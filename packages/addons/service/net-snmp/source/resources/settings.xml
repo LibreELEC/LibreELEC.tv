@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
    <!-- net-snmp -->
-    <category label="32000">
-		<setting label="32001" id="COMMUNITY" type="text" default="libreelec"/>
-		<setting label="32002" id="LOCATION" type="text" default="HOME"/>
-		<setting label="32003" id="CONTACT" type="text" default="root@localhost"/>
-		<setting label="32004" id="SNMPVERSION" type="labelenum" values="v1|v2c|v3" default="v2c"/>
-		<setting label="32007" type="lsep"/>
-		<setting label="32005" id="SNMPUSER" type="text" default="user"/>
-		<setting label="32006" id="SNMPPASSWORD" type="text" default="password"/>
-		<setting label="32008" type="lsep"/>
-		<setting label="32009" type="bool" id="CPUTEMP" default="true"/>
-		<setting label="32010" type="bool" id="GPUTEMP" default="false"/>
+    <category label="30000">
+		<setting label="30001" id="COMMUNITY" type="text" default="libreelec"/>
+		<setting label="30002" id="LOCATION" type="text" default="HOME"/>
+		<setting label="30003" id="CONTACT" type="text" default="root@localhost"/>
+		<setting label="30004" id="SNMPVERSION" type="labelenum" values="v1|v2c|v3" default="v2c"/>
+		<setting label="30007" type="lsep"/>
+		<setting label="30005" id="SNMPUSER" type="text" default="user"/>
+		<setting label="30006" id="SNMPPASSWORD" type="text" default="password"/>
+		<setting label="30008" type="lsep"/>
+		<setting label="30009" type="bool" id="CPUTEMP" default="true"/>
+		<setting label="30010" type="bool" id="GPUTEMP" default="false"/>
     </category>
 </settings>

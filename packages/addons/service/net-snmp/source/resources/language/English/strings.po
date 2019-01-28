@@ -1,42 +1,50 @@
 # Kodi Media Center language file
-# Addon Name: rsyslog
-# Addon id: service.rsyslog
+# Addon Name: net-snmp
+# Addon id: service.net-snmp
 # Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 
 msgctxt "#30000"
-msgid "Configuration"
+msgid "General"
 msgstr ""
 
 msgctxt "#30001"
-msgid "Configure rsyslog.conf manually"
+msgid "Community"
 msgstr ""
 
 msgctxt "#30002"
-msgid "IP | Name | FQDN"
+msgid "Location"
 msgstr ""
 
 msgctxt "#30003"
-msgid "Port"
+msgid "Contact"
 msgstr ""
 
 msgctxt "#30004"
-msgid "Protocol"
+msgid "SNMP Version"
 msgstr ""
 
 msgctxt "#30005"
-msgid "Log journal and kernel"
+msgid "SNMP User"
 msgstr ""
 
 msgctxt "#30006"
-msgid "Log Kodi"
+msgid "SNMP Password"
 msgstr ""
 
 msgctxt "#30007"
-msgid "Zlib Compression"
+msgid "v3 account"
 msgstr ""
 
 msgctxt "#30008"
-msgid "Level"
+msgid "Extends"
+msgstr ""
+
+msgctxt "#30009"
+msgid "Expose cputemp"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Expose gputemp"
 msgstr ""

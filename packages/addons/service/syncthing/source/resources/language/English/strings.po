@@ -1,7 +1,7 @@
 # Kodi Media Center language file
 # Addon Name: syncthing
 # Addon id: service.system.syncthing
-# Addon Provider: awiouy at gmail dot com
+# Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 

@@ -1,30 +1,30 @@
 # Kodi Media Center language file
-# Addon Name: inadyn
-# Addon id: service.system.inadyn
+# Addon Name: touchscreen
+# Addon id: service.touchscreen
 # Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 
 msgctxt "#30000"
-msgid "Configuration"
+msgid "General"
 msgstr ""
 
 msgctxt "#30001"
-msgid "Provider"
+msgid "Recalibrate after reboot"
 msgstr ""
 
 msgctxt "#30002"
-msgid "Username"
+msgid "Clean screen"
 msgstr ""
 
 msgctxt "#30003"
-msgid "Password"
+msgid "Touchscreen"
 msgstr ""
 
 msgctxt "#30004"
-msgid "Alias"
+msgid "Now you can safely clean the screen."
 msgstr ""
 
 msgctxt "#30005"
-msgid "SSL"
+msgid "Still %d seconds left."
 msgstr ""

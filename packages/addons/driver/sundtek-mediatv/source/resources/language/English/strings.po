@@ -1,0 +1,122 @@
+# Kodi Media Center language file
+# Addon Name: sundtek-mediatv
+# Addon id: driver.dvb.sundtek-mediatv
+# Addon Provider: Team LibreELEC
+msgid ""
+msgstr ""
+
+msgctxt "#30000"
+msgid "General"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Extra delay [sec]"
+msgstr ""
+
+msgctxt "#30002"
+msgid "Run user script"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Enable hardware PID filter"
+msgstr ""
+
+msgctxt "#30004"
+msgid "Enable IR receiver"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Lowest adapter number (/dev/dvb/adapterX/)"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Enable suspend/resume the driver"
+msgstr ""
+
+msgctxt "#30007"
+msgid "Networking"
+msgstr ""
+
+msgctxt "#30008"
+msgid "Share local tuner over network"
+msgstr ""
+
+msgctxt "#30009"
+msgid "Use network shared tuners"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Server 1 IP address"
+msgstr ""
+
+msgctxt "#30011"
+msgid "    # of tuners"
+msgstr ""
+
+msgctxt "#30012"
+msgid "Server 2 IP address"
+msgstr ""
+
+msgctxt "#30013"
+msgid "    # of tuners"
+msgstr ""
+
+msgctxt "#30014"
+msgid "Server 3 IP address"
+msgstr ""
+
+msgctxt "#30015"
+msgid "    # of tuners"
+msgstr ""
+
+msgctxt "#30016"
+msgid "Server 4 IP address"
+msgstr ""
+
+msgctxt "#30017"
+msgid "    # of tuners"
+msgstr ""
+
+msgctxt "#30018"
+msgid "Server 5 IP address"
+msgstr ""
+
+msgctxt "#30019"
+msgid "    # of tuners"
+msgstr ""
+
+msgctxt "#30020"
+msgid "Tuner settings"
+msgstr ""
+
+msgctxt "#30021"
+msgid "Enable modifying settings"
+msgstr ""
+
+msgctxt "#30022"
+msgid "       >>> Refresh tuners <<<"
+msgstr ""
+
+msgctxt "#30023"
+msgid "    IR protocol"
+msgstr ""
+
+msgctxt "#30024"
+msgid "    keymap filename"
+msgstr ""
+
+msgctxt "#30025"
+msgid "Driver"
+msgstr ""
+
+msgctxt "#30026"
+msgid "Driver version"
+msgstr ""
+
+msgctxt "#30027"
+msgid "Check for new driver version at boot"
+msgstr ""
+
+msgctxt "#30028"
+msgid "       >>> Update driver now <<<"
+msgstr ""

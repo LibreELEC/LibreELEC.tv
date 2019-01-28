@@ -1,7 +1,7 @@
 # Kodi Media Center language file
 # Addon Name: dispmanx_vnc
 # Addon id: service.system.dispmanx_vnc
-# Addon Provider: awiouy at gmail dot com
+# Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 

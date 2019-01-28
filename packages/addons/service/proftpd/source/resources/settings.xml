@@ -1,61 +1,61 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-  <category label="40000">
+  <category label="30000">
     <setting type="lsep" />
-    <setting id="Port"                 type="number"    label="40040" default="21" />
-    <setting id="MaxClients"           type="number"    label="40050" default="10" />
-    <setting id="MaxClientsPerHost"    type="number"    label="40060" default="5" />
-    <setting id="MaxHostsPerUser"      type="number"    label="40070" default="5" />
-    <setting id="MaxInstances"         type="number"    label="40080" default="30" />
-    <setting id="Umask"                type="number"    label="40090" default="022" />
-    <setting id="ServerName"           type="text"      label="40100" default="ProFTPD on LibreELEC"/>
-    <setting id="ServerIdent"          type="bool"      label="40110" default="true"               />
-    <setting id="ServerIdentText"      type="text"      label="40120" default="LibreELEC" visible="eq(-1,true)" />
-    <setting id="AllowOverwrite"       type="bool"      label="40030" default="true" />
-    <setting id="AllowStoreRestart"    type="bool"      label="40180" default="true" />
-    <setting id="AllowRetrieveRestart" type="bool"      label="40190" default="true" />
-    <setting id="RootLogin"            type="bool"      label="40200" default="true" />
-    <setting id="Debuglevel"           type="labelenum" label="40210" default="0" values="0|1|2|3|4|5|6|7|8|9|10" />
+    <setting id="Port"                 type="number"    label="30004" default="21" />
+    <setting id="MaxClients"           type="number"    label="30005" default="10" />
+    <setting id="MaxClientsPerHost"    type="number"    label="30006" default="5" />
+    <setting id="MaxHostsPerUser"      type="number"    label="30007" default="5" />
+    <setting id="MaxInstances"         type="number"    label="30008" default="30" />
+    <setting id="Umask"                type="number"    label="30009" default="022" />
+    <setting id="ServerName"           type="text"      label="30010" default="ProFTPD on LibreELEC"/>
+    <setting id="ServerIdent"          type="bool"      label="30011" default="true"               />
+    <setting id="ServerIdentText"      type="text"      label="30012" default="LibreELEC" visible="eq(-1,true)" />
+    <setting id="AllowOverwrite"       type="bool"      label="30003" default="true" />
+    <setting id="AllowStoreRestart"    type="bool"      label="30013" default="true" />
+    <setting id="AllowRetrieveRestart" type="bool"      label="30014" default="true" />
+    <setting id="RootLogin"            type="bool"      label="30015" default="true" />
+    <setting id="Debuglevel"           type="labelenum" label="30016" default="0" values="0|1|2|3|4|5|6|7|8|9|10" />
   </category>
-  <category label="60000">
+  <category label="30034">
     <setting type="lsep" />
-    <setting id="TLSEngine"       type="bool"   label="60010" default="true" />
-    <setting id="TLSRequired"     type="bool"   label="60020" default="false" visible="eq(-1,true)" />
-    <setting id="CertTTL"         type="number" label="60030" default="36500" />
-    <setting id="CertHash"        type="enum"   label="60040" default="sha1" values="sha1" />
-    <setting id="CertCrypto"      type="enum"   label="60050" default="x509" values="rsa|x509" />
-    <setting id="CertBitStrength" type="number" label="60060" default="2048" />
+    <setting id="TLSEngine"       type="bool"   label="30035" default="true" />
+    <setting id="TLSRequired"     type="bool"   label="30036" default="false" visible="eq(-1,true)" />
+    <setting id="CertTTL"         type="number" label="30037" default="36500" />
+    <setting id="CertHash"        type="enum"   label="30038" default="sha1" values="sha1" />
+    <setting id="CertCrypto"      type="enum"   label="30039" default="x509" values="rsa|x509" />
+    <setting id="CertBitStrength" type="number" label="30040" default="2048" />
   </category>
-  <category label="70000">
+  <category label="30041">
     <setting type="lsep" />
-    <setting id="AllowForeignAddress" type="bool"   label="70010" default="true" />
-    <setting id="PassivePorts"        type="number" label="70020" default="45000" />
-    <setting id="PassivePorts2"       type="number" label="70030" default="45100" />
-    <setting id="MasqueradeAddress"   type="bool"   label="70040" default="true" />
-    <setting id="MasqueradeAddress2"  type="text"   label="70050" default="127.0.0.1" visible="eq(-1,true)" />
+    <setting id="AllowForeignAddress" type="bool"   label="30042" default="true" />
+    <setting id="PassivePorts"        type="number" label="30043" default="45000" />
+    <setting id="PassivePorts2"       type="number" label="30044" default="45100" />
+    <setting id="MasqueradeAddress"   type="bool"   label="30045" default="true" />
+    <setting id="MasqueradeAddress2"  type="text"   label="30046" default="127.0.0.1" visible="eq(-1,true)" />
   </category>
-  <category label="50000">
+  <category label="30017">
     <setting type="lsep" />
-    <setting id="CryptoHash" type="enum" label="50010" default="sha-512" values="sha-512|sha-256|md5" />
+    <setting id="CryptoHash" type="enum" label="30018" default="sha-512" values="sha-512|sha-256|md5" />
     <setting type="lsep" />
-    <setting id="Username1"  type="text"   label="50020" default="" />
-    <setting id="Userpass1"  type="text"   label="50030" default=""         enable="!eq(-1,)" />
-    <setting id="Userpath1"  type="folder" label="50040" default="/storage" enable="!eq(-1,)" option="writeable" />
+    <setting id="Username1"  type="text"   label="30019" default="" />
+    <setting id="Userpass1"  type="text"   label="30020" default=""         enable="!eq(-1,)" />
+    <setting id="Userpath1"  type="folder" label="30021" default="/storage" enable="!eq(-1,)" option="writeable" />
     <setting type="lsep" />
-    <setting id="Username2"  type="text"   label="50050" default=""         visible="!eq(-3,)" />
-    <setting id="Userpass2"  type="text"   label="50060" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
-    <setting id="Userpath2"  type="folder" label="50070" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)"  option="writeable" />
+    <setting id="Username2"  type="text"   label="30022" default=""         visible="!eq(-3,)" />
+    <setting id="Userpass2"  type="text"   label="30023" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
+    <setting id="Userpath2"  type="folder" label="30024" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)"  option="writeable" />
     <setting type="lsep" />
-    <setting id="Username3"  type="text"   label="50080" default=""         visible="!eq(-3,)" />
-    <setting id="Userpass3"  type="text"   label="50090" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
-    <setting id="Userpath3"  type="folder" label="50100" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)"  option="writeable" />
+    <setting id="Username3"  type="text"   label="30025" default=""         visible="!eq(-3,)" />
+    <setting id="Userpass3"  type="text"   label="30026" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
+    <setting id="Userpath3"  type="folder" label="30027" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)"  option="writeable" />
     <setting type="lsep" />
-    <setting id="Username4"  type="text"   label="50110" default=""         visible="!eq(-3,)" />
-    <setting id="Userpass4"  type="text"   label="50120" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
-    <setting id="Userpath4"  type="folder" label="50130" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)" option="writeable" />
+    <setting id="Username4"  type="text"   label="30028" default=""         visible="!eq(-3,)" />
+    <setting id="Userpass4"  type="text"   label="30029" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
+    <setting id="Userpath4"  type="folder" label="30030" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)" option="writeable" />
     <setting type="lsep" />
-    <setting id="Username5"  type="text"   label="50140" default=""         visible="!eq(-3,)" />
-    <setting id="Userpass5"  type="text"   label="50150" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
-    <setting id="Userpath5"  type="folder" label="50160" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)"  option="writeable" />
+    <setting id="Username5"  type="text"   label="30031" default=""         visible="!eq(-3,)" />
+    <setting id="Userpass5"  type="text"   label="30032" default=""         visible="!eq(-4,)" enable="!eq(-1,)" />
+    <setting id="Userpath5"  type="folder" label="30033" default="/storage" visible="!eq(-5,)" enable="!eq(-1,)"  option="writeable" />
   </category>
 </settings>

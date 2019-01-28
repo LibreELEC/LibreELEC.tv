@@ -1,0 +1,54 @@
+# Kodi Media Center language file
+# Addon Name: hdhomerun
+# Addon id: driver.dvb.hdhomerun
+# Addon Provider: Team LibreELEC
+msgid ""
+msgstr ""
+
+msgctxt "#30000"
+msgid "General"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Pre wait time [sec]"
+msgstr ""
+
+msgctxt "#30002"
+msgid "Post wait time [sec]"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Enable userhdhomerun logging"
+msgstr ""
+
+msgctxt "#30004"
+msgid "Enable libhdhomerun logging"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Enable suspend/resume the driver"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Tuner settings"
+msgstr ""
+
+msgctxt "#30007"
+msgid "Enable modifying settings"
+msgstr ""
+
+msgctxt "#30008"
+msgid "Refresh tuners... (press me)"
+msgstr ""
+
+msgctxt "#30009"
+msgid "    use full name"
+msgstr ""
+
+msgctxt "#30010"
+msgid "    number of tuners"
+msgstr ""
+
+msgctxt "#30011"
+msgid "    disabled"
+msgstr ""

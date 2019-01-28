@@ -1,38 +1,38 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-  <category label="1000" >
+  <category label="30000" >
     <setting type="sep" />
-    <setting id="SETTLE_TIME"          type="number" label="1014" default="0" />
-    <setting id="RUN_USER_SCRIPT"      type="bool"   label="1015" default="false" />
-    <setting id="ENABLE_HW_PID_FILTER" type="bool"   label="1030" default="true" />
-    <setting id="ENABLE_IR_RECEIVER"   type="bool"   label="1035" default="false" />
-    <setting id="LOWEST_ADAPTER_NUM"   type="number" label="1040" default="0" />
-    <setting id="SUSPEND_DRIVER"       type="bool"   label="1050" default="true" />
+    <setting id="SETTLE_TIME"          type="number" label="30001" default="0" />
+    <setting id="RUN_USER_SCRIPT"      type="bool"   label="30002" default="false" />
+    <setting id="ENABLE_HW_PID_FILTER" type="bool"   label="30003" default="true" />
+    <setting id="ENABLE_IR_RECEIVER"   type="bool"   label="30004" default="false" />
+    <setting id="LOWEST_ADAPTER_NUM"   type="number" label="30005" default="0" />
+    <setting id="SUSPEND_DRIVER"       type="bool"   label="30006" default="true" />
   </category>
-  <category label="2000" >
+  <category label="30007" >
     <setting type="sep" />
-    <setting id="ALLOW_NET_USE"  type="bool"   label="2005" default="false" />
-    <setting id="USE_NET_TUNERS" type="bool"   label="2010" default="false" />
-    <setting id="DEVICE1_IP"  type="ipaddress" label="2020" default=""                     visible="eq(-1,true)" />
-    <setting id="DEVICE1_NUM" type="labelenum" label="2021" default="1" values="1|5|4|3|2" visible="eq(-2,true)" />
-    <setting id="DEVICE2_IP"  type="ipaddress" label="2030" default=""                     visible="eq(-3,true)" />
-    <setting id="DEVICE2_NUM" type="labelenum" label="2031" default="1" values="1|5|4|3|2" visible="eq(-4,true)" />
-    <setting id="DEVICE3_IP"  type="ipaddress" label="2040" default=""                     visible="eq(-5,true)" />
-    <setting id="DEVICE3_NUM" type="labelenum" label="2041" default="1" values="1|5|4|3|2" visible="eq(-6,true)" />
-    <setting id="DEVICE4_IP"  type="ipaddress" label="2050" default=""                     visible="eq(-7,true)" />
-    <setting id="DEVICE4_NUM" type="labelenum" label="2051" default="1" values="1|5|4|3|2" visible="eq(-8,true)" />
-    <setting id="DEVICE5_IP"  type="ipaddress" label="2060" default=""                     visible="eq(-9,true)" />
-    <setting id="DEVICE5_NUM" type="labelenum" label="2061" default="1" values="1|5|4|3|2" visible="eq(-10,true)" />
+    <setting id="ALLOW_NET_USE"  type="bool"   label="30008" default="false" />
+    <setting id="USE_NET_TUNERS" type="bool"   label="30009" default="false" />
+    <setting id="DEVICE1_IP"  type="ipaddress" label="30010" default=""                     visible="eq(-1,true)" />
+    <setting id="DEVICE1_NUM" type="labelenum" label="30011" default="1" values="1|5|4|3|2" visible="eq(-2,true)" />
+    <setting id="DEVICE2_IP"  type="ipaddress" label="30012" default=""                     visible="eq(-3,true)" />
+    <setting id="DEVICE2_NUM" type="labelenum" label="30013" default="1" values="1|5|4|3|2" visible="eq(-4,true)" />
+    <setting id="DEVICE3_IP"  type="ipaddress" label="30014" default=""                     visible="eq(-5,true)" />
+    <setting id="DEVICE3_NUM" type="labelenum" label="30015" default="1" values="1|5|4|3|2" visible="eq(-6,true)" />
+    <setting id="DEVICE4_IP"  type="ipaddress" label="30016" default=""                     visible="eq(-7,true)" />
+    <setting id="DEVICE4_NUM" type="labelenum" label="30017" default="1" values="1|5|4|3|2" visible="eq(-8,true)" />
+    <setting id="DEVICE5_IP"  type="ipaddress" label="30018" default=""                     visible="eq(-9,true)" />
+    <setting id="DEVICE5_NUM" type="labelenum" label="30019" default="1" values="1|5|4|3|2" visible="eq(-10,true)" />
   </category>
-  <category label="9000">
+  <category label="30020">
     <setting type="sep" />
-    <setting id="ENABLE_TUNER_TYPES" type="bool" label="9005" default="true" />
-    <setting label="9010" option="close" type="action" id="refresh_tuners" action="RunScript($CWD/resources/actions.py, refresh_tuners)" />
+    <setting id="ENABLE_TUNER_TYPES" type="bool" label="30021" default="true" />
+    <setting label="30022" option="close" type="action" id="refresh_tuners" action="RunScript($CWD/resources/actions.py, refresh_tuners)" />
   </category>
-  <category label="3000">
+  <category label="30025">
     <setting type="sep" />
-    <setting id="BUILD_DATE" type="enum" label="3005" values="#" /> 
-    <setting id="CHECK_BOOT" type="bool" label="3020" default="false" />
-    <setting label="3010" option="close" type="action" id="update_driver" action="RunScript($CWD/resources/actions.py, update_driver)" />
+    <setting id="BUILD_DATE" type="enum" label="30026" values="#" /> 
+    <setting id="CHECK_BOOT" type="bool" label="30027" default="false" />
+    <setting label="30028" option="close" type="action" id="update_driver" action="RunScript($CWD/resources/actions.py, update_driver)" />
   </category>
 </settings>

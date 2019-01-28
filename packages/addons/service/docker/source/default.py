@@ -25,157 +25,157 @@ import dockermon
 
 docker_events = {
                   'container': {
-                                 'string': 30030,
+                                 'string': 30010,
                                  'event': {
                                             'attach':       {
-                                                              'string': 30031,
+                                                              'string': 30011,
                                                               'enabled': '',
                                                             },
                                             'commit':       {
-                                                              'string': 30032,
+                                                              'string': 30012,
                                                               'enabled': '',
                                                             },
                                             'copy':         {
-                                                              'string': 30033,
+                                                              'string': 30013,
                                                               'enabled': '',
                                                             },
                                             'create':       {
-                                                              'string': 30034,
+                                                              'string': 30014,
                                                               'enabled': '',
                                                             },
                                             'destroy':      {
-                                                              'string': 30035,
+                                                              'string': 30015,
                                                               'enabled': '',
                                                             },
                                             'die':          {
-                                                              'string': 30036,
+                                                              'string': 30016,
                                                               'enabled': '',
                                                             },
                                             'exec_create':  {
-                                                              'string': 30037,
+                                                              'string': 30017,
                                                               'enabled': '',
                                                             },
                                             'exec_start':   {
-                                                              'string': 30038,
+                                                              'string': 30018,
                                                               'enabled': '',
                                                             },
                                             'export':       {
-                                                              'string': 30039,
+                                                              'string': 30019,
                                                               'enabled': '',
                                                             },
                                             'kill':         {
-                                                              'string': 30040,
+                                                              'string': 30020,
                                                               'enabled': True,
                                                             },
                                             'oom':          {
-                                                              'string': 30041,
+                                                              'string': 30021,
                                                               'enabled': True,
                                                             },
                                             'pause':        {
-                                                              'string': 30042,
+                                                              'string': 30022,
                                                               'enabled': '',
                                                             },
                                             'rename':       {
-                                                              'string': 30043,
+                                                              'string': 30023,
                                                               'enabled': '',
                                                             },
                                             'resize':       {
-                                                              'string': 30044,
+                                                              'string': 30024,
                                                               'enabled': '',
                                                             },
                                             'restart':      {
-                                                              'string': 30045,
+                                                              'string': 30025,
                                                               'enabled': '',
                                                             },
                                             'start':        {
-                                                              'string': 30046,
+                                                              'string': 30026,
                                                               'enabled': True,
                                                             },
                                             'stop':         {
-                                                              'string': 30047,
+                                                              'string': 30027,
                                                               'enabled': True,
                                                             },
                                             'top':          {
-                                                              'string': 30048,
+                                                              'string': 30028,
                                                               'enabled': '',
                                                             },
                                             'unpause':      {
-                                                              'string': 30049,
+                                                              'string': 30029,
                                                               'enabled': '',
                                                             },
                                             'update':       {
-                                                              'string': 30050,
+                                                              'string': 30030,
                                                               'enabled': '',
                                                             },
                                           },
                                },
                   'image':     {
-                                 'string': 30060,
+                                 'string': 30031,
                                  'event': {
                                             'delete':       {
-                                                              'string': 30061,
+                                                              'string': 30032,
                                                               'enabled': '',
                                                             },
                                             'import':       {
-                                                              'string': 30062,
+                                                              'string': 30033,
                                                               'enabled': '',
                                                             },
                                             'pull':         {
-                                                              'string': 30063,
+                                                              'string': 30034,
                                                               'enabled': True,
                                                             },
                                             'push':         {
-                                                              'string': 30064,
+                                                              'string': 30035,
                                                               'enabled': '',
                                                             },
                                             'tag':          {
-                                                              'string': 30065,
+                                                              'string': 30036,
                                                               'enabled': '',
                                                             },
                                             'untag':        {
-                                                              'string': 30066,
+                                                              'string': 30037,
                                                               'enabled': '',
                                                             },
                                           },
                                },
                   'volume':    {
-                                 'string': 30070,
+                                 'string': 30038,
                                  'event': {
                                             'create':       {
-                                                              'string': 30071,
+                                                              'string': 30039,
                                                               'enabled': '',
                                                             },
                                             'mount':        {
-                                                              'string': 30072,
+                                                              'string': 30040,
                                                               'enabled': '',
                                                             },
                                             'unmount':      {
-                                                              'string': 30073,
+                                                              'string': 30041,
                                                               'enabled': '',
                                                             },
                                             'destroy':      {
-                                                              'string': 30074,
+                                                              'string': 30042,
                                                               'enabled': '',
                                                             },
                                           },
                                },
                   'network':   {
-                                 'string': 30080,
+                                 'string': 30043,
                                  'event': {
                                             'create':       {
-                                                              'string': 30081,
+                                                              'string': 30044,
                                                               'enabled': '',
                                                             },
                                             'connect':      {
-                                                              'string': 30082,
+                                                              'string': 30045,
                                                               'enabled': '',
                                                             },
                                             'disconnect':   {
-                                                              'string': 30083,
+                                                              'string': 30046,
                                                               'enabled': '',
                                                             },
                                             'destroy':      {
-                                                              'string': 30084,
+                                                              'string': 30047,
                                                               'enabled': '',
                                                             },
                                           },
@@ -187,30 +187,30 @@ def print_notification(json_data):
     if __addon__.getSetting('notifications') is '0': # default
         if docker_events[json_data['Type']]['event'][json_data['Action']]['enabled']:
             try:
-                message = unicode(' '.join([__addon__.getLocalizedString(30010),
+                message = unicode(' '.join([__addon__.getLocalizedString(30007),
                                             json_data['Actor']['Attributes']['name'],
                                             '|',
-                                            __addon__.getLocalizedString(30012),
+                                            __addon__.getLocalizedString(30009),
                                             __addon__.getLocalizedString(event_string)]))
             except KeyError as e:
-                message = unicode(' '.join([__addon__.getLocalizedString(30011),
+                message = unicode(' '.join([__addon__.getLocalizedString(30008),
                                             json_data['Type'],
                                             '|',
-                                            __addon__.getLocalizedString(30012),
+                                            __addon__.getLocalizedString(30009),
                                             __addon__.getLocalizedString(event_string)]))
 
     elif __addon__.getSetting('notifications') is '1': # all
         try:
-            message = unicode(' '.join([__addon__.getLocalizedString(30010),
+            message = unicode(' '.join([__addon__.getLocalizedString(30007),
                                         json_data['Actor']['Attributes']['name'],
                                         '|',
-                                        __addon__.getLocalizedString(30012),
+                                        __addon__.getLocalizedString(30009),
                                         __addon__.getLocalizedString(event_string)]))
         except KeyError as e:
-            message = unicode(' '.join([__addon__.getLocalizedString(30011),
+            message = unicode(' '.join([__addon__.getLocalizedString(30008),
                                         json_data['Type'],
                                         '|',
-                                        __addon__.getLocalizedString(30012),
+                                        __addon__.getLocalizedString(30009),
                                         __addon__.getLocalizedString(event_string)]))
 
     elif __addon__.getSetting('notifications') is '2': # none
@@ -219,16 +219,16 @@ def print_notification(json_data):
     elif __addon__.getSetting('notifications') is '3': # custom
         if __addon__.getSetting(json_data['Action']) == 'true':
             try:
-                message = unicode(' '.join([__addon__.getLocalizedString(30010),
+                message = unicode(' '.join([__addon__.getLocalizedString(30007),
                                             json_data['Actor']['Attributes']['name'],
                                             '|',
-                                            __addon__.getLocalizedString(30012),
+                                            __addon__.getLocalizedString(30009),
                                             __addon__.getLocalizedString(event_string)]))
             except KeyError as e:
-                message = unicode(' '.join([__addon__.getLocalizedString(30011),
+                message = unicode(' '.join([__addon__.getLocalizedString(30008),
                                             json_data['Type'],
                                             '|',
-                                            __addon__.getLocalizedString(30012),
+                                            __addon__.getLocalizedString(30009),
                                             __addon__.getLocalizedString(event_string)]))
 
     dialog = xbmcgui.Dialog()

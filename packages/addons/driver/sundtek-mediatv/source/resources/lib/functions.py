@@ -173,14 +173,14 @@ def add_hdhomerun(xmldoc, node_cat, tuners):
 
     node2 = xmldoc.createElement("setting")
     node2.setAttribute("id", 'ATTACHED_TUNER_' + tuner_var + '_FULLNAME')
-    node2.setAttribute("label", '9020')
+    node2.setAttribute("label", '30023')
     node2.setAttribute("type", 'bool')
     node2.setAttribute("default", 'false')
     node_cat.appendChild(node2)
 
     node3 = xmldoc.createElement("setting")
     node3.setAttribute("id", 'ATTACHED_TUNER_' + tuner_var + '_DISABLE')
-    node3.setAttribute("label", '9030')
+    node3.setAttribute("label", '30024')
     node3.setAttribute("type", 'bool')
     node3.setAttribute("default", 'false')
     node_cat.appendChild(node3)
@@ -234,7 +234,7 @@ def add_sundtek(xmldoc, node_cat, tuners):
 
     node2 = xmldoc.createElement("setting")
     node2.setAttribute("id", 'ATTACHED_TUNER_' + tuner_serial + '_IRPROT')
-    node2.setAttribute("label", '9020')
+    node2.setAttribute("label", '30023')
     node2.setAttribute("type", 'labelenum')
     node2.setAttribute("default", 'auto')
     node2.setAttribute("values", 'auto|RC5|NEC|RC6')
@@ -242,7 +242,7 @@ def add_sundtek(xmldoc, node_cat, tuners):
 
     node3 = xmldoc.createElement("setting")
     node3.setAttribute("id", 'ATTACHED_TUNER_' + tuner_serial + '_KEYMAP')
-    node3.setAttribute("label", '9030')
+    node3.setAttribute("label", '30024')
     node3.setAttribute("type", 'file')
     node3.setAttribute("mask", '*.map')
     node3.setAttribute("default", __sundtek_userspace__)
@@ -257,7 +257,7 @@ def add_new_tuners(xmldoc, tuners, which):
   for node_cat in category:
     setting = node_cat.getElementsByTagName('setting')
     for node_set in setting :
-      if 'label' in node_set.attributes.keys() and '9010' in node_set.getAttribute('label'):
+      if 'label' in node_set.attributes.keys() and '30022' in node_set.getAttribute('label'):
         if which == 'hdhomerun':
           add_hdhomerun(xmldoc, node_cat, tuners)
           break

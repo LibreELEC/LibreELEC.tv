@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-  <category label="1000" >
+  <category label="30000" >
     <setting type="sep" />
-    <setting label="1010" id="TS_RECALIBRATE" type="bool" default="false" />
-    <setting label="1020" id="clean_screen" type="action" option="close" action="RunScript($CWD/lock-screen.py)" />
+    <setting label="30001" id="TS_RECALIBRATE" type="bool" default="false" />
+    <setting label="30002" id="clean_screen" type="action" option="close" action="RunScript($CWD/lock-screen.py)" />
   </category>
 </settings>

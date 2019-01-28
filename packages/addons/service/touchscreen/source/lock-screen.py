@@ -21,7 +21,7 @@ def handle_wait(time_to_wait, title, text):
         secs += 1
         percent = increment*secs
         secs_left = time_to_wait - secs
-        remaining_display = (_(2030).encode('utf-8')) % secs_left
+        remaining_display = (_(30005).encode('utf-8')) % secs_left
         dialog.update(percent, text, "", remaining_display)
         xbmc.sleep(1000)
 
@@ -30,4 +30,4 @@ def handle_wait(time_to_wait, title, text):
 
 # how long to lock the screen
 lock_secs = 30
-handle_wait(lock_secs, _(2010).encode('utf-8'), _(2020).encode('utf-8'))
+handle_wait(lock_secs, _(30003).encode('utf-8'), _(30004).encode('utf-8'))

@@ -1,4 +1,7 @@
 # Kodi Media Center language file
+# Addon Name: locale
+# Addon id: service.locale
+# Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 

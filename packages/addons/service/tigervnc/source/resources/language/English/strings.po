@@ -1,6 +1,7 @@
 # Kodi Media Center language file
 # Addon Name: tigervnc
 # Addon id: service.tigervnc
+# Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 

@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
-  <category label="1000" >
+  <category label="30000" >
     <setting type="sep" />
-    <setting id="PRE_WAIT"  type="number" label="1020" default="2" />
-    <setting id="POST_WAIT" type="number" label="1030" default="1" />
-    <setting id="USERHDHOMERUN_LOG" type="bool" label="1040" default="false" />
-    <setting id="LIBHDHOMERUN_LOG" type="bool" label="1050" default="false" />
-    <setting id="SUSPEND_DRIVER" type="bool" label="1060" default="false" />
+    <setting id="PRE_WAIT"  type="number" label="30001" default="2" />
+    <setting id="POST_WAIT" type="number" label="30002" default="1" />
+    <setting id="USERHDHOMERUN_LOG" type="bool" label="30003" default="false" />
+    <setting id="LIBHDHOMERUN_LOG" type="bool" label="30004" default="false" />
+    <setting id="SUSPEND_DRIVER" type="bool" label="30005" default="false" />
   </category>
-  <category label="9000">
+  <category label="30006">
     <setting type="sep" />
-    <setting id="ENABLE_TUNER_TYPES" type="bool" label="9005" default="true" />
-    <setting label="9010" option="close" type="action" id="refresh_tuners" action="RunScript($CWD/resources/actions.py, refresh_tuners)" />
+    <setting id="ENABLE_TUNER_TYPES" type="bool" label="30007" default="true" />
+    <setting label="30008" option="close" type="action" id="refresh_tuners" action="RunScript($CWD/resources/actions.py, refresh_tuners)" />
   </category>
 </settings>

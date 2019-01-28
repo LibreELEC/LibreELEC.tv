@@ -1,198 +1,190 @@
 # Kodi Media Center language file
-# Addon Name: docker
-# Addon id: service.system.docker
+# Addon Name: proftpd
+# Addon id: service.proftpd
 # Addon Provider: Team LibreELEC
 msgid ""
 msgstr ""
 
 msgctxt "#30000"
-msgid "Settings"
+msgid "General"
 msgstr ""
 
 msgctxt "#30001"
-msgid "Notifications"
-msgstr ""
-
-msgctxt "#30002"
-msgid "Default"
+msgid "Settings"
 msgstr ""
 
 msgctxt "#30003"
-msgid "All"
+msgid "Allow Overwrite"
 msgstr ""
 
 msgctxt "#30004"
-msgid "Off"
+msgid "Port"
 msgstr ""
 
 msgctxt "#30005"
-msgid "Custom"
+msgid "Max Clients"
 msgstr ""
 
 msgctxt "#30006"
-msgid "Notification Length (Seconds)"
+msgid "Max Clients per Host"
 msgstr ""
 
 msgctxt "#30007"
-msgid "Name:"
+msgid "Max Hosts per User"
 msgstr ""
 
 msgctxt "#30008"
-msgid "Type:"
+msgid "Max Instances"
 msgstr ""
 
 msgctxt "#30009"
-msgid "Action:"
+msgid "Umask"
 msgstr ""
 
 msgctxt "#30010"
-msgid "Container"
+msgid "Server Name"
 msgstr ""
 
 msgctxt "#30011"
-msgid "attach"
+msgid "Server Ident"
 msgstr ""
 
 msgctxt "#30012"
-msgid "commit"
+msgid "Server Ident Text"
 msgstr ""
 
 msgctxt "#30013"
-msgid "copy"
+msgid "Allow Store Restart"
 msgstr ""
 
 msgctxt "#30014"
-msgid "create"
+msgid "Allow Retrieve Restart"
 msgstr ""
 
 msgctxt "#30015"
-msgid "destroy"
+msgid "Allow Root Login"
 msgstr ""
 
 msgctxt "#30016"
-msgid "die"
+msgid "Debug level"
 msgstr ""
 
 msgctxt "#30017"
-msgid "exec_create"
+msgid "User"
 msgstr ""
 
 msgctxt "#30018"
-msgid "exec_start"
+msgid "Hash Algorithm"
 msgstr ""
 
 msgctxt "#30019"
-msgid "export"
+msgid "Username 1"
 msgstr ""
 
 msgctxt "#30020"
-msgid "kill"
+msgid "User Password 1"
 msgstr ""
 
 msgctxt "#30021"
-msgid "out of memory"
+msgid "User Path 1"
 msgstr ""
 
 msgctxt "#30022"
-msgid "pause"
+msgid "Username 2"
 msgstr ""
 
 msgctxt "#30023"
-msgid "rename"
+msgid "User Password 2"
 msgstr ""
 
 msgctxt "#30024"
-msgid "resize"
+msgid "User Path 2"
 msgstr ""
 
 msgctxt "#30025"
-msgid "restart"
+msgid "Username 3"
 msgstr ""
 
 msgctxt "#30026"
-msgid "start"
+msgid "User Password 3"
 msgstr ""
 
 msgctxt "#30027"
-msgid "stop"
+msgid "User Path 3"
 msgstr ""
 
 msgctxt "#30028"
-msgid "top"
+msgid "Username 4"
 msgstr ""
 
 msgctxt "#30029"
-msgid "unpause"
+msgid "User Password 4"
 msgstr ""
 
 msgctxt "#30030"
-msgid "update"
+msgid "User Path 4"
 msgstr ""
 
 msgctxt "#30031"
-msgid "Image"
+msgid "Username 5"
 msgstr ""
 
 msgctxt "#30032"
-msgid "delete"
+msgid "User Password 5"
 msgstr ""
 
 msgctxt "#30033"
-msgid "import"
+msgid "User Path 5"
 msgstr ""
 
 msgctxt "#30034"
-msgid "pull"
+msgid "TLS"
 msgstr ""
 
 msgctxt "#30035"
-msgid "push"
+msgid "Allow TLS Engine"
 msgstr ""
 
 msgctxt "#30036"
-msgid "tag"
+msgid "TLS Required"
 msgstr ""
 
 msgctxt "#30037"
-msgid "untag"
+msgid "Certificat Lifetime (Days)"
 msgstr ""
 
 msgctxt "#30038"
-msgid "Volume"
+msgid "Certificat Hash Algorithm"
 msgstr ""
 
 msgctxt "#30039"
-msgid "create"
+msgid "Certificat Cryptosystem"
 msgstr ""
 
 msgctxt "#30040"
-msgid "mount"
+msgid "Certificat Bit-Strength"
 msgstr ""
 
 msgctxt "#30041"
-msgid "unmount"
+msgid "FXP"
 msgstr ""
 
 msgctxt "#30042"
-msgid "destroy"
+msgid "Allow Foreign Address"
 msgstr ""
 
 msgctxt "#30043"
-msgid "Network"
+msgid "Passive Portrange Start"
 msgstr ""
 
 msgctxt "#30044"
-msgid "create"
+msgid "Passive Portrange End"
 msgstr ""
 
 msgctxt "#30045"
-msgid "connect"
+msgid "Enable Masquerade Address"
 msgstr ""
 
 msgctxt "#30046"
-msgid "disconnect"
-msgstr ""
-
-msgctxt "#30047"
-msgid "destroy"
+msgid "Masquerade Address"
 msgstr ""
