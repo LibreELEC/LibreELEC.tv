@@ -24,8 +24,8 @@ make_target() {
   case "$DEVICE" in
     RK3288)
       # Use vendor ddr init and miniloader blob
-      cp -av bin/rk32/rk3288_ddr_400MHz_v1.08.bin ddr.bin
-      cp -av bin/rk32/rk3288_miniloader_v2.58.bin miniloader.bin
+      #cp -av bin/rk32/rk3288_ddr_400MHz_v1.08.bin ddr.bin
+      #cp -av bin/rk32/rk3288_miniloader_v2.58.bin miniloader.bin
 
       # Make tee.bin available for u-boot fit-image
       #cp -av bin/rk32/rk3288_tee_ta_v2.01.bin tee.bin
@@ -40,25 +40,25 @@ make_target() {
       else
         cp -av bin/rk33/rk3328_ddr_786MHz_v1.16.bin ddr.bin
       fi
-      cp -av bin/rk33/rk322xh_miniloader_v2.50.bin miniloader.bin
+      #cp -av bin/rk33/rk322xh_miniloader_v2.50.bin miniloader.bin
 
       # Build trust.img for use with miniloader blob
-      tools/trust_merger --ignore-bl32 --verbose RKTRUST/RK3328TRUST.ini
+      #tools/trust_merger --ignore-bl32 --verbose RKTRUST/RK3328TRUST.ini
 
       # Make bl31 and bl32 available for u-boot fit-image
-      #cp -av bin/rk33/rk322xh_bl31_v1.44.elf bl31.elf
+      cp -av bin/rk33/rk322xh_bl31_v1.44.elf bl31.elf
       #cp -av bin/rk33/rk322xh_bl32_v2.01.bin bl32.bin
       ;;
     RK3399)
       # Use vendor ddr init and miniloader blob
-      cp -av bin/rk33/rk3399_ddr_800MHz_v1.24.bin ddr.bin
-      cp -av bin/rk33/rk3399_miniloader_v1.26.bin miniloader.bin
+      #cp -av bin/rk33/rk3399_ddr_800MHz_v1.24.bin ddr.bin
+      #cp -av bin/rk33/rk3399_miniloader_v1.26.bin miniloader.bin
 
       # Build trust.img for use with miniloader blob
-      tools/trust_merger --ignore-bl32 --verbose RKTRUST/RK3399TRUST.ini
+      #tools/trust_merger --ignore-bl32 --verbose RKTRUST/RK3399TRUST.ini
 
       # Make bl31 and bl32 available for u-boot fit-image
-      #cp -av bin/rk33/rk3399_bl31_v1.35.elf bl31.elf
+      cp -av bin/rk33/rk3399_bl31_v1.35.elf bl31.elf
       #cp -av bin/rk33/rk3399_bl32_v2.01.bin bl32.bin
       ;;
   esac

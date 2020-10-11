@@ -3,9 +3,12 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="u-boot"
+PKG_VERSION="v2020.10"
+PKG_SHA256="0c022ca6796aa8c0689faae8b515eb62ac84519c31de3153257a9ee0f446618f"
 PKG_ARCH="arm aarch64"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.denx.de/wiki/U-Boot"
+PKG_URL="https://github.com/u-boot/u-boot/archive/$PKG_VERSION.tar.gz"
 PKG_DEPENDS_TARGET="toolchain Python3:host swig:host"
 PKG_LONGDESC="Das U-Boot is a cross-platform bootloader for embedded systems."
 
@@ -20,20 +23,6 @@ fi
 
 PKG_NEED_UNPACK="$PROJECT_DIR/$PROJECT/bootloader"
 [ -n "$DEVICE" ] && PKG_NEED_UNPACK+=" $PROJECT_DIR/$PROJECT/devices/$DEVICE/bootloader"
-
-case "$PROJECT" in
-  Rockchip)
-    PKG_VERSION="8659d08d2b589693d121c1298484e861b7dafc4f"
-    PKG_SHA256="3f9f2bbd0c28be6d7d6eb909823fee5728da023aca0ce37aef3c8f67d1179ec1"
-    PKG_URL="https://github.com/rockchip-linux/u-boot/archive/$PKG_VERSION.tar.gz"
-    PKG_PATCH_DIRS="rockchip"
-    ;;
-  *)
-    PKG_VERSION="v2020.10"
-    PKG_SHA256="0c022ca6796aa8c0689faae8b515eb62ac84519c31de3153257a9ee0f446618f"
-    PKG_URL="https://github.com/u-boot/u-boot/archive/$PKG_VERSION.tar.gz"
-    ;;
-esac
 
 post_patch() {
   if [ -n "$UBOOT_SYSTEM" ] && find_file_path bootloader/config; then

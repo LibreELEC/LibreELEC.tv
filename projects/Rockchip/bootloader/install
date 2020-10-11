@@ -2,10 +2,15 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 if [ -f ddr.bin -a -f miniloader.bin ]; then
-  tools/mkimage -n ${DEVICE/RK/rk} -T rksd -d ddr.bin idbloader.img
-  cat miniloader.bin >> idbloader.img
+  tools/mkimage -n ${DEVICE/RK/rk} -T rksd -d "ddr.bin:miniloader.bin" idbloader.img
   PKG_LOAD_ADDR=$(sed -n "/SYS_TEXT_BASE/s/#define CONFIG_SYS_TEXT_BASE //p" u-boot.cfg)
   $(get_build_dir rkbin)/tools/loaderimage --pack --uboot u-boot-dtb.bin uboot.img $PKG_LOAD_ADDR
+elif [ -f ddr.bin -a -f spl/u-boot-spl.bin ]; then
+  tools/mkimage -n ${DEVICE/RK/rk} -T rksd -d "ddr.bin:spl/u-boot-spl.bin" idbloader.img
+elif [ -f tpl/u-boot-tpl.bin -a -f spl/u-boot-spl.bin ]; then
+  tools/mkimage -n ${DEVICE/RK/rk} -T rksd -d "tpl/u-boot-tpl.bin:spl/u-boot-spl.bin" idbloader.img
+elif [ -f spl/u-boot-spl.bin -a -f u-boot.bin ]; then
+  tools/mkimage -n ${DEVICE/RK/rk} -T rksd -d "spl/u-boot-spl.bin:u-boot.bin" idbloader.img
 fi
 
 if [ -f idbloader.img ]; then
@@ -14,4 +19,8 @@ fi
 
 if [ -f uboot.img ]; then
   cp -av uboot.img $INSTALL/usr/share/bootloader
+elif [ -f u-boot.itb ]; then
+  cp -av u-boot.itb $INSTALL/usr/share/bootloader/uboot.img
+elif [ -f u-boot.img ]; then
+  cp -av u-boot.img $INSTALL/usr/share/bootloader/uboot.img
 fi
