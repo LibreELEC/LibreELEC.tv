@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2020-present Team LibreELEC (https://libreelec.tv)
+
+PKG_RKBIN="$(get_install_dir rkbin)/.noinstall"
+for PKG_FILE in bl31.elf tee.elf tee.bin ddr.bin miniloader.bin; do
+  if [ -f $PKG_RKBIN/$PKG_FILE ]; then
+    cp -av $PKG_RKBIN/$PKG_FILE .
+  fi
+done

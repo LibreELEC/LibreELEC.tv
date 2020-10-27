@@ -6,7 +6,7 @@
     BOOTLOADER="u-boot"
 
   # U-Boot make target
-    UBOOT_TARGET="u-boot-dtb.bin"
+    UBOOT_TARGET="all"
 
   # U-Boot firmware package(s) to use
     UBOOT_FIRMWARE="rkbin"

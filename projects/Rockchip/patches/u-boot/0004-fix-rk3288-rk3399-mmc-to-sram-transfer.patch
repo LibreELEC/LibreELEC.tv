@@ -1,0 +1,45 @@
+From 2a2d695e10b1be3d48df92d5418cb1efef9c9bf7 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 11 Oct 2020 14:33:07 +0000
+Subject: [PATCH 4/6] fix rk3288/rk3399 mmc to sram transfer
+
+---
+ arch/arm/dts/rk3288-u-boot.dtsi | 10 ++++++++++
+ arch/arm/dts/rk3399-u-boot.dtsi |  3 +++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/arch/arm/dts/rk3288-u-boot.dtsi b/arch/arm/dts/rk3288-u-boot.dtsi
+index e3c6c10f13..55bb6b0b5a 100644
+--- a/arch/arm/dts/rk3288-u-boot.dtsi
++++ b/arch/arm/dts/rk3288-u-boot.dtsi
+@@ -41,6 +41,16 @@
+ 	u-boot,dm-pre-reloc;
+ };
+ 
++&emmc {
++	/* mmc to sram can't do dma, prevent aborts transfering OPTEE parts */
++	u-boot,spl-fifo-mode;
++};
++
++&sdmmc {
++	/* mmc to sram can't do dma, prevent aborts transfering OPTEE parts */
++	u-boot,spl-fifo-mode;
++};
++
+ &pmu {
+ 	u-boot,dm-pre-reloc;
+ };
+diff --git a/arch/arm/dts/rk3399-u-boot.dtsi b/arch/arm/dts/rk3399-u-boot.dtsi
+index ecd230c720..4e975cb108 100644
+--- a/arch/arm/dts/rk3399-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-u-boot.dtsi
+@@ -115,6 +115,9 @@
+ &sdhci {
+ 	max-frequency = <200000000>;
+ 	u-boot,dm-pre-reloc;
++
++	/* mmc to sram can't do dma, prevent aborts transferring TF-A parts */
++	u-boot,spl-fifo-mode;
+ };
+ 
+ &sdmmc {
