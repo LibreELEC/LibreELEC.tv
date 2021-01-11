@@ -1163,10 +1163,10 @@ source_package() {
           ${PKG_NAME}-${PKG_VERSION}.*)
             PKG_SOURCE_NAME=$PKG_SOURCE_NAME
             ;;
-          *.tar | *.tbz | *.tgz | *.txz | *.7z | *.zip)
+          *.tar | *.tbz | *.tgz | *.txz | *.tzst | *.7z | *.zip)
             PKG_SOURCE_NAME=${PKG_NAME}-${PKG_VERSION}.${PKG_SOURCE_NAME##*\.}
             ;;
-          *.tar.bz2 | *.tar.gz | *.tar.xz)
+          *.tar.bz2 | *.tar.gz | *.tar.xz | *.tar.zst )
             PKG_SOURCE_NAME=${PKG_NAME}-${PKG_VERSION}.tar.${PKG_SOURCE_NAME##*\.}
             ;;
           *.diff | *.patch | *.diff.bz2 | *.patch.bz2 | patch-*.bz2 | *.diff.gz | *.patch.gz | patch-*.gz)

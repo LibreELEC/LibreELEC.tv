@@ -75,6 +75,7 @@ dep_map=(
   [wget]=wget
   [xz]=xz-utils
   [zip]=zip
+  [zstd]=zstd
 )
 
 # [file]=package

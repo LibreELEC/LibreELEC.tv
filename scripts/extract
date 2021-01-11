@@ -51,6 +51,10 @@ case ${PKG_SOURCE_NAME} in
     mkdir -p "${DESTDIR}"
     tar xf ${FULL_SOURCE_PATH} ${TAR_OPTS} -C "${DESTDIR}"
     ;;
+  *.tar.zst | *.tzst)
+    mkdir -p "${DESTDIR}"
+    zstdcat ${FULL_SOURCE_PATH} | tar xf - ${TAR_OPTS} -C "${DESTDIR}"
+    ;;
   *.7z)
     mkdir -p ${2}/${1}
     7z x -o${2}/${1} ${FULL_SOURCE_PATH}
