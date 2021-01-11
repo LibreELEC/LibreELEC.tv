@@ -3,10 +3,10 @@
 
 PKG_NAME="zstd"
 PKG_VERSION="1.4.8"
-PKG_SHA256="32478297ca1500211008d596276f5367c54198495cf677e9439f4791a4c69f24"
+PKG_SHA256="c7ea10e20dd61b457220455e3cf553069987b968b7c63d1b9d46acbdb45623eb"
 PKG_LICENSE="BSD/GPLv2"
 PKG_SITE="http://www.zstd.net"
-PKG_URL="https://github.com/facebook/zstd/releases/download/v${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_URL="https://github.com/facebook/zstd/releases/download/v${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.zst"
 PKG_DEPENDS_HOST="ccache:host meson:host ninja:host"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A fast real-time compression algorithm."
