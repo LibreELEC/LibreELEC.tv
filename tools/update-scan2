@@ -1,0 +1,150 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2020-present Team LibreELEC (https://libreelec.tv)
+
+set -e
+
+. config/options ""
+
+# check if depends are available
+command -v curl >/dev/null 2>&1 || die "please install curl"
+command -v jq >/dev/null 2>&1 || die "please install jq"
+
+# global vars
+PACKAGES_CURRENT=""
+PACKAGES_IGNORED=""
+PACKAGES_NOT_REGISTERED=""
+github_api="no"
+
+# check for github user and token present at ~/.libreelec/options to activate github api checks
+if [[ ! -z "${github_token}" || ! -z "${github_user}" ]]; then
+  # check if token works
+  if curl -sL -I -u ${github_user}:${github_token} https://api.github.com/user | grep -q "Status: 200"; then
+    echo "Github api usage activated"
+    github_api="yes"
+    github_api_token="-u ${github_user}:${github_token}"
+  else
+    echo ""
+    echo " your Github token is not working"
+    echo " github_token=${github_token}"
+    echo " github_user=${github_user}"
+    echo ""
+    die
+  fi
+else
+cat << EOF
+
+ | Github API not in use, some features are disabled
+ |==============================================================================
+ | create your "Personal access token" here https://github.com/settings/tokens
+ | add your token and username to ~/.libreelec/options
+ | github_token="your_github_token_here"
+ | github_user="your_github_username_here"
+
+EOF
+fi
+
+check_for_update() {
+  local PKG_NAME PKG_URL PKG_VERSION
+
+  # source variables from package.mk
+  PKG_NAME="$(grep -oP -m 1 '(?<=PKG_NAME=\").*(?=\")' ${1} || true)"
+  PKG_VERSION="$(grep -oP -m 1 '(?<=PKG_VERSION=\").*(?=\")' ${1} || true)"
+  eval PKG_URL="$(grep -oP -m 1 '(?<=PKG_URL=\").*(?=\")' ${1} || true)"
+
+  # check if version and url are empty or self hosted by us and ignore those packages
+  if [ -z "${PKG_VERSION}" ] || [ -z "${PKG_URL}" ] || [[ "${PKG_URL}" == "$DISTRO_SRC"* ]]; then
+    PACKAGES_IGNORED+="${PKG_NAME} "
+    return
+  else
+    # check if package exist at tracker
+    upstream_version="$(curl -sL https://release-monitoring.org/api/project/LibreELEC/${PKG_NAME} | jq -r '.version')"
+    if [ "${upstream_version}" == "null" ]; then
+      if [[ $(curl -sL https://release-monitoring.org/api/project/LibreELEC/${PKG_NAME} | jq -r '.error') =~ "No package" ]]; then
+        # if no package at tracker check if we can use github api
+        if [[ ! ${PKG_URL} =~ ^.*(github\.com).*$ ]]; then
+          PACKAGES_NOT_REGISTERED+="${PKG_NAME} "
+          return
+        fi
+      else
+        # package exist at tracker but has no version
+        upstream_version="! broken at release tracker !"
+      fi
+    fi
+  fi
+
+  # use github api if it is available
+  if [ "$github_api" = "yes" ]; then
+    # check if version is a githash
+    if [[ ${PKG_VERSION} =~ ^[a-z0-9]{40} ]]; then
+      # check if url contains github
+      if [[ ${PKG_URL} =~ ^.*(github\.com).*$ ]]; then
+        github_repos="$(echo ${PKG_URL} | grep -oP '(?<=https:\/\/github.com\/)?[0-9A-Za-z._-]+\/[0-9A-Za-z._-]+(?=/archive|/tags|/releases)')"
+        le_master_version_date="Commit date: $(curl -sL $github_api_token https://api.github.com/repos/${github_repos}/git/commits/${PKG_VERSION} | jq -r '.committer.date')"
+        upstream_latest_commit="$(curl -sL $github_api_token https://api.github.com/repos/${github_repos}/git/refs/heads/master | jq -r '.object.url')"
+        upstream_latest_commit_date="$(curl -sL $github_api_token ${upstream_latest_commit} | jq -r '.committer.date')"
+        upstream_latest_tag="$(curl -sL $github_api_token https://api.github.com/repos/${github_repos}/tags | jq -r '.[0].name')"
+        upstream_latest_tag_url="$(curl -sL $github_api_token https://api.github.com/repos/${github_repos}/tags | jq -r '.[0].commit.url')"
+        upstream_latest_tag_date="$(curl -sL $github_api_token ${upstream_latest_tag_url} | jq -r '.commit.committer.date')"
+        # compare upstream with local version
+        if [ "${PKG_VERSION}" != "${upstream_latest_commit##*/}" ]; then
+          # get upstream tag informations
+          if [ "${upstream_latest_tag}" = "null" ]; then
+            tag=" | TAG: no tags"
+          else
+            tag=" | TAG: ${upstream_latest_tag} (${upstream_latest_tag_date%T*})"
+          fi
+          upstream_version="Master: ${upstream_latest_commit_date%T*}${tag}"
+          PKG_VERSION="${le_master_version_date%T*}"
+        else
+          upstream_version="${upstream_latest_commit##*/}"
+        fi
+      fi
+    fi
+  fi
+
+  # print version output line
+  if [ "${PKG_VERSION}" != "${upstream_version}" ]; then
+    printf "%-35s | %-40s | %-20s" "${PKG_NAME}" "${PKG_VERSION}" "${upstream_version}"; printf '\n'
+  else
+    PACKAGES_CURRENT+="${PKG_NAME} "
+  fi
+}
+
+# create list of packages
+if [ -n "${1}" ]; then
+  PACKAGE_LIST="$(find packages/ -type d -name ${1})/package.mk"
+  if [ ! -f "${PACKAGE_LIST}" ]; then
+    die "Package not found: ${1}"
+  fi
+else
+  PACKAGE_LIST="$(find packages/ -type f -name package.mk \
+    ! -path "packages/addons/addon-depends/adafruit-libraries-depends/*" \
+    ! -path "packages/emulation/*" \
+    ! -path "packages/linux/*" \
+    ! -path "packages/mediacenter/*" \
+    | awk '{FS="/" ; $0=$0 ; print $(NF-1)"|"$0}' | sort | cut -d"|" -f2 \
+    )"
+fi
+
+# output
+echo -e "\nUpdates found:\n"
+printf "%-35s | %-40s | %-20s" "Package" "LE git master" "upstream location"; printf '\n'
+echo -e ''$_{1..140}'\b-'
+
+for check_version in ${PACKAGE_LIST}; do
+  check_for_update "${check_version}"
+done
+
+echo ""
+
+if [ -n "${PACKAGES_CURRENT}" ]; then
+  echo -e "\nCurrent $(echo ${PACKAGES_CURRENT} | wc -w):\n${PACKAGES_CURRENT}\n"
+fi
+if [ -n "${PACKAGES_IGNORED}" ]; then
+  echo -e "\nIgnored $(echo ${PACKAGES_IGNORED} | wc -w):\n${PACKAGES_IGNORED}"
+fi
+if [ -n "${PACKAGES_NOT_REGISTERED}" ]; then
+  echo -e "\nPackages not known at tracker $(echo ${PACKAGES_NOT_REGISTERED} | wc -w):\n${PACKAGES_NOT_REGISTERED}\n"
+fi
