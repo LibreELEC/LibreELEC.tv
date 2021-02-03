@@ -3,11 +3,11 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="curl"
-PKG_VERSION="7.74.0"
-PKG_SHA256="999d5f2c403cf6e25d58319fdd596611e455dd195208746bc6e6d197a77e878b"
+PKG_VERSION="7.77.0"
+PKG_SHA256="0f64582c54282f31c0de9f0a1a596b182776bd4df9a4c4a2a41bbeb54f62594b"
 PKG_LICENSE="MIT"
-PKG_SITE="http://curl.haxx.se"
-PKG_URL="http://curl.haxx.se/download/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_SITE="https://curl.haxx.se"
+PKG_URL="https://curl.haxx.se/download/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain zlib openssl rtmpdump libidn2 nghttp2"
 PKG_LONGDESC="Client and library for (HTTP, HTTPS, FTP, ...) transfers."
 PKG_TOOLCHAIN="configure"
