@@ -1,0 +1,459 @@
+Patch from openSUSE
+https://ftp.lysator.liu.se/pub/opensuse/source/tumbleweed/repo/oss/suse/src/open-isns-0.100-3.1.src.rpm
+Originally named: open-isns-updates.diff 
+Required to compile due to sighold and sigrelse errors.
+refer to https://build.opensuse.org/package/view_file/openSUSE:Factory/open-isns/open-isns.changes
+
+diff --git a/Makefile.in b/Makefile.in
+index f76880a4637f..f001a879bf4f 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -118,6 +118,7 @@ install:
+ 	$(INSTALL) -m 644 $(srcdir)/doc/isnsd.8 $(MANDIR)/man8
+ 	$(INSTALL) -m 644 $(srcdir)/doc/isnsdd.8 $(MANDIR)/man8
+ 	$(INSTALL) -m 644 $(srcdir)/doc/isnsadm.8 $(MANDIR)/man8
++	$(INSTALL) -m 644 $(srcdir)/doc/isnssetup.8 $(MANDIR)/man8
+ 	$(INSTALL) -m 644 $(srcdir)/doc/isns_config.5 $(MANDIR)/man5
+ 	$(INSTALL) -m 644 $(srcdir)/isnsd.service $(SYSTEMDDIR)
+ 	$(INSTALL) -m 644 $(srcdir)/isnsd.socket $(SYSTEMDDIR)
+diff --git a/TODO b/TODO
+index 2ddf0086a2d5..bfa9172f0632 100644
+--- a/TODO
++++ b/TODO
+@@ -27,6 +27,10 @@ isnsdd:
+  	we registered for ESI are seeing the server's
+ 	ESI messages.
+ 
++isnssetup:
++-	Update to support systemd, and perhaps have
++	a few options?
++
+ DevAttrReg:
+  -	Refuse registration of nodes inside the CONTROL
+  	entity, unless it's a control node.
+@@ -98,3 +102,6 @@ Renaming
+ 
+ Socket code:
+  -	impose upper limit on the reassembly buffer
++
++Compilation:
++ -      'make depend' does not work
+diff --git a/client.c b/client.c
+index 848787718623..fda26be3f6f9 100644
+--- a/client.c
++++ b/client.c
+@@ -122,22 +122,17 @@ isns_client_get_local_address(const isns_client_t *clnt,
+ /*
+  * Create a security context
+  */
++#ifdef WITH_SECURITY
+ static isns_security_t *
+ __create_security_context(const char *name, const char *auth_key,
+ 		const char *server_key)
+ {
+-#ifdef WITH_SECURITY
+ 	isns_security_t 	*ctx;
+ 	isns_principal_t	*princ;
+-#endif /* WITH_SECURITY */
+ 
+ 	if (!isns_config.ic_security)
+ 		return NULL;
+ 
+-#ifndef WITH_SECURITY
+-	isns_error("Cannot create security context: security disabled at build time\n");
+-	return NULL;
+-#else /* WITH_SECURITY */
+ 	ctx = isns_create_dsa_context();
+ 	if (ctx == NULL)
+ 		isns_fatal("Unable to create security context\n");
+@@ -174,8 +169,19 @@ __create_security_context(const char *name, const char *auth_key,
+ 	}
+ 
+ 	return ctx;
+-#endif /* WITH_SECURITY */
+ }
++#else	/* WITH_SECURITY */
++static isns_security_t *
++__create_security_context(__attribute__((unused))const char *name,
++			  __attribute__((unused))const char *auth_key,
++			  __attribute__((unused))const char *server_key)
++{
++	if (!isns_config.ic_security)
++		return NULL;
++	isns_error("Cannot create security context: security disabled at build time\n");
++	return NULL;
++}
++#endif	/* WITH_SECURITY */
+ 
+ /*
+  * Create the default security context
+diff --git a/configure.ac b/configure.ac
+index e4f3995c4a9b..d956e580dc94 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -17,7 +17,7 @@ AC_PATH_PROG(SH, sh)
+ dnl C Compiler features
+ AC_C_INLINE
+ if test "$GCC" = "yes"; then
+-        CFLAGS="-Wall -Werror -Wextra $CFLAGS"
++        CFLAGS="-Wall -Wextra $CFLAGS"
+ 	CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
+ fi
+ 
+diff --git a/db-policy.c b/db-policy.c
+index b1c46e22980d..d4a0cba432e2 100644
+--- a/db-policy.c
++++ b/db-policy.c
+@@ -52,11 +52,11 @@ __isns_db_keystore_lookup(isns_db_keystore_t *store,
+ /*
+  * Load a DSA key from the DB store
+  */
++#ifdef WITH_SECURITY
+ static EVP_PKEY *
+ __isns_db_keystore_find(isns_keystore_t *store_base,
+ 		const char *name, size_t namelen)
+ {
+-#ifdef WITH_SECURITY
+ 	isns_db_keystore_t *store = (isns_db_keystore_t *) store_base;
+ 	isns_object_t	*obj;
+ 	const void	*key_data;
+@@ -71,10 +71,16 @@ __isns_db_keystore_find(isns_keystore_t *store_base,
+ 		return NULL;
+ 
+ 	return isns_dsa_decode_public(key_data, key_size);
+-#else
++}
++#else	/* WITH_SECURITY */
++static EVP_PKEY *
++__isns_db_keystore_find(__attribute__((unused))isns_keystore_t *store_base,
++			__attribute__((unused))const char *name,
++			__attribute__((unused))size_t namelen)
++{
+ 	return NULL;
+-#endif
+ }
++#endif	/* WITH_SECURITY */
+ 
+ /*
+  * Retrieve policy from database
+diff --git a/doc/isnssetup.8 b/doc/isnssetup.8
+new file mode 100644
+index 000000000000..3076af5bafe9
+--- /dev/null
++++ b/doc/isnssetup.8
+@@ -0,0 +1,64 @@
++'\" t
++.TH ISNSSETUP 8 "4 Dec 2020"
++.SH NAME
++isnssetup \- a simple script to bootstrap an iSNS server, including security
++.SH SYNOPSIS
++.B isnssetup
++.SH DESCRIPTION
++.B isnssetup
++is a command line utility for for bootstrapping your iSNS
++installation. It sets up the authentication credentials,
++sets up the
++.B ServerAddress
++to be
++.IR localhost ,
++and registers the appropriate values in the
++.B iSNS
++database. The
++.B isnssetup
++script does not take any options.
++.PP
++Running this script performs the following steps:
++.TP
++.B \(bu
++Set
++.B ServerAddress
++to
++.I localhost
++and
++.B Security
++to
++.I 1
++for
++.B isnsadmin.conf
++and
++.BR isnsdd.conf .
++.TP
++.B \(bu
++Initialize security files by running
++.BR "isnsd --init" ,
++copying the public key to the server key, then restarting
++the
++.B isnsd
++daemon, so that it sees the new authorization files.
++.TP
++.B \(bu
++Registering the control node policy, the control node itself, and
++lastly registering the server policy.
++.PP
++Note that this script is supplied as an example, although you should
++be able to use it directly if you wish. You have to be
++.B root
++to run this script successfully.
++.SH BUGS
++This script does not take
++.B systemd
++into account, so you may have to modify it to get it to work on
++a modern system.
++.SH SEE ALSO
++RFC 4171,
++.BR isnsadm (8),
++.BR isnsd (8),
++.BR isns_config (5).
++.SH AUTHORS
++Olaf Kirch <olaf.kirch@oracle.com>
+diff --git a/include/libisns/paths.h.in b/include/libisns/paths.h.in
+index 1e96e70e1449..d4ef8036beb1 100644
+--- a/include/libisns/paths.h.in
++++ b/include/libisns/paths.h.in
+@@ -9,8 +9,8 @@
+ #define ISNS_CONFIG_H
+ 
+ #define __OPENISNS_MKVERSION(maj, min)	(((maj) << 8) + (min))
+-#define OPENISNS_VERSION		__OPENISNS_MKVERSION(0, 99);
+-#define OPENISNS_VERSION_STRING		"0.99"
++#define OPENISNS_VERSION		__OPENISNS_MKVERSION(0, 100);
++#define OPENISNS_VERSION_STRING		"0.100"
+ 
+ #define ISNS_ETCDIR			"/etc/isns"
+ #define ISNS_RUNDIR			"@RUNDIR@"
+diff --git a/include/libisns/util.h b/include/libisns/util.h
+index 417448026afb..f1b97f050737 100644
+--- a/include/libisns/util.h
++++ b/include/libisns/util.h
+@@ -14,6 +14,7 @@
+ #include <string.h>	// for strdup
+ #include <signal.h>
+ #include <libisns/types.h>
++#include <stdlib.h>
+ 
+ #define array_num_elements(a) (sizeof(a) / sizeof((a)[0]))
+ 
+@@ -40,14 +41,22 @@ char *		print_size(unsigned long);
+  */
+ static inline void signals_hold(void)
+ {
+-	sighold(SIGTERM);
+-	sighold(SIGINT);
++	sigset_t s;
++
++	sigemptyset(&s);
++	sigaddset(&s, SIGTERM);
++	sigaddset(&s, SIGINT);
++	sigprocmask(SIG_BLOCK, &s, 0);
+ }
+ 
+ static inline void signals_release(void)
+ {
+-	sigrelse(SIGTERM);
+-	sigrelse(SIGINT);
++	sigset_t s;
++
++	sigemptyset(&s);
++	sigaddset(&s, SIGTERM);
++	sigaddset(&s, SIGINT);
++	sigprocmask(SIG_UNBLOCK, &s, 0);
+ }
+ 
+ /*
+diff --git a/isnsadm.c b/isnsadm.c
+index 7a9600731e55..94c705e2a3b8 100644
+--- a/isnsadm.c
++++ b/isnsadm.c
+@@ -1162,7 +1162,7 @@ generate_key_callback(void)
+ }
+ 
+ isns_attr_t *
+-load_key_callback(const char *pathname)
++load_key_callback(__attribute__((unused))const char *pathname)
+ {
+ 	isns_fatal("Authentication disabled in this build\n");
+ 	return NULL;
+diff --git a/isnsdd.c b/isnsdd.c
+index 58825cc8e68f..9cedb9f093ce 100644
+--- a/isnsdd.c
++++ b/isnsdd.c
+@@ -401,7 +401,7 @@ check_portal_registration(__attribute__((unused))void *ptr)
+ 			continue;
+ 
+ 		last_modified = isns_object_last_modified(obj);
+-		if (last_modified + 2 * interval > now) {
++		if ((time_t)(last_modified + 2 * interval) > now) {
+ 			good_portals++;
+ 			continue;
+ 		}
+diff --git a/pki.c b/pki.c
+index 486d9bb00057..6617b8aee7df 100644
+--- a/pki.c
++++ b/pki.c
+@@ -9,12 +9,15 @@
+ #include <unistd.h>
+ #include <limits.h>
+ #include "config.h"
++#include <fcntl.h>
++#include <assert.h>
+ #ifdef	WITH_SECURITY
+ #include <openssl/pem.h>
+ #include <openssl/err.h>
+ #include <openssl/evp.h>
++#include <openssl/dsa.h>
++#include <openssl/bn.h>
+ #endif
+-#include <fcntl.h>
+ #include <libisns/isns.h>
+ #include "security.h"
+ #include <libisns/util.h>
+@@ -96,13 +99,11 @@ isns_create_dsa_context(void)
+ 	isns_security_t	*ctx;
+ 
+ 	if (!isns_openssl_init) {
+-		ERR_load_crypto_strings();
+ #if OPENSSL_API_COMPAT < 0x10100000L
++		ERR_load_crypto_strings();
+ 		OpenSSL_add_all_algorithms();
+ 		OpenSSL_add_all_ciphers();
+ 		OpenSSL_add_all_digests();
+-#else
+-		OPENSSL_init_crypto();
+ #endif
+ 		isns_openssl_init = 1;
+ 	}
+@@ -431,18 +432,41 @@ isns_dsa_load_params(const char *filename)
+ 	return dsa;
+ }
+ 
+-static int
++/*
++ * write one 'status' character to stdout
++ */
++static void
++write_status_byte(int ch)
++{
++	static int	stdout_fd = 1;	/* fileno(stdout) */
++	char		buf[2];
++	int		res;
++
++	/*
++	 * We don't actually care about the return value here, since
++	 * we are just dumping a status byte to stdout, but
++	 * some linux distrubutions set the warn_unused_result attribute
++	 * for the write() API, so we might as well use the return value
++	 * to make sure the write command isn't broken.
++	 */
++	assert(ch);
++	buf[0] = ch;
++	buf[1] = '\0';
++	res = write(stdout_fd, buf, 1);
++	assert(res == 1);
++}
++
++static void
+ isns_dsa_param_gen_callback(int stage,
+ 		__attribute__((unused))int index,
+ 		__attribute__((unused))void *dummy)
+ {
+ 	if (stage == 0)
+-		write(1, "+", 1);
++		write_status_byte('+');
+ 	else if (stage == 1)
+-		write(1, ".", 1);
++		write_status_byte('.');
+ 	else if (stage == 2)
+-		write(1, "/", 1);
+-	return 0;
++		write_status_byte('/');
+ }
+ 
+ int
+@@ -467,7 +491,7 @@ isns_dsa_init_params(const char *filename)
+ 	isns_notice("Generating DSA parameters; this may take a while\n");
+ #if OPENSSL_VERSION_NUMBER >= 0x10002000L
+ 	cb = BN_GENCB_new();
+-	BN_GENCB_set(cb, (int (*)(int, int, BN_GENCB *)) isns_dsa_param_gen_callback, NULL);
++	BN_GENCB_set_old(cb, (void (*)(int, int, void *)) isns_dsa_param_gen_callback, NULL);
+ 	dsa = DSA_new();
+ 	if (!DSA_generate_parameters_ex(dsa, dsa_key_bits, NULL, 0, NULL, NULL, cb)) {
+ 		DSA_free(dsa);
+@@ -478,7 +502,7 @@ isns_dsa_init_params(const char *filename)
+ 	dsa = DSA_generate_parameters(dsa_key_bits, NULL, 0,
+ 			NULL, NULL, isns_dsa_param_gen_callback, NULL);
+ #endif
+-	write(1, "\n", 1);
++	write_status_byte('\n');
+ 
+ 	if (dsa == NULL) {
+ 		isns_dsasig_report_errors("Error generating DSA parameters",
+diff --git a/security.c b/security.c
+index 673a26effd2a..68eb7795b464 100644
+--- a/security.c
++++ b/security.c
+@@ -408,32 +408,34 @@ isns_security_init(void)
+ }
+ 
+ isns_keystore_t *
+-isns_create_keystore(const char *spec)
++isns_create_keystore(__attribute__((unused))const char *spec)
+ {
+ 	isns_no_security();
+ 	return NULL;
+ }
+ 
+ void
+-isns_security_set_keystore(isns_security_t *ctx,
+-			isns_keystore_t *ks)
++isns_security_set_keystore(__attribute__((unused))isns_security_t *ctx,
++			   __attribute__((unused))isns_keystore_t *ks)
+ {
+ 	isns_no_security();
+ }
+ 
+ void
+-isns_principal_free(isns_principal_t *peer)
++isns_principal_free(__attribute__((unused))isns_principal_t *peer)
+ {
+ }
+ 
+ isns_principal_t *
+-isns_get_principal(isns_security_t *ctx, const char *spi, size_t spi_len)
++isns_get_principal(__attribute__((unused))isns_security_t *ctx,
++		   __attribute__((unused))const char *spi,
++		   __attribute__((unused))size_t spi_len)
+ {
+ 	return NULL;
+ }
+ 
+ const char *
+-isns_principal_name(const isns_principal_t *princ)
++isns_principal_name(__attribute__((unused))const isns_principal_t *princ)
+ {
+ 	return NULL;
+ }
+diff --git a/socket.c b/socket.c
+index da9f5dcea05d..432a9bddddcd 100644
+--- a/socket.c
++++ b/socket.c
+@@ -5,7 +5,7 @@
+  */
+ 
+ #include <sys/socket.h>
+-#include <sys/poll.h>
++#include <poll.h>
+ #include <sys/time.h>
+ #include <sys/un.h>
+ #include <string.h>
+@@ -322,8 +322,9 @@ failed:
+ }
+ #else /* WITH_SECURITY */
+ static int
+-isns_pdu_authenticate(isns_security_t *sec,
+-		struct isns_partial_msg *msg, buf_t *bp)
++isns_pdu_authenticate(__attribute__((unused))isns_security_t *sec,
++		      __attribute__((unused))struct isns_partial_msg *msg,
++		      __attribute__((unused))buf_t *bp)
+ {
+ 	return 0;
+ }

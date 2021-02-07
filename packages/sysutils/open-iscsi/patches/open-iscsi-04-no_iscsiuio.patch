@@ -1,13 +1,22 @@
 diff -Naur open-iscsi-bf39941/Makefile open-iscsi-bf39941.patch/Makefile
 --- open-iscsi-bf39941/Makefile	2013-08-08 17:06:46.000000000 +0200
 +++ open-iscsi-bf39941.patch/Makefile	2013-08-08 18:02:13.009068581 +0200
-@@ -26,20 +26,18 @@
+@@ -19,7 +19,7 @@
+ MANPAGES = doc/iscsid.8 doc/iscsiadm.8 doc/iscsi_discovery.8 \
+ 		iscsiuio/docs/iscsiuio.8 doc/iscsi_fw_login.8 doc/iscsi-iname.8 \
+ 		doc/iscsistart.8
+-PROGRAMS = usr/iscsid usr/iscsiadm utils/iscsi-iname iscsiuio/src/unix/iscsiuio \
++PROGRAMS = usr/iscsid usr/iscsiadm utils/iscsi-iname \
+ 		   usr/iscsistart
+ SCRIPTS = utils/iscsi_discovery utils/iscsi_fw_login utils/iscsi_offload \
+ 		  utils/iscsi-gen-initiatorname
+@@ -58,20 +58,18 @@
  
  all: user
  
--user: utils/open-isns/Makefile iscsiuio/Makefile
-+user: utils/open-isns/Makefile
- 	$(MAKE) -C utils/open-isns
+-user: iscsiuio/Makefile
++user:
+ 	$(MAKE) -C libopeniscsiusr
  	$(MAKE) -C utils/sysdeps
  	$(MAKE) -C utils/fwparam_ibft
  	$(MAKE) -C usr
@@ -20,6 +29,6 @@ diff -Naur open-iscsi-bf39941/Makefile open-iscsi-bf39941.patch/Makefile
  	@echo "Built management application:        usr/iscsiadm"
  	@echo "Built boot tool:                     usr/iscsistart"
 -	@echo "Built iscsiuio daemon:               iscsiuio/src/unix/iscsiuio"
+ 	@echo "Built libopeniscsiusr library:       libopeniscsiusr/libopeniscsiusr.so"
  	@echo
  	@echo "Read README file for detailed information."
- 

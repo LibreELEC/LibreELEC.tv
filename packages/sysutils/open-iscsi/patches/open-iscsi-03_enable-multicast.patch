@@ -12,7 +12,7 @@ diff --git a/usr/iscsi_net_util.c b/usr/iscsi_net_util.c
 index 6d0ebf9..3801ac7 100644
 --- a/usr/iscsi_net_util.c
 +++ b/usr/iscsi_net_util.c
-@@ -229,7 +229,7 @@ int net_setup_netdev(char *netdev, char *local_ip, char *mask, char *gateway,
+@@ -329,7 +329,7 @@ int net_setup_netdev(char *netdev, char *local_ip, char *mask, char *gateway,
  		/* Bring up interface */
  		memset(&ifr, 0, sizeof(ifr));
  		strlcpy(ifr.ifr_name, netdev, IFNAMSIZ);

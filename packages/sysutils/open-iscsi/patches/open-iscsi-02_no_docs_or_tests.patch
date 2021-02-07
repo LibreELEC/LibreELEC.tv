@@ -1,0 +1,11 @@
+--- a/libopeniscsiusr/Makefile	2018-10-17 16:47:23.000000000 +0000
++++ b/libopeniscsiusr/Makefile	2021-01-23 08:28:18.219889936 +0000
+@@ -52,7 +52,7 @@
+ 
+ LIBADD =
+ 
+-all: $(LIBS) $(LIBS_MAJOR) $(TESTS) doc
++all: $(LIBS) $(LIBS_MAJOR)
+ 
+ $(LIBS): $(OBJS)
+ 	@echo CFLAGS= $(CFLAGS)
