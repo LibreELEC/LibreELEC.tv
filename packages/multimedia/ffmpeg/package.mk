@@ -19,9 +19,12 @@ PKG_FFMPEG_HWACCEL="--enable-hwaccels"
 
 PKG_FFMPEG_RPI="--disable-mmal"
 
+PKG_FFMPEG_TESTING="--enable-encoder=wrapped_avframe --enable-muxer=null"
+
 if [ "${PROJECT}" = "RPi" ]; then
   PKG_PATCH_DIRS="rpi"
   PKG_FFMPEG_RPI+=" --disable-rpi --enable-sand"
+  PKG_FFMPEG_TESTING+=" --enable-vout-drm --enable-outdev=vout_drm"
 else
   PKG_PATCH_DIRS="v4l2-request v4l2-drmprime"
 fi
@@ -101,6 +104,12 @@ pre_configure_target() {
   rm -rf .${TARGET_NAME}
 }
 
+if [ "${FFMPEG_TESTING}" = "yes" ]; then
+  PKG_FFMPEG_OTHER="${PKG_FFMPEG_TESTING}"
+else
+  PKG_FFMPEG_OTHER="--disable-programs"
+fi
+
 configure_target() {
   ./configure --prefix="/usr" \
               --cpu="${TARGET_CPU}" \
@@ -132,7 +141,6 @@ configure_target() {
               --pkg-config="${TOOLCHAIN}/bin/pkg-config" \
               --enable-optimizations \
               --disable-extra-warnings \
-              --disable-programs \
               --enable-avdevice \
               --enable-avcodec \
               --enable-avformat \
@@ -204,7 +212,8 @@ configure_target() {
               --enable-asm \
               --disable-altivec \
               ${PKG_FFMPEG_FPU} \
-              --disable-symver
+              --disable-symver \
+              ${PKG_FFMPEG_OTHER}
 }
 
 post_makeinstall_target() {
