@@ -1,5 +1,5 @@
 {
-  "name": "@DISTRONAME@_@PROJECT@",
+  "name": "@DISTRONAME@_@TARGET_SYSTEM@",
   "version": "@LIBREELEC_VERSION@",
   "release_date": "@RELEASE_DATE@",
   "kernel": "@KERNEL_VERSION@",

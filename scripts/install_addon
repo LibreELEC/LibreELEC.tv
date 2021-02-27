@@ -29,7 +29,7 @@ install_addon_files "${ADDON_DIRECTORY}"
 debug_strip "${ADDON_DIRECTORY}"
 
 # pack_addon()
-ADDON_INSTALL_DIR="${TARGET_IMG}/${ADDONS}/${ADDON_VERSION}/${DEVICE:-${PROJECT}}/${TARGET_ARCH}/${PKG_ADDON_ID}"
+ADDON_INSTALL_DIR="${TARGET_IMG}/${ADDONS}/${ADDON_VERSION}/${TARGET_SYSTEM}/${TARGET_ARCH}/${PKG_ADDON_ID}"
 ADDONVER="$(xmlstarlet sel -t -v "/addon/@version" ${ADDON_BUILD}/${PKG_ADDON_ID}/addon.xml)"
 
 if [ -f ${ADDON_INSTALL_DIR}/${PKG_ADDON_ID}-${ADDONVER}.zip ]; then
@@ -76,7 +76,7 @@ done
 # Jenkins add-on build
 if [ "${ADDON_JENKINS}" = "yes" ]; then
   ADDON_JENKINS_DIR="${TARGET_IMG}/jenkins"
-  ADDON_JENKINS_ADDON_NAME="${ADDON_VERSION}-${DEVICE:-${PROJECT}}-${TARGET_ARCH}-${PKG_ADDON_ID}-${ADDONVER}"
+  ADDON_JENKINS_ADDON_NAME="${ADDON_VERSION}-${TARGET_SYSTEM}-${TARGET_ARCH}-${PKG_ADDON_ID}-${ADDONVER}"
   mkdir -p "${ADDON_JENKINS_DIR}"
   cd ${ADDON_INSTALL_DIR}
   ${TOOLCHAIN}/bin/7za a -l -mx0 -bsp0 -bso0 -tzip ${ADDON_JENKINS_DIR}/${ADDON_JENKINS_ADDON_NAME}.zip ${PKG_ADDON_ID}-${ADDONVER}.zip resources/

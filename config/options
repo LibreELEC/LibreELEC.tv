@@ -30,6 +30,9 @@ export PROJECT="${PROJECT:-Generic}"
 export ARCH="${ARCH:-x86_64}"
 TARGET_ARCH="${ARCH}"
 
+# determines TARGET_SYSTEM
+TARGET_SYSTEM="${DEVICE:-${PROJECT}}"
+
 # include arm-mem package on arm
 if [ "${TARGET_ARCH}" = "arm" ]; then
   ARM_MEM_SUPPORT="yes"

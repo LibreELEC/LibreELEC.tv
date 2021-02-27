@@ -93,7 +93,7 @@ if [ -n "${CUSTOM_VERSION}" ]; then
   LIBREELEC_VERSION="${CUSTOM_VERSION}"
 fi
 
-LIBREELEC_ARCH="${DEVICE:-${PROJECT}}.${TARGET_ARCH}"
+LIBREELEC_ARCH="${TARGET_SYSTEM}.${TARGET_ARCH}"
 TARGET_VERSION="${LIBREELEC_ARCH}-${LIBREELEC_VERSION}"
 
 if [ -n "${CUSTOM_IMAGE_NAME}" ]; then
@@ -105,7 +105,7 @@ else
     IMAGE_NAME="${DISTRONAME}-${TARGET_VERSION}"
   fi
 
-  if [ -n "${UBOOT_SYSTEM}" ] && [ "${UBOOT_SYSTEM}" != "${DEVICE:-${PROJECT}}" ]; then
+  if [ -n "${UBOOT_SYSTEM}" ] && [ "${UBOOT_SYSTEM}" != "${TARGET_SYSTEM}" ]; then
     IMAGE_NAME="${IMAGE_NAME}-${UBOOT_SYSTEM}"
   fi
 fi
@@ -353,7 +353,7 @@ if [ "${1}" = "release" -o "${1}" = "mkimage" -o "${1}" = "noobs" ]; then
     RELEASE_DIR="${TARGET_IMG}/${IMAGE_NAME}-${1}"
 
     # eg. LibreELEC_RPi, LibreELEC_RPi2 etc.
-    NOOBS_DISTRO="${DISTRONAME}_${DEVICE:-${PROJECT}}"
+    NOOBS_DISTRO="${DISTRONAME}_${TARGET_SYSTEM}"
 
     # Create release dir
     mkdir -p ${RELEASE_DIR}/${NOOBS_DISTRO}
@@ -383,7 +383,7 @@ if [ "${1}" = "release" -o "${1}" = "mkimage" -o "${1}" = "noobs" ]; then
     fi
 
     sed -e "s%@DISTRONAME@%${DISTRONAME}%g" \
-        -e "s%@PROJECT@%${DEVICE:-${PROJECT}}%g" \
+        -e "s%@TARGET_SYSTEM@%${TARGET_SYSTEM}%g" \
         -e "s%@LIBREELEC_VERSION@%${LIBREELEC_VERSION}%g" \
         -e "s%@RELEASE_DATE@%$(date +%F)%g" \
         -e "s%@KERNEL_VERSION@%$(kernel_version)%g" \
@@ -393,7 +393,7 @@ if [ "${1}" = "release" -o "${1}" = "mkimage" -o "${1}" = "noobs" ]; then
         -i ${RELEASE_DIR}/${NOOBS_DISTRO}/os.json
 
     sed -e "s%@DISTRONAME@%${DISTRONAME}%g" \
-        -e "s%@PROJECT@%${DEVICE:-${PROJECT}}%g" \
+        -e "s%@TARGET_SYSTEM@%${TARGET_SYSTEM}%g" \
         -e "s%@SYSTEM_SIZE@%${SYSTEM_SIZE}%g" \
         -i ${RELEASE_DIR}/${NOOBS_DISTRO}/partitions.json
 

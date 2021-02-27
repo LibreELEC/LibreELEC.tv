@@ -11,7 +11,7 @@ case $(uname -r) in
 esac
 
 # Allow upgrades between arm and aarch64
-if [ "$1" = "@PROJECT@.arm" -o "$1" = "@PROJECT@.aarch64" ]; then
+if [ "$1" = "@TARGET_SYSTEM@.arm" -o "$1" = "@TARGET_SYSTEM@.aarch64" ]; then
   exit 0
 else
   exit 1

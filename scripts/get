@@ -16,7 +16,7 @@ fi
 lock_source_dir() {
   exec 99<"${SOURCES}/${1}"
   if ! flock --nonblock --exclusive 99; then
-    echo "Project/Device ${DEVICE:-${PROJECT}} waiting, to avoid concurrent processing of ${1}..."
+    echo "Project/Device ${TARGET_SYSTEM} waiting, to avoid concurrent processing of ${1}..."
     flock --exclusive 99
   fi
 }
