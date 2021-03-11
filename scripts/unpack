@@ -189,9 +189,9 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
       if [ -f "${i}" ]; then
         build_msg "CLR_APPLY_PATCH" "APPLY PATCH $(print_color "CLR_PATCH_DESC" "${PATCH_DESC}")" "${i#${ROOT}/}"
         if grep -qE '^GIT binary patch$|^rename from|^rename to' ${i}; then
-          cat ${i} | git apply --directory=$(echo "${PKG_BUILD}" | cut -f1 -d\ ) -p1 --verbose --whitespace=nowarn --unsafe-paths >&${VERBOSE_OUT}
+          git apply --directory="${PKG_BUILD}" -p1 --verbose --whitespace=nowarn --unsafe-paths < ${i} >&${VERBOSE_OUT}
         else
-          cat ${i} | patch -d $(echo "${PKG_BUILD}" | cut -f1 -d\ ) -p1 >&${VERBOSE_OUT}
+          patch -d "${PKG_BUILD}" -p1 < ${i} >&${VERBOSE_OUT}
         fi
       fi
     done
@@ -199,7 +199,7 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
     pkg_call_exists_opt post_patch && pkg_call
   fi
 
-  if [ ! "${PKG_NAME}" = "configtools" ] ; then
+  if [ "${PKG_NAME}" != "configtools" ] ; then
     for config in $(find "${PKG_BUILD}" -name config.guess | sed 's/config.guess//'); do
       build_msg "CLR_FIXCONFIG" "FIXCONFIG" "${config}"
 
