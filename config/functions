@@ -661,7 +661,7 @@ init_package_cache() {
     export _CACHE_PACKAGE_LOCAL _CACHE_PACKAGE_GLOBAL
 
     # overwrite existing cache files only when they are invalid, or not yet created
-    mkdir -p "$(dirname "${_CACHE_PACKAGE_GLOBAL}")"
+    mkdir -p "${_CACHE_PACKAGE_GLOBAL%/*}"
     if [ -f "${_CACHE_PACKAGE_LOCAL}" ] && cmp -s "${temp_local}" "${_CACHE_PACKAGE_LOCAL}"; then
       rm "${temp_local}"
     else
@@ -773,7 +773,7 @@ check_arch() {
 
     for arch in ${linux_config_dir}/*.conf ${linux_config_dir}/*/linux.${TARGET_ARCH}.conf; do
       [[ ${arch} =~ .*\*.* ]] && continue #ignore unexpanded wildcard
-      arch_err_msg+="\n - $(basename ${arch} | cut -f2 -d".")"
+      arch_err_msg+="\n - $(echo ${arch##*/} | cut -f2 -d".")"
     done
     die "${arch_err_msg}"
   fi
@@ -1111,7 +1111,7 @@ source_package() {
   unset_functions
 
   if [ -n "${1}" ]; then
-    [ -f "${1}" ] && PKG_DIR="$(dirname "${1}")" || PKG_DIR="$(get_pkg_directory "${1}")"
+    [ -f "${1}" ] && PKG_DIR="${1%/*}" || PKG_DIR="$(get_pkg_directory "${1}")"
 
     [ -n "$PKG_DIR" -a -r $PKG_DIR/package.mk ] || die "FAILURE: unable to source package - ${1}/package.mk does not exist"
 
@@ -1423,7 +1423,7 @@ done
 
   for f in $PKG_DIR/source/resources/screenshot-*.{jpg,png}; do
     if [ -f "$f" ]; then
-      screenshots+="<screenshot>resources/$(basename $f)</screenshot>\n"
+      screenshots+="<screenshot>resources/${f##*/}</screenshot>\n"
     fi
   done
 
