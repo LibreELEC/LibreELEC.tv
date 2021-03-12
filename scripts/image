@@ -187,7 +187,7 @@ if [ -d "${PROJECT_DIR}/${PROJECT}/filesystem" ]; then
   # Install project specific systemd services
   for service in ${PROJECT_DIR}/${PROJECT}/filesystem/usr/lib/systemd/system/*.service; do
     if [ -f "${service}" ]; then
-      enable_service $(basename ${service})
+      enable_service ${service##*/}
     fi
   done
 fi
@@ -198,7 +198,7 @@ if [ -n "${DEVICE}" -a -d "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/filesyste
   # Install device specific systemd services
   for service in ${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/filesystem/usr/lib/systemd/system/*.service; do
     if [ -f "${service}" ]; then
-      enable_service $(basename ${service})
+      enable_service ${service##*/}
     fi
   done
 fi
