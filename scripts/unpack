@@ -156,7 +156,7 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
              ${PROJECT_DIR}/${PROJECT}/patches/${PKG_NAME}/${PKG_VERSION}/*.patch \
              ${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/patches/${PKG_NAME}/*.patch; do
 
-      thisdir="$(dirname "${i}")"
+      thisdir="${i%/*}"
 
       if [ "${thisdir}" = "${PKG_DIR}/patches" ]; then
         PATCH_DESC="(common)"
@@ -176,11 +176,11 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
         PATCH_DESC="(device)"
       else
         if [[ "${thisdir}" =~ ^${PKG_DIR}/.* ]]; then
-          PATCH_DESC="(common - $(basename "${thisdir}"))"
+          PATCH_DESC="(common - ${thisdir##*/})"
         elif [[ "${thisdir}" =~ ^${PROJECT_DIR}/.*/devices/.* ]]; then
-          PATCH_DESC="(device - $(basename "${thisdir}"))"
+          PATCH_DESC="(device - ${thisdir##*/})"
         elif [[ "${thisdir}" =~ ^${PROJECT_DIR}/.* ]]; then
-          PATCH_DESC="(project - $(basename "${thisdir}"))"
+          PATCH_DESC="(project - ${thisdir##*/})"
         else
           PATCH_DESC="(absolute - ${i})"
         fi
