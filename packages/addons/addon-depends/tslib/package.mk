@@ -2,11 +2,11 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="tslib"
-PKG_VERSION="1.1"
-PKG_SHA256="fe35e5f710ea933b118f710e2ce4403ac076fe69926b570333867d4de082a51c"
+PKG_VERSION="1.22"
+PKG_SHA256="aaf0aed410a268d7b51385d07fe4d9d64312038e87c447ec8a24c8db0a15617a"
 PKG_LICENSE="GPL"
-PKG_SITE="https://github.com/kergoth/tslib"
-PKG_URL="https://github.com/kergoth/tslib/releases/download/1.1/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_SITE="https://github.com/libts/tslib"
+PKG_URL="https://github.com/libts/tslib/releases/download/${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain evtest"
 PKG_LONGDESC="Touchscreen access library with ts_uinput_touch daemon."
 PKG_TOOLCHAIN="autotools"
