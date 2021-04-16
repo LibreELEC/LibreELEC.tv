@@ -214,6 +214,9 @@ check_toolchain_config() {
   if [ "${toolchain}" == "AUTOTOOLS" ]; then
     toolchain="CONFIGURE"
   fi
+  if [ "${toolchain}" == "CMAKE-MAKE" ]; then
+    toolchain="CMAKE"
+  fi
   for var in "${!PKG_@}"; do
     if [[ "${var}" =~ INSTALL_OPTS_ || "${var}" =~ _MAKE_OPTS ]]; then
       continue
