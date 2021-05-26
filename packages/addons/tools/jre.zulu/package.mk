@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2019-present Peter Vicman (peter.vicman@gmail.com)
+# Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="jre.zulu"
 PKG_VERSION="1.0"
-PKG_REV="100"
+PKG_REV="101"
 PKG_LICENSE="GPL2"
 PKG_DEPENDS_TARGET="jre-libbluray libXext chrome-libXtst chrome-libXi chrome-libXrender jre-libXinerama"
 PKG_DEPENDS_UNPACK="jdk-${TARGET_ARCH}-zulu"
@@ -25,8 +26,9 @@ _pkg_copy_lib() {
 addon() {
   mkdir -p ${ADDON_BUILD}/${PKG_ADDON_ID}/lib
 
-  cp -a $(get_build_dir jdk-${TARGET_ARCH}-zulu)/jre \
-        $(get_install_dir jre-libbluray)/usr/share/java/*.jar \
+  cp -a $(get_build_dir jdk-${TARGET_ARCH}-zulu)/jre11 \
+    ${ADDON_BUILD}/${PKG_ADDON_ID}/jre
+  cp -a $(get_install_dir jre-libbluray)/usr/share/java/*.jar \
         ${PKG_DIR}/profile.d \
     ${ADDON_BUILD}/${PKG_ADDON_ID}
 

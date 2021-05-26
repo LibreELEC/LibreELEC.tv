@@ -1,2 +1,7 @@
+101
+- jdk-aarch64-zulu: update to 11.45.27-11.0.10
+- jdk-arm-zulu: update to 11.45.27-11.0.10
+- jdk-x86_64-zulu: update to 11.45.27-11.0.10
+
 100
 - Initial release
