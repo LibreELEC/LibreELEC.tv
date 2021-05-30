@@ -1,28 +1,20 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2009-2016 Stephan Raue (stephan@openelec.tv)
+# Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libsndfile"
-PKG_VERSION="1.0.28"
-PKG_SHA256="1ff33929f042fa333aed1e8923aa628c3ee9e1eb85512686c55092d1e5a9dfa9"
-PKG_LICENSE="LGPL"
-PKG_SITE="http://www.mega-nerd.com/libsndfile/"
-PKG_URL="http://www.mega-nerd.com/${PKG_NAME}/files/${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_VERSION="1.0.31"
+PKG_SHA256="8cdee0acb06bb0a3c1a6ca524575643df8b1f3a55a0893b4dd9f829d08263785"
+PKG_LICENSE="LGPL-2.1-or-later"
+PKG_SITE="https://libsndfile.github.io/libsndfile/"
+PKG_URL="https://github.com/libsndfile/libsndfile/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain alsa-lib"
-PKG_LONGDESC="A library for accessing various audio file formats."
-PKG_TOOLCHAIN="configure"
+PKG_LONGDESC="A C library for reading and writing sound files containing sampled audio data."
+PKG_BUILD_FLAGS="+pic"
 
-# package specific configure options
-PKG_CONFIGURE_OPTS_TARGET="--enable-static --disable-shared \
-                           --disable-silent-rules \
-                           --disable-sqlite \
-                           --enable-alsa \
-                           --disable-external-libs \
-                           --disable-experimental \
-                           --disable-test-coverage \
-                           --enable-largefile \
-                           --with-gnu-ld \
-                           --with-pic"
-
-post_makeinstall_target() {
-  rm -rf ${INSTALL}/usr/bin
-}
+PKG_CMAKE_OPTS_TARGET="-DBUILD_PROGRAMS=OFF \
+                       -DBUILD_EXAMPLES=OFF \
+                       -DBUILD_TESTING=OFF \
+                       -DBUILD_REGTEST=OFF \
+                       -DENABLE_EXTERNAL_LIBS=OFF \
+                       -DINSTALL_MANPAGES=OFF"
