@@ -207,7 +207,7 @@ BOOTSTRAP_MESON_OPTS="${HOST_MESON_OPTS}"
 
 # make autoreconf
 if [ "${PKG_TOOLCHAIN}" = "autotools" ]; then
-  ${SCRIPTS}/autoreconf "${PKG_NAME}" "${PARENT_PKG}"
+  ${SCRIPTS}/autoreconf "${PKG_NAME}" "${PARENT_PKG}" $(dirname "${PKG_CONFIGURE_SCRIPT}")
 fi
 
 pkg_lock_status "ACTIVE" "${PKG_NAME}:${TARGET}" "build"

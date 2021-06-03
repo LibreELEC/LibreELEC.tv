@@ -6,27 +6,29 @@
 
 . config/options "${1}"
 
-if [ ! -f "${PKG_BUILD}/configure.in" \
-    -a ! -f "${PKG_BUILD}/configure.ac" ]; then
+RECONF_DIR="${3}"
+
+if [ ! -f "${RECONF_DIR}/configure.in" \
+    -a ! -f "${RECONF_DIR}/configure.ac" ]; then
   die "configure.in or configure.ac not found"
 fi
 
-if [ ! -f "${PKG_BUILD}/.autoreconf-done" ]; then
+if [ ! -f "${RECONF_DIR}/.autoreconf-done" ]; then
   PARENT_PKG="${2}"
 
   # lock package during autoreconf otherwise it is racy, eg. glib:host/glib:target building concurrently
   pkg_lock "${PKG_NAME}" "reconf" "${PARENT_PKG}"
 
-  if [ ! -f "${PKG_BUILD}/.autoreconf-done" ]; then
+  if [ ! -f "${RECONF_DIR}/.autoreconf-done" ]; then
     pkg_lock_status "ACTIVE" "${PKG_NAME}" "reconf"
 
-    touch "${PKG_BUILD}/NEWS" "${PKG_BUILD}/AUTHORS" "${PKG_BUILD}/ChangeLog"
-    mkdir -p "${PKG_BUILD}/m4"
+    touch "${RECONF_DIR}/NEWS" "${RECONF_DIR}/AUTHORS" "${RECONF_DIR}/ChangeLog"
+    mkdir -p "${RECONF_DIR}/m4"
 
     build_msg "CLR_AUTORECONF" "AUTORECONF" "${PKG_NAME}" "indent"
 
-    do_autoreconf "${PKG_BUILD}"
-    touch "${PKG_BUILD}/.autoreconf-done"
+    do_autoreconf "${RECONF_DIR}"
+    touch "${RECONF_DIR}/.autoreconf-done"
 
     pkg_lock_status "UNLOCK" "${PKG_NAME}" "reconf" "configured"
   else

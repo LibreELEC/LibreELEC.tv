@@ -28,13 +28,11 @@ PKG_CONFIGURE_OPTS_TARGET="--disable-docs \
                            --with-udev-rules-dir=/usr/lib/udev/rules.d/ \
                            --with-sysroot=${SYSROOT_PREFIX}"
 
+configure_package() {
+  PKG_CONFIGURE_SCRIPT="${PKG_BUILD}/open-vm-tools/configure"
+}
+
 post_unpack() {
-  mv ${PKG_BUILD}/${PKG_NAME}/* ${PKG_BUILD}/
-
-  sed -e 's|.*common-agent/etc/config/Makefile.*||' -i ${PKG_BUILD}/configure.ac
-
-  mkdir -p ${PKG_BUILD}/common-agent/etc/config
-
   # Hack to allow package to be bumped without linking against old libraries
   rm -f ${SYSROOT_PREFIX}/usr/lib/libvmtools*
 }
