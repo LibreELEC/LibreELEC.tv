@@ -60,6 +60,7 @@ make_host() {
 
 makeinstall_host() {
   cp -v ../include/libiberty.h ${SYSROOT_PREFIX}/usr/include
+  make -C bfd install # fix parallel build with libctf requiring bfd
   make install
 }
 
