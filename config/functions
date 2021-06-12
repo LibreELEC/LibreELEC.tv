@@ -765,11 +765,12 @@ check_arch() {
 
   if [ ! -e "$linux_config_dir/linux.${TARGET_PATCH_ARCH:-$TARGET_ARCH}.conf" ] &&
        ! ls "$linux_config_dir/"*/linux.${TARGET_PATCH_ARCH:-$TARGET_ARCH}.conf &>/dev/null; then
+       archs=$(ls $linux_config_dir/linux.*.conf $linux_config_dir/*/linux.*.conf 2>/dev/null | sed -e 's,.*/,,' -e 's/^linux\.\(.*\)\.conf/\1/')
     arch_err_msg="\n $dashes$dashes$dashes"
     arch_err_msg="${arch_err_msg}\n ERROR: Architecture not found, use a valid Architecture"
     arch_err_msg="${arch_err_msg}\n for your project or create a new config"
     arch_err_msg="${arch_err_msg}\n $dashes$dashes$dashes"
-    arch_err_msg="${arch_err_msg}\n\n Valid Architectures for your project: ${PROJECT}"
+    arch_err_msg="${arch_err_msg}\n\n Valid Architectures for your project: ${archs}"
 
     for arch in $linux_config_dir/*.conf $linux_config_dir/*/linux.$TARGET_ARCH.conf; do
       [[ ${arch} =~ .*\*.* ]] && continue #ignore unexpanded wildcard
