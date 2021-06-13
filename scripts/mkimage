@@ -54,7 +54,7 @@ show_error() {
 trap cleanup SIGINT
 
 # create an image
-echo -e "\nimage: creating file $(basename ${DISK})..."
+echo -e "\nimage: creating file ${DISK##*/}..."
 dd if=/dev/zero of="${DISK}" bs=1M count="${DISK_SIZE}" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
 
 # write a disklabel
@@ -200,7 +200,7 @@ EOF
 
   for dtb in "${RELEASE_DIR}/3rdparty/bootloader/"*.dtb ; do
     if [ -f "${dtb}" ]; then
-      mcopy "${dtb}" ::/$(basename "${dtb}")
+      mcopy "${dtb}" ::/"${dtb##*/}"
     fi
   done
 
@@ -327,7 +327,7 @@ pigz --best --force "${DISK}"
 
 # create sha256 checksum of image
 ( cd "${TARGET_IMG}"
-  sha256sum $(basename "${DISK}").gz > $(basename "${DISK}").gz.sha256
+  sha256sum "${DISK##*/}.gz" > "${DISK##*/}.gz.sha256"
 )
 
 # cleanup

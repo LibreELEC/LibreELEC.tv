@@ -156,7 +156,7 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
              ${PROJECT_DIR}/${PROJECT}/patches/${PKG_NAME}/${PKG_VERSION}/*.patch \
              ${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/patches/${PKG_NAME}/*.patch; do
 
-      thisdir="$(dirname "${i}")"
+      thisdir="${i%/*}"
 
       if [ "${thisdir}" = "${PKG_DIR}/patches" ]; then
         PATCH_DESC="(common)"
@@ -176,11 +176,11 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
         PATCH_DESC="(device)"
       else
         if [[ "${thisdir}" =~ ^${PKG_DIR}/.* ]]; then
-          PATCH_DESC="(common - $(basename "${thisdir}"))"
+          PATCH_DESC="(common - ${thisdir##*/})"
         elif [[ "${thisdir}" =~ ^${PROJECT_DIR}/.*/devices/.* ]]; then
-          PATCH_DESC="(device - $(basename "${thisdir}"))"
+          PATCH_DESC="(device - ${thisdir##*/})"
         elif [[ "${thisdir}" =~ ^${PROJECT_DIR}/.* ]]; then
-          PATCH_DESC="(project - $(basename "${thisdir}"))"
+          PATCH_DESC="(project - ${thisdir##*/})"
         else
           PATCH_DESC="(absolute - ${i})"
         fi
@@ -189,9 +189,9 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
       if [ -f "${i}" ]; then
         build_msg "CLR_APPLY_PATCH" "APPLY PATCH $(print_color "CLR_PATCH_DESC" "${PATCH_DESC}")" "${i#${ROOT}/}"
         if grep -qE '^GIT binary patch$|^rename from|^rename to' ${i}; then
-          cat ${i} | git apply --directory=$(echo "${PKG_BUILD}" | cut -f1 -d\ ) -p1 --verbose --whitespace=nowarn --unsafe-paths >&${VERBOSE_OUT}
+          git apply --directory="${PKG_BUILD}" -p1 --verbose --whitespace=nowarn --unsafe-paths < ${i} >&${VERBOSE_OUT}
         else
-          cat ${i} | patch -d $(echo "${PKG_BUILD}" | cut -f1 -d\ ) -p1 >&${VERBOSE_OUT}
+          patch -d "${PKG_BUILD}" -p1 < ${i} >&${VERBOSE_OUT}
         fi
       fi
     done
@@ -199,7 +199,7 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
     pkg_call_exists_opt post_patch && pkg_call
   fi
 
-  if [ ! "${PKG_NAME}" = "configtools" ] ; then
+  if [ "${PKG_NAME}" != "configtools" ] ; then
     for config in $(find "${PKG_BUILD}" -name config.guess | sed 's/config.guess//'); do
       build_msg "CLR_FIXCONFIG" "FIXCONFIG" "${config}"
 

@@ -661,7 +661,7 @@ init_package_cache() {
     export _CACHE_PACKAGE_LOCAL _CACHE_PACKAGE_GLOBAL
 
     # overwrite existing cache files only when they are invalid, or not yet created
-    mkdir -p "$(dirname "${_CACHE_PACKAGE_GLOBAL}")"
+    mkdir -p "${_CACHE_PACKAGE_GLOBAL%/*}"
     if [ -f "${_CACHE_PACKAGE_LOCAL}" ] && cmp -s "${temp_local}" "${_CACHE_PACKAGE_LOCAL}"; then
       rm "${temp_local}"
     else
@@ -699,11 +699,11 @@ save_build_config() {
 check_path() {
   local dashes="===========================" path_err_msg
   if [ "${PWD##/usr}" != "${PWD}" ]; then
-    path_err_msg="\n $dashes$dashes$dashes"
-    path_err_msg="${path_err_msg}\n ERROR: Detected building inside /usr"
-    path_err_msg="${path_err_msg}\n $dashes$dashes$dashes"
-    path_err_msg="${path_err_msg}\n This is not supported with our buildsystem."
-    path_err_msg="${path_err_msg}\n Please use another dir (for example your \$HOME) to build ${DISTRONAME}"
+    path_err_msg="\n ${dashes}${dashes}${dashes}"
+    path_err_msg+="\n ERROR: Detected building inside /usr"
+    path_err_msg+="\n ${dashes}${dashes}${dashes}"
+    path_err_msg+="\n This is not supported by the buildsystem."
+    path_err_msg+="\n Please use another directory (for example your \$HOME) to build ${DISTRONAME}"
 
     die "${path_err_msg}"
   fi
@@ -712,13 +712,13 @@ check_path() {
 check_distro() {
   local dashes="===========================" distro_err_msg
   if [ -z "${DISTRO}" -o ! -d "${DISTRO_DIR}/${DISTRO}" ]; then
-    distro_err_msg="\n $dashes$dashes$dashes"
-    distro_err_msg="${distro_err_msg}\n ERROR: Distro not found, use a valid distro or create a new config"
-    distro_err_msg="${distro_err_msg}\n $dashes$dashes$dashes"
-    distro_err_msg="${distro_err_msg}\n\n Valid distros:"
+    distro_err_msg="\n ${dashes}${dashes}${dashes}"
+    distro_err_msg+="\n ERROR: Distro not found, use a valid distro or create a new config"
+    distro_err_msg+="\n ${dashes}${dashes}${dashes}"
+    distro_err_msg+="\n\n Valid distros:"
 
     for distros in ${DISTRO_DIR}/*; do
-      distro_err_msg="${distro_err_msg}\n - ${distros##*/}"
+      distro_err_msg+="\n - ${distros##*/}"
     done
     die "${distro_err_msg}"
   fi
@@ -727,13 +727,13 @@ check_distro() {
 check_project() {
   local dashes="===========================" project_err_msg
   if [ -z "${PROJECT}" -o ! -d "${PROJECT_DIR}/${PROJECT}" ]; then
-    project_err_msg="\n $dashes$dashes$dashes"
-    project_err_msg="${project_err_msg}\n ERROR: Project not found, use a valid project or create a new config"
-    project_err_msg="${project_err_msg}\n $dashes$dashes$dashes"
-    project_err_msg="${project_err_msg}\n\n Valid projects:"
+    project_err_msg="\n ${dashes}${dashes}${dashes}"
+    project_err_msg+="\n ERROR: Project not found. Use a valid project or create a new config"
+    project_err_msg+="\n ${dashes}${dashes}${dashes}"
+    project_err_msg+="\n\n Valid projects:"
 
     for projects in ${PROJECT_DIR}/*; do
-      project_err_msg="${project_err_msg}\n - ${projects##*/}"
+      project_err_msg+="\n - ${projects##*/}"
     done
     die "${project_err_msg}"
   fi
@@ -743,13 +743,13 @@ check_device() {
   local dashes="===========================" device_err_msg
   if [ \( -z "${DEVICE}" -a -d "${PROJECT_DIR}/${PROJECT}/devices" \) -o \
        \( -n "${DEVICE}" -a ! -d "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}" \) ]; then
-    device_err_msg="\n $dashes$dashes$dashes"
-    device_err_msg="${device_err_msg}\n ERROR: You need to specify a valid device for the $PROJECT project"
-    device_err_msg="${device_err_msg}\n $dashes$dashes$dashes"
-    device_err_msg="${device_err_msg}\n\n Valid devices for project: ${PROJECT}"
+    device_err_msg="\n ${dashes}${dashes}${dashes}"
+    device_err_msg+="\n ERROR: Specify a valid device for the ${PROJECT} project"
+    device_err_msg+="\n ${dashes}${dashes}${dashes}"
+    device_err_msg+="\n\n Valid devices for project: ${PROJECT}"
 
     for device in ${PROJECT_DIR}/${PROJECT}/devices/*; do
-      device_err_msg="${device_err_msg}\n - ${device##*/}"
+      device_err_msg+="\n - ${device##*/}"
     done
     die "${device_err_msg}"
   fi
@@ -763,17 +763,17 @@ check_arch() {
     linux_config_dir="${PROJECT_DIR}/${PROJECT}/linux"
   fi
 
-  if [ ! -e "$linux_config_dir/linux.${TARGET_PATCH_ARCH:-$TARGET_ARCH}.conf" ] &&
-       ! ls "$linux_config_dir/"*/linux.${TARGET_PATCH_ARCH:-$TARGET_ARCH}.conf &>/dev/null; then
-    arch_err_msg="\n $dashes$dashes$dashes"
-    arch_err_msg="${arch_err_msg}\n ERROR: Architecture not found, use a valid Architecture"
-    arch_err_msg="${arch_err_msg}\n for your project or create a new config"
-    arch_err_msg="${arch_err_msg}\n $dashes$dashes$dashes"
-    arch_err_msg="${arch_err_msg}\n\n Valid Architectures for your project: ${PROJECT}"
+  if [ ! -e "${linux_config_dir}/linux.${TARGET_PATCH_ARCH:-$TARGET_ARCH}.conf" ] &&
+       ! ls "${linux_config_dir}/"*/linux.${TARGET_PATCH_ARCH:-$TARGET_ARCH}.conf &>/dev/null; then
+    arch_err_msg="\n ${dashes}${dashes}${dashes}"
+    arch_err_msg+="\n ERROR: Architecture not found. Use a valid Architecture"
+    arch_err_msg+="\n for your project or create a new config"
+    arch_err_msg+="\n ${dashes}${dashes}${dashes}"
+    arch_err_msg+="\n\n Valid Architectures for project: ${PROJECT}"
 
-    for arch in $linux_config_dir/*.conf $linux_config_dir/*/linux.$TARGET_ARCH.conf; do
+    for arch in ${linux_config_dir}/*.conf ${linux_config_dir}/*/linux.${TARGET_ARCH}.conf; do
       [[ ${arch} =~ .*\*.* ]] && continue #ignore unexpanded wildcard
-      arch_err_msg="${arch_err_msg}\n - $(basename $arch | cut -f2 -d".")"
+      arch_err_msg+="\n - $(echo ${arch##*/} | cut -f2 -d".")"
     done
     die "${arch_err_msg}"
   fi
@@ -1111,7 +1111,7 @@ source_package() {
   unset_functions
 
   if [ -n "${1}" ]; then
-    [ -f "${1}" ] && PKG_DIR="$(dirname "${1}")" || PKG_DIR="$(get_pkg_directory "${1}")"
+    [ -f "${1}" ] && PKG_DIR="${1%/*}" || PKG_DIR="$(get_pkg_directory "${1}")"
 
     [ -n "$PKG_DIR" -a -r $PKG_DIR/package.mk ] || die "FAILURE: unable to source package - ${1}/package.mk does not exist"
 
@@ -1423,7 +1423,7 @@ done
 
   for f in $PKG_DIR/source/resources/screenshot-*.{jpg,png}; do
     if [ -f "$f" ]; then
-      screenshots+="<screenshot>resources/$(basename $f)</screenshot>\n"
+      screenshots+="<screenshot>resources/${f##*/}</screenshot>\n"
     fi
   done
 

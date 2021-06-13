@@ -258,59 +258,59 @@ else
     # meson builds
     "meson:target")
       create_meson_conf_target ${TARGET} ${MESON_CONF}
-      echo "Executing (target): meson ${TARGET_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_TARGET} $(dirname ${PKG_MESON_SCRIPT})" | tr -s " "
-      CC="${HOST_CC}" CXX="${HOST_CXX}" meson ${TARGET_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_TARGET} $(dirname ${PKG_MESON_SCRIPT})
+      echo "Executing (target): meson ${TARGET_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_TARGET} ${PKG_MESON_SCRIPT%/*}" | tr -s " "
+      CC="${HOST_CC}" CXX="${HOST_CXX}" meson ${TARGET_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_TARGET} ${PKG_MESON_SCRIPT%/*}
       ;;
     "meson:host")
       create_meson_conf_host ${TARGET} ${MESON_CONF}
-      echo "Executing (host): meson ${HOST_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_HOST} $(dirname ${PKG_MESON_SCRIPT})" | tr -s " "
-      meson ${HOST_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_HOST} $(dirname ${PKG_MESON_SCRIPT})
+      echo "Executing (host): meson ${HOST_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_HOST} ${PKG_MESON_SCRIPT%/*}" | tr -s " "
+      meson ${HOST_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_HOST} ${PKG_MESON_SCRIPT%/*}
       ;;
     "meson:init")
       create_meson_conf_target ${TARGET} ${MESON_CONF}
-      echo "Executing (init): meson ${INIT_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_INIT} $(dirname ${PKG_MESON_SCRIPT})" | tr -s " "
-      meson ${INIT_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_INIT} $(dirname ${PKG_MESON_SCRIPT})
+      echo "Executing (init): meson ${INIT_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_INIT} ${PKG_MESON_SCRIPT%/*}" | tr -s " "
+      meson ${INIT_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_INIT} ${PKG_MESON_SCRIPT%/*}
       ;;
     "meson:bootstrap")
       create_meson_conf_host ${TARGET} ${MESON_CONF}
-      echo "Executing (bootstrap): meson ${BOOTSTRAP_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_BOOTSTRAP} $(dirname ${PKG_MESON_SCRIPT})" | tr -s " "
-      meson ${BOOTSTRAP_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_BOOTSTRAP} $(dirname ${PKG_MESON_SCRIPT})
+      echo "Executing (bootstrap): meson ${BOOTSTRAP_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_BOOTSTRAP} ${PKG_MESON_SCRIPT%/*}" | tr -s " "
+      meson ${BOOTSTRAP_MESON_OPTS} --cross-file=${MESON_CONF} ${PKG_MESON_OPTS_BOOTSTRAP} ${PKG_MESON_SCRIPT%/*}
       ;;
 
     # cmake builds with ninja
     "cmake:target")
-      echo "Executing (target): cmake ${CMAKE_GENERATOR_NINJA} ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${CMAKE_GENERATOR_NINJA} ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (target): cmake ${CMAKE_GENERATOR_NINJA} ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${CMAKE_GENERATOR_NINJA} ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} ${PKG_CMAKE_SCRIPT%/*}
       ;;
     "cmake:host")
-      echo "Executing (host): cmake ${CMAKE_GENERATOR_NINJA} ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${CMAKE_GENERATOR_NINJA} ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (host): cmake ${CMAKE_GENERATOR_NINJA} ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${CMAKE_GENERATOR_NINJA} ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} ${PKG_CMAKE_SCRIPT%/*}
       ;;
     "cmake:init")
-      echo "Executing (init): cmake ${CMAKE_GENERATOR_NINJA} ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${CMAKE_GENERATOR_NINJA} ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (init): cmake ${CMAKE_GENERATOR_NINJA} ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${CMAKE_GENERATOR_NINJA} ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} ${PKG_CMAKE_SCRIPT%/*}
       ;;
     "cmake:bootstrap")
-      echo "Executing (bootstrap): cmake ${CMAKE_GENERATOR_NINJA} ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${CMAKE_GENERATOR_NINJA} ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (bootstrap): cmake ${CMAKE_GENERATOR_NINJA} ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${CMAKE_GENERATOR_NINJA} ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} ${PKG_CMAKE_SCRIPT%/*}
       ;;
 
     # cmake builds with make
     "cmake-make:target")
-      echo "Executing (target): cmake ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (target): cmake ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${TARGET_CMAKE_OPTS} ${PKG_CMAKE_OPTS_TARGET} ${PKG_CMAKE_SCRIPT%/*}
       ;;
     "cmake-make:host")
-      echo "Executing (host): cmake ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (host): cmake ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${HOST_CMAKE_OPTS} ${PKG_CMAKE_OPTS_HOST} ${PKG_CMAKE_SCRIPT%/*}
       ;;
     "cmake-make:init")
-      echo "Executing (init): cmake ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (init): cmake ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${INIT_CMAKE_OPTS} ${PKG_CMAKE_OPTS_INIT} ${PKG_CMAKE_SCRIPT%/*}
       ;;
     "cmake-make:bootstrap")
-      echo "Executing (bootstrap): cmake ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} $(dirname ${PKG_CMAKE_SCRIPT})" | tr -s " "
-      cmake ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} $(dirname ${PKG_CMAKE_SCRIPT})
+      echo "Executing (bootstrap): cmake ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} ${PKG_CMAKE_SCRIPT%/*}" | tr -s " "
+      cmake ${BOOTSTRAP_CMAKE_OPTS} ${PKG_CMAKE_OPTS_BOOTSTRAP} ${PKG_CMAKE_SCRIPT%/*}
       ;;
 
     # configure builds
