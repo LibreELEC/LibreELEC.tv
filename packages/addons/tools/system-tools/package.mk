@@ -3,7 +3,7 @@
 
 PKG_NAME="system-tools"
 PKG_VERSION="1.0"
-PKG_REV="122"
+PKG_REV="123"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://libreelec.tv"
@@ -19,6 +19,7 @@ PKG_ADDON_TYPE="xbmc.python.script"
 
 PKG_DEPENDS_TARGET="toolchain \
                     autossh \
+                    bottom \
                     diffutils \
                     dstat \
                     dtach \
@@ -51,8 +52,6 @@ PKG_DEPENDS_TARGET="toolchain \
 
 if [ "${TARGET_ARCH}" = "x86_64" ]; then
   PKG_DEPENDS_TARGET+=" efibootmgr st"
-else
-  PKG_DEPENDS_TARGET+=" bottom"
 fi
 
 addon() {
