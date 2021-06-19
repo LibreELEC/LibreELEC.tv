@@ -14,6 +14,8 @@
 
 . /etc/profile
 
+unset PYTHONPATH
+
 trap cleanup TERM
 
 KODI_ROOT=$HOME/.kodi
