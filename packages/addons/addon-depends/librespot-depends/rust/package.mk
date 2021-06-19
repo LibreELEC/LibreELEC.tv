@@ -2,7 +2,7 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="rust"
-PKG_VERSION="1.50.0"
+PKG_VERSION="nightly"
 PKG_LICENSE="MIT"
 PKG_SITE="https://www.rust-lang.org"
 PKG_DEPENDS_TARGET="toolchain rustup.rs"
@@ -25,11 +25,12 @@ make_target() {
       ;;
   esac
   "$(get_build_dir rustup.rs)/rustup-init.sh" \
-    --default-toolchain "${PKG_VERSION}" \
+    --default-toolchain none \
     --no-modify-path \
     --profile minimal \
     --target "${RUST_TARGET_TRIPLE}" \
     -y
+  cargo/bin/rustup toolchain install nightly --allow-downgrade --profile minimal --component clippy
 
   cat <<EOF >"${CARGO_HOME}/config"
 [build]
@@ -43,6 +44,10 @@ EOF
   cat <<EOF >"${CARGO_HOME}/env"
 export CARGO_HOME="${CARGO_HOME}"
 export CARGO_TARGET_DIR="\${PKG_BUILD}/.\${TARGET_NAME}"
+if [ "${HOSTTYPE}" = "${TARGET_ARCH}" ]; then
+  export CARGO_TARGET_APPLIES_TO_HOST="false"
+  export CARGO_Z_TARGET_APPLIES_TO_HOST="-Z target-applies-to-host"
+fi
 export PATH="${CARGO_HOME}/bin:${PATH}"
 export PKG_CONFIG_ALLOW_CROSS="1"
 export PKG_CONFIG_PATH="${PKG_CONFIG_LIBDIR}"
