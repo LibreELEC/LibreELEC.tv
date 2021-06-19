@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
+
+# basic sanity check
+if [ ! -f config/options ]; then
+  echo -e "$0: must be run from LibreELEC root directory"
+  exit 0
+fi
+
+if [ "${1}" == "help" -o "${1}" == "--help" -o "${1}" == "h" -o "${1}" == "-h" ]; then
+  echo -e "Usage: ${0} [rev]"
+  exit 0
+fi
+
+# check for needed tools
+PROGRAMS="jq pv tar xz sort uniq mktemp cat cp sed awk"
+for PROGRAM in ${PROGRAMS}; do
+  if [ -z "$(which ${PROGRAM} 2> /dev/null)" ]; then
+    echo -e "Missing needed program: ${PROGRAM}"
+    echo -e "Required programs: ${PROGRAMS}"
+    exit 0
+  fi
+done
+
+# fake project name
+PROJECT="aarch64-toolchain"
+ARCH="aarch64"
+
+# aarch64 build options
+TARGET_CPU="cortex-a53"
+TARGET_CPU_FLAGS="+crc+crypto"
+TARGET_FEATURES="64bit"
+TARGET_KERNEL_ARCH="arm64"
+
+# create fake project
+mkdir -p projects/${PROJECT}/linux
+touch projects/${PROJECT}/linux/linux.aarch64.conf
+
+# we want to trap our own exit signals so we can cleanup temp dirs
+NOONEXIT="yes"
+DISABLE_HOST_OPTIMIZATION="yes"
+. config/options ""
+
+# set toolchain name and version
+TOOLCHAIN_STAGING_DIRECTORY="$(mktemp -d)"
+GCC_VERSION="$(get_pkg_variable gcc PKG_VERSION)"
+TOOLCHAIN_NAME="gcc-arm-${TARGET_NAME}"
+TOOLCHAIN_VERSION_REV="${1:-0}"
+TOOLCHAIN_VERSION="${GCC_VERSION}-${TOOLCHAIN_VERSION_REV}"
+TOOLCHAIN_VERSION_FILE="${TOOLCHAIN_STAGING_DIRECTORY}/${TOOLCHAIN_NAME}/toolchain-version.txt"
+TOOLCHAIN_ARCHIVE="${TOOLCHAIN_NAME}-${TOOLCHAIN_VERSION}.tar.xz"
+
+cleanup() {
+  rm -rf projects/${PROJECT}
+  rm -rf ${TOOLCHAIN_STAGING_DIRECTORY}
+}
+trap "cleanup $0 $@" EXIT
+
+if [ -f "${TOOLCHAIN_ARCHIVE}" ]; then
+  echo -e "Archive already exits: ${TOOLCHAIN_ARCHIVE}"
+  exit 1
+fi
+
+# start the multithreaded build of the toolchain
+${SCRIPTS}/build_mt toolchain
+
+echo -e "\n==========================================================="
+echo -e "Toolchain was built successfully"
+
+# copy toolchain to staging
+cp -a ${TOOLCHAIN} ${TOOLCHAIN_STAGING_DIRECTORY}/${TOOLCHAIN_NAME}
+
+# write toolchan version information
+cat << EOF > ${TOOLCHAIN_VERSION_FILE}
+Toolchain name: ${TOOLCHAIN_NAME}
+Toolchain version: ${TOOLCHAIN_VERSION}
+
+Toolchain flags:
+===========================================================
+CPPFLAGS: ${HOST_CPPFLAGS}
+CFLAGS:   ${HOST_CFLAGS}
+CXXFLAGS: ${HOST_CXXFLAGS}
+LDFLAGS:  ${HOST_LDFLAGS}
+
+Package versions:
+===========================================================
+
+EOF
+
+# get a list of packages from the build plan for the toolchain version file
+TOOLCHAIN_PLAN="${BUILD}/.threads/plan.json"
+TOOLCHAIN_PACKAGES="$(cat ${TOOLCHAIN_PLAN} | jq '.[] | select(.section != "virtual") | .name' | sed -n 's/^"\(.*\):.*$/\1/p' | sort --ignore-case | uniq)"
+
+for package in ${TOOLCHAIN_PACKAGES}; do
+  echo -e "${package}" >> ${TOOLCHAIN_VERSION_FILE}
+  echo -e " - version: $(get_pkg_variable ${package} PKG_VERSION)" >> ${TOOLCHAIN_VERSION_FILE}
+  echo -e " - sha256: $(get_pkg_variable ${package} PKG_SHA256)" >> ${TOOLCHAIN_VERSION_FILE}
+  echo -e " - url: $(get_pkg_variable ${package} PKG_URL)\n" >> ${TOOLCHAIN_VERSION_FILE}
+done
+
+# compress toolchain into archive
+echo -e "Compressing archive: ${TOOLCHAIN_NAME}-${TOOLCHAIN_VERSION}.tar.xz\n"
+
+tar cf - -C ${TOOLCHAIN_STAGING_DIRECTORY} ${TOOLCHAIN_NAME} | pv -s $(du -sb ${TOOLCHAIN_STAGING_DIRECTORY}  | awk '{print $1}') -p --timer --rate --bytes | xz -T0 > ${TOOLCHAIN_NAME}-${TOOLCHAIN_VERSION}.tar.xz
+
+echo -e "\nToolchain was packaged successfully"
+
+echo -e "\nToolchain Version File:"
+cat ${TOOLCHAIN_VERSION_FILE}
+
+cleanup

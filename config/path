@@ -64,7 +64,7 @@ XORG_PATH_DRIVERS=/usr/lib/xorg/modules/drivers
 # use ARM toolchain on 64/32 split builds
 if [ -z "$KERNEL_TOOLCHAIN" -a "$TARGET_KERNEL_ARCH" = "arm64" -a "$TARGET_ARCH" = "arm" ]; then
   if [ "${MACHINE_HARDWARE_NAME}" = "x86_64" ]; then
-    KERNEL_TOOLCHAIN="aarch64-none-linux-gnu"
+    KERNEL_TOOLCHAIN="aarch64-libreelec-linux-gnueabi"
   elif [ "${MACHINE_HARDWARE_NAME}" = "aarch64" ]; then
     KERNEL_TOOLCHAIN="aarch64-none-elf"
   else
