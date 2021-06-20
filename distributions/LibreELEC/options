@@ -161,7 +161,7 @@
   DEBUG_GROUP_YES="kodi+"
 
 # wireless daemon to use (wpa_supplicant/iwd)
-  WIRELESS_DAEMON="wpa_supplicant"
+  WIRELESS_DAEMON="iwd"
 
 # build and install iSCSI support - iscsistart (yes / no)
   ISCSI_SUPPORT="yes"
