@@ -25,6 +25,7 @@ PKG_MAINTAINER="Anton Voyl (awiouy)"
 make_target() {
   . $(get_build_dir rust)/cargo/env
   cargo build \
+    ${CARGO_Z_TARGET_APPLIES_TO_HOST} \
     --release \
     --no-default-features \
     --features "alsa-backend pulseaudio-backend with-dns-sd with-vorbis"
