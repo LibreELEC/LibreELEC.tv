@@ -4,14 +4,10 @@
 import os
 import subprocess
 import sys
-import threading
 import time
 import xbmc
 import xbmcaddon
 import xbmcgui
-
-sys.path.append('/usr/share/kodi/addons/service.libreelec.settings')
-import oe
 
 __author__      = 'lrusak'
 __addon__       = xbmcaddon.Addon()
@@ -184,7 +180,7 @@ docker_events = {
 
 def print_notification(json_data):
     event_string = docker_events[json_data['Type']]['event'][json_data['Action']]['string']
-    if __addon__.getSetting('notifications') is '0': # default
+    if __addon__.getSetting('notifications') == '0': # default
         if docker_events[json_data['Type']]['event'][json_data['Action']]['enabled']:
             try:
                 message = unicode(' '.join([__addon__.getLocalizedString(30010),
@@ -199,7 +195,7 @@ def print_notification(json_data):
                                             __addon__.getLocalizedString(30012),
                                             __addon__.getLocalizedString(event_string)]))
 
-    elif __addon__.getSetting('notifications') is '1': # all
+    elif __addon__.getSetting('notifications') == '1': # all
         try:
             message = unicode(' '.join([__addon__.getLocalizedString(30010),
                                         json_data['Actor']['Attributes']['name'],
@@ -213,10 +209,10 @@ def print_notification(json_data):
                                         __addon__.getLocalizedString(30012),
                                         __addon__.getLocalizedString(event_string)]))
 
-    elif __addon__.getSetting('notifications') is '2': # none
+    elif __addon__.getSetting('notifications') == '2': # none
         pass
 
-    elif __addon__.getSetting('notifications') is '3': # custom
+    elif __addon__.getSetting('notifications') == '3': # custom
         if __addon__.getSetting(json_data['Action']) == 'true':
             try:
                 message = unicode(' '.join([__addon__.getLocalizedString(30010),
@@ -233,25 +229,12 @@ def print_notification(json_data):
 
     dialog = xbmcgui.Dialog()
     try:
-        if message is not '':
+        if message != '':
             length = int(__addon__.getSetting('notification_length')) * 1000
-            dialog.notification('Docker', message, '/storage/.kodi/addons/service.system.docker/resources/icon.png', length)
+            dialog.notification('Docker', message, __path__ + '/resources/icon.png', length)
             xbmc.log('## service.system.docker ## ' + unicode(message))
     except NameError as e:
         pass
-
-class dockermonThread(threading.Thread):
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self._is_running = True
-
-    def run(self):
-        while self._is_running:
-            dockermon.watch(print_notification)
-
-    def stop(self):
-        self._is_running = False
 
 class Main(object):
 
@@ -283,8 +266,8 @@ class Main(object):
                 restart_docker = True
 
         if restart_docker:
-            oe.execute('systemctl enable  /storage/.kodi/addons/service.system.docker/system.d/service.system.docker.service')
-            oe.execute('systemctl restart /storage/.kodi/addons/service.system.docker/system.d/service.system.docker.service')
+            subprocess.call(['systemctl','enable','/storage/.kodi/addons/service.system.docker/system.d/service.system.docker.service'], close_fds=True)
+            subprocess.call(['systemctl','restart','service.system.docker.service'], close_fds=True)
 
         # end temp cleanup
         #############################
@@ -292,9 +275,10 @@ class Main(object):
         monitor = DockerMonitor(self)
 
         while not monitor.abortRequested():
-            if monitor.waitForAbort():
-                # we don't want to stop or disable docker while it's installed
-                pass
+            try:
+                dockermon.watch(print_notification, run=lambda: not monitor.abortRequested())
+            except Exception:
+                monitor.waitForAbort(1)
 
 class DockerMonitor(xbmc.Monitor):
 
@@ -305,8 +289,4 @@ class DockerMonitor(xbmc.Monitor):
         pass
 
 if ( __name__ == "__main__" ):
-    dockermonThread().start()
     Main()
-
-    del DockerMonitor
-    dockermonThread().stop()
