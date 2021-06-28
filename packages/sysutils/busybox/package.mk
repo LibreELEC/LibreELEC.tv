@@ -180,12 +180,10 @@ makeinstall_target() {
 }
 
 post_install() {
-  ROOT_PWD="$(${TOOLCHAIN}/bin/cryptpw -m sha512 ${ROOT_PASSWORD})"
-
   echo "chmod 4755 ${INSTALL}/usr/bin/busybox" >> ${FAKEROOT_SCRIPT}
   echo "chmod 000 ${INSTALL}/usr/cache/shadow" >> ${FAKEROOT_SCRIPT}
 
-  add_user root "${ROOT_PWD}" 0 0 "Root User" "/storage" "/bin/sh"
+  add_user root "${ROOT_PASSWORD}" 0 0 "Root User" "/storage" "/bin/sh"
   add_group root 0
   add_group users 100
 
