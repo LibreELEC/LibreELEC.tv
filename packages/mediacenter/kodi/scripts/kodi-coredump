@@ -1,0 +1,103 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-later
+# Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
+# Copyright (C) 2008-2013 Team XBMC (http://xbmc.org)
+
+if [ ! -p /dev/stdin ]; then
+  echo "no piped input. exiting"
+  exit 0
+fi
+
+if [ -z "${1}" -a -z "${2}" -a -z "${3}" ]; then
+  echo "no arguments provided. exiting"
+  exit 0
+fi
+
+PATHNAME="${1}"
+TIMESECONDS="${2}"
+PID="${3}"
+
+. /etc/profile
+
+KODI_ROOT=$HOME/.kodi
+CRASHLOG_DIR=$KODI_ROOT/temp
+
+command_exists()
+{
+  command -v $1 &>/dev/null
+}
+
+single_stacktrace()
+{
+  # core filename is "core.*kodi.bin.*"
+  find "$1" -name 'core.*kodi.bin.*' | while read core; do
+    echo "=====>  Core file: "$core"" >> $FILE
+    echo "        =========================================" >> $FILE
+    if [ -f /storage/.config/debug.enhanced ]; then
+      gdb /usr/lib/kodi/kodi.bin --core="$core" --batch -ex "thread apply all bt full" -ex "info registers" -ex "set print asm-demangle on" -ex "disassemble" 2>/dev/null >> $FILE
+    else
+      gdb /usr/lib/kodi/kodi.bin --core="$core" --batch -ex "thread apply all bt" 2>/dev/null >> $FILE
+    fi
+    rm -f "$core"
+  done
+}
+
+print_crash_report()
+{
+  mkdir -p $CRASHLOG_DIR
+
+  DATE=`date +%Y%m%d%H%M%S`
+  FILE="$CRASHLOG_DIR/.kodi_crashlog.log"
+  echo "############## kodi CRASH LOG ###############" > $FILE
+  echo >> $FILE
+  echo "################ SYSTEM INFO ################" >> $FILE
+  echo -n " Date: " >> $FILE
+  date >> $FILE
+  echo " kodi Options: $SAVED_ARGS" >> $FILE
+  echo -n " Arch: " >> $FILE
+  uname -m >> $FILE
+  echo -n " Kernel: " >> $FILE
+  uname -rvs >> $FILE
+  echo -n " Release: " >> $FILE
+  . /etc/os-release
+  echo $NAME $VERSION >> $FILE
+  echo "############## END SYSTEM INFO ##############" >> $FILE
+  echo >> $FILE
+  echo "############### STACK TRACE #################" >> $FILE
+  if command_exists gdb; then
+    single_stacktrace /storage/.cache/cores
+  else
+    echo "gdb not installed, can't get stack trace." >> $FILE
+  fi
+  echo "############# END STACK TRACE ###############" >> $FILE
+  echo >> $FILE
+  echo "################# LOG FILE ##################" >> $FILE
+  echo >> $FILE
+  cat $KODI_ROOT/temp/kodi.log >> $FILE
+  echo >> $FILE
+  echo "############### END LOG FILE ################" >> $FILE
+  echo >> $FILE
+  echo "############ END kodi CRASH LOG #############" >> $FILE
+  OFILE="$FILE"
+  FILE="$CRASHLOG_DIR/kodi_crashlog_$DATE.log"
+  mv "$OFILE" "$FILE"
+  ln -sf "$(basename $FILE)" "$CRASHLOG_DIR/kodi_crash.log"
+  echo "Crash report available at $FILE"
+}
+
+if command_exists gdb; then
+  ulimit -c unlimited
+fi
+
+# write coredump from stdin to file
+cat > /storage/.cache/cores/core.${PATHNAME}.${TIMESECONDS}.${PID}
+
+# Crashed with core dump
+print_crash_report
+
+# clean up any stale cores. just in case
+find /storage/.cache/cores -type f -delete
+
+# Cleanup. Keep only youngest 10 reports
+rm -f $(ls -1t $CRASHLOG_DIR/kodi_crashlog_*.log | tail -n +11)

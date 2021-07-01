@@ -1,0 +1,8 @@
+[Unit]
+Description=Enable/Disable kodi safe mode
+DefaultDependencies=no
+SuccessAction=reboot
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/kodi/kodi-safe-mode --enable

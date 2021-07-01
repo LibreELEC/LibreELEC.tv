@@ -3,10 +3,36 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
-KODI_ROOT=$HOME/.kodi
+ACTION="${1}"
 
+if [ "${ACTION}" != "--enable" -a "${ACTION}" != "--disable" ]; then
+  exit 1
+fi
+
+. /etc/profile
+
+KODI_ROOT=$HOME/.kodi
+NOSAFE_MODE=$HOME/.config/safemode.disable
 KODI_ROOT_FAILED=$KODI_ROOT.FAILED
 BOOT_STATUS=$HOME/.config/boot.status
+
+activate_safe_mode()
+{
+  [ -f $NOSAFE_MODE ] && return 0
+
+  BOOT_STATE="$(cat $BOOT_STATUS 2>/dev/null)"
+
+  if [ "${BOOT_STATE:-OK}" = "OK" ]; then
+    # generate logfiles zip for the failed kodi
+    /usr/bin/createlog
+    lastlog=$(ls -1 /storage/logfiles/*.zip | tail -n 1)
+    mv $lastlog /storage/logfiles/log-$(date -u +%Y-%m-%d-%H.%M.%S)-FAILED.zip
+
+    echo "SAFE" > $BOOT_STATUS
+  fi
+
+  return 0
+}
 
 process_boot_status()
 {
@@ -16,7 +42,7 @@ process_boot_status()
     if [ ! -d $KODI_ROOT_FAILED ]; then
       # entering safe mode - rename failed .kodi, and restart with clean .kodi
       mv $KODI_ROOT $KODI_ROOT_FAILED
-      reboot
+      return 0
     else
       # exiting safe mode - restore failed .kodi
       rm -fr $KODI_ROOT
@@ -30,6 +56,8 @@ process_boot_status()
   return 0
 }
 
-process_boot_status
+[ "${ACTION}" == "--enable" ] && activate_safe_mode
+
+[ "${ACTION}" == "--enable" -o "${ACTION}" == "--disable" ] && process_boot_status
 
 exit 0
