@@ -1323,23 +1323,6 @@ get_full_firmware_dir() {
   echo "$(get_kernel_overlay_dir $1)/lib/firmware"
 }
 
-fix_module_depends() {
-  # modify .modinfo section in kernel module to depends on other required modules
-  local MODULE="$1"
-  local DEPENDS="$2"
-  local OLD_DEPENDS=""
-  cp ${MODULE} ${MODULE}_orig
-  $OBJDUMP -s -j .modinfo ${MODULE}_orig | awk 'BEGIN{v=0;} /Contents/ {v=1; next;} {if (v==1) print $0;}' >new.modinfo1
-  cat new.modinfo1 | cut -c7-41 | awk '{printf($0);}' | sed 's/ //g;s/../\\\x&/g;' >new.modinfo2
-  /bin/echo -ne `cat new.modinfo2` | tr '\000' '\n' >new.modinfo3
-  cat new.modinfo3 | awk '/^depends=/ {next;} {print $0;}' | tr '\n' '\000' >new.modinfo
-  OLD_DEPENDS=$(awk '{FS="="} /depends=/ {print $2}' new.modinfo3)
-  [ -n "$OLD_DEPENDS" ] && DEPENDS="$OLD_DEPENDS,$DEPENDS"
-  /bin/echo -ne "depends=$DEPENDS\0" >>new.modinfo
-  $OBJCOPY --remove-section=.modinfo --add-section=.modinfo=new.modinfo --set-section-flags .modinfo=contents,alloc,load,readonly,data ${MODULE}_orig ${MODULE}
-  rm new.modinfo*
-}
-
 
 ### ADDON HELPERS ###
 install_binary_addon() {
