@@ -14,7 +14,7 @@ fi
 [ ! -d "${SOURCES}/${1}" ] && die "${PKG_NAME}: ${SOURCES}/${1} not found"
 [ ! -d "${2}" ] && die "${PKG_NAME}: target ${2} not found"
 
-if [[ ${PKG_URL} =~ ^file:// ]]; then
+if [[ "${PKG_URL}" =~ ^file:// ]]; then
   FULL_SOURCE_PATH="${PKG_SOURCE_NAME}"
 else
   FULL_SOURCE_PATH="${SOURCES}/${1}/${PKG_SOURCE_NAME}"
@@ -22,12 +22,12 @@ fi
 
 if [ ! -f "${FULL_SOURCE_PATH}" -a ! -d "${FULL_SOURCE_PATH}" ]; then
   echo "error: File ${PKG_SOURCE_NAME} doesn't exist for package ${1}"
-  echo "Have you called scripts/extract before scripts/get ?"
+  echo "Have you called scripts/extract before scripts/get?"
   die
 fi
 
 # The build system expects packages to be extracted to
-# ${PKG_BUILD.}
+# ${PKG_BUILD}.
 # Try to strip the top level dir from the archive and extract to
 # the correct directory if possible so packages don't need to
 # set PKG_SOURCE_DIR and scripts/unpack doesn't need to rename
@@ -40,37 +40,40 @@ fi
 # can be disabled by PKG_TAR_STRIP_COMPONENTS="no" in package.mk
 TAR_OPTS=""
 if [ -z "${PKG_SOURCE_DIR}" ]; then
-  [ -z ${PKG_TAR_STRIP_COMPONENTS} ] && TAR_OPTS="--strip-components=1" || :
+  [ -z "${PKG_TAR_STRIP_COMPONENTS}" ] && TAR_OPTS="--strip-components=1" || :
   DESTDIR="${2}/${PKG_NAME}-${PKG_VERSION}"
 else
   DESTDIR="${2}"
 fi
 
-case ${PKG_SOURCE_NAME} in
+case "${PKG_SOURCE_NAME}" in
   *.tar | *.tar.bz2 | *.tbz | *.tar.gz | *.tgz | *.tar.xz | *.txz)
     mkdir -p "${DESTDIR}"
-    tar xf ${FULL_SOURCE_PATH} ${TAR_OPTS} -C "${DESTDIR}"
+    tar xf "${FULL_SOURCE_PATH}" "${TAR_OPTS}" -C "${DESTDIR}"
+    ;;
+  *.tar.zst | *.tzst)
+    mkdir -p "${DESTDIR}"
+    zstdcat "${FULL_SOURCE_PATH}" | tar xf - "${TAR_OPTS}" -C "${DESTDIR}"
     ;;
   *.7z)
-    mkdir -p ${2}/${1}
-    7z x -o${2}/${1} ${FULL_SOURCE_PATH}
+    mkdir -p "${2}/${1}"
+    7z x -o"${2}/${1}" "${FULL_SOURCE_PATH}"
     ;;
   *.zip)
-    unzip -q ${FULL_SOURCE_PATH} -d ${2}
+    unzip -q "${FULL_SOURCE_PATH}" -d "${2}"
     ;;
   *.diff | *.patch)
-    cat ${FULL_SOURCE_PATH} | patch -d ${2} -p1
+    patch -d "${2}" -p1 < "${FULL_SOURCE_PATH}"
     ;;
   *.diff.bz2 | *.patch.bz2 | patch-*.bz2)
-    bzcat ${FULL_SOURCE_PATH} | patch -d ${2} -p1
+    bzcat "${FULL_SOURCE_PATH}" | patch -d "${2}" -p1
     ;;
   *.diff.gz | *.patch.gz | patch-*.gz)
-    zcat ${FULL_SOURCE_PATH} | patch -d ${2} -p1
+    zcat "${FULL_SOURCE_PATH}" | patch -d "${2}" -p1
     ;;
   *)
     FULL_DEST_PATH="${2}/${PKG_NAME}-${PKG_VERSION}"
-    mkdir ${FULL_DEST_PATH}
-    tar cf - -C ${FULL_SOURCE_PATH} ${PKG_TAR_COPY_OPTS} . | \
-      tar xf - -C ${FULL_DEST_PATH}
+    mkdir "${FULL_DEST_PATH}"
+    tar cf - -C "${FULL_SOURCE_PATH}" "${PKG_TAR_COPY_OPTS}" . | tar xf - -C "${FULL_DEST_PATH}"
     ;;
 esac
