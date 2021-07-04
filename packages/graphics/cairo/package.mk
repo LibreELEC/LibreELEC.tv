@@ -74,18 +74,27 @@ pre_configure_target() {
                                  --x-libraries="${SYSROOT_PREFIX}/usr/lib" \
                                  --enable-xlib \
                                  --enable-xlib-xrender \
-                                 --enable-gl \
-                                 --enable-glx \
-                                 --disable-glesv2 \
-                                 --disable-egl \
                                  --with-x"
-   else
+  else
     PKG_CONFIGURE_OPTS_TARGET+=" --disable-xlib \
                                  --disable-xlib-xrender \
-                                 --disable-gl \
+                                 --without-x"
+  fi
+
+  if [ "${OPENGL_SUPPORT}" = "yes" ]; then
+    PKG_CONFIGURE_OPTS_TARGET+=" --enable-gl \
+                                 --enable-glx \
+                                 --disable-glesv2 \
+                                 --disable-egl"
+  elif [ "${OPENGLES_SUPPORT}" = "yes" ]; then
+    PKG_CONFIGURE_OPTS_TARGET+=" --disable-gl \
                                  --disable-glx \
                                  --enable-glesv2 \
-                                 --enable-egl \
-                                 --without-x"
+                                 --enable-egl"
+  else
+    PKG_CONFIGURE_OPTS_TARGET+=" --disable-gl \
+                                 --disable-glx \
+                                 --disable-glesv2 \
+                                 --disable-egl"
   fi
 }
