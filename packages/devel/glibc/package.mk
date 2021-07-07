@@ -102,11 +102,6 @@ post_makeinstall_target() {
     cp -a ${INSTALL}/usr/share/i18n/locales ${INSTALL}/.noinstall
     mv ${INSTALL}/usr/share/i18n/charmaps ${INSTALL}/.noinstall
 
-  # Generic "installer" needs localedef to define drawing chars
-  if [ "${PROJECT}" != "Generic" ]; then
-    rm ${INSTALL}/usr/bin/localedef
-  fi
-
 # we are linking against ld.so, so symlink
   ln -sf $(basename ${INSTALL}/usr/lib/ld-*.so) ${INSTALL}/usr/lib/ld.so
 
@@ -123,12 +118,9 @@ post_makeinstall_target() {
   safe_remove ${INSTALL}/usr/lib/*.map
   safe_remove ${INSTALL}/var
 
-# add UTF-8 charmap for Generic (charmap is needed for installer)
-  if [ "${PROJECT}" = "Generic" ]; then
-    mkdir -p ${INSTALL}/usr/share/i18n/charmaps
-    cp -PR ${PKG_BUILD}/localedata/charmaps/UTF-8 ${INSTALL}/usr/share/i18n/charmaps
-    pigz --best --force ${INSTALL}/usr/share/i18n/charmaps/UTF-8
-  fi
+# add UTF-8 charmap
+  mkdir -p ${INSTALL}/usr/share/i18n/charmaps
+    cp -PR ${INSTALL}/.noinstall/charmaps/UTF-8.gz ${INSTALL}/usr/share/i18n/charmaps
 
   if [ ! "${GLIBC_LOCALES}" = yes ]; then
     safe_remove ${INSTALL}/usr/share/i18n/locales

@@ -1,0 +1,17 @@
+[Unit]
+Description=Compile locale definition files
+ConditionPathExists=!/storage/.cache/locpath
+ConditionPathExists=!/storage/.kodi/addons/service.locale/locpath
+Before=kodi.service
+
+[Service]
+Type=oneshot
+Environment=HOME=/storage
+Environment=I18NPATH=/usr/share/i18n
+ExecStartPre=/bin/mkdir /storage/.cache/locpath
+ExecStart=/usr/bin/localedef --quiet -i POSIX -f UTF-8 /storage/.cache/locpath/C.UTF-8
+SuccessExitStatus=0 1
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
