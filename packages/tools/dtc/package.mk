@@ -15,11 +15,19 @@ PKG_LONGDESC="The Device Tree Compiler"
 PKG_MAKE_OPTS_TARGET="dtc fdtput fdtget libfdt"
 PKG_MAKE_OPTS_HOST="dtc libfdt"
 
+pre_make_host() {
+  make clean
+}
+
 makeinstall_host() {
   mkdir -p ${TOOLCHAIN}/bin
     cp -P ${PKG_BUILD}/dtc ${TOOLCHAIN}/bin
   mkdir -p ${TOOLCHAIN}/lib
     cp -P ${PKG_BUILD}/libfdt/libfdt.so ${TOOLCHAIN}/lib
+}
+
+pre_make_target() {
+  make clean
 }
 
 makeinstall_target() {
