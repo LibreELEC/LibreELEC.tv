@@ -106,3 +106,6 @@ unset CONFIG_SITE
 # Ignore custom python installs...
 unset PYTHONHOME PYTHONPATH PYTHONSTARTUP
 export PYTHONNOUSERSITE=yes #disable PEP 370
+
+# Fix #4737
+unset PYTHONDONTWRITEBYTECODE
