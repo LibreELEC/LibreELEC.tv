@@ -33,11 +33,9 @@ PKG_MESON_OPTS_TARGET="-Ddefault_library=shared \
                        -Dforce_posix_threads=true \
                        -Dtests=false"
 
-PKG_MESON_PROPERTIES_TARGET="
-have_c99_vsnprintf=false
-have_c99_snprintf=false
-growing_stack=false
-va_val_copy=false"
+if [ "${MACHINE_HARDWARE_NAME}" = "aarch64" -a "${TARGET_ARCH}" = "arm" ]; then
+  PKG_MESON_PROPERTIES_TARGET="needs_exe_wrapper = true"
+fi
 
 post_makeinstall_target() {
   rm -rf ${INSTALL}/usr/bin

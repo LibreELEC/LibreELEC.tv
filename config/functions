@@ -482,12 +482,14 @@ cpu_family = '$TARGET_ARCH'
 cpu = '$TARGET_SUBARCH'
 endian = 'little'
 
-[properties]
-root = '$TOOLCHAIN'
+[built-in options]
 $(python3 -c "import os; print('c_args = {}'.format([x for x in os.getenv('CFLAGS').split()]))")
 $(python3 -c "import os; print('c_link_args = {}'.format([x for x in os.getenv('LDFLAGS').split()]))")
 $(python3 -c "import os; print('cpp_args = {}'.format([x for x in os.getenv('CXXFLAGS').split()]))")
 $(python3 -c "import os; print('cpp_link_args = {}'.format([x for x in os.getenv('LDFLAGS').split()]))")
+
+[properties]
+root = '$TOOLCHAIN'
 ${!properties}
 EOF
 }
@@ -512,12 +514,14 @@ cpu_family = '$TARGET_ARCH'
 cpu = '$TARGET_SUBARCH'
 endian = 'little'
 
-[properties]
-root = '$SYSROOT_PREFIX/usr'
+[built-in options]
 $(python3 -c "import os; print('c_args = {}'.format([x for x in os.getenv('TARGET_CFLAGS').split()]))")
 $(python3 -c "import os; print('c_link_args = {}'.format([x for x in os.getenv('TARGET_LDFLAGS').split()]))")
 $(python3 -c "import os; print('cpp_args = {}'.format([x for x in os.getenv('TARGET_CXXFLAGS').split()]))")
 $(python3 -c "import os; print('cpp_link_args = {}'.format([x for x in os.getenv('TARGET_LDFLAGS').split()]))")
+
+[properties]
+root = '$SYSROOT_PREFIX/usr'
 ${!properties}
 EOF
 }
