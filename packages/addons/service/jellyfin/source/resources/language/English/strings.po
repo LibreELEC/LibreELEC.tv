@@ -1,0 +1,14 @@
+# Kodi Media Center language file
+# Addon Name: jellyfin
+# Addon id: service.jellyfin
+# Addon Provider: Team LibreELEC
+msgid ""
+msgstr ""
+
+msgctxt "#30000"
+msgid "Configuration"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Priority (nice, 0=max, 19=min)"
+msgstr ""

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+   <category   label="30000">
+      <setting label="30001" id="jellyfin_nice" type="slider" default="10" range="0,1,19" option="int" />
+    </category>
+</settings>
