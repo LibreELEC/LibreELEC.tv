@@ -1,3 +1,7 @@
+114
+- Add .NET Runtime 5.0.7
+- Add ASP.NET Core Runtime 5.0.7
+
 113
 - Update to ASP.NET Core Runtime 3.1.16
 
