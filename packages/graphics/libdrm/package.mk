@@ -50,4 +50,6 @@ listcontains "${GRAPHIC_DRIVERS}" "etnaviv" &&
 post_makeinstall_target() {
   mkdir -p ${INSTALL}/usr/bin
     cp -a ${PKG_BUILD}/.${TARGET_NAME}/tests/modetest/modetest ${INSTALL}/usr/bin/
+    cp -a ${PKG_BUILD}/.${TARGET_NAME}/tests/modeprint/modeprint ${INSTALL}/usr/bin/
+    cp -a ${PKG_BUILD}/.${TARGET_NAME}/tests/proptest/proptest ${INSTALL}/usr/bin/
 }
