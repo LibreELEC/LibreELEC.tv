@@ -7,7 +7,7 @@ PKG_SHA256="06b10a183ce5371f915c6bb15b7b1fffbe046e8275099c96affc29e17645d909"
 PKG_LICENSE="LGPLv2.1+"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="https://ffmpeg.org/releases/ffmpeg-${PKG_VERSION}.tar.xz"
-PKG_DEPENDS_TARGET="toolchain aom bzip2 gnutls libvorbis opus x264 zlib"
+PKG_DEPENDS_TARGET="toolchain aom bzip2 gnutls lame libvorbis opus x264 x265 zlib"
 PKG_LONGDESC="FFmpegx is an complete FFmpeg build to support encoding and decoding."
 PKG_BUILD_FLAGS="-gold -sysroot"
 
@@ -61,6 +61,12 @@ pre_configure_target() {
     --enable-hwaccel=vp8_vaapi \
     --enable-hwaccel=vp9_vaapi \
     --enable-hwaccel=wmv3_vaapi"
+
+    PKG_FFMPEG_X26x_GENERIC="\
+    --enable-libx264 \
+    --enable-encoder=x264 \
+    --enable-libx265 \
+    --enable-encoder=x265"
   fi
 
 # Encoders
@@ -69,10 +75,7 @@ pre_configure_target() {
     --enable-libvpx \
     --enable-encoder=libvpx_vp8 \
     --enable-encoder=libvpx_vp9 \
-    --enable-libx264 \
-    --enable-encoder=x264 \
-    --enable-libx265 \
-    --enable-encoder=x265 \
+    ${PKG_FFMPEG_X26x_GENERIC} \
     --enable-libaom \
     --enable-encoder=libaom_av1 \
     \
@@ -109,6 +112,7 @@ configure_target() {
     \
     `#Static and Shared` \
     --enable-static \
+    --pkg-config-flags="--static" \
     --disable-shared \
     \
     `#Licensing options` \
@@ -119,6 +123,8 @@ configure_target() {
     \
     `#Hardware accelerated decoding encoding` \
     ${PKG_FFMPEG_HW_ENCODERS_GENERIC} \
+    \
+    ${PKG_FFMPEG_ENCODERS} \
     \
     `#General options` \
     --enable-avresample \
