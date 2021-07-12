@@ -15,7 +15,15 @@ PKG_TOOLCHAIN="manual"
 [ -n "${KERNEL_TOOLCHAIN}" ] && PKG_DEPENDS_TARGET+=" gcc-arm-${KERNEL_TOOLCHAIN}:host"
 
 make_target() {
-  CROSS_COMPILE="${TARGET_KERNEL_PREFIX}" LDFLAGS="" CFLAGS="" make PLAT=${ATF_PLATFORM} bl31
+  ATF_OPTS="PLAT=${ATF_PLATFORM}"
+
+  # atf gained support GCC stack protection, but it's currently not implemented
+  # on platforms supported by LE
+  #if flag_enabled "hardening" "$HARDENING_SUPPORT"; then
+  #  ATF_OPTS="${ATF_OPTS} ENABLE_STACK_PROTECTOR=strong"
+  #fi
+
+  CROSS_COMPILE="${TARGET_KERNEL_PREFIX}" LDFLAGS="" CFLAGS="" make ${ATF_OPTS} bl31
 }
 
 makeinstall_target() {

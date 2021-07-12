@@ -35,6 +35,10 @@ PKG_CONFIGURE_OPTS_TARGET="BASH_SHELL=/bin/sh \
                            --enable-lock-elision \
                            --disable-timezone-tools"
 
+if flag_enabled "hardening" "${HARDENING_SUPPORT}"; then
+  PKG_CONFIGURE_OPTS_TARGET="${PKG_CONFIGURE_OPTS_TARGET} --enable-stack-protector=strong"
+fi
+
 if build_with_debug; then
   PKG_CONFIGURE_OPTS_TARGET+=" --enable-debug"
 else
