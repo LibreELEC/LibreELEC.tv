@@ -3,6 +3,13 @@
     TARGET_CPU=core2
   fi
 
+  # 64bit userland
+  if [ -z "${TARGET_FEATURES}" ]; then
+    TARGET_FEATURES="64bit"
+  else
+    TARGET_FEATURES+=" 64bit"
+  fi
+
 # determine architecture's family
   TARGET_SUBARCH=x86_64
 

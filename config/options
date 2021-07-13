@@ -43,19 +43,24 @@ fi
 # read DISTRO version information
 . "${DISTRO_DIR}/${DISTRO}/version" || die "\nERROR: No distro version present\n"
 
-# read DISTRO options if available
+# read DISTRO options
 if [ -f "${DISTRO_DIR}/${DISTRO}/options" ]; then
   . "${DISTRO_DIR}/${DISTRO}/options"
 fi
 
-# read PROJECT options if available
+# read PROJECT options
 if [ -f "${PROJECT_DIR}/${PROJECT}/options" ]; then
   . "${PROJECT_DIR}/${PROJECT}/options"
 fi
 
-# read DEVICE options if available
+# read DEVICE options
 if [ -f "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/options" ]; then
   . "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/options"
+fi
+
+# read architecture defaults
+if [ -f "config/arch.${TARGET_ARCH}" ]; then
+  . "config/arch.${TARGET_ARCH}"
 fi
 
 # projects can set KERNEL_NAME (kernel.img)

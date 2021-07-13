@@ -33,7 +33,6 @@
         elif [ "$DEVICE" = "RPi4" ]; then
           TARGET_FPU="neon-fp-armv8"
         fi
-        TARGET_FEATURES="32bit"
         ;;
     esac
 

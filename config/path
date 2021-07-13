@@ -13,11 +13,6 @@ set -e
   TARGET_IMG=${TARGET_DIR:-$ROOT/target}
   ADDONS=addons
 
-# include ARCH specific options
-  if [ -f config/arch.$TARGET_ARCH ]; then
-    . config/arch.$TARGET_ARCH
-  fi
-
 [ -z "${HOST_NAME}" ] && export HOST_NAME="$($LOCAL_CC -dumpmachine)"
 TARGET_NAME=$TARGET_GCC_ARCH-libreelec-linux-gnu${TARGET_ABI}
 

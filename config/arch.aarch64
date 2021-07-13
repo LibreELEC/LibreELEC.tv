@@ -3,6 +3,13 @@
     TARGET_CPU=cortex-a53
   fi
 
+  # 64bit userland and neon required by armv8
+  if [ -z "${TARGET_FEATURES}" ]; then
+    TARGET_FEATURES="64bit neon"
+  else
+    TARGET_FEATURES+=" 64bit neon"
+  fi
+
 # TARGET_CPU:
 # generic cortex-a35 cortex-a53 cortex-a57 cortex-a72
 # exynos-m1 qdf24xx thunderx xgene1 cortex-a57.cortex-a53
@@ -14,7 +21,6 @@
       TARGET_SUBARCH=aarch64
       TARGET_VARIANT=armv8-a
       TARGET_ABI=eabi
-      TARGET_FEATURES+=" neon"
       ;;
   esac
 

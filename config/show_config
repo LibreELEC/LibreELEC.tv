@@ -14,9 +14,13 @@ show_config() {
   config_message+="\n\n Buildsystem configuration:"
   config_message+="\n $dashes$dashes"
 
-  config_message+="\n - CPU (ARCH):\t\t\t\t $TARGET_CPU ($TARGET_ARCH)"
+  config_message+="\n - CPU:\t\t\t\t\t $TARGET_CPU"
+  config_message+="\n - Kernel Architecture:\t\t\t $TARGET_KERNEL_ARCH"
+  config_message+="\n - Userland Architecture:\t\t $TARGET_ARCH"
   config_message+="\n - FLOAT:\t\t\t\t $TARGET_FLOAT"
-  config_message+="\n - FPU:\t\t\t\t\t $TARGET_FPU"
+  if [ -n "${TARGET_FPU}" ]; then
+    config_message+="\n - FPU:\t\t\t\t\t ${TARGET_FPU}"
+  fi
   config_message+="\n - CPU features:\t\t\t $TARGET_FEATURES"
   config_message+="\n - LTO (Link Time Optimization) support: $LTO_SUPPORT"
   config_message+="\n - GOLD (Google Linker) Support:\t $GOLD_SUPPORT"

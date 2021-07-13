@@ -9,7 +9,6 @@
         TARGET_FLOAT="hard"
         TARGET_CPU="cortex-a17"
         TARGET_FPU="neon-vfpv4"
-        TARGET_FEATURES="32bit"
         ;;
     esac
 

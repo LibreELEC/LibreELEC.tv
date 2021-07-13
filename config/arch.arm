@@ -3,6 +3,13 @@
     TARGET_CPU=cortex-a8
   fi
 
+  # 32bit userland
+  if [ -z "${TARGET_FEATURES}" ]; then
+    TARGET_FEATURES="32bit"
+  else
+    TARGET_FEATURES+=" 32bit"
+  fi
+
 # TARGET_CPU:
 # arm2 arm250 arm3 arm6 arm60 arm600 arm610 arm620 arm7 arm7m arm7d
 # arm7dm arm7di arm7dmi arm70 arm700 arm700i arm710 arm710c
@@ -56,6 +63,10 @@
   TARGET_VARIANT="${TARGET_SUBARCH}${TARGET_CPU_FLAGS}"
   TARGET_GCC_ARCH=${TARGET_SUBARCH/-}
   TARGET_KERNEL_ARCH=${TARGET_KERNEL_ARCH:-arm}
+
+  if [ "${TARGET_KERNEL_ARCH}" = "arm64" ]; then
+    TARGET_KERNEL_PATCH_ARCH="aarch64"
+  fi
 
 # setup ARCH specific *FLAGS
   TARGET_CFLAGS="-march=$TARGET_VARIANT -mtune=$TARGET_CPU -mabi=aapcs-linux -Wno-psabi -Wa,-mno-warn-deprecated"
