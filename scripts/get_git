@@ -72,8 +72,8 @@ fi
 
 GIT_FOUND="no"
 opwd="$(pwd)"
-for d in "${SOURCES}/${1}/${1}-"* ; do
-  if [ -d "${d}/.git" ]; then
+for d in "${SOURCES}/${1}/${1}-"*/ ; do
+  if [ -d "${d}.git" ]; then
     if [ "${GIT_FOUND}" = "no" ]; then
       cd "${d}"
       if [ "${PKG_URL}" = "$(git remote get-url origin)" ]; then
@@ -117,7 +117,7 @@ cd "${opwd}"
 if [ "${GIT_FOUND}" = "no" ]; then
   build_msg "CLR_GET" "GIT CLONE" "${1}"
   git clone ${GIT_CLONE_PARAMS} "${PKG_URL}" "${PACKAGE}"
-elif [ ! "${GIT_DIR}" = "${PACKAGE}" ]; then
+elif [ ! "${GIT_DIR}" = "${PACKAGE}/" ]; then
   mv "${GIT_DIR}" "${PACKAGE}"
 fi
 
