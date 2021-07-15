@@ -40,6 +40,8 @@ RUN_FSCK="yes"
 RUN_FSCK_DISKS=""
 SYSLINUX_DEFAULT=""
 GRUB_DEFAULT=""
+FLASH_NETBOOT="no"
+STORAGE_NETBOOT="no"
 
 NBD_DEVS="0"
 FLASH_FREE_MIN="5"
@@ -605,6 +607,21 @@ mount_storage() {
       . /flash/mount-storage.sh
     else
       mount_part "$disk" "/storage" "rw,noatime"
+      # create resize marker if storage is original 32 MiB size
+      if [ "$STORAGE_NETBOOT" != "yes" ]; then
+        case "$disk" in
+          LABEL=*|UUID=*)
+          STORAGE_TARGET=$(findfs "$disk")
+          ;;
+          /dev/ubi*|/*)
+          STORAGE_TARGET="$disk"
+          ;;
+        esac
+        STORAGE_SIZE=$(blockdev --getsize64 "$STORAGE_TARGET") # Disk size in bytes
+        if [ $STORAGE_SIZE -eq 33554432 ]; then # 32 * 1024 * 1024
+          echo "" > /storage/.please_resize_me
+        fi
+      fi
     fi
   else
     # /storage should always be writable

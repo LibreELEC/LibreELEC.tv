@@ -24,7 +24,8 @@ else
   DISK_LABEL=msdos
 fi
 
-STORAGE_SIZE=32 # STORAGE_SIZE must be >= 32 !
+# STORAGE_SIZE must be >= 32! Alter busybox init script if this value changes.
+STORAGE_SIZE=32
 
 DISK_START_PADDING=$(( (${SYSTEM_PART_START} + 2048 - 1) / 2048 ))
 DISK_GPT_PADDING=1
@@ -267,14 +268,6 @@ mke2fs -F -q -t ext4 -m 0 "${LE_TMP}/part2.ext4"
 tune2fs -L "${DISTRO_DISKLABEL}" -U ${UUID_STORAGE} "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 e2fsck -n "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 sync
-
-# add resize mark
-mkdir "${LE_TMP}/part2.fs"
-touch "${LE_TMP}/part2.fs/.please_resize_me"
-echo "image: populating filesystem on part2..."
-populatefs -U -d "${LE_TMP}/part2.fs" "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
-sync
-e2fsck -n "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 
 # merge part2 back to disk image
 echo "image: merging part2 back to image..."
