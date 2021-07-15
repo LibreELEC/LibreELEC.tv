@@ -2,8 +2,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="comskip"
-PKG_VERSION="84fcd7388394c95fc8a7e558642bbadb43134507"
-PKG_SHA256="4d45d30335ce1c28fb4de8865ada57f81de18d83a77950e9ab7c3ea26d24a883"
+PKG_VERSION="9c89619cd9c5aae7f7b1ef4858f07bb6cf3f5a89" # 1 Aug 2020
+PKG_SHA256="a76e8453a06778fe69e9f83eb016686cda85489d4e1c5deb5ea895b175d53381"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.kaashoek.com/comskip/"
 PKG_URL="https://github.com/erikkaashoek/Comskip/archive/${PKG_VERSION}.tar.gz"
