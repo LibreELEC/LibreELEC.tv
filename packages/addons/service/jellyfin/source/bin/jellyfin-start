@@ -1,0 +1,21 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
+
+. /etc/profile
+oe_setup_addon service.jellyfin
+
+# check if jellyfin is already successful installed
+if [ ! -f "$ADDON_DIR/extract.ok" ]; then
+  cd $ADDON_DIR
+  jellyfin-downloader
+fi
+
+libs="${ADDON_DIR}/libs"
+ff="/storage/.kodi/addons/tools.ffmpeg-tools/bin"
+
+exec \
+nice -n "$jellyfin_nice" \
+dotnet "${libs}/jellyfin.dll" \
+  --datadir "${ADDON_HOME}" \
+  --ffmpeg "${ff}/ffmpeg"

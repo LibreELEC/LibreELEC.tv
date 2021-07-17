@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
+
+. /etc/profile
+oe_setup_addon service.jellyfin
+
+ICON="${ADDON_DIR}/resources/icon.png"
+CONTROL_FILE="/tmp/curl.done"
+DATA_FILE="/tmp/curl.data"
+JELLYFIN_FILE="jellyfin_@JELLYFIN_VERSION@.tar.gz"
+
+# check for enough free disk space
+if [ $(df . | awk 'END {print $4}') -lt 200000 ]; then
+  kodi-send --action="Notification(Not enough disk space, at least 200MB are required,30000,${ICON})" >/dev/null
+  exit 0;
+fi
+
+# remove install status and folders
+if [ -f ${ADDON_DIR}/extract.ok ]; then
+  rm ${ADDON_DIR}/extract.ok
+fi
+
+if [ -d ${ADDON_DIR}/libs ]; then
+  rm -rf ${ADDON_DIR}/libs
+fi
+
+# create tmp download dir
+TEMP_DIR=`mktemp -d`
+
+mkdir -p ${TEMP_DIR}/tmp_download
+if [ -d ${TEMP_DIR}/tmp_download ]; then
+  cd ${TEMP_DIR}/tmp_download
+else
+  kodi-send --action="Notification(Unable to download Jellyfin - no temp directory,30000,${ICON})" >/dev/null
+  exit 0
+fi
+
+echo "Downloading Jellyfin"
+
+# download Jellyfin
+rm -f ${CONTROL_FILE} ${DATA_FILE}
+(
+  curl -L -# -O -C - https://repo.jellyfin.org/releases/server/portable/versions/stable/combined/@JELLYFIN_VERSION@/${JELLYFIN_FILE} 2>${DATA_FILE}
+  touch ${CONTROL_FILE}
+) | \
+  while [ : ]; do
+    [ -f ${DATA_FILE} ] && prog="$(tr '\r' '\n' < ${DATA_FILE} | tail -n 1 | sed -r 's/^[# ]+/#/;s/^[^0-9]*//g')" || prog=
+    kodi-send --action="Notification(Downloading Jellyfin,\"${prog:-0.0%}\",3000,${ICON})" >/dev/null
+    [ -f ${CONTROL_FILE} ] && break
+    sleep 4
+  done
+
+rm -f ${CONTROL_FILE} ${DATA_FILE}
+
+# extract Jellyfin
+kodi-send --action="Notification(Extracting Jellyfin,Starting,1000,${ICON})" >/dev/null
+
+# extract JELLYFIN_FILE to libs directory
+mkdir ${ADDON_DIR}/libs
+tar xf ${JELLYFIN_FILE} -C ${ADDON_DIR}/libs --strip-components=2
+
+# cleanup
+cd ${ADDON_DIR}
+rm -rf ${TEMP_DIR}/tmp_download
+rmdir ${TEMP_DIR}
+touch ${ADDON_DIR}/extract.ok
+kodi-send --action="Notification(Extracting Jellyfin,Finished,1000,${ICON})" >/dev/null

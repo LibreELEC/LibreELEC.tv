@@ -1,0 +1,13 @@
+[Unit]
+Description=Jellyfin - The Free Software Media System
+Documentation=https://jellyfin.org/
+Wants=multi-user.target
+After=multi-user.target
+
+[Service]
+SyslogIdentifier=%N
+ExecStart=/bin/sh /storage/.kodi/addons/%N/bin/jellyfin-start
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

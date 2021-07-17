@@ -1,0 +1,3 @@
+<settings version="2">
+    <setting id="jellyfin_nice" default="true">10</setting>
+</settings>
