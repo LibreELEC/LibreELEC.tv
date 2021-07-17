@@ -2,8 +2,8 @@ diff --git a/src/device.c b/src/device.c
 index 0fda950..eb09e53 100644
 --- a/src/device.c
 +++ b/src/device.c
-@@ -1247,8 +1247,6 @@ int __connman_device_init(const char *device, const char *nodevice)
- 	if (nodevice != NULL)
+@@ -1490,8 +1490,6 @@ int __connman_device_init(const char *device, const char *nodevice)
+ 	if (nodevice)
  		nodevice_filter = g_strsplit(nodevice, ",", -1);
  
 -	cleanup_devices();
