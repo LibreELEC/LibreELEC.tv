@@ -1,0 +1,345 @@
+From e463e54254e6721ff15158af9fa0fdb7a1fbb5f3 Mon Sep 17 00:00:00 2001
+From: Kongxin Deng <1498971779@qq.com>
+Date: Thu, 24 Jun 2021 19:08:28 +0800
+Subject: [PATCH] arm64: dts: rockchip: Add new rk3399-roc-pc-plus board
+
+Added support for new rk3399-roc-pc-plus boards.
+Signed-off-by: Kongxin Deng <1498971779@qq.com>
+---
+ arch/arm64/boot/dts/rockchip/Makefile         |   1 +
+ .../boot/dts/rockchip/rk3399-roc-pc-plus.dts  | 311 ++++++++++++++++++
+ 2 files changed, 312 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/rockchip/rk3399-roc-pc-plus.dts
+
+diff --git a/arch/arm64/boot/dts/rockchip/Makefile b/arch/arm64/boot/dts/rockchip/Makefile
+index 26661c7b736b..102539d3a112 100644
+--- a/arch/arm64/boot/dts/rockchip/Makefile
++++ b/arch/arm64/boot/dts/rockchip/Makefile
+@@ -35,6 +35,7 @@ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-pinebook-pro.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-puma-haikou.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc-mezzanine.dtb
++dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc-plus.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-rock-pi-4a.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-rock-pi-4b.dtb
+ dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-rock-pi-4c.dtb
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-roc-pc-plus.dts b/arch/arm64/boot/dts/rockchip/rk3399-roc-pc-plus.dts
+new file mode 100644
+index 000000000000..438858634b51
+--- /dev/null
++++ b/arch/arm64/boot/dts/rockchip/rk3399-roc-pc-plus.dts
+@@ -0,0 +1,311 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
++ */
++
++/dts-v1/;
++#include "rk3399-roc-pc.dtsi"
++
++/ {
++	model = "Firefly roc-rk3399-pc PLUS";
++	compatible = "firefly,roc-rk3399-pc", "rockchip,rk3399";
++
++	poe_12v: poe-12v {
++		compatible = "regulator-fixed";
++		regulator-name = "poe_12v";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++	};
++
++	vcc3v3_ngff: vcc3v3-ngff {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc3v3_ngff";
++		enable-active-high;
++		gpio = <&gpio4 RK_PD3 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&vcc3v3_ngff_en>;
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&sys_12v>;
++	};
++
++	vcc3v3_pcie: vcc3v3-pcie {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc3v3_pcie";
++		enable-active-high;
++		gpio = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&vcc3v3_pcie_en>;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&sys_12v>;
++	};
++
++	sdio_pwrseq: sdio-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		clocks = <&rk808 1>;
++		clock-names = "ext_clock";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_enable_h>;
++		reset-gpios = <&gpio2 4 GPIO_ACTIVE_LOW>;
++	};
++
++	es8388-sound {
++		status = "okay";
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,name = "rockchip,es8388-codec";
++		simple-audio-card,mclk-fs = <256>;
++		simple-audio-card,cpu {
++			sound-dai = <&i2s1>;
++			system-clock-frequency = <11289600>;
++		};
++		simple-audio-card,codec {
++			sound-dai = <&es8388>;
++			system-clock-frequency = <11289600>;
++		};
++	};
++	/delete-node/ vcc_hub_en-regulator;
++
++	leds {
++		compatible = "gpio-leds";
++
++		FAN_EN {
++			//fan power
++			gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>;	//GPIO1_A1
++			default-state = "on";
++		};
++	};
++};
++
++&sys_12v {
++	vin-supply = <&poe_12v>;
++};
++
++&pcie_phy {
++	status = "okay";
++};
++
++&pcie0 {
++	ep-gpios = <&gpio4 RK_PD1 GPIO_ACTIVE_HIGH>;
++	num-lanes = <4>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pcie_perst>;
++	vpcie3v3-supply = <&vcc3v3_pcie>;
++	vpcie1v8-supply = <&vcc1v8_pmu>;
++	vpcie0v9-supply = <&vcca_0v9>;
++	status = "okay";
++};
++
++
++/* RTC */
++
++&rk808{
++	rtc {
++		status = "disabled";
++	};
++};
++
++&i2c0 {
++	status = "okay";
++	hym8563: hym8563@51 {
++		compatible = "haoyu,hym8563";
++		reg = <0x51>;
++		interrupt-parent = <&gpio0>;
++		interrupts = <5 IRQ_TYPE_EDGE_FALLING>;
++		pinctrl-names = "default";
++		#clock-cells = <0>;
++		clock-frequency = <32768>;
++		clock-output-names = "xin32k";
++	};
++};
++
++
++&i2c4 {
++	/delete-node/ fusb30x@22;
++};
++
++&fusb0 {
++	fusb302,role = "ROLE_MODE_DFP";
++	vbus-5v-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
++};
++
++&cdn_dp {
++	status = "okay";
++	extcon = <&fusb0>;
++	phys = <&tcphy0_dp>;
++};
++
++&tcphy1 {
++	/delete-property/ extcon;
++};
++
++&u2phy1 {
++	/delete-property/ extcon;
++};
++
++&usbdrd3_1 {
++	/delete-property/ extcon;
++};
++
++&i2s1 {
++	status = "okay";
++};
++
++
++&rk808 {
++	/delete-property/ pmic,hold-gpio;
++};
++
++&yellow_led{
++	gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
++};
++&vcc_sys {
++	/delete-property/ gpio;
++	/delete-property/ pinctrl-names;
++	/delete-property/ pinctrl-0;
++};
++
++&i2c1 {
++	status = "okay";
++	es8388: es8388@11 {
++		compatible = "everest,es8388";
++		status = "okay";
++		reg = <0x11>;
++		hp-det-gpio = <&gpio2 6 GPIO_ACTIVE_HIGH>;
++		hp-ctl-gpio = <&gpio0 2 GPIO_ACTIVE_HIGH>;
++		clock-names = "mclk";
++		clocks = <&cru SCLK_I2S_8CH_OUT>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&i2s_8ch_mclk>;
++		pinctrl-1 = <&ear_ctl_h>;
++		#sound-dai-cells = <0>;
++	};
++};
++
++
++&pinctrl {
++	ngff {
++		vcc3v3_ngff_en: vcc3v3-ngff-en {
++			rockchip,pins = <4 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	pcie {
++		vcc3v3_pcie_en: vcc3v3-pcie-en {
++			rockchip,pins = <1 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		pcie_perst: pcie-perst {
++			rockchip,pins = <4 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	bt {
++		bt_enable_h: bt-enable-h {
++			rockchip,pins = <0 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		bt_host_wake_l: bt-host-wake-l {
++			rockchip,pins = <0 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		bt_wake_l: bt-wake-l {
++			rockchip,pins = <2 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	sdio-pwrseq {
++		wifi_enable_h: wifi-enable-h {
++			rockchip,pins =
++				<2 4 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	wifi {
++		wifi_host_wake_l: wifi-host-wake-l {
++			rockchip,pins = <0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	es8388-pins {
++		ear_ctl_h: ear-ctl-h {
++			rockchip,pins = <0 2 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++	};
++
++	i2s0 {
++		i2s0_8ch_bus: i2s0-8ch-bus {
++			rockchip,pins =
++				<3 RK_PD0 1 &pcfg_pull_none>,
++				<3 RK_PD1 1 &pcfg_pull_none>,
++				<3 RK_PD2 1 &pcfg_pull_none>,
++				<3 RK_PD3 1 &pcfg_pull_none>,
++				<3 RK_PD4 1 &pcfg_pull_none>,
++				<3 RK_PD5 1 &pcfg_pull_none>,
++				<3 RK_PD6 1 &pcfg_pull_none>,
++				<3 RK_PD7 1 &pcfg_pull_none>;
++		};
++
++		i2s_8ch_mclk: i2s-8ch-mclk {
++			rockchip,pins = <4 0 1 &pcfg_pull_none>;
++		};
++	};
++
++	leds {
++		yellow_led_pin: yellow-led-pin {
++			rockchip,pins = <0 13 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++};
++
++&sdio0 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <50000000>;
++	bus-width = <4>;
++	cap-sdio-irq;
++	cap-sd-highspeed;
++	no-emmc;
++	keep-power-in-suspend;
++	mmc-pwrseq = <&sdio_pwrseq>;
++	non-removable;
++	num-slots = <1>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&sdio0_bus4 &sdio0_cmd &sdio0_clk>;
++	sd-uhs-sdr104;
++
++	status = "okay";
++
++	brcmf: wifi@1 {
++		compatible = "brcm,bcm4329-fmac";
++		reg = <1>;
++		interrupt-parent = <&gpio0>;
++		interrupts = <RK_PA3 GPIO_ACTIVE_HIGH>;
++		interrupt-names = "host-wake";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_host_wake_l>;
++	};
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0_xfer &uart0_cts &uart0_rts>;
++	status = "okay";
++
++	bluetooth {
++		compatible = "brcm,bcm43438-bt";
++		clocks = <&rk808 1>;
++		clock-names = "ext_clock";
++		device-wakeup-gpios = <&gpio2 RK_PD2 GPIO_ACTIVE_HIGH>;
++		host-wakeup-gpios = <&gpio0 RK_PA4 GPIO_ACTIVE_HIGH>;
++		shutdown-gpios = <&gpio0 RK_PB1 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&bt_host_wake_l &bt_wake_l &bt_enable_h>;
++	};
++};
+-- 
+2.20.1
+

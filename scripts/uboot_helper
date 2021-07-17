@@ -308,6 +308,10 @@ devices = \
         'dtb': 'rk3399-sapphire.dtb',
         'config': 'evb-rk3399_defconfig'
       },
+      'roc-pc-plus': {
+        'dtb': 'rk3399-roc-pc-plus.dtb',
+        'config': 'firefly-rk3399_defconfig'
+      },
     },
   },
   'Samsung': {
