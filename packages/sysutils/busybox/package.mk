@@ -8,8 +8,7 @@ PKG_SHA256="9d57c4bd33974140fd4111260468af22856f12f5b5ef7c70c8d9b75c712a0dee"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.busybox.net"
 PKG_URL="https://busybox.net/downloads/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
-PKG_DEPENDS_HOST="toolchain:host"
-PKG_DEPENDS_TARGET="toolchain busybox:host hdparm dosfstools e2fsprogs zip usbutils parted procps-ng gptfdisk libtirpc"
+PKG_DEPENDS_TARGET="toolchain hdparm dosfstools e2fsprogs zip usbutils parted procps-ng gptfdisk libtirpc"
 PKG_DEPENDS_INIT="toolchain libtirpc"
 PKG_LONGDESC="BusyBox combines tiny versions of many common UNIX utilities into a single small executable."
 # busybox fails to build with GOLD support enabled with binutils-2.25
@@ -40,13 +39,6 @@ pre_build_target() {
   cp -RP ${PKG_BUILD}/* ${PKG_BUILD}/.${TARGET_NAME}
 }
 
-pre_build_host() {
-  PKG_MAKE_OPTS_HOST="ARCH=${TARGET_ARCH} CROSS_COMPILE= KBUILD_VERBOSE=1 install"
-
-  mkdir -p ${PKG_BUILD}/.${HOST_NAME}
-  cp -RP ${PKG_BUILD}/* ${PKG_BUILD}/.${HOST_NAME}
-}
-
 pre_build_init() {
   PKG_MAKE_OPTS_INIT="ARCH=${TARGET_ARCH} \
                       HOSTCC=${HOST_CC} \
@@ -56,16 +48,6 @@ pre_build_init() {
 
   mkdir -p ${PKG_BUILD}/.${TARGET_NAME}-init
   cp -RP ${PKG_BUILD}/* ${PKG_BUILD}/.${TARGET_NAME}-init
-}
-
-configure_host() {
-  cd ${PKG_BUILD}/.${HOST_NAME}
-    cp ${PKG_DIR}/config/busybox-host.conf .config
-
-    # set install dir
-    sed -i -e "s|^CONFIG_PREFIX=.*$|CONFIG_PREFIX=\"${PKG_BUILD}/.install_host\"|" .config
-
-    make oldconfig
 }
 
 configure_target() {
@@ -113,11 +95,6 @@ configure_init() {
     LDFLAGS+=" -fwhole-program"
 
     make oldconfig
-}
-
-makeinstall_host() {
-  mkdir -p ${TOOLCHAIN}/bin
-    cp -R ${PKG_BUILD}/.install_host/bin/* ${TOOLCHAIN}/bin
 }
 
 makeinstall_target() {
@@ -180,12 +157,10 @@ makeinstall_target() {
 }
 
 post_install() {
-  ROOT_PWD="$(${TOOLCHAIN}/bin/cryptpw -m sha512 ${ROOT_PASSWORD})"
-
   echo "chmod 4755 ${INSTALL}/usr/bin/busybox" >> ${FAKEROOT_SCRIPT}
   echo "chmod 000 ${INSTALL}/usr/cache/shadow" >> ${FAKEROOT_SCRIPT}
 
-  add_user root "${ROOT_PWD}" 0 0 "Root User" "/storage" "/bin/sh"
+  add_user root "${ROOT_PASSWORD}" 0 0 "Root User" "/storage" "/bin/sh"
   add_group root 0
   add_group users 100
 

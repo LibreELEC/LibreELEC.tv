@@ -1490,6 +1490,8 @@ add_user() {
   PASSWORD="$2"
   if [ "$PASSWORD" = "x" ]; then
     PASSWORD="*"
+  else
+    PASSWORD=$(python -c "import crypt; print(crypt.crypt('$PASSWORD', crypt.mksalt(crypt.METHOD_SHA512)))")
   fi
   if ! grep -q "^$1:" ${INSTALL}/usr/cache/shadow; then
     echo "$1:$PASSWORD:::::::" >> ${INSTALL}/usr/cache/shadow
