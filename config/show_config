@@ -33,6 +33,7 @@ show_config() {
   config_message+="\n - ALSA support:\t\t\t $ALSA_SUPPORT"
   config_message+="\n - Pulseaudio support:\t\t\t $PULSEAUDIO_SUPPORT"
   config_message+="\n - Bluetooth support:\t\t\t $BLUETOOTH_SUPPORT"
+  config_message+="\n - Entropy kickstart to /dev/random: \t $USE_ENTROPY"
 
   for config_driver in $ADDITIONAL_DRIVERS; do
     config_message+="\n - Include driver:\t\t\t $config_driver"

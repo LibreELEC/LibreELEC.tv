@@ -1,12 +1,17 @@
 [Unit]
 Description=Add random entropy from file
 DefaultDependencies=no
-After=systemd-tmpfiles-setup.service
-Before=systemd-udevd.service
+RequiresMountsFor=/storage/cache/random.data
+After=local-fs.target
+Requires=local-fs.target
+Before=sysinit.target
+Conflicts=shutdown.target
+Before=shutdown.target
 
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/entropy/add-entropy
+ExecStop=/usr/lib/entropy/add-random-at-shutdown
 RemainAfterExit=yes
 
 [Install]

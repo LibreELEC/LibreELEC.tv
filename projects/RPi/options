@@ -87,6 +87,9 @@
   # e.g. GRAPHIC_DRIVERS="vc4"
     GRAPHIC_DRIVERS="vc4"
 
+  # Use entropy package for initial /dev/random randomness (yes / no)
+    USE_ENTROPY="no"
+
   # KODI Player implementation to use (default / bcm2835-driver / mesa)
     KODIPLAYER_DRIVER="mesa"
 

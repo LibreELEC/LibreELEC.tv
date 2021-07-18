@@ -1,17 +1,36 @@
 #!/usr/bin/python
 
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
+
+import fcntl
 import os
 import struct
+import subprocess
+import sys
+
 
 RNDADDENTROPY = 0x40085203
-import fcntl
+AVAILABLE_ENTROPY = 0
+ENTROPY_THRESHOLD = 128
+
 
 def add_entropy(fd, data):
     add = struct.pack('ii', len(data)*8, len(data)) + data
     fcntl.ioctl(fd, RNDADDENTROPY, add)
 
+
+# if available entropy does not need a kickstart, exit
+if os.path.isfile("/proc/sys/kernel/random/entropy_avail"):
+    with open("/proc/sys/kernel/random/entropy_avail") as entropy_pool:
+        AVAILABLE_ENTROPY=int(entropy_pool.read())
+    if AVAILABLE_ENTROPY > ENTROPY_THRESHOLD:
+        sys.exit(0)
+    else:
+        subprocess.run(["echo 'entropy: adding random data to /dev/random' | systemd-cat -p info"], shell=True)
+
 if not os.path.isfile("/storage/.cache/random.data"):
-    os.system("dd if=/dev/urandom of=/storage/.cache/random.data count=4 >/dev/null")
+    os.system("dd if=/dev/urandom of=/storage/.cache/random.data count=4 2>/dev/null")
 
 cache=os.open("/storage/.cache/random.data", os.O_RDONLY)
 

@@ -17,6 +17,9 @@ PKG_LONGDESC="Root package used to build and create complete image"
 # Sound support
 [ "${ALSA_SUPPORT}" = "yes" ] && PKG_DEPENDS_TARGET+=" alsa"
 
+# Include entropy package
+[ "${USE_ENTROPY}" = "yes" ] && PKG_DEPENDS_TARGET+=" entropy"
+
 # Automounter support
 [ "${UDEVIL}" = "yes" ] && PKG_DEPENDS_TARGET+=" udevil"
 
