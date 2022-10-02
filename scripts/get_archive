@@ -2,8 +2,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 _get_file_already_downloaded() {
-  [ ! -f "${PACKAGE}" -o ! -f "${STAMP_URL}" -o ! -f "${STAMP_SHA}" ] && return 1
-  [ -n "${PKG_SHA256}" -a "$(cat ${STAMP_SHA} 2>/dev/null)" != "${PKG_SHA256}" ] && return 1
+  { [ ! -f "${PACKAGE}" ] || [ ! -f "${STAMP_URL}" ] || [ ! -f "${STAMP_SHA}" ]; } && return 1
+  { [ -n "${PKG_SHA256}" ] && [ "$(cat ${STAMP_SHA} 2>/dev/null)" != "${PKG_SHA256}" ]; } && return 1
   return 0
 }
 
@@ -32,13 +32,13 @@ rm -f "${STAMP_URL}" "${STAMP_SHA}"
 
 NBGET=10
 NBCHKS=2
-while [ ${NBGET} -gt 0 -a ${NBCHKS} -gt 0 ]; do
+while [ ${NBGET} -gt 0 ] && [ ${NBCHKS} -gt 0 ]; do
   for url in "${PKG_URL}" "${PACKAGE_MIRROR}"; do
     rm -f "${PACKAGE}"
     if ${GET_CMD} "${url}"; then
       CALC_SHA256=$(sha256sum "${PACKAGE}" | cut -d" " -f1)
 
-      [ -z "${PKG_SHA256}" -o "${PKG_SHA256}" = "${CALC_SHA256}" ] && break 2
+      { [ -z "${PKG_SHA256}" ] || [ "${PKG_SHA256}" = "${CALC_SHA256}" ]; } && break 2
 
       if [ "${CHANGE_HASH}" = "yes" ]; then
         sed -e "s|^PKG_SHA256=.*|PKG_SHA256=\"${CALC_SHA256}\"|" -i "${PKG_DIR}/package.mk"
@@ -52,7 +52,7 @@ while [ ${NBGET} -gt 0 -a ${NBCHKS} -gt 0 ]; do
   NBGET=$((NBGET - 1))
 done
 
-if [ ${NBGET} -eq 0 -o ${NBCHKS} -eq 0 ]; then
+if [ ${NBGET} -eq 0 ] || [ ${NBCHKS} -eq 0 ]; then
   die "\nCannot get ${1} sources : ${PKG_URL}\nTry later!"
 else
   build_msg "CLR_INFO" "INFO" "Calculated checksum: ${CALC_SHA256}"
