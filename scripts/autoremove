@@ -5,7 +5,7 @@
 
 . config/options "${1}"
 
-if [ -d "${PKG_BUILD}" -a "${PKG_SECTION}" != "virtual" ]; then
+if [ -d "${PKG_BUILD}" ] && [ "${PKG_SECTION}" != "virtual" ]; then
   print_color CLR_AUTOREMOVE "AUTOREMOVE ${PKG_BUILD}"
   echo
   rm -r "${PKG_BUILD}"
