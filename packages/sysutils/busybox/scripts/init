@@ -311,7 +311,7 @@ check_is_compatible() {
 }
 
 update_file() {
-  if [ -f "$UPDATE_DIR/$2" -a -f "$3" ]; then
+  if [ -f "$UPDATE_DIR/$2" ] && [ -f "$3" ]; then
     mount -o remount,rw /flash
 
     rm -f "$3"
@@ -334,7 +334,7 @@ update_file() {
 update_partition() {
   local result
 
-  if [ -f "$UPDATE_DIR/$2" -a -b "$3" ]; then
+  if [ -f "$UPDATE_DIR/$2" ] && [ -b "$3" ]; then
     StartProgress spinner "Updating $1... "
       result="$(dd if="$UPDATE_DIR/$2" of="$3" 2>&1)"
       StopProgress "done"
@@ -406,7 +406,7 @@ load_splash() {
         done
       fi
 
-      if [ -n "$SPLASHIMAGE" -a -f "$SPLASHIMAGE" ]; then
+      if [ -n "$SPLASHIMAGE" ] && [ -f "$SPLASHIMAGE" ]; then
         ply-image $SPLASHIMAGE > /dev/null 2>&1
       fi
 
@@ -468,7 +468,7 @@ force_fsck() {
 }
 
 check_disks() {
-  if [ "$RUN_FSCK" = "yes" -a -n "$RUN_FSCK_DISKS" ]; then
+  if [ "$RUN_FSCK" = "yes" ] && [ -n "$RUN_FSCK_DISKS" ]; then
     progress "Checking disk(s): $RUN_FSCK_DISKS"
     echo "Checking disk(s): $RUN_FSCK_DISKS" >/dev/kmsg
     for i in 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0; do
@@ -571,7 +571,7 @@ mount_storage() {
 
   if [ -n "$disk" ]; then
     if [ -n "$OVERLAY" ]; then
-      OVERLAY_DIR=$(cat /sys/class/net/eth0/address | tr -d :)
+      OVERLAY_DIR=$(tr -d : < /sys/class/net/eth0/address)
 
       mount_part "$disk" "/storage" "rw,noatime"
       mkdir -p /storage/$OVERLAY_DIR
@@ -602,7 +602,7 @@ mount_storage() {
 update_bootmenu() {
   local crnt_default
 
-  if [ -n "$SYSLINUX_DEFAULT" -a -f /flash/syslinux.cfg ]; then
+  if [ -n "$SYSLINUX_DEFAULT" ] && [ -f /flash/syslinux.cfg ]; then
     if grep -q "^LABEL $SYSLINUX_DEFAULT\$" /flash/syslinux.cfg; then
       crnt_default="$(awk '/^DEFAULT/ {print $2}' /flash/syslinux.cfg)"
       if [ ! "$crnt_default" = "$SYSLINUX_DEFAULT" ]; then
@@ -617,7 +617,7 @@ update_bootmenu() {
     fi
   fi
 
-  if [ -n "$GRUB_DEFAULT" -a -f /flash/EFI/BOOT/grub.cfg ]; then
+  if [ -n "$GRUB_DEFAULT" ] && [ -f /flash/EFI/BOOT/grub.cfg ]; then
     if grep -q "^menuentry \"$GRUB_DEFAULT\"" /flash/EFI/BOOT/grub.cfg; then
       crnt_default="$(awk '/^set default/ {print substr($2,9,19)}' /flash/EFI/BOOT/grub.cfg)"
       if [ ! "$crnt_default" = "\"$GRUB_DEFAULT\"" ]; then
@@ -663,7 +663,7 @@ do_cleanup() {
       umount $UPDATE_ROOT/.tmp/mnt
     fi
 
-    [ -n $LOOP ] && losetup -d $LOOP &>/dev/null
+    [ -n "$LOOP" ] && losetup -d $LOOP &>/dev/null
   fi
 
   [ -f "$UPDATE_TAR" ] && rm -f "$UPDATE_TAR" &>/dev/null
@@ -812,7 +812,7 @@ check_update() {
     return 0
   fi
 
-  if [ ! -f "$UPDATE_DIR/$UPDATE_KERNEL" -o ! -f "$UPDATE_DIR/$UPDATE_SYSTEM" ]; then
+  if [ ! -f "$UPDATE_DIR/$UPDATE_KERNEL" ] || [ ! -f "$UPDATE_DIR/$UPDATE_SYSTEM" ]; then
     echo "Missing (source) ${UPDATE_KERNEL} or ${UPDATE_SYSTEM}!"
     do_cleanup
     StartProgress countdown "Normal startup in 30s... " 30 "NOW"
@@ -821,9 +821,9 @@ check_update() {
 
   # check md5 sums if .nocheck doesn't exist
   if [ ! -f "$UPDATE_ROOT/.nocheck" ]; then
-    if [ -f "$UPDATE_DIR/${UPDATE_KERNEL}.md5" -a -f "$UPDATE_DIR/${UPDATE_SYSTEM}.md5" ]; then
+    if [ -f "$UPDATE_DIR/${UPDATE_KERNEL}.md5" ] && [ -f "$UPDATE_DIR/${UPDATE_SYSTEM}.md5" ]; then
       # *.md5 size-check
-      if [ ! -s "$UPDATE_DIR/${UPDATE_KERNEL}.md5" -o ! -s "$UPDATE_DIR/${UPDATE_SYSTEM}.md5" ]; then
+      if [ ! -s "$UPDATE_DIR/${UPDATE_KERNEL}.md5" ] || [ ! -s "$UPDATE_DIR/${UPDATE_SYSTEM}.md5" ]; then
         echo "Zero-sized .md5 file!"
         MD5_FAILED="1"
       else
@@ -932,7 +932,7 @@ prepare_sysroot() {
   mount --move /flash /sysroot/flash
   mount --move /storage /sysroot/storage
 
-  if [ ! -d "/sysroot/usr/lib/kernel-overlays/base/lib/modules/$(uname -r)/" -a -f "/sysroot/usr/lib/systemd/systemd" ]; then
+  if [ ! -d "/sysroot/usr/lib/kernel-overlays/base/lib/modules/$(uname -r)/" ] && [ -f "/sysroot/usr/lib/systemd/systemd" ]; then
     echo ""
     echo "NEVER TOUCH boot= in syslinux.conf / cmdline.txt!"
     echo "If you don't know what you are doing,"
@@ -1082,8 +1082,8 @@ done
 BOOT_STEP=final
 
 # log if booting from usb / removable storage
-STORAGE=$(cat /proc/mounts | grep " /sysroot/storage " | awk '{print $1}' | awk -F '/' '{print $3}')
-FLASH=$(cat /proc/mounts | grep " /sysroot/flash " | awk '{print $1}' | awk -F '/' '{print $3}')
+STORAGE=$(grep " /sysroot/storage " /proc/mounts | awk '{print $1}' | awk -F '/' '{print $3}')
+FLASH=$(grep " /sysroot/flash " /proc/mounts | awk '{print $1}' | awk -F '/' '{print $3}')
 for i in $STORAGE $FLASH ; do
   if [ -n "$i" ]; then
     removable="/sys/class/block/*/$i/../removable"
