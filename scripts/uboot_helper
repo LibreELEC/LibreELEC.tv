@@ -370,6 +370,58 @@ devices = \
         'rockchip_legacy_boot': '1'
       },
     },
+    'RK356X': {
+      'nanopi-r5c': {
+        'config': 'nanopi-r5c-rk3568_defconfig',
+        'dtb': '',
+        'soc': 'RK3568'
+      },
+      'nanopi-r5s': {
+        'config': 'nanopi-r5s-rk3568_defconfig',
+        'dtb': '',
+        'soc': 'RK3568'
+      },
+      'odroid-m1': {
+        'config': 'odroid-m1-rk3568_defconfig',
+        'dtb': '',
+        'soc': 'RK3568'
+      },
+      'orangepi-3b': {
+        'config': 'orangepi-3b-rk3566_defconfig',
+        'dtb': '',
+        'soc': 'RK3566'
+      },
+      'quartz64-a': {
+        'config': 'quartz64-a-rk3566_defconfig',
+        'dtb': '',
+        'soc': 'RK3566'
+      },
+      'quartz64-b': {
+        'config': 'quartz64-b-rk3566_defconfig',
+        'dtb': '',
+        'soc': 'RK3566'
+      },
+      'radxa-zero-3': {
+        'config': 'radxa-zero-3-rk3566_defconfig',
+        'dtb': '',
+        'soc': 'RK3566'
+      },
+      'rock-3a': {
+        'config': 'rock-3a-rk3568_defconfig',
+        'dtb': '',
+        'soc': 'RK3568'
+      },
+      'rock-3b': {
+        'config': 'rock-3b-rk3568_defconfig',
+        'dtb': '',
+        'soc': 'RK3568'
+      },
+      'rock-3c': {
+        'config': 'rock-3c-rk3566_defconfig',
+        'dtb': '',
+        'soc': 'RK3566'
+      },
+    },
   },
   'Samsung': {
     'Exynos': {
