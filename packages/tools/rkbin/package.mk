@@ -12,6 +12,11 @@ PKG_LONGDESC="rkbin: Rockchip Firmware and Tool Binaries"
 PKG_TOOLCHAIN="manual"
 PKG_STAMP="$UBOOT_SYSTEM"
 
+post_unpack() {
+  cp -a "${PKG_BUILD}/RKBOOT/RK3566MINIALL.ini" "${PKG_BUILD}/RKBOOT/RK356XMINIALL.ini"
+  cp -a "${PKG_BUILD}/RKTRUST/RK3568TRUST.ini" "${PKG_BUILD}/RKTRUST/RK356XTRUST.ini"
+}
+
 make_target() {
   if [ -n "${UBOOT_SYSTEM}" ]; then
     PKG_SOC=$("${ROOT}/${SCRIPTS}/uboot_helper" "${PROJECT}" "${DEVICE}" "${UBOOT_SYSTEM}" soc)
