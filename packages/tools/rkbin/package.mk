@@ -2,8 +2,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="rkbin"
-PKG_VERSION="b0c100f1a260d807df450019774993c761beb79d"
-PKG_SHA256="c6ebf8ab556e071e3b067540e95aecff650143f0c97e129cd40c837a4f11a881"
+PKG_VERSION="74213af1e952c4683d2e35952507133b61394862" # linux-6.1-stan-rkr6
+PKG_SHA256="b565faeab846950262c07e6debbd6519ea9e7f34943dbb305b9cea6b1026e11a"
 PKG_ARCH="arm aarch64"
 PKG_LICENSE="nonfree"
 PKG_SITE="https://github.com/rockchip-linux/rkbin"
