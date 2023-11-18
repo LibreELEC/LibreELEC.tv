@@ -13,21 +13,32 @@ PKG_TOOLCHAIN="manual"
 PKG_STAMP="$UBOOT_SYSTEM"
 
 make_target() {
-  PKG_BOOT_INI="RKBOOT/${DEVICE}MINIALL.ini"
+  if [ -n "${UBOOT_SYSTEM}" ]; then
+    PKG_SOC=$("${ROOT}/${SCRIPTS}/uboot_helper" "${PROJECT}" "${DEVICE}" "${UBOOT_SYSTEM}" soc)
+  fi
+  PKG_SOC=${PKG_SOC:-${DEVICE}}
+
+  PKG_BOOT_INI="RKBOOT/${PKG_SOC}MINIALL.ini"
+  if [ ! -f "${PKG_BOOT_INI}" ]; then
+    PKG_BOOT_INI="RKBOOT/${DEVICE}MINIALL.ini"
+  fi
   if [ -f "${PKG_BOOT_INI}" ]; then
     PKG_FILE=$(sed -nr "/^\[LOADER_OPTION\]/ { :l /^FlashData[ ]*=/ { s/[^=]*=[ ]*//; p; q;}; n; b l;}" "${PKG_BOOT_INI}")
     if [ -f "${PKG_FILE}" ]; then
       cp -av "${PKG_FILE}" ddr.bin
 
       # Override sdram frequency
-      if [ "${DEVICE}" = "RK3328" ]; then
+      if [ "${PKG_SOC}" = "RK3328" ]; then
         sed -s 's/\x4d\x1\x4d\x1\x4d\x1\x4d\x1\x4d\x1\x4d\x1/\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3/g' -i ddr.bin
         sed -s 's/\x90\x1\x90\x1\x90\x1\x90\x1\x90\x1\x90\x1/\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3/g' -i ddr.bin
       fi
     fi
   fi
 
-  PKG_TRUST_INI="RKTRUST/${DEVICE}TRUST.ini"
+  PKG_TRUST_INI="RKTRUST/${PKG_SOC}TRUST.ini"
+  if [ ! -f "${PKG_TRUST_INI}" ]; then
+    PKG_TRUST_INI="RKTRUST/${DEVICE}TRUST.ini"
+  fi
   if [ -f "${PKG_TRUST_INI}" ]; then
     PKG_FILE=$(sed -nr "/^\[BL31_OPTION\]/ { :l /^PATH[ ]*=/ { s/[^=]*=[ ]*//; p; q;}; n; b l;}" "${PKG_TRUST_INI}")
     if [ -f "${PKG_FILE}" ]; then
