@@ -6,8 +6,8 @@ Date:   Tue Oct 1 12:09:07 2013 +0300
     
     ref: https://fedoraproject.org/wiki/Networking/NameResolution/ADDRCONFIG
 
---- a/sysdeps/posix/getaddrinfo.c
-+++ b/sysdeps/posix/getaddrinfo.c
+--- a/nss/getaddrinfo.c
++++ b/nss/getaddrinfo.c
 @@ -730,6 +730,38 @@ gaih_inet (const char *name, const struc
    if (res_ctx == NULL)
      no_more = 1;
