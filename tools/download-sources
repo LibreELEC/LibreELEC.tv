@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2019-present Team LibreELEC (https://libreelec.tv)
+
+# Download all packages listed in the build plan to SOURCES_DIR
+
+unset _CACHE_PACKAGE_LOCAL _CACHE_PACKAGE_GLOBAL _DEBUG_DEPENDS_LIST _DEBUG_PACKAGE_LIST
+
+. config/options ""
+
+THREADCOUNT="${THREADCOUNT:-$(nproc)}"
+
+# function to enable use of parallel
+download_package_tarball() {
+  local package_name="${1}"
+
+  "${SCRIPTS}/get" "${package_name}"
+}
+
+# Packages listed in the build plan
+PACKAGE_LIST=$( \
+  "${SCRIPTS}/pkgjson" | \
+  "${SCRIPTS}/genbuildplan.py" --hide-header --list-packages --build ${@:-image} ${GENFLAGS} || \
+  die "FAILURE: Unable to generate plan"
+)
+
+# drop :target, :host, :init, and now repeated package entries
+UNIQUE_PACKAGES=$(
+  for package in ${PACKAGE_LIST}; do
+    echo "${package}" | cut -d ":" -f 1
+  done | awk '!seen[$0]++'
+)
+
+# Package downloading
+if command -v parallel > /dev/null; then
+  export -f download_package_tarball
+  export SCRIPTS
+
+  parallel --jobs "${THREADCOUNT}" download_package_tarball <<< "${UNIQUE_PACKAGES}"
+else
+  for package in ${UNIQUE_PACKAGES}; do
+    download_package_tarball "${package}"
+  done
+fi
