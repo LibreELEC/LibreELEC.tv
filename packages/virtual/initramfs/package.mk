@@ -7,17 +7,13 @@ PKG_VERSION=""
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.openelec.tv"
 PKG_URL=""
-PKG_DEPENDS_INIT="libc:init busybox:init plymouth-lite:init util-linux:init e2fsprogs:init dosfstools:init terminus-font:init"
+PKG_DEPENDS_INIT="libc:init busybox:init plymouth-lite:init util-linux:init parted:init e2fsprogs:init dosfstools:init terminus-font:init"
 PKG_DEPENDS_TARGET="toolchain initramfs:init"
 PKG_SECTION="virtual"
 PKG_LONGDESC="Metapackage for installing initramfs"
 
 if [ "${ISCSI_SUPPORT}" = yes ]; then
   PKG_DEPENDS_INIT+=" open-iscsi:init"
-fi
-
-if [ "${INITRAMFS_PARTED_SUPPORT}" = yes ]; then
-  PKG_DEPENDS_INIT+=" parted:init"
 fi
 
 for i in ${PKG_DEPENDS_INIT}; do

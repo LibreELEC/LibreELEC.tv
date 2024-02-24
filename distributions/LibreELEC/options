@@ -73,6 +73,7 @@
   SYSTEM_PART_START=8192
 
 # Size of storage partition, in MB. Must be >=32
+# Do not set SYSTEM_SIZE + STORAGE_SIZE to equal common sizes of memory devices
   STORAGE_SIZE=32
 
 # build with swap support (yes / no)
@@ -221,7 +222,7 @@
 
 # Support for partitioning and formating disks in initramfs (yes / no)
 # This adds support for parted and mkfs.ext3/4 to initramfs for OEM usage
-  INITRAMFS_PARTED_SUPPORT="no"
+  INITRAMFS_FORMAT_FS_SUPPORT="no"
 
 # build and install nano text editor (yes / no)
   NANO_EDITOR="yes"

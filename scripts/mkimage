@@ -97,14 +97,6 @@ tune2fs -L "${DISTRO_DISKLABEL}" -U ${UUID_STORAGE} "${LE_TMP}/part2.ext4" >"${S
 e2fsck -n "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 sync
 
-# add resize mark
-mkdir "${LE_TMP}/part2.fs"
-touch "${LE_TMP}/part2.fs/.please_resize_me"
-echo "image: populating filesystem on part2..."
-populatefs -U -d "${LE_TMP}/part2.fs" "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
-sync
-e2fsck -n "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
-
 # merge part2 into disk image
 echo "image: merging part2 into disk image..."
 dd if="${LE_TMP}/part2.ext4" of="${DISK}" bs=512 seek="${STORAGE_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error

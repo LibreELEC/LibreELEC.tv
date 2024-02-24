@@ -99,7 +99,7 @@ makeinstall_init() {
     ln -sf e2fsck ${INSTALL}/usr/sbin/fsck.ext3
     ln -sf e2fsck ${INSTALL}/usr/sbin/fsck.ext4
 
-  if [ ${INITRAMFS_PARTED_SUPPORT} = "yes" ]; then
+  if [ ${INITRAMFS_FORMAT_FS_SUPPORT} = "yes" ]; then
     cp misc/mke2fs ${INSTALL}/usr/sbin
     ln -sf mke2fs ${INSTALL}/usr/sbin/mkfs.ext2
     ln -sf mke2fs ${INSTALL}/usr/sbin/mkfs.ext3

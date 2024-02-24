@@ -73,10 +73,11 @@ PKG_CONFIGURE_OPTS_INIT="${UTILLINUX_CONFIG_DEFAULT} \
                          --disable-all-programs \
                          --enable-libblkid \
                          --enable-libmount \
+                         --enable-libuuid \
                          --enable-fsck"
 
-if [ "${INITRAMFS_PARTED_SUPPORT}" = "yes" ]; then
-  PKG_CONFIGURE_OPTS_INIT+=" --enable-mkfs --enable-libuuid"
+if [ "${INITRAMFS_FORMAT_FS_SUPPORT}" = "yes" ]; then
+  PKG_CONFIGURE_OPTS_INIT+=" --enable-mkfs"
 fi
 
 post_makeinstall_target() {
