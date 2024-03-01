@@ -29,7 +29,7 @@ LOCAL_UPDATE_DIR = '/storage/.update'
 
 class UpdateSystem():
     '''Functions to check for, obtain, and validate system updates.'''
-    def __init__(self):
+    def __init__(self, given_json=None):
         # information on running system
         self.current = {
             'architecture': None,
@@ -54,7 +54,7 @@ class UpdateSystem():
             'version_bugfix': None
             }
         # releases.json
-        self.update_json = None
+        self.update_json = given_json
         # update results
         self.abort_check = False
         self.update_available = False
