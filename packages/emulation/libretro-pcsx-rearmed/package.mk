@@ -2,43 +2,52 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-pcsx-rearmed"
-PKG_VERSION="4373e29de72c917dbcd04ec2a5fb685e69d9def3"
-PKG_SHA256="85560938cdad30be5994e935d35b0b4b8a12f6d2ca39c0034bfaa3d98cbcb11a"
+PKG_VERSION="1fec8a9574a8128c9b64f79a5c1f72bbd86ac2bf"
+PKG_SHA256="356085035cd3494bd59f529be3c597583df0008c251fb56b87d46774fcd809c0"
 PKG_LICENSE="GPLv2"
 PKG_SITE="https://github.com/libretro/pcsx_rearmed"
 PKG_URL="https://github.com/libretro/pcsx_rearmed/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
-PKG_LONGDESC="game.libretro.pcsx-rearmed: PCSX Rearmed for Kodi"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="ARM optimized PCSX fork"
 PKG_TOOLCHAIN="make"
-PKG_BUILD_FLAGS="-gold"
 
 PKG_LIBNAME="pcsx_rearmed_libretro.so"
-PKG_LIBPATH="${PKG_LIBNAME}"
+PKG_LIBPATH="../${PKG_LIBNAME}"
 PKG_LIBVAR="PCSX-REARMED_LIB"
 
-PKG_MAKE_OPTS_TARGET="-f Makefile.libretro GIT_VERSION=${PKG_VERSION:0:7}"
+PKG_MAKE_OPTS_TARGET="-f Makefile.libretro -C ../"
 
-pre_configure_target() {
-  cd ${PKG_BUILD}
+if [ "${OPENGL_SUPPORT}" = "yes" ]; then
+  PKG_DEPENDS_TARGET+=" ${OPENGL}"
+fi
 
-  if target_has_feature neon; then
-    PKG_MAKE_OPTS_TARGET+=" HAVE_NEON=1 HAVE_NEON_ASM=1 BUILTIN_GPU=neon"
-   else
-    PKG_MAKE_OPTS_TARGET+=" HAVE_NEON=0"
+if [ "${OPENGLES_SUPPORT}" = "yes" ]; then
+  PKG_DEPENDS_TARGET+=" ${OPENGLES}"
+fi
+
+if [ "${VULKAN_SUPPORT}" = "yes" ]; then
+  PKG_DEPENDS_TARGET+=" ${VULKAN}"
+fi
+
+if [ "${ARCH}" = "arm" ]; then
+  PKG_MAKE_OPTS_TARGET+=" DYNAREC=ari64"
+  if target_has_feature neon ; then
+    PKG_MAKE_OPTS_TARGET+=" HAVE_NEON_ASM=1 BUILTIN_GPU=neon"
+  else
+    PKG_MAKE_OPTS_TARGET+=" HAVE_NEON_ASM=0 BUILTIN_GPU=unai"
   fi
-  
-  case ${TARGET_ARCH} in
-    aarch64)
-      PKG_MAKE_OPTS_TARGET+=" DYNAREC=ari64 platform=aarch64"
-      ;;
-    arm)
-      PKG_MAKE_OPTS_TARGET+=" DYNAREC=ari64"
-      ;;
-    x86_64)
-      PKG_MAKE_OPTS_TARGET+=" DYNAREC=lightrec"
-      ;;
-  esac
-}
+  if [ "${DEVICE}" = "OdroidGoAdvance" ]; then
+    sed -e "s|armv8-a|armv8-a+crc|" \
+        -i ../Makefile.libretro
+    PKG_MAKE_OPTS_TARGET+=" platfrom=classic_armv8_a35"
+  else
+    PKG_MAKE_OPTS_TARGET+=" platform=unix"
+  fi
+elif [ "${ARCH}" = "aarch64" ]; then
+  PKG_MAKE_OPTS_TARGET+=" platform=unix DYNAREC=ari64"
+else
+  PKG_MAKE_OPTS_TARGET+=" platform=unix DYNAREC=none"
+fi
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}

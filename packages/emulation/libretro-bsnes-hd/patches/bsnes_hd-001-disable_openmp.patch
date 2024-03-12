@@ -1,0 +1,37 @@
+diff --git a/bsnes/GNUmakefile b/bsnes/GNUmakefile
+index 58466fb..eceb96c 100644
+--- a/bsnes/GNUmakefile
++++ b/bsnes/GNUmakefile
+@@ -1,7 +1,7 @@
+ target ?= bsnes
+ binary ?= application
+ build := performance
+-openmp := true
++openmp := false
+ local := false
+ flags += -I. -I..
+ 
+diff --git a/bsnes/target-libretro/GNUmakefile b/bsnes/target-libretro/GNUmakefile
+index 340c40a..ddc2297 100644
+--- a/bsnes/target-libretro/GNUmakefile
++++ b/bsnes/target-libretro/GNUmakefile
+@@ -1,6 +1,6 @@
+ name := bsnes_libretro
+ local := false
+-openmp := true
++openmp := false
+ flags += -Wno-narrowing -Wno-multichar -g -fPIC
+ 
+ ifeq ($(platform), ios-arm64)
+@@ -23,9 +23,9 @@ obj/libretro.o: target-libretro/libretro.cpp
+ 
+ all: $(objects)
+ ifeq ($(platform),linux)
+-	$(strip $(compiler) -o out/bsnes_hd_beta_libretro.so -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -lgomp -Wl,-Bdynamic $(options))
++	$(strip $(compiler) -o out/bsnes_hd_beta_libretro.so -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -Wl,-Bdynamic $(options))
+ else ifeq ($(platform),windows)
+-	$(strip $(compiler) -o out/bsnes_hd_beta_libretro.dll -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -lgomp -Wl,-Bdynamic $(options))
++	$(strip $(compiler) -o out/bsnes_hd_beta_libretro.dll -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -Wl,-Bdynamic $(options))
+ else ifeq ($(platform),libnx)
+ 	$(strip $(AR) rcs out/bsnes_hd_beta_libretro_libnx.a $(objects))
+ else ifeq ($(platform),macos)

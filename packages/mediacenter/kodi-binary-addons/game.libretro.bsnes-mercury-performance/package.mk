@@ -2,10 +2,9 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.bsnes-mercury-performance"
-PKG_VERSION="0.94.0.26-Nexus"
-PKG_SHA256="afa740018ac8cc1038b64cd7c9b4c812bb6de1f6b8af7fa8a08353adf5b1c984"
+PKG_VERSION="0.94.0.35-Nexus"
+PKG_SHA256="b32d9bd536c3834bbe714f923ae95f3adf531fc9e98d49d203d45d1b4ac7bb9e"
 PKG_REV="1"
-PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-game/game.libretro.bsnes-mercury-performance"
 PKG_URL="https://github.com/kodi-game/game.libretro.bsnes-mercury-performance/archive/${PKG_VERSION}.tar.gz"

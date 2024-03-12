@@ -4,45 +4,38 @@
 PKG_NAME="libretro-mame2010"
 PKG_VERSION="5f524dd5fca63ec1dcf5cca63885286109937587"
 PKG_SHA256="deb2a5126fcf9791ebaaba604143b6fb1bf4fa48fdc7a2ef919c900a3f9e4d69"
-PKG_LICENSE="GPLv2"
+PKG_LICENSE="MAME"
 PKG_SITE="https://github.com/libretro/mame2010-libretro"
 PKG_URL="https://github.com/libretro/mame2010-libretro/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain zlib"
-PKG_LONGDESC="Late 2010 version of MAME (0.139) for libretro"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="Late 2010 version of MAME (0.139) for libretro. Compatible with MAME 0.139 romsets."
+PKG_TOOLCHAIN="manual"
 
 PKG_LIBNAME="mame2010_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="MAME2010_LIB"
 
-pre_configure_target() {
-  export CFLAGS="${CFLAGS} -fpermissive"
-  export CXXFLAGS="${CXXFLAGS} -fpermissive"
-  export LD="${CXX}"
-
-  case ${TARGET_CPU} in
-    arm1176jzf-s)
-      PKG_MAKE_OPTS_TARGET="platform=armv6-hardfloat-${TARGET_CPU}"
-      ;;
-    cortex-a7|cortex-a8|cortex-a9)
-      PKG_MAKE_OPTS_TARGET="platform=armv7-neon-hardfloat-${TARGET_CPU}"
-      ;;
-    *cortex-a53|cortex-a17)
-      if [ "${TARGET_ARCH}" = "aarch64" ]; then
-        PKG_MAKE_OPTS_TARGET="platform=aarch64"
-      else
-        PKG_MAKE_OPTS_TARGET="platform=armv7-neon-hardfloat-cortex-a9"
-      fi
-      ;;
-  esac
+pre_make_target() {
+  PKG_MAKE_OPTS_TARGET="CC=${CC} LD=${CC}"
+  if [ "${ARCH}" = "arm" ]; then
+    PKG_MAKE_OPTS_TARGET+=" PTR64=0 ARM_ENABLED=1 LCPU=arm"
+  elif [ "${ARCH}" = "x86_64" ]; then
+    PKG_MAKE_OPTS_TARGET+=" PTR64=1 ARM_ENABLED=0 LCPU=x86_64"
+  elif [ "${ARCH}" = "aarch64" ]; then
+    PKG_MAKE_OPTS_TARGET+=" PTR64=1 ARM_ENABLED=1 LCPU=arm64"
+  fi
+  make ${PKG_MAKE_OPTS_TARGET} PLATCFLAGS="${CFLAGS}" maketree
 }
 
-pre_make_target() {
-  # precreate the build directories because they may be created too late
-  make ${PKG_MAKE_OPTS_TARGET} maketree
+make_target() {
+  make ${PKG_MAKE_OPTS_TARGET} PLATCFLAGS="${CFLAGS}"
 }
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}
   echo "set(${PKG_LIBVAR} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME})" > ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}/${PKG_NAME}-config.cmake
+
+  mkdir -p ${SYSROOT_PREFIX}/usr/share/libretro-database/mame2010
+  cp -v metadata/mame2010.xml ${SYSROOT_PREFIX}/usr/share/libretro-database/mame2010/
 }

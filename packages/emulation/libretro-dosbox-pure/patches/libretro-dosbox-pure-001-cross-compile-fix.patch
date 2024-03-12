@@ -4,7 +4,7 @@
    src/*/*/*.cpp
  
  CPUFLAGS := $(MAKE_CPUFLAGS)
--STRIPCMD := strip --strip-all
+-STRIPCMD := $(or $(STRIP),strip) --strip-all
 +STRIPCMD := ${STRIP}
  ifneq ($(ISWIN),)
    OUTNAME := dosbox_pure_libretro.dll

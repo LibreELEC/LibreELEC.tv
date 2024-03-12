@@ -2,22 +2,24 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-snes9x"
-PKG_VERSION="bc3bbb28c1723742d102c867e264574915d7c8ef"
-PKG_SHA256="59e43b695021f2444103a345bb95f44870bd4792af7580d71b95f61bb9ad35f9"
-PKG_LICENSE="GPLv3"
+PKG_VERSION="ec4ebfc8f3819a9522fcb8e53eed985090017b1b"
+PKG_SHA256="0599dc74a5bac048134a3aaac3625d8e9a6fe7765a8388396353b70ac13a2607"
+PKG_LICENSE="Non-commercial"
 PKG_SITE="https://github.com/libretro/snes9x"
 PKG_URL="https://github.com/libretro/snes9x/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
-PKG_LONGDESC="game.libretro.snes9x: snes9x for Kodi"
-PKG_TOOLCHAIN="manual"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="Snes9x - Portable Super Nintendo Entertainment System (TM) emulator"
+PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="snes9x_libretro.so"
 PKG_LIBPATH="libretro/${PKG_LIBNAME}"
 PKG_LIBVAR="SNES9X_LIB"
 
-make_target() {
-  make -C libretro/
-}
+PKG_MAKE_OPTS_TARGET="-C libretro/"
+
+if [ "${DEVICE}" = "OdroidGoAdvance" ]; then
+  PKG_MAKE_OPTS_TARGET+=" platform=classic_armv8_a35"
+fi
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}

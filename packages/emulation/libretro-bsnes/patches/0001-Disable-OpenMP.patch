@@ -1,0 +1,63 @@
+From 43c1b5bd74f8e6355dd55d177ec66cece9c75900 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Tue, 28 Mar 2023 19:00:04 -0700
+Subject: [PATCH] Disable OpenMP
+
+---
+ bsnes/GNUmakefile                 | 5 ++---
+ bsnes/target-libretro/GNUmakefile | 8 ++++----
+ 2 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/bsnes/GNUmakefile b/bsnes/GNUmakefile
+index ab0c1a76..1d7aa92b 100644
+--- a/bsnes/GNUmakefile
++++ b/bsnes/GNUmakefile
+@@ -1,8 +1,8 @@
+ target ?= bsnes
+ binary ?= application
+ build := performance
+-openmp := true
+-local ?= true
++openmp := false
++local ?= false
+ flags += -I. -I..
+ 
+ # in order for this to work, obj/lzma.o must be omitted or bsnes will hang on startup.
+@@ -37,7 +37,6 @@ else ifeq ($(platform),macos)
+ else ifneq ($(filter $(platform),linux bsd unix unix-armv7-hardfloat-neon),)
+   ifeq ($(binary),application)
+     options += -Wl,-export-dynamic
+-    options += -lX11 -lXext
+   else ifeq ($(binary),library)
+     flags += -fPIC
+     options += -shared
+diff --git a/bsnes/target-libretro/GNUmakefile b/bsnes/target-libretro/GNUmakefile
+index a39bed5a..0e0a39f6 100644
+--- a/bsnes/target-libretro/GNUmakefile
++++ b/bsnes/target-libretro/GNUmakefile
+@@ -1,6 +1,6 @@
+ name := bsnes_libretro
+ local := false
+-openmp := true
++openmp := false
+ flags += -Wno-narrowing -Wno-multichar -g -fPIC
+ 
+ ifeq ($(platform), ios-arm64)
+@@ -24,11 +24,11 @@ obj/program.o:  target-libretro/program.cpp
+ 
+ all: $(objects)
+ ifneq ($(filter $(platform),linux bsd unix unix-armv7-hardfloat-neon),)
+-	$(strip $(compiler) -o out/bsnes_libretro.so -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -lgomp -Wl,-Bdynamic $(options))
++	$(strip $(compiler) -o out/bsnes_libretro.so -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -Wl,-Bdynamic $(options))
+ else ifeq ($(platform),haiku)
+-	$(strip $(compiler) -o out/bsnes_libretro.so -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -lgomp -Wl,-Bdynamic $(options))
++	$(strip $(compiler) -o out/bsnes_libretro.so -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -Wl,-Bdynamic $(options))
+ else ifeq ($(platform),windows)
+-	$(strip $(compiler) -o out/bsnes_libretro.dll -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -lgomp -Wl,-Bdynamic $(options))
++	$(strip $(compiler) -o out/bsnes_libretro.dll -shared $(objects) -Wl,--no-undefined -Wl,--version-script=target-libretro/link.T -Wl,-Bdynamic $(options))
+ else ifeq ($(platform),libnx)
+ 	$(strip $(AR) rcs out/bsnes_libretro_libnx.a $(objects))
+ else ifeq ($(platform),macos)
+-- 
+2.34.1
+

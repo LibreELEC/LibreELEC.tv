@@ -2,28 +2,28 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-mgba"
-PKG_VERSION="a69c3434afe8b26cb8f9463077794edfa7d5efad"
-PKG_SHA256="e166ad04c46b631f9001fff6155dbde956b57983fdcb4e50d8bbb57980b99840"
-PKG_LICENSE="MPL 2.0"
+PKG_VERSION="314bf7b676f5b820f396209eb0c7d6fbe8103486"
+PKG_SHA256="66d9766d6f129bff9bfacc8a94787daa018b9c4a9a56fd49673c019eba19ae53"
+PKG_LICENSE="MPLv2.0"
 PKG_SITE="https://github.com/libretro/mgba"
 PKG_URL="https://github.com/libretro/mgba/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform zlib"
-PKG_LONGDESC="game.libretro.mgba: mGBA for Kodi"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="mGBA Game Boy Advance Emulator"
 PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="mgba_libretro.so"
-PKG_LIBPATH="${PKG_LIBNAME}"
+PKG_LIBPATH="../${PKG_LIBNAME}"
 PKG_LIBVAR="MGBA_LIB"
 
-pre_configure_target() {
-  # fails to build in subdirs
-  cd ${PKG_BUILD}
-  rm -rf .${TARGET_NAME}
-}
+PKG_MAKE_OPTS_TARGET="-C ../ -f Makefile.libretro"
 
-make_target() {
-  make -f Makefile.libretro
-}
+if [ "${ARCH}" = "arm" ]; then
+  PKG_MAKE_OPTS_TARGET+=" platform=unix-armv"
+fi
+
+if target_has_feature neon ; then
+  PKG_MAKE_OPTS_TARGET+=" HAVE_NEON=1"
+fi
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}

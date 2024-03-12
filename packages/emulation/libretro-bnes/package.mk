@@ -7,16 +7,13 @@ PKG_SHA256="c151e1296b8f6c035014dc62919692097feeebb19ae73294f1b9781edf1921b1"
 PKG_LICENSE="GPLv3"
 PKG_SITE="https://github.com/libretro/bnes-libretro"
 PKG_URL="https://github.com/libretro/bnes-libretro/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
-PKG_LONGDESC="game.libretro.bnes: bNES for Kodi"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="libretro implementation of bNES/higan. (Nintendo Entertainment System)"
+PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="bnes_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="BNES_LIB"
-
-make_target() {
-  make
-}
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}

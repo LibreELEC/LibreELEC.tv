@@ -7,16 +7,15 @@ PKG_SHA256="9ef470c7c6bee83bbeb1e861a1c76b722d78de5e5a3849e7132d03d40fa8828d"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/libretro/sameboy"
 PKG_URL="https://github.com/libretro/SameBoy/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform util-linux:host"
-PKG_LONGDESC="libretro wrapper for SameBoy emulator."
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="Gameboy and Gameboy Color emulator written in C"
+PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="sameboy_libretro.so"
 PKG_LIBPATH="libretro/${PKG_LIBNAME}"
 PKG_LIBVAR="SAMEBOY_LIB"
 
-make_target() {
-  make -C libretro
-}
+PKG_MAKE_OPTS_TARGET="-C libretro/"
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}

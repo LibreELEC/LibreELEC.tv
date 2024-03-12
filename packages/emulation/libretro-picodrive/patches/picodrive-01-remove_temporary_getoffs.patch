@@ -1,0 +1,9 @@
+diff --git a/tools/mkoffsets.sh b/tools/mkoffsets.sh
+index d9a8db5..b82d6eb 100755
+--- a/tools/mkoffsets.sh
++++ b/tools/mkoffsets.sh
+@@ -165,3 +165,4 @@ get_define OFS_SH2_ SH2_ p_rom			; echo "$line" >>$fn
+ get_define OFS_SH2_ SH2_ p_dram			; echo "$line" >>$fn
+ get_define OFS_SH2_ SH2_ p_drcblk_da		; echo "$line" >>$fn
+ get_define OFS_SH2_ SH2_ p_drcblk_ram		; echo "$line" >>$fn
++rm -f /tmp/getoffs.*

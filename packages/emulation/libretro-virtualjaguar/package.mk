@@ -2,13 +2,14 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-virtualjaguar"
-PKG_VERSION="2cc06899b839639397b8b30384a191424b6f529d"
-PKG_SHA256="08d0f3403b41a2606e66aa78e35e3cd8fff8bf14050b260ce6f0395f51d48f7b"
+PKG_VERSION="8126e5c504ac7217a638f38e4cd9190822c8abdd"
+PKG_SHA256="365baa5ee4212e524fc2e40b1c6f29f3c9d4078486e35962db57e7e5da679e73"
 PKG_LICENSE="GPLv3"
 PKG_SITE="https://github.com/libretro/virtualjaguar-libretro"
 PKG_URL="https://github.com/libretro/virtualjaguar-libretro/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
+PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="Port of Virtual Jaguar to Libretro"
+PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="virtualjaguar_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"

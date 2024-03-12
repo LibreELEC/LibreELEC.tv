@@ -1,0 +1,28 @@
+diff -Naur dosbox_pure-4fdb557e415698aae5bd90b076f76437f5e9b0b4/Makefile dosbox_pure-4fdb557e415698aae5bd90b076f76437f5e9b0b4-2/Makefile
+--- dosbox_pure-4fdb557e415698aae5bd90b076f76437f5e9b0b4/Makefile	2022-12-13 22:22:26.391256258 +0100
++++ dosbox_pure-4fdb557e415698aae5bd90b076f76437f5e9b0b4-2/Makefile	2022-12-13 22:38:22.894452324 +0100
+@@ -201,9 +201,9 @@
+   ifeq ($(platform),vita)
+     CFLAGS   := -DNDEBUG -O3 -fno-ident -fno-partial-inlining
+   else
+-    CFLAGS   := -DNDEBUG -O2 -fno-ident
++    CFLAGS   := -DNDEBUG -O3 -fno-ident
+   endif
+-  LDFLAGS  += -O2
++  LDFLAGS  += -O3 -fno-ident
+ endif
+ 
+ CFLAGS  += $(CPUFLAGS) -std=gnu++11 -fomit-frame-pointer -fexceptions -Wno-address-of-packed-member -Wno-format -Wno-switch -Wno-psabi
+@@ -245,9 +245,9 @@
+ else
+ 	$(info Linking $@ ...)
+ 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+-ifneq ($(BUILD),DEBUG)
+-	$(STRIPCMD) $@
+-endif
++#ifneq ($(BUILD),DEBUG)
++#	$(STRIPCMD) $@
++#endif
+ endif
+ 
+ define COMPILE

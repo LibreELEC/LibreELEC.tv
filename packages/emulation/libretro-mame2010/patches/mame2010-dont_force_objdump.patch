@@ -1,0 +1,13 @@
+diff --git a/Makefile b/Makefile
+index 65ece36..6fd017d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -633,7 +633,7 @@ endif
+ # utilities
+ MD = -mkdir$(EXE_EXT)
+ RM = @rm -f
+-OBJDUMP = @objdump
++OBJDUMP ?= @objdump
+ 
+ #-------------------------------------------------
+ # form the name of the executable

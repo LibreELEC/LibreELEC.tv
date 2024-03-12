@@ -7,16 +7,13 @@ PKG_SHA256="e4eaf64e9160b501cadf983a46b8a2a98c8b590a13ca9082793d9a11e17fdcaf"
 PKG_LICENSE="GPLv2"
 PKG_SITE="https://github.com/libretro/beetle-gba-libretro"
 PKG_URL="https://github.com/libretro/beetle-gba-libretro/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
-PKG_LONGDESC="game.libretro.beetle-gba: Beetle GBA for Kodi"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="libretro implementation of Mednafen gba"
+PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="mednafen_gba_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="BEETLE-GBA_LIB"
-
-make_target() {
-  make
-}
 
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}

@@ -60,13 +60,7 @@ else
 fi
 
 # list of packages to exclude from update
-EXCLUDED_PACKAGES="game.libretro.chailove
-	game.libretro.fbalpha2012
-	game.libretro.lutro
-	game.libretro.parallel_n64
-	game.libretro.pcem
-	game.libretro.picodrive
-	game.libretro.theodore
+EXCLUDED_PACKAGES="
 	game.netplay
 	game.shader.presets"
 

@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.fceumm"
-PKG_VERSION="0.0.1.45-Nexus"
-PKG_SHA256="a61aec49a41b9ce9a6bb9f39b738afeb34eb8450f10725d829006947d5968790"
+PKG_VERSION="0.0.1.55-Nexus"
+PKG_SHA256="25858ca597d793bca97ade0d0940f61e4159ac2d5aa6b7b4017b2cab23ae40fa"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"

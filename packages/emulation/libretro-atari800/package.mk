@@ -2,16 +2,14 @@
 # Copyright (C) 2020-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-atari800"
-PKG_VERSION="94033288b026fe699bc50703609807aa8075f4dd"
-PKG_SHA256="4e33976c2de88fdfb1ceaecda99a205419cb19b5125b55835fb3414cef58abf6"
-PKG_LICENSE="GPLv2"
+PKG_VERSION="410d7bf0c215f3444793a9cec51c129e7b67c400"
+PKG_SHA256="b144e60c6f3e0ceada87833f0526f5a791acb9bf331a25b280af62bffd9d8e78"
+PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/libretro/libretro-atari800"
 PKG_URL="https://github.com/libretro/libretro-atari800/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform"
-PKG_LONGDESC="Atari 8-bit computer and 5200 console emulator"
+PKG_DEPENDS_TARGET="toolchain"
+PKG_LONGDESC="Libretro port of Atari800 emulator version 3.1.0"
 PKG_TOOLCHAIN="make"
-
-PKG_MAKE_OPTS_TARGET="platform=unix"
 
 PKG_LIBNAME="atari800_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"

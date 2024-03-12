@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.yabause"
-PKG_VERSION="0.9.15.43-Nexus"
-PKG_SHA256="c485c7ff558e16260c558aac6f6a074ba95fd51b7af34b4e52f09752c96f90a8"
+PKG_VERSION="0.9.15.56-Nexus"
+PKG_SHA256="a9e16d7ed15fbd833a97064cdf15fe29e51bb975c34981fbbe9fc093406792ee"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
