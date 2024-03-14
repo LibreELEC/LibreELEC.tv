@@ -1,0 +1,296 @@
+#!/usr/bin/env python
+
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2023 Team LibreELEC (https://libreelec.tv)
+
+import argparse
+import json
+import os
+import shutil
+import sys
+import tempfile
+import urllib.request
+
+from datetime import datetime, timedelta
+
+
+# Location with release.json to parse available upgrade files
+UPDATE_DOWNLOAD_URL = 'https://releases.libreelec.tv/releases.json'
+# Where to download upgrade files
+LOCAL_UPDATE_DIR = '/storage/.update/'
+# How long an upgrade should be available before downloading
+SMOKETEST_DURATION = 21 # Days
+
+
+def die(s, exit_code=1):
+    '''Print string and exit program using exit_code.'''
+    if s:
+        print(s)
+    sys.exit(exit_code)
+
+
+def lchop(s, prefix):
+    '''Remove prefix from string.'''
+    if prefix and s.startswith(prefix):
+        return s[len(prefix):]
+    return s
+
+
+def rchop(s, suffix):
+    '''Remove suffix from string.'''
+    if suffix and s.endswith(suffix):
+        return s[:-len(suffix)]
+    return s
+
+
+def parse_osrelease():
+    '''Read /etc/os-release for key variables.'''
+    def strip_quotes(s):
+        '''Remove quotes from start and end of string.'''
+        s = lchop(s, '\"')
+        s = rchop(s, '\"')
+        return s
+
+
+    if os.path.isfile('/etc/os-release'):
+        with open('/etc/os-release', 'r', encoding='utf-8') as data:
+            content = data.read()
+    else:
+        die('ERROR: Did not find /etc/os-release.')
+    for line in content.splitlines():
+        if line[0:15] == 'LIBREELEC_ARCH=':
+            architecture = strip_quotes(line.split('=')[1])
+        elif line[0:5] == 'NAME=':
+            distribution = strip_quotes(line.split('=')[1])
+        elif line[0:8] == 'VERSION=':
+            version = strip_quotes(line.split('=')[1])
+        elif line[0:11] == 'VERSION_ID=':
+            version_id = strip_quotes(line.split('=')[1])
+    return architecture, distribution, version, version_id
+
+
+# Fetch json file
+def fetch_update_json():
+    '''Downloads releases.json file and readies for parsing.'''
+    if ALT_JSON:
+        if os.path.exists(ALT_JSON):
+            releases_json = f'file://{ALT_JSON}'
+        elif ALT_JSON.startswith('http://') or ALT_JSON.startswith('https://'):
+            releases_json = ALT_JSON
+        else:
+            die(f'ERROR: Unable to locate {ALT_JSON}.')
+    else:
+        releases_json = UPDATE_DOWNLOAD_URL
+    data = urllib.request.urlopen(releases_json)
+    if data:
+        content = data.read()
+        json_data = content.decode('utf-8').strip()
+    if not json_data:
+        die(f'ERROR: Failed to load releases.json')
+    return json.loads(json_data)
+
+
+# Fetch download file
+def fetch_update_file(update_url):
+    '''Download update_url to a temporary directory. Copy to LOCAL_UPDATE_DIR when finished.'''
+    update_filename = update_url.split('/')[-1]
+    with tempfile.TemporaryDirectory() as update_temp_dir:
+        try:
+            with urllib.request.urlopen(update_url) as download, open(f'{update_temp_dir}/update.file', 'wb') as file_in_progress:
+                shutil.copyfileobj(download, file_in_progress)
+        except Exception as e:
+            print(e)
+            # delete partial download
+            if os.path.exists(f'{update_temp_dir}/update.file'):
+                print('ERROR: Download failure. Removing partially downloaded file.')
+                os.remove(f'{update_temp_dir}/update.file')
+        else:
+            print('Download finished.')
+            if os.path.exists(f'{update_temp_dir}/update.file'):
+                print(f'Copying {update_filename} to {LOCAL_UPDATE_DIR}')
+                shutil.copy2(f'{update_temp_dir}/update.file', f'{LOCAL_UPDATE_DIR}/{update_filename}')
+
+
+# Read json file for update information and take appropriate action
+def check_for_update():
+    '''Review releases.json for suitable upgrade file.
+    Returns three values:
+        True/False if an upgrade is found
+        True/False if upgrade is major (10.x -> 11.x)
+        URL to download an update file, if available
+    '''
+    def get_highest_value(list):
+        '''Review list of integers (eg releases) and return highest as string.'''
+        highest_value = 0 # releases start at 0
+        for value in list:
+            value = int(value)
+            highest_value = max(value, highest_value)
+        return str(highest_value)
+
+
+    def parse_device_json(device_json):
+        '''Parse the fields of a device's release entry.'''
+        filename = device_json['file']['name']
+        # Assumes filename format is 'distribution-device.arch-version.tar'
+        version = rchop(filename.split('-')[-1], '.tar')
+        version_bugfix = int(version.split('.')[2])
+        sha256_hash = device_json['file']['sha256']
+        # XXX: old releases.json without subpath field
+        try:
+            subpath = device_json['file']['subpath']
+        except KeyError:
+            subpath = None
+        # XXX: old releases.json without timestamp field
+        try:
+            timestamp = datetime.strptime(device_json['file']['timestamp'], '%Y-%m-%d %H:%M:%S')
+        except KeyError:
+            timestamp = None
+        smokedate = timestamp + timedelta(days=SMOKETEST_DURATION) if timestamp else None
+        return filename, version, version_bugfix, sha256_hash, subpath, timestamp, smokedate
+
+
+    release_data = fetch_update_json()
+    if not release_data:
+        die(f'ERROR: Failed to load releases.json.')
+
+    # Current device version
+    version_major, version_minor = [int(i) for i in VERSION_ID.split('.')]
+    version_bugfix = int(VERSION.split('.')[2]) if 'nightly' not in VERSION else None
+    version_timestamp = datetime.strptime(VERSION.split('-')[1], '%Y%m%d%H%M%S') if 'nightly' in VERSION else None
+    release_branch = f'{DISTRIBUTION}-{VERSION_ID}'
+
+    highest_device_release = get_highest_value(release_data[release_branch]['project'][ARCHITECTURE]['releases'])
+
+    # Parses highest (most recent) release of device within releases.json file
+    (candidate,
+     candidate_version, candidate_version_bugfix,
+     candidate_sha256,
+     candidate_subpath,
+     candidate_timestamp, candidate_smokedate) = parse_device_json(release_data[release_branch]['project'][ARCHITECTURE]['releases'][highest_device_release])
+
+    # Higher bugfix release available
+    if (version_bugfix is not None and candidate_version_bugfix > version_bugfix) or (candidate_timestamp and version_timestamp and candidate_timestamp > version_timestamp):
+        update_url = release_data[release_branch]['url']
+        update_file = f'{update_url}{candidate_subpath}/{candidate}' if candidate_subpath else f'{update_url}{candidate}'
+        if not SETTINGSONLY:
+            print(f'Found update file: {update_file}')
+        if FORCE or (candidate_smokedate and datetime.now() > candidate_smokedate):
+            return(True, False, update_file)
+        else:
+            if candidate_smokedate:
+                print(f'Update held until {candidate_smokedate} for general availability.')
+            else:
+                print('Unable to determine testing period of update. Holding update back. Use --force to proceed anyway.')
+            return False, False, None
+    # Check for major system upgrades
+    else:
+        highest_version_major = version_major
+        highest_version_minor = version_minor
+
+        for os_branch in release_data:
+            key_version = lchop(os_branch, f'{DISTRIBUTION}-')
+            key_version_major = int(key_version.split('.')[0])
+            key_version_minor = int(key_version.split('.')[1])
+            if key_version_major > highest_version_major:
+                highest_version_major = key_version_major
+                highest_version_minor = key_version_minor
+            elif key_version_major == highest_version_major and key_version_minor > highest_version_minor:
+                highest_version_minor = key_version_minor
+
+        release_branch = f'{DISTRIBUTION}-{highest_version_major}.{highest_version_minor}'
+
+        # check if installed project/device is in the release_branch series
+        if not ARCHITECTURE in release_data[release_branch]['project']:
+            die(f'Device ({ARCHITECTURE}) not found in release series: {release_branch}')
+
+        # determine latest release for device
+        highest_device_release = get_highest_value(release_data[release_branch]['project'][ARCHITECTURE]['releases'])
+        (candidate,
+         candidate_version, candidate_version_bugfix,
+         candidate_sha256,
+         candidate_subpath,
+         candidate_timestamp, candidate_smokedate) = parse_device_json(release_data[release_branch]['project'][ARCHITECTURE]['releases'][highest_device_release])
+        # XXX: don't condense; a fourth version number may appear
+        candidate_version_major = int(candidate_version.split('.')[0])
+        candidate_version_minor = int(candidate_version.split('.')[1])
+        candidate_version_bugfix = int(candidate_version.split('.')[2])
+
+        # Current to a major or minor version upgrade
+        if candidate_version_major > version_major or \
+            (candidate_version_major == version_major and candidate_version_minor > version_minor):
+
+            update_url = release_data[release_branch]['url']
+            update_file = f'{update_url}{candidate_subpath}/{candidate}' if candidate_subpath else f'{update_url}{candidate}'
+            if VERBOSE:
+                print(f'Found update file: {update_file}')
+            return True, True, update_file
+
+    return False, False, None
+
+
+if __name__ == '__main__':
+    # parse CLI arguments
+    parser = argparse.ArgumentParser(description='Parse releases.json for suitable upgrade files.', argument_default=False)
+    # CLI Switches
+    parser.add_argument('-v', '--verbose',
+        help = 'Verbose output', action = 'store_true')
+    parser.add_argument('-f', '--force',
+        help = 'Ignore testing periods for updates.', action = 'store_true')
+    parser.add_argument('-j', '--json',
+        help = 'Path (http or file) to an alternative releases.json file.', action = 'store')
+    parser.add_argument('-s', '--settingsonly',
+        help = 'DEVELOPER ONLY: Generate output for the settings addon.', action = 'store_true')
+    parser.add_argument('-u', '--upgrade',
+        help = 'Upgrade system to latest minor bugfix release', action = 'store_true')
+    args = parser.parse_args()
+
+    VERBOSE = args.verbose
+    FORCE = args.force
+    ALT_JSON = args.json
+    SETTINGSONLY = args.settingsonly
+    UPGRADE = args.upgrade
+    del args, parser
+
+    # Sanity checking
+    if SETTINGSONLY and VERBOSE:
+        die('ERROR: --settingsonly and --verbose are mutually exclusive.')
+    if SETTINGSONLY and UPGRADE:
+        die('ERROR: --settingsonly and --upgrade are mutually exclusive.')
+    if SETTINGSONLY and FORCE:
+        die('ERROR: --settingsonly and --force are mutually exclusive.')
+
+
+    # Get to it.
+    ARCHITECTURE, DISTRIBUTION, VERSION, VERSION_ID = parse_osrelease()
+#    ARCHITECTURE = 'RPi2.arm'
+#    VERSION = '10.0.1'
+#    VERSION_ID = '10.0'
+    if VERSION.startswith('devel'):
+        die('ERROR: Automatic updates from development versions is unsupported.')
+
+    if VERBOSE:
+        print(f'{ARCHITECTURE=}\n{DISTRIBUTION=}\n{VERSION=}\n{VERSION_ID=}')
+
+    update_available, update_major, update_location = check_for_update()
+    if SETTINGSONLY:
+        if update_available:
+            # Give settings a URL if it should download a file. Otherwise True/False on existence of the update
+            response = True if update_major else update_location
+        else:
+            response = False
+        print(response)
+        sys.exit()
+    if update_available and not update_major and UPGRADE:
+        print(f'Downloading: {update_location}')
+        fetch_update_file(update_location)
+        update_filename = update_location.split('/')[-1]
+        if os.path.exists(f'{LOCAL_UPDATE_DIR}/{update_filename}'):
+            print('Download complete. Reboot to continue the update.')
+        else:
+            print('Download failed. Try again later.')
+    elif update_major:
+        print('Major system update found. Please check https://libreelec.tv for release notes that may affect this device.')
+    elif update_available and not UPGRADE:
+        print('System update found. Use --upgrade to apply.')
+    else:
+        print('No eligible system updates found to apply.')
