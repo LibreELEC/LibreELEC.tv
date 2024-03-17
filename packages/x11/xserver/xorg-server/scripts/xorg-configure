@@ -73,23 +73,6 @@ logger -t Xorg "### creating needed directories and symlinks ###"
     # indirect rendering
     ln -sf /usr/lib/libGLX_nvidia.so.0 /var/lib/libGLX_indirect.so.0
     XORG_ARGS="${XORG_ARGS} -ignoreABI"
-  # Used to support GeForce 500 Series & older
-  elif [ "${1}" = "nvidia-legacy" ]; then
-    ln -sf /usr/lib/libGL_nvidia-legacy.so.1 /var/lib/libGL.so
-    ln -sf /usr/lib/xorg/modules/extensions/libglx_nvidia-legacy.so /var/lib/libglx.so
-    ln -sf /usr/lib/libnvidia-ml.so.@NVIDIA_LEGACY_VERSION@ /var/lib/libnvidia-ml.so.1
-    ln -sf /usr/lib/xorg/modules/drivers/nvidia-legacy_drv.so /var/lib/nvidia_drv.so
-    ln -sf /usr/lib/nvidia-legacy/nvidia.ko /var/lib/nvidia.ko
-    ln -sf /usr/lib/vdpau/libvdpau_nvidia-legacy.so.1 /var/lib/libvdpau_nvidia.so.1
-    ln -sf /usr/lib/vdpau/libvdpau_nvidia-legacy.so.1 /var/lib/libvdpau_nvidia.so
-    ln -sf /usr/bin/nvidia-legacy-smi /var/lib/nvidia-smi
-    ln -sf /usr/bin/nvidia-legacy-xconfig /var/lib/nvidia-xconfig
-    insmod /var/lib/nvidia.ko
-    # GLX (NON-GLVND)
-    ln -sf /usr/lib/libGL_nvidia-legacy.so.1 /var/lib/libGLX.so
-    # indirect rendering
-    ln -sf /usr/lib/libGL_nvidia-legacy.so.1 /var/lib/libGLX_indirect.so.0
-    XORG_ARGS="${XORG_ARGS} -ignoreABI"
   # Used for AMD & Intel GPUs supported by MESA 3D
   else
     ln -sf /usr/lib/xorg/modules/extensions/libglx_mesa.so /var/lib/libglx.so

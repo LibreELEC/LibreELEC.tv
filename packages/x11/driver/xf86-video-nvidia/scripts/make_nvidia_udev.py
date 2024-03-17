@@ -57,11 +57,8 @@ with open(__rules__, 'w') as f:
   f.write('LABEL="subsystem_pci"\n')
   for id in unique_ids:
     f.write('ATTR{device}=="0x' + str(id) + '", GOTO="configure_nvidia"\n')
-  f.write('GOTO="configure_nvidia-legacy"\n\n')
+  f.write('GOTO="end_video"\n\n')
   f.write('LABEL="configure_nvidia"\n')
   f.write('ENV{xorg_driver}="nvidia", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@nvidia.service"\n')
-  f.write('GOTO="end_video"\n\n')
-  f.write('LABEL="configure_nvidia-legacy"\n')
-  f.write('ENV{xorg_driver}="nvidia", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@nvidia-legacy.service"\n')
   f.write('GOTO="end_video"\n\n')
   f.write('LABEL="end_video"\n')

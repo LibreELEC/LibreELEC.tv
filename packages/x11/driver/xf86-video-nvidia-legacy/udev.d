@@ -1,1 +1,0 @@
-../xf86-video-nvidia/udev.d/

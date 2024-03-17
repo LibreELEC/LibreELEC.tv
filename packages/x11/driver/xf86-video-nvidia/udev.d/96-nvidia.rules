@@ -387,14 +387,10 @@ ATTR{device}=="0x28b8", GOTO="configure_nvidia"
 ATTR{device}=="0x28e0", GOTO="configure_nvidia"
 ATTR{device}=="0x28e1", GOTO="configure_nvidia"
 ATTR{device}=="0x28f8", GOTO="configure_nvidia"
-GOTO="configure_nvidia-legacy"
+GOTO="end_video"
 
 LABEL="configure_nvidia"
 ENV{xorg_driver}="nvidia", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@nvidia.service"
-GOTO="end_video"
-
-LABEL="configure_nvidia-legacy"
-ENV{xorg_driver}="nvidia", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xorg-configure@nvidia-legacy.service"
 GOTO="end_video"
 
 LABEL="end_video"
