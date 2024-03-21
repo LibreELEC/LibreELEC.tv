@@ -54,6 +54,12 @@
       TARGET_FPU_FLAGS="-mfloat-abi=$TARGET_FLOAT -mfpu=$TARGET_FPU"
       TARGET_FEATURES+=" neon"
       ;;
+    cortex-a55|cortex-a76|cortex-a76.cortex-a55)
+      TARGET_SUBARCH=armv8.2-a
+      TARGET_ABI=eabi
+      TARGET_FPU_FLAGS="-mfloat-abi=$TARGET_FLOAT -mfpu=$TARGET_FPU"
+      TARGET_FEATURES+=" neon"
+      ;;
   esac
 
   if [ "${TARGET_FLOAT}" = "hard" ]; then
