@@ -21,8 +21,8 @@ from datetime import datetime, timedelta
 from hashlib import sha256
 
 
-# List of locations with JSON release data (may be a single string entry)
-JSON_DOWNLOAD_URL = ['https://releases.libreelec.tv/releases_v2.json', 'https://releases.libreelec.tv/releases.json']
+# Location of JSON release data
+JSON_DOWNLOAD_URL = 'https://releases.libreelec.tv/releases.json'
 # Where to put update files
 LOCAL_UPDATE_DIR = '/storage/.update'
 
@@ -105,21 +105,15 @@ class UpdateSystem():
                 return
         else:
             releases_json = JSON_DOWNLOAD_URL
-        if isinstance(releases_json, list):
-            for url in releases_json:
-                try:
-                    data = urllib.request.urlopen(url)
-                except urllib.error.HTTPError as err:
-                    if err.code == 404:
-                        print(f'ERROR: HTTP 404: Failed to download from: {url}')
-                        continue
-                    else:
-                        print(f'Unhandled HTTPError: {err=}')
-                        raise
-                else:
-                    break
-        else:
+        try:
             data = urllib.request.urlopen(releases_json)
+        except urllib.error.HTTPError as err:
+            if err.code == 404:
+                print(f'ERROR: HTTP 404: Failed to download from: {url}')
+                raise
+            else:
+                print(f'Unhandled HTTPError: {err=}')
+                raise
         self.update_json = json.loads(data.read().decode('utf-8').strip()) if data else None
 
 
