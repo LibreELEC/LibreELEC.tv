@@ -65,7 +65,7 @@ PKG_MESON_OPTS_TARGET="--libdir=/usr/lib \
                        -Dlocaled=false \
                        -Dmachined=false \
                        -Dportabled=false \
-                       -Duserdb=false \
+                       -Duserdb=true \
                        -Dhomed=disabled \
                        -Dnetworkd=false \
                        -Dtimedated=false \
@@ -88,7 +88,7 @@ PKG_MESON_OPTS_TARGET="--libdir=/usr/lib \
                        -Dnss-myhostname=false \
                        -Dnss-mymachines=disabled \
                        -Dnss-resolve=disabled \
-                       -Dnss-systemd=false \
+                       -Dnss-systemd=true \
                        -Dman=disabled \
                        -Dhtml=disabled \
                        -Dlink-udev-shared=true \
@@ -303,4 +303,5 @@ post_install() {
   enable_service network-base.service
   enable_service systemd-timesyncd.service
   enable_service systemd-timesyncd-setup.service
+  enable_service systemd-userdbd.socket
 }
