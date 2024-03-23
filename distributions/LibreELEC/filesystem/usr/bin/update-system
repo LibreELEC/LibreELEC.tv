@@ -210,12 +210,6 @@ class UpdateSystem():
             self.update_available = False
             self.update_major = False
             return
-        if self.current['version'].startswith('devel'):
-            print('ERROR: Automatic updates from development builds are unsupported.')
-            self.abort_check = True
-            self.update_available = False
-            self.update_major = False
-            return
 
         # Retrieve json with release data
         if not self.update_json:
