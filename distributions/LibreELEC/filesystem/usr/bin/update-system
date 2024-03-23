@@ -115,15 +115,15 @@ class UpdateSystem():
             releases_json = STABLE_JSON_URL
 
         try:
-            data = urllib.request.urlopen(releases_json)
+            with urllib.request.urlopen(releases_json) as data:
+                self.update_json = json.loads(data.read().decode('utf-8').strip()) if data else None
         except urllib.error.HTTPError as err:
             if err.code == 404:
-                print(f'ERROR: HTTP 404: Failed to download from: {url}')
+                print(f'ERROR: HTTP 404: Failed to download from: {releases_json}')
                 raise
             else:
-                print(f'Unhandled HTTPError: {err=}')
+                print(f'ERROR: Unhandled HTTPError: {err=}')
                 raise
-        self.update_json = json.loads(data.read().decode('utf-8').strip()) if data else None
 
 
     def parse_device_json(self, device_json, canary=None):
@@ -199,26 +199,30 @@ class UpdateSystem():
                         os.remove(f'{update_temp_dir}/update.file')
 
 
+    def abort_update_check(self, msg=None):
+        '''Reset update result flags to None.'''
+        print(msg)
+        self.update_available = False
+        self.update_major = False
+        self.update_url = None
+
+
     def precheck_update(self):
         '''Gather and validate information needed for update check.'''
         self.parse_osrelease()
         if args.verbose:
             print(f'{self.current["architecture"]=}\n{self.current["distribution"]=}\n{self.current["version"]=}\n{self.current["version_id"]=}')
         if not (self.current['architecture'] and self.current['distribution'] and self.current['version'] and self.current['version_id']):
-            print('ERROR: parse_osrelease failed. Unable to determine running device or version.')
+            self.abort_update_check('ERROR: parse_osrelease failed. Unable to determine running device or version.')
             self.abort_check = True
-            self.update_available = False
-            self.update_major = False
             return
 
         # Retrieve json with release data
         if not self.update_json:
             self.fetch_update_json()
         if not self.update_json:
-            print('ERROR: Failed to load json release data.')
+            self.abort_update_check('ERROR: Failed to load json release data.')
             self.abort_check = True
-            self.update_available = False
-            self.update_major = False
             return
 
 
@@ -230,10 +234,7 @@ class UpdateSystem():
 
         release_branch = f'{self.current["distribution"]}-{self.current["version_id"]}'
         if release_branch not in self.update_json:
-            print('Running release branch not in json file.')
-            self.update_available = False
-            self.update_major = False
-            self.update_url = None
+            self.abort_update_check('Running release branch not in json file.')
             return
         device_release = UpdateSystem.get_highest_value(self.update_json[release_branch]['project'][self.current['architecture']]['releases'])
         # Old releases.json without canary field
@@ -254,9 +255,7 @@ class UpdateSystem():
                 print(f'Update held until {self.candidate["canarydate"]} for general availability.')
             else:
                 print('Unable to determine testing period of update. Holding update back. Use --force to proceed anyway.')
-            self.update_available = False
-            self.update_major = False
-            self.update_url = None
+            self.abort_update_check()
             return
 
 
@@ -309,10 +308,7 @@ class UpdateSystem():
 
         release_branch = f'{self.current["distribution"]}-{self.current["version_id"]}'
         if release_branch not in self.update_json:
-            print('Running release branch not in json file.')
-            self.update_available = False
-            self.update_major = False
-            self.update_url = None
+            self.abort_update_check('Running release branch not in json file.')
             return
 
         device_release = UpdateSystem.get_highest_value(self.update_json[release_branch]['project'][self.current['architecture']]['releases'])
@@ -326,9 +322,7 @@ class UpdateSystem():
             self.update_available = True
             return
         else:
-            self.update_available = False
-            self.update_major = False
-            self.update_url = None
+            self.abort_update_check()
             return
 
 
@@ -346,40 +340,30 @@ class UpdateSystem():
 
         self.check_for_major()
         if self.update_available and self.update_major:
-            return self.update_available, self.update_major, self.update_Url, self.candidate['sha256']
+            return self.update_available, self.update_major, self.update_url, self.candidate['sha256']
 
         # Both checks negative; report nothing available.
         return False, False, None, None
 
 
     def standalone_update(self):
-        '''Function to run when being invoked as standalone script: handles update check and downloading update.'''
+        '''Function to run when being invoked as standalone script: calls update check and downloads update.'''
         if args.bugfix:
             self.check_for_bugfix()
-            if self.update_available:
-                print(f'Found update file: {self.update_url}')
-            else:
-                print('No bugfix release found.')
         elif args.major:
             self.check_for_major()
-            if self.update_available:
-                print(f'Found update file: {self.update_url}')
-            else:
-                print('No newer release series found.')
         elif args.nightly:
             self.check_for_nightly()
-            if self.update_available:
-                print(f'Found update file: {self.update_url}')
-            else:
-                print('No newer nightly test build found.')
         else:
             self.check_for_bugfix()
             if not self.update_available:
                 self.check_for_major()
+
         if args.verbose:
             print(f'{self.update_available=}\n{self.update_major=}\n{self.update_url=}')
 
         if self.update_available:
+            print(f'Found update file: {self.update_url}')
             if self.update_major:
                 print('Major system update found. Check https://libreelec.tv for release notes that may affect this device.')
             else:
@@ -391,10 +375,9 @@ class UpdateSystem():
                     else:
                         print('Download failed. Please try again later.')
                 else:
-                    print('System update found. Use --update to apply.')
+                    print('System update found. Run command again with --update to apply.')
         else:
             print('No eligible system updates found to apply.')
-
 
 
 if __name__ == '__main__':
