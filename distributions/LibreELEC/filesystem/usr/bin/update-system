@@ -22,7 +22,8 @@ from hashlib import sha256
 
 
 # Location of JSON release data
-JSON_DOWNLOAD_URL = 'https://releases.libreelec.tv/releases.json'
+STABLE_JSON_URL = 'https://releases.libreelec.tv/releases.json'
+TEST_JSON_URL = 'https://test.libreelec.tv/releases.json'
 # Where to put update files
 LOCAL_UPDATE_DIR = '/storage/.update'
 
@@ -90,7 +91,12 @@ class UpdateSystem():
         # If debugging other devices, change self.current[architecture, distribution, version, version_id] here
         self.current['version_major'], self.current['version_minor'] = [int(i) for i in self.current['version_id'].split('.')]
         self.current['version_bugfix'] = int(self.current['version'].split('.')[2]) if not self.current['version'].startswith(('devel', 'nightly')) else None
-        self.current['timestamp'] = datetime.strptime(self.current['version'].split('-')[1], '%Y%m%d') if 'nightly' in self.current['version'] else None
+        if self.current['version'].startswith('nightly'):
+            self.current['timestamp'] = datetime.strptime(self.current['version'].split('-')[1], '%Y%m%d')
+        elif self.current['version'].startswith('devel'):
+            self.current['timestamp'] = datetime.strptime(self.current['version'].split('-')[1], '%Y%m%d%H%M%S')
+        else:
+            self.current['timestamp'] = None
 
 
     def fetch_update_json(self):
@@ -103,8 +109,11 @@ class UpdateSystem():
             else:
                 print(f'ERROR: Unable to locate: {args.json}.')
                 return
+        elif args.nightly:
+            releases_json = TEST_JSON_URL
         else:
-            releases_json = JSON_DOWNLOAD_URL
+            releases_json = STABLE_JSON_URL
+
         try:
             data = urllib.request.urlopen(releases_json)
         except urllib.error.HTTPError as err:
@@ -119,19 +128,35 @@ class UpdateSystem():
 
     def parse_device_json(self, device_json, canary=None):
         '''Parse json fields of a device's release entry.'''
-        self.candidate['filename'] = device_json['file']['name']
-        # Assumes filename format is 'distribution-device.arch-version.tar'
-        version = tuple(int(i) for i in self.candidate['filename'].split('-')[-1].removesuffix('.tar').split('.'))
+        if args.nightly:
+            if 'image' in device_json: # image entry
+                self.candidate['filename'] = device_json['image']['name']
+                self.candidate['sha256'] = device_json['image']['sha256']
+                # old releases.json without subpath field
+                self.candidate['subpath'] = device_json['image']['subpath'] if 'subpath' in device_json['image'] else None
+                # old releases.json without timestamp field
+                self.candidate['timestamp'] = datetime.strptime(device_json['image']['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['image'] else None
+            else: # uboot entry
+                self.candidate['filename'] = device_json['uboot'][0]['name']
+                self.candidate['sha256'] = device_json['uboot'][0]['sha256']
+                # old releases.json without subpath field
+                self.candidate['subpath'] = device_json['uboot'][0]['subpath'] if 'subpath' in device_json['uboot'][0] else None
+                # old releases.json without timestamp field
+                self.candidate['timestamp'] = datetime.strptime(device_json['uboot'][0]['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['uboot'][0] else None
+        else: # file entry
+            self.candidate['filename'] = device_json['file']['name']
+            # Assumes filename format is 'distribution-device.arch-version.tar'
+            self.candidate['sha256'] = device_json['file']['sha256']
+            # old releases.json without subpath field
+            self.candidate['subpath'] = device_json['file']['subpath'] if 'subpath' in device_json['file'] else None
+            # old releases.json without timestamp field
+            self.candidate['timestamp'] = datetime.strptime(device_json['file']['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['file'] else None
+        version = tuple(int(i) for i in self.candidate['filename'].split('-')[-1].removesuffix('.tar').split('.')) if not 'devel' in self.candidate['filename'] and not 'nightly' in self.candidate['filename'] else (None, None, None)
         self.candidate['version_major'] = version[0]
         self.candidate['version_minor'] = version[1]
         self.candidate['version_bugfix'] = version[2]
-        self.candidate['sha256'] = device_json['file']['sha256']
-        # old releases.json without subpath field
-        self.candidate['subpath'] = device_json['file']['subpath'] if 'subpath' in device_json['file'] else None
-        # old releases.json without timestamp field
-        self.candidate['timestamp'] = datetime.strptime(device_json['file']['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['file'] else None
-        # set if parts are known
-        self.candidate['canarydate'] = self.candidate['timestamp'] + timedelta(days=canary) if self.candidate['timestamp'] and canary else None
+        # set if parts are known and not nightly check
+        self.candidate['canarydate'] = self.candidate['timestamp'] + timedelta(days=canary) if self.candidate['timestamp'] and canary and not args.nightly else None
 
 
     def fetch_update_file(self):
@@ -282,6 +307,37 @@ class UpdateSystem():
             return
 
 
+    def check_for_nightly(self):
+        '''Review test build's releases.json for updates to running release series.'''
+        self.precheck_update()
+        if self.abort_check:
+            return
+
+        release_branch = f'{self.current["distribution"]}-{self.current["version_id"]}'
+        if release_branch not in self.update_json:
+            print('Running release branch not in json file.')
+            self.update_available = False
+            self.update_major = False
+            self.update_url = None
+            return
+
+        device_release = UpdateSystem.get_highest_value(self.update_json[release_branch]['project'][self.current['architecture']]['releases'])
+        # Parses highest (most recent) release of device within releases.json file
+        self.parse_device_json(self.update_json[release_branch]['project'][self.current['architecture']]['releases'][device_release])
+
+        # compare timestamps to determine newer
+        if self.candidate['timestamp'] and self.current['timestamp'] and self.candidate['timestamp'] > self.current['timestamp']:
+            self.candidate['url'] = self.update_json[release_branch]['url']
+            self.update_url = f'{self.candidate["url"]}{self.candidate["subpath"]}/{self.candidate["filename"]}' if self.candidate['subpath'] else f'{self.candidate["url"]}{self.candidate["filename"]}'
+            self.update_available = True
+            return
+        else:
+            self.update_available = False
+            self.update_major = False
+            self.update_url = None
+            return
+
+
     def check_for_update(self):
         '''Function to run when invoked by settings addon: checks for bugfix then major updates.
         Returns four values:
@@ -316,12 +372,18 @@ class UpdateSystem():
                 print(f'Found update file: {self.update_url}')
             else:
                 print('No newer release series found.')
+        elif args.nightly:
+            self.check_for_nightly()
+            if self.update_available:
+                print(f'Found update file: {self.update_url}')
+            else:
+                print('No newer nightly test build found.')
         else:
             self.check_for_bugfix()
             if not self.update_available:
                 self.check_for_major()
         if args.verbose:
-            print(f'{self.update_available=}\n{self.update_major=}\n{self.update_url=}\n{self.candidate["sha256"]=}')
+            print(f'{self.update_available=}\n{self.update_major=}\n{self.update_url=}')
 
         if self.update_available:
             if self.update_major:
@@ -350,6 +412,8 @@ if __name__ == '__main__':
         help = 'Check for bugfix updates only (ex 11.0.x -> 11.0.y).', action = 'store_true')
     parser.add_argument('-m', '--major',
         help = 'Check for major/minor updates only (ex 11.x -> 12.x).', action = 'store_true')
+    parser.add_argument('-n', '--nightly',
+        help = 'Check for current nightly test build.', action = 'store_true')
     parser.add_argument('-f', '--force',
         help = 'Ignore testing periods for updates.', action = 'store_true')
     parser.add_argument('-j', '--json',
@@ -358,8 +422,14 @@ if __name__ == '__main__':
         help = 'Update system to latest minor bugfix release.', action = 'store_true')
     args = parser.parse_args()
 
+    # sanity check
+    if args.nightly and (args.bugfix or args.major):
+        print('Error: --nightly may not be combined with --bugfix or --major. Assuming --nightly intended.')
+        args.bugfix = False
+        args.major = False
+
     UpdateSystem().standalone_update()
 
 else:
     # Set default CLI args values when importing
-    args = argparse.Namespace(verbose=False, bugfix=False, major=False, force=False, json=False, update=False)
+    args = argparse.Namespace(verbose=False, bugfix=False, major=False, nightly=False, force=False, json=False, update=False)
