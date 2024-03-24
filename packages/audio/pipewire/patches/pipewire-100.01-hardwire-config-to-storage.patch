@@ -1,0 +1,12 @@
+diff -Naur pipewire-1.0.3/meson.build pipewire-1.0.3.patch/meson.build
+--- pipewire-1.0.3/meson.build	2024-02-02 14:09:07.000000000 +0100
++++ pipewire-1.0.3.patch/meson.build	2024-03-22 11:49:32.002717707 +0100
+@@ -45,7 +45,7 @@
+ pipewire_localedir = prefix / get_option('localedir')
+ pipewire_sysconfdir = prefix / get_option('sysconfdir')
+ 
+-pipewire_configdir = pipewire_sysconfdir / 'pipewire'
++pipewire_configdir = '/storage/.config/pipewire'
+ pipewire_confdatadir = pipewire_datadir / 'pipewire'
+ modules_install_dir = pipewire_libdir / pipewire_name
+ 
