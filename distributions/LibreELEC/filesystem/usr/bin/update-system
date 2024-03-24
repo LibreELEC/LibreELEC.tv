@@ -133,24 +133,24 @@ class UpdateSystem():
                 self.candidate['filename'] = device_json['image']['name']
                 self.candidate['sha256'] = device_json['image']['sha256']
                 # old releases.json without subpath field
-                self.candidate['subpath'] = device_json['image']['subpath'] if 'subpath' in device_json['image'] else None
+                self.candidate['subpath'] = device_json['image']['subpath']
                 # old releases.json without timestamp field
-                self.candidate['timestamp'] = datetime.strptime(device_json['image']['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['image'] else None
+                self.candidate['timestamp'] = datetime.strptime(device_json['image']['timestamp'], '%Y-%m-%d %H:%M:%S')
             else: # uboot entry
                 self.candidate['filename'] = device_json['uboot'][0]['name']
                 self.candidate['sha256'] = device_json['uboot'][0]['sha256']
                 # old releases.json without subpath field
-                self.candidate['subpath'] = device_json['uboot'][0]['subpath'] if 'subpath' in device_json['uboot'][0] else None
+                self.candidate['subpath'] = device_json['uboot'][0]['subpath']
                 # old releases.json without timestamp field
-                self.candidate['timestamp'] = datetime.strptime(device_json['uboot'][0]['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['uboot'][0] else None
+                self.candidate['timestamp'] = datetime.strptime(device_json['uboot'][0]['timestamp'], '%Y-%m-%d %H:%M:%S')
         else: # file entry
             self.candidate['filename'] = device_json['file']['name']
             # Assumes filename format is 'distribution-device.arch-version.tar'
             self.candidate['sha256'] = device_json['file']['sha256']
             # old releases.json without subpath field
-            self.candidate['subpath'] = device_json['file']['subpath'] if 'subpath' in device_json['file'] else None
+            self.candidate['subpath'] = device_json['file']['subpath']
             # old releases.json without timestamp field
-            self.candidate['timestamp'] = datetime.strptime(device_json['file']['timestamp'], '%Y-%m-%d %H:%M:%S') if 'timestamp' in device_json['file'] else None
+            self.candidate['timestamp'] = datetime.strptime(device_json['file']['timestamp'], '%Y-%m-%d %H:%M:%S')
         version = tuple(int(i) for i in self.candidate['filename'].split('-')[-1].removesuffix('.tar').split('.')) if not 'devel' in self.candidate['filename'] and not 'nightly' in self.candidate['filename'] else (None, None, None)
         self.candidate['version_major'] = version[0]
         self.candidate['version_minor'] = version[1]
