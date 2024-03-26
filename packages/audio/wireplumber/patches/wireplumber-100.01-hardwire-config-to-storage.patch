@@ -1,0 +1,12 @@
+diff -Naur wireplumber-0.4.17/meson.build wireplumber-0.4.17.patch/meson.build
+--- wireplumber-0.4.17/meson.build	2023-12-03 19:05:19.000000000 +0100
++++ wireplumber-0.4.17.patch/meson.build	2024-03-22 11:50:40.226276019 +0100
+@@ -16,7 +16,7 @@
+ wireplumber_bin_dir = get_option('prefix') / get_option('bindir')
+ wireplumber_module_dir = get_option('prefix') / get_option('libdir') / 'wireplumber-' + wireplumber_api_version
+ wireplumber_data_dir = get_option('prefix') / get_option('datadir') / 'wireplumber'
+-wireplumber_config_dir = get_option('prefix') / get_option('sysconfdir') / 'wireplumber'
++wireplumber_config_dir = '/storage/.config/wireplumber'
+ wireplumber_locale_dir = get_option('prefix') / get_option('localedir')
+ 
+ cc = meson.get_compiler('c')
