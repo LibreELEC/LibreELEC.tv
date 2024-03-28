@@ -10,61 +10,50 @@ PKG_SITE="https://curl.haxx.se"
 PKG_URL="https://curl.haxx.se/download/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain zlib openssl rtmpdump libidn2 nghttp2"
 PKG_LONGDESC="Client and library for (HTTP, HTTPS, FTP, ...) transfers."
-PKG_TOOLCHAIN="configure"
 
-PKG_CONFIGURE_OPTS_TARGET="ac_cv_lib_rtmp_RTMP_Init=yes \
-                           ac_cv_header_librtmp_rtmp_h=yes \
-                           --disable-debug \
-                           --enable-optimize \
-                           --enable-warnings \
-                           --disable-curldebug \
-                           --disable-ares \
-                           --enable-largefile \
-                           --enable-http \
-                           --enable-ftp \
-                           --enable-file \
-                           --disable-ldap \
-                           --disable-ldaps \
-                           --enable-rtsp \
-                           --enable-proxy \
-                           --disable-dict \
-                           --disable-telnet \
-                           --disable-tftp \
-                           --disable-pop3 \
-                           --disable-imap \
-                           --disable-smb \
-                           --disable-smtp \
-                           --disable-gopher \
-                           --disable-mqtt \
-                           --disable-manual \
-                           --enable-libgcc \
-                           --enable-ipv6 \
-                           --enable-versioned-symbols \
-                           --enable-threaded-resolver \
-                           --enable-verbose \
-                           --disable-sspi \
-                           --enable-cookies \
-                           --enable-symbol-hiding \
-                           --with-gnu-ld \
-                           --without-gssapi \
-                           --with-zlib \
-                           --without-brotli \
-                           --without-zstd \
-                           --with-random=/dev/urandom \
-                           --without-gnutls \
-                           --with-ssl \
-                           --without-mbedtls \
-                           --with-ca-bundle=/run/libreelec/cacert.pem \
-                           --without-ca-path \
-                           --without-libpsl \
-                           --without-libssh2 \
-                           --with-librtmp \
-                           --with-libidn2 \
-                           --with-nghttp2"
-
-post_configure_target() {
-  libtool_remove_rpath libtool
-}
+PKG_CMAKE_OPTS_TARGET="-DENABLE_DEBUG=OFF \
+                       -DCURL_LTO=ON \
+                       -DCURL_WERROR=ON \
+                       -DENABLE_CURLDEBUG=OFF \
+                       -DENABLE_ARES=OFF \
+                       -DCURL_DISABLE_HTTP=OFF \
+                       -DCURL_DISABLE_FTP=OFF \
+                       -DCURL_DISABLE_FILE=OFF \
+                       -DCURL_DISABLE_LDAP=ON \
+                       -DCURL_DISABLE_LDAPS=ON \
+                       -DCURL_DISABLE_RTSP=OFF \
+                       -DCURL_DISABLE_PROXY=OFF \
+                       -DCURL_DISABLE_DICT=ON \
+                       -DCURL_DISABLE_TELNET=ON \
+                       -DCURL_DISABLE_TFTP=ON \
+                       -DCURL_DISABLE_POP3=ON \
+                       -DCURL_DISABLE_IMAP=ON \
+                       -DCURL_DISABLE_SMB=ON \
+                       -DCURL_DISABLE_SMTP=ON \
+                       -DCURL_DISABLE_GOPHER=ON \
+                       -DCURL_DISABLE_MQTT=ON \
+                       -DENABLE_CURL_MANUAL=OFF \
+                       -DENABLE_IPV6=ON \
+                       -DENABLE_THREADED_RESOLVER=ON \
+                       -DCURL_DISABLE_VERBOSE_STRINGS=OFF \
+                       -DCURL_WINDOWS_SSPI=OFF \
+                       -DCURL_DISABLE_COOKIES=OFF \
+                       -DCURL_HIDDEN_SYMBOLS=ON \
+                       -DCURL_USE_GSSAPI=OFF \
+                       -DUSE_ZLIB=ON \
+                       -DCURL_BROTLI=OFF \
+                       -DCURL_ZSTD=OFF \
+                       -DRANDOM_FILE=/dev/urandom \
+                       -DCURL_USE_GNUTLS=OFF \
+                       -DCURL_ENABLE_SSL=ON \
+                       -DCURL_USE_MBEDTLS=OFF \
+                       -DCURL_CA_BUNDLE=/run/libreelec/cacert.pem \
+                       -DCURL_CA_PATH=none \
+                       -DCURL_USE_LIBPSL=OFF \
+                       -DCURL_USE_LIBSSH2=OFF \
+                       -DUSE_LIBRTMP=ON \
+                       -DUSE_LIBIDN2=ON \
+                       -DUSE_NGHTTP2=ON"
 
 post_makeinstall_target() {
   rm -rf ${INSTALL}/usr/share/zsh
