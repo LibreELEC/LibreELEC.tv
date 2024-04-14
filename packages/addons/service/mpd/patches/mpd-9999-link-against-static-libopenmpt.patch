@@ -1,0 +1,11 @@
+--- a/src/decoder/plugins/meson.build	2024-12-03 11:56:57.000000000 +0000
++++ b/src/decoder/plugins/meson.build	2024-12-30 14:15:29.590502435 +0000
+@@ -110,7 +110,7 @@
+   ]
+ endif
+ 
+-libopenmpt_dep = dependency('libopenmpt', required: get_option('openmpt'))
++libopenmpt_dep = dependency('libopenmpt', required: get_option('openmpt'), static: true)
+ decoder_features.set('ENABLE_OPENMPT', libopenmpt_dep.found())
+ if libopenmpt_dep.found()
+   decoder_plugins_sources += [
