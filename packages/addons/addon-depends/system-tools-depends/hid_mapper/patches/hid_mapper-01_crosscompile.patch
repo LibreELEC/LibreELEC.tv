@@ -2,8 +2,8 @@ diff --git a/Makefile b/Makefile
 index f98abbd..9d1d524 100755
 --- a/Makefile
 +++ b/Makefile
-@@ -9,13 +9,13 @@ EXEC=hid_mapper
- VERSION=1.0
+@@ -38,13 +38,13 @@ EXEC=hid_mapper
+ VERSION=2.1.0
  
  all: $(OBJS)
 -	g++ $(LDFLAGS) $(OBJS) -o $(EXEC)
@@ -17,5 +17,5 @@ index f98abbd..9d1d524 100755
 -	gcc -c $(CFLAGS) $<
 +	${CC} -c $(CFLAGS) $<
  
- deb:
- 	cp $(EXEC) package/usr/bin
+ deb: all
+ 	rm -rf package/
