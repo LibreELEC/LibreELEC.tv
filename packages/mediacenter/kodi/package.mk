@@ -89,10 +89,6 @@ configure_package() {
   if [ "${KODI_PIPEWIRE_SUPPORT}" = yes ]; then
     PKG_DEPENDS_TARGET+=" pipewire"
     KODI_PIPEWIRE="-DENABLE_PIPEWIRE=ON"
-
-    if [ "${KODI_PULSEAUDIO_SUPPORT}" = "yes" -o "${KODI_ALSA_SUPPORT}" = "yes" ]; then
-      die "KODI_PULSEAUDIO_SUPPORT and KODI_ALSA_SUPPORT cannot be used with KODI_PIPEWIRE_SUPPORT"
-    fi
   else
     KODI_PIPEWIRE="-DENABLE_PIPEWIRE=OFF"
   fi
@@ -341,17 +337,19 @@ post_makeinstall_target() {
         -e "s|@KODI_MAX_SECONDS@|${KODI_MAX_SECONDS:-900}|g" \
         -i ${INSTALL}/usr/lib/kodi/kodi.sh
 
-    if [ "${KODI_PIPEWIRE_SUPPORT}" = "yes" ]; then
-      KODI_AUDIO_ARGS="--audio-backend=pipewire"
-    elif [ "${KODI_PULSEAUDIO_SUPPORT}" = "yes" -a "${KODI_ALSA_SUPPORT}" = "yes" ]; then
+    # define our default audio config
+    # override at runtime in /storage/.config/kodi.conf
+    if [ "${KODI_PULSEAUDIO_SUPPORT}" = "yes" -a "${KODI_ALSA_SUPPORT}" = "yes" ]; then
       KODI_AUDIO_ARGS="--audio-backend=alsa+pulseaudio"
-    elif [ "${KODI_PULSEAUDIO_SUPPORT}" = "yes" -a "${KODI_ALSA_SUPPORT}" != "yes" ]; then
-      KODI_AUDIO_ARGS="--audio-backend=pulseaudio"
     elif [ "${KODI_PULSEAUDIO_SUPPORT}" != "yes" -a "${KODI_ALSA_SUPPORT}" = "yes" ]; then
       KODI_AUDIO_ARGS="--audio-backend=alsa"
+    elif [ "${KODI_PULSEAUDIO_SUPPORT}" = "yes" -a "${KODI_ALSA_SUPPORT}" != "yes" ]; then
+      KODI_AUDIO_ARGS="--audio-backend=pulseaudio"
+    elif [ "${KODI_PIPEWIRE_SUPPORT}" = "yes" ]; then
+      KODI_AUDIO_ARGS="--audio-backend=pipewire"
     fi
 
-    # adjust audio output device to what was built
+    # adjust default audio backend to our preference above
     sed "s/@KODI_AUDIO_ARGS@/${KODI_AUDIO_ARGS}/" ${PKG_DIR}/config/kodi.conf.in > ${INSTALL}/usr/lib/kodi/kodi.conf
 
     # set default display environment
