@@ -1,0 +1,13 @@
+[Unit]
+Description=etc directory overlay
+ConditionPathIsDirectory=/storage/.filesystem/etc
+ConditionPathIsDirectory=/storage/.overlays/etc
+
+[Mount]
+What=overlay
+Where=/etc
+Type=overlay
+Options=lowerdir=/etc,upperdir=/storage/.filesystem/etc,workdir=/storage/.overlays/etc
+
+[Install]
+WantedBy=local-fs.target

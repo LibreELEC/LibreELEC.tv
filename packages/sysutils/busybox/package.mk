@@ -169,6 +169,11 @@ post_install() {
   enable_service show-version.service
   enable_service vfd-clock.service
   enable_service var.mount
+  if [ "${WRITEABLE_ETC}" = "yes" ]; then
+    enable_service etc.mount
+  else
+    safe_remove ${INSTALL}/usr/lib/tmpfiles.d/z_02_writeable_etc.conf
+  fi
   enable_service locale.service
 
   # cron support
