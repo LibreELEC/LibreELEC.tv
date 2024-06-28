@@ -1,0 +1,5 @@
+#!/bin/sh
+
+for entry in $(find /storage/containers -mindepth 1 -maxdepth 1); do
+    ln -s "${entry}" /var/lib/machines/
+done
