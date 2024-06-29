@@ -1,7 +1,7 @@
-From a915f25cf7f89f056dd2d0cdcbc2f1f1787ae5c0 Mon Sep 17 00:00:00 2001
+From 860810facd7b4cdeb212edbd915d00c848f4d966 Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Sat, 23 Mar 2024 09:59:30 +0000
-Subject: [PATCH 6/6] FROMGIT: board: amlogic: add
+Subject: [PATCH 7/7] FROMGIT: board: amlogic: add
  meson_generate_serial_ethaddr fallback to p200
 
 Add a fall-back method to generate ethaddr from CPU serial on p200 boards

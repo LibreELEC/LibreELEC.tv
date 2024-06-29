@@ -1,7 +1,7 @@
-From f1ef120a45f47ce8f2a2fd554e4fa9d9a14ed42e Mon Sep 17 00:00:00 2001
+From 5feaed938c81cff592dbb7843fecba98a24ed105 Mon Sep 17 00:00:00 2001
 From: Neil Armstrong <neil.armstrong@linaro.org>
 Date: Wed, 20 Mar 2024 09:46:11 +0100
-Subject: [PATCH 4/6] FROMGIT: board: amlogic: fix buffler overflow in serial,
+Subject: [PATCH 5/7] FROMGIT: board: amlogic: fix buffler overflow in serial,
  mac & usid read
 
 While meson_sm_read_efuse() doesn't overflow, the string is not
@@ -107,7 +107,7 @@ index 185880de139..0b781666e98 100644
  			env_set("usid", usid);
  	}
 diff --git a/board/amlogic/odroid-n2/odroid-n2.c b/board/amlogic/odroid-n2/odroid-n2.c
-index 2135457edd9..a4bcc62174a 100644
+index ec1f4efc113..f840afbfd67 100644
 --- a/board/amlogic/odroid-n2/odroid-n2.c
 +++ b/board/amlogic/odroid-n2/odroid-n2.c
 @@ -107,7 +107,7 @@ static int odroid_detect_variant(void)

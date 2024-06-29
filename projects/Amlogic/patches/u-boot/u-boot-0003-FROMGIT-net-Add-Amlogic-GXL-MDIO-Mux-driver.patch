@@ -1,7 +1,7 @@
-From 5bf96e879251fdbce4cab01c1efb1157070f6ffc Mon Sep 17 00:00:00 2001
+From 91a49a0d363d5437b8e2f2dc4757e89cb7f46d94 Mon Sep 17 00:00:00 2001
 From: Neil Armstrong <neil.armstrong@linaro.org>
 Date: Wed, 13 Dec 2023 10:30:12 +0100
-Subject: [PATCH 2/6] FROMGIT: net: Add Amlogic GXL MDIO Mux driver
+Subject: [PATCH 3/7] FROMGIT: net: Add Amlogic GXL MDIO Mux driver
 
 Port the mdio-mux-meson-gxl.c Linux driver introduced in [1],
 and adapt it to U-Boot.

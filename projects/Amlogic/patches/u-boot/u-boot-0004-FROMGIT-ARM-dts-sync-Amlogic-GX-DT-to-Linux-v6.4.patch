@@ -1,7 +1,7 @@
-From f7cb3ada3688afbc79598b02c59a2e9c561fec7f Mon Sep 17 00:00:00 2001
+From 0e5c2f955fb3029a9bd2194bd4d87fa56601e573 Mon Sep 17 00:00:00 2001
 From: Neil Armstrong <neil.armstrong@linaro.org>
 Date: Wed, 13 Dec 2023 10:30:13 +0100
-Subject: [PATCH 3/6] FROMGIT: ARM: dts: sync Amlogic GX DT to Linux v6.4
+Subject: [PATCH 4/7] FROMGIT: ARM: dts: sync Amlogic GX DT to Linux v6.4
 
 Sync Amlogic GXBB, GXL & GXM DTs from Linux v6.4, and also
 switch to GXL MDIO MUX driver to adapt to DT change,

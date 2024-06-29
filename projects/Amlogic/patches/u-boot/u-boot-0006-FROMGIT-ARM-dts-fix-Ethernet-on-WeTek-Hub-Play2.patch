@@ -1,7 +1,7 @@
-From 20c327bd28ce28a81bb8524b68c23c029b6df96d Mon Sep 17 00:00:00 2001
+From 8c848d4d2cf809d94c5cde3feafe156a4d4f6faf Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Thu, 7 Mar 2024 16:11:17 +0000
-Subject: [PATCH 5/6] FROMGIT: ARM: dts: fix Ethernet on WeTek Hub/Play2
+Subject: [PATCH 6/7] FROMGIT: ARM: dts: fix Ethernet on WeTek Hub/Play2
 
 Placing the snps,reset content needed for Ethernet to probe in a common uboot.dtsi
 results in the content not being used and broken Ethernet. Fix this by creating two
