@@ -609,13 +609,16 @@ EOF
 }
 
 create_meson_conf_target() {
+  local linker="$(get_target_linker)"
   local properties
   properties="PKG_MESON_PROPERTIES_${1^^}"
 
   cat > $2 <<EOF
 [binaries]
 c = '$TARGET_CC'
+c_ld = '$linker'
 cpp = '$TARGET_CXX'
+cpp_ld = '$linker'
 ar = '$TARGET_AR'
 strip = '$TARGET_STRIP'
 pkg-config = '$PKG_CONFIG'
