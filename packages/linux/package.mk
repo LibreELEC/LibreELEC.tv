@@ -62,6 +62,10 @@ if [[ "${KERNEL_TARGET}" = uImage* ]]; then
   PKG_DEPENDS_TARGET+=" u-boot-tools:host"
 fi
 
+if [ "${BOOTLOADER}" = "bcm2835-bootloader" -a "${TARGET_KERNEL_ARCH}" = "arm64" ]; then
+  PKG_DEPENDS_TARGET+=" pigz:host"
+fi
+
 # Ensure that the dependencies of initramfs:target are built correctly, but
 # we don't want to add initramfs:target as a direct dependency as we install
 # this "manually" from within linux:target
