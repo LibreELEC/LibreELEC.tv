@@ -8,7 +8,7 @@ PKG_ARCH="arm aarch64"
 PKG_LICENSE="BSD-3-Clause"
 PKG_SITE="https://github.com/raspberrypi/utils"
 PKG_URL="https://github.com/raspberrypi/utils/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain dtc"
+PKG_DEPENDS_TARGET="gcc:host dtc"
 PKG_LONGDESC="Raspberry Pi related collection of scripts and simple applications"
 
 makeinstall_target() {
