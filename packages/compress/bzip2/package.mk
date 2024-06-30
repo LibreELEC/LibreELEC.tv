@@ -9,7 +9,7 @@ PKG_LICENSE="GPL"
 PKG_SITE="https://sourceware.org/bzip2/"
 PKG_URL="https://sourceware.org/pub/bzip2/bzip2-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_HOST="ccache:host"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_TARGET="make:host gcc:host"
 PKG_LONGDESC="A high-quality bzip2 data compressor."
 PKG_BUILD_FLAGS="+pic +pic:host"
 
