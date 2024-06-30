@@ -267,6 +267,13 @@ get_project_arch() {
   fi
 }
 
+get_distro_version() {
+  if [ -f ${1}/etc/os-release ]; then
+    . ${1}/etc/os-release
+    echo "${VERSION_ID}"
+  fi
+}
+
 # If the project/arch of current matches the update, then it is considered compatible.
 # Otherwise, mount the update SYSTEM partition and, if canupdate.sh is available,
 # call the script to determine if the current update file can be applied on to the
@@ -292,6 +299,14 @@ check_is_compatible() {
 
   old_project_arch="$(get_project_arch "/sysroot")" || return
   new_project_arch="$(get_project_arch "/update")" || return
+
+  # old image will be gone by the time post-update runs
+  if [ -f "/update/usr/lib/libreelec/post-update" ]; then
+    export OLD_PROJECT_ARCH=$old_project_arch
+    export NEW_PROJECT_ARCH=$new_project_arch
+    export OLD_DISTRO_VERSION="$(get_distro_version "/sysroot")"
+    export NEW_DISTRO_VERSION="$(get_distro_version "/update")"
+  fi
 
   # If old or new project/arch isn't available then could be very old (pre-/etc/os-release) build - have to trust it
   if [ -n "${old_project_arch}" -a -n "${new_project_arch}" ]; then
@@ -356,6 +371,19 @@ update_bootloader() {
       sync
       StopProgress "done"
     [ -n "${result}" ] && echo "${result}"
+  fi
+}
+
+post_update_tasks() {
+  if [ -f "${SYSTEM_ROOT}/usr/lib/libreelec/post-update" ]; then
+    local result
+
+    StartProgress spinner "Running post update tasks... "
+      result="$(sh ${SYSTEM_ROOT}/usr/lib/libreelec/post-update 2>&1)"
+      sync
+    StopProgress "done"
+    [ -n "${result}" ] && echo "${result}"
+    sleep 10
   fi
 }
 
@@ -932,6 +960,7 @@ check_update() {
   umount /sysroot
   update_file "System" "$UPDATE_SYSTEM" "/flash/$IMAGE_SYSTEM"
   update_bootloader
+  post_update_tasks
   do_cleanup
   do_reboot
 }

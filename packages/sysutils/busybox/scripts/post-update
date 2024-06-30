@@ -1,0 +1,13 @@
+#!/bin/sh
+# Copyright (C) 2023-present Team LibreELEC (https://libreelec.tv)
+
+# post-update script demo
+
+echo "BOOT_ROOT=${BOOT_ROOT}"
+echo "SYSTEM_ROOT=${SYSTEM_ROOT}"
+echo "OLD_PROJECT_ARCH=${OLD_PROJECT_ARCH}"
+echo "NEW_PROJECT_ARCH=${NEW_PROJECT_ARCH}"
+echo "OLD_DISTRO_VERSION=${OLD_DISTRO_VERSION}"
+echo "NEW_DISTRO_VERSION=${NEW_DISTRO_VERSION}"
+
+exit
