@@ -358,6 +358,38 @@ devices = \
         'rockchip_legacy_boot': '1'
       },
     },
+    'RK3568': {
+      'odroid-m1': {
+        'dtb': 'rk3568-odroid-m1.dtb',
+        'config': 'odroid-m1-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'nanopi-r5c': {
+        'dtb': 'rk3568-nanopi-r5c.dtb',
+        'config': 'nanopi-r5c-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'nanopi-r5s': {
+        'dtb': 'rk3568-nanopi-r5s.dtb',
+        'config': 'nanopi-r5s-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'quartz64-a': {
+        'dtb': 'rk3566-quartz64-a.dtb',
+        'config': 'quartz64-a-rk3566_defconfig',
+        'soc': 'RK3566'
+      },
+      'quartz64-b': {
+        'dtb': 'rk3566-quartz64-b.dtb',
+        'config': 'quartz64-b-rk3566_defconfig',
+        'soc': 'RK3566'
+      },
+      'rock-3a': {
+        'dtb': 'rk3568-rock-3a.dtb',
+        'config': 'rock-3a-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+    },
   },
   'Samsung': {
     'Exynos': {

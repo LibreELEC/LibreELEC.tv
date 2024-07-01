@@ -3,6 +3,8 @@
 
 SRCDIR="${BUILD}"/image/system/usr/share/bootloader
 DSTDIR="${RELEASE_DIR}"/3rdparty/bootloader
+SOC=$("${ROOT}/${SCRIPTS}/uboot_helper" "${PROJECT}" "${DEVICE}" "${UBOOT_SYSTEM}" soc)
+SOC=${SOC:-${DEVICE}}
 
 mkdir -p "${DSTDIR}"
 if [ -n "${UBOOT_SYSTEM}" ]; then
@@ -20,4 +22,4 @@ if [ -n "${UBOOT_SYSTEM}" ]; then
   fi
 fi
 
-cp -av "${SRCDIR}"/"${DEVICE,,}"*.dtb "${DSTDIR}"
+cp -av "${SRCDIR}"/"${SOC,,}"*.dtb "${DSTDIR}"

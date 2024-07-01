@@ -1,0 +1,239 @@
+diff --git a/drivers/clk/rockchip/clk-rk3568.c b/drivers/clk/rockchip/clk-rk3568.c
+index 16dabe2b9c47..f0634787d904 100644
+--- a/drivers/clk/rockchip/clk-rk3568.c
++++ b/drivers/clk/rockchip/clk-rk3568.c
+@@ -87,6 +87,39 @@ static struct rockchip_pll_rate_table rk3568_pll_rates[] = {
+ 	{ /* sentinel */ },
+ };
+ 
++static struct rockchip_pll_rate_table rk3568_hpll_rates[] = {
++	/* _mhz, _refdiv, _fbdiv, _postdiv1, _postdiv2, _dsmpd, _frac */
++	RK3036_PLL_RATE( 594000000, 1, 74, 3, 1, 0,  4194304),  /* vco = 1782000000  fout = 594000000 */
++	RK3036_PLL_RATE( 593406592, 1, 74, 3, 1, 0,  2949838),  /* vco = 1780219777  fout = 593406592.36908 */
++	RK3036_PLL_RATE( 319750000, 1, 79, 6, 1, 0, 15728640),  /* vco = 1918500000  fout = 319750000 */
++	RK3036_PLL_RATE( 297000000, 1, 74, 6, 1, 0,  4194304),  /* vco = 1782000000  fout = 297000000 */
++	RK3036_PLL_RATE( 296703296, 1, 74, 6, 1, 0,  2949838),  /* vco = 1780219777  fout = 296703296.18454 */
++	RK3036_PLL_RATE( 241500000, 1, 60, 6, 1, 0,  6291456),  /* vco = 1449000000  fout = 241500000 */
++	RK3036_PLL_RATE( 162000000, 1, 67, 5, 2, 0,  8388608),  /* vco = 1620000000  fout = 162000000 */
++	RK3036_PLL_RATE( 148500000, 1, 74, 6, 2, 0,  4194304),  /* vco = 1782000000  fout = 148500000*/
++	RK3036_PLL_RATE( 148351648, 1, 74, 6, 2, 0,  2949838),  /* vco = 1780219777  fout = 148351648.09227 */
++	RK3036_PLL_RATE( 136750000, 1, 68, 2, 6, 0,  6291456),  /* vco = 1641000000  fout = 136750000 */
++	RK3036_PLL_RATE( 135000000, 1, 56, 5, 2, 0,  4194304),  /* vco = 1350000000  fout = 135000000 */
++	RK3036_PLL_RATE( 119000000, 1, 59, 6, 2, 0,  8388608),  /* vco = 1428000000  fout = 119000000 */
++	RK3036_PLL_RATE( 108000000, 1, 63, 7, 2, 1,        0),  /* vco = 1512000000  fout = 108000000 */
++	RK3036_PLL_RATE( 106500000, 1, 62, 7, 2, 0,  2097152),  /* vco = 1491000000  fout = 106500000 */
++	RK3036_PLL_RATE(  88750000, 1, 55, 5, 3, 0,  7864320),  /* vco = 1331250000  fout = 88750000 */
++	RK3036_PLL_RATE(  85500000, 1, 57, 4, 4, 1,        0),  /* vco = 1368000000  fout = 85500000 */
++	RK3036_PLL_RATE(  78750000, 1, 59, 6, 3, 0,  1048576),  /* vco = 1417500000  fout = 78750000 */
++	RK3036_PLL_RATE(  74250000, 1, 74, 6, 4, 0,  4194304),  /* vco = 1782000000  fout = 74250000 */
++	RK3036_PLL_RATE(  74175824, 1, 74, 6, 4, 0,  2949838),  /* vco = 1780219777  fout = 74175824.046135 */
++	RK3036_PLL_RATE(  71000000, 1, 71, 6, 4, 1,        0),  /* vco = 1704000000  fout = 71000000 */
++	RK3036_PLL_RATE(  65000000, 1, 65, 6, 4, 0,        0),  /* vco = 1560000000  fout = 65000000 */
++	RK3036_PLL_RATE(  59340659, 1, 59, 6, 4, 0,  5715310),  /* vco = 1424175816  fout = 59340659.022331 */
++	RK3036_PLL_RATE(  54000000, 1, 63, 7, 4, 1,        0),  /* vco = 1512000000  fout = 54000000 */
++	RK3036_PLL_RATE(  49500000, 1, 72, 5, 7, 0,  3145728),  /* vco = 1732500000  fout = 49500000 */
++	RK3036_PLL_RATE(  40000000, 1, 70, 7, 6, 1,        0),  /* vco = 1680000000  fout = 40000000 */
++	RK3036_PLL_RATE(  31500000, 1, 55, 7, 6, 0,  2097152),  /* vco = 1323000000  fout = 31500000 */
++	RK3036_PLL_RATE(  27000000, 1, 55, 7, 7, 0,  2097152),  /* vco = 1323000000  fout = 27000000 */
++	RK3036_PLL_RATE(  26973026, 1, 55, 7, 7, 0,  1173214),  /* vco = 1321678296  fout = 26973026.450799 */
++	{ /* sentinel */ },
++};
++
+ #define RK3568_DIV_ATCLK_CORE_MASK	0x1f
+ #define RK3568_DIV_ATCLK_CORE_SHIFT	0
+ #define RK3568_DIV_GICCLK_CORE_MASK	0x1f
+@@ -315,7 +348,7 @@ static struct rockchip_pll_clock rk3568_pmu_pll_clks[] __initdata = {
+ 		     RK3568_PMU_MODE_CON0, 0, 4, 0, rk3568_pll_rates),
+ 	[hpll] = PLL(pll_rk3328, PLL_HPLL, "hpll",  mux_pll_p,
+ 		     0, RK3568_PMU_PLL_CON(16),
+-		     RK3568_PMU_MODE_CON0, 2, 7, 0, rk3568_pll_rates),
++		     RK3568_PMU_MODE_CON0, 2, 7, 0, rk3568_hpll_rates),
+ };
+ 
+ static struct rockchip_pll_clock rk3568_pll_clks[] __initdata = {
+@@ -1045,10 +1078,10 @@ static struct rockchip_clk_branch rk3568_clk_branches[] __initdata = {
+ 			RK3568_CLKGATE_CON(20), 8, GFLAGS),
+ 	GATE(HCLK_VOP, "hclk_vop", "hclk_vo", 0,
+ 			RK3568_CLKGATE_CON(20), 9, GFLAGS),
+-	COMPOSITE(DCLK_VOP0, "dclk_vop0", hpll_vpll_gpll_cpll_p, CLK_SET_RATE_NO_REPARENT,
++	COMPOSITE(DCLK_VOP0, "dclk_vop0", hpll_vpll_gpll_cpll_p, CLK_SET_RATE_PARENT | CLK_SET_RATE_NO_REPARENT,
+ 			RK3568_CLKSEL_CON(39), 10, 2, MFLAGS, 0, 8, DFLAGS,
+ 			RK3568_CLKGATE_CON(20), 10, GFLAGS),
+-	COMPOSITE(DCLK_VOP1, "dclk_vop1", hpll_vpll_gpll_cpll_p, CLK_SET_RATE_NO_REPARENT,
++	COMPOSITE(DCLK_VOP1, "dclk_vop1", hpll_vpll_gpll_cpll_p, CLK_SET_RATE_PARENT | CLK_SET_RATE_NO_REPARENT,
+ 			RK3568_CLKSEL_CON(40), 10, 2, MFLAGS, 0, 8, DFLAGS,
+ 			RK3568_CLKGATE_CON(20), 11, GFLAGS),
+ 	COMPOSITE(DCLK_VOP2, "dclk_vop2", hpll_vpll_gpll_cpll_p, CLK_SET_RATE_NO_REPARENT,
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index 583df4d22f7e..39be88da24fc 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -1338,10 +1338,88 @@ static void vop2_crtc_disable_vblank(struct drm_crtc *crtc)
+ 	vop2_crtc_disable_irq(vp, VP_INT_FS_FIELD);
+ }
+ 
++static bool vop2_crtc_is_tmds(struct drm_crtc *crtc)
++{
++	struct rockchip_crtc_state *s = to_rockchip_crtc_state(crtc->state);
++	struct drm_encoder *encoder;
++
++	switch (s->output_type) {
++	case DRM_MODE_CONNECTOR_LVDS:
++	case DRM_MODE_CONNECTOR_DSI:
++		return false;
++	case DRM_MODE_CONNECTOR_eDP:
++	case DRM_MODE_CONNECTOR_HDMIA:
++	case DRM_MODE_CONNECTOR_HDMIB:
++	case DRM_MODE_CONNECTOR_DisplayPort:
++		return true;
++	}
++
++	drm_for_each_encoder_mask(encoder, crtc->dev, crtc->state->encoder_mask)
++		if (encoder->encoder_type == DRM_MODE_ENCODER_TMDS)
++			return true;
++
++	return false;
++}
++
++static enum drm_mode_status vop2_crtc_size_valid(struct drm_crtc *crtc,
++					const struct drm_display_mode *mode)
++{
++	struct vop2_video_port *vp = to_vop2_video_port(crtc);
++	struct vop2 *vop2 = vp->vop2;
++	const struct vop2_data *vop2_data = vop2->data;
++	const struct vop2_video_port_data *vp_data = &vop2_data->vp[vp->id];
++	const struct vop_rect *max_output = &vp_data->max_output;
++
++	if (max_output->width && max_output->height) {
++		/* only the size of the resulting rect matters */
++		if (drm_mode_validate_size(mode, max_output->width,
++					   max_output->height) != MODE_OK) {
++			return drm_mode_validate_size(mode, max_output->height,
++						      max_output->width);
++		}
++	}
++
++	return MODE_OK;
++}
++
++/*
++ * The VESA DMT standard specifies a 0.5% pixel clock frequency tolerance.
++ * The CVT spec reuses that tolerance in its examples.
++ */
++#define	CLOCK_TOLERANCE_PER_MILLE	5
++
++static enum drm_mode_status vop2_crtc_mode_valid(struct drm_crtc *crtc,
++					const struct drm_display_mode *mode)
++{
++	struct vop2_video_port *vp = to_vop2_video_port(crtc);
++	struct vop2 *vop2 = vp->vop2;
++	long rounded_rate;
++	long lowest, highest;
++
++	if (vop2_crtc_is_tmds(crtc)) {
++		rounded_rate = clk_round_rate(vp->dclk, mode->clock * 1000 + 999);
++		if (rounded_rate < 0)
++			return MODE_NOCLOCK;
++
++		lowest = mode->clock * (1000 - CLOCK_TOLERANCE_PER_MILLE);
++		if (rounded_rate < lowest)
++			return MODE_CLOCK_LOW;
++
++		highest = mode->clock * (1000 + CLOCK_TOLERANCE_PER_MILLE);
++		if (rounded_rate > highest)
++			return MODE_CLOCK_HIGH;
++	}
++
++	return vop2_crtc_size_valid(crtc, mode);
++}
++
+ static bool vop2_crtc_mode_fixup(struct drm_crtc *crtc,
+ 				 const struct drm_display_mode *mode,
+ 				 struct drm_display_mode *adj_mode)
+ {
++	if (vop2_crtc_size_valid(crtc, adj_mode) != MODE_OK)
++		return false;
++
+ 	drm_mode_set_crtcinfo(adj_mode, CRTC_INTERLACE_HALVE_V |
+ 					CRTC_STEREO_DOUBLE);
+ 
+@@ -2071,6 +2149,7 @@ static void vop2_crtc_atomic_flush(struct drm_crtc *crtc,
+ }
+ 
+ static const struct drm_crtc_helper_funcs vop2_crtc_helper_funcs = {
++	.mode_valid = vop2_crtc_mode_valid,
+ 	.mode_fixup = vop2_crtc_mode_fixup,
+ 	.atomic_check = vop2_crtc_atomic_check,
+ 	.atomic_begin = vop2_crtc_atomic_begin,
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
+index 62b573f282a7..749bc6aa9331 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
+@@ -141,32 +141,6 @@ static const struct vop2_video_port_data rk3568_vop_video_ports[] = {
+  */
+ static const struct vop2_win_data rk3568_vop_win_data[] = {
+ 	{
+-		.name = "Smart0-win0",
+-		.phys_id = ROCKCHIP_VOP2_SMART0,
+-		.base = 0x1c00,
+-		.formats = formats_win_lite,
+-		.nformats = ARRAY_SIZE(formats_win_lite),
+-		.format_modifiers = format_modifiers,
+-		.layer_sel_id = 3,
+-		.supported_rotations = DRM_MODE_REFLECT_Y,
+-		.type = DRM_PLANE_TYPE_PRIMARY,
+-		.max_upscale_factor = 8,
+-		.max_downscale_factor = 8,
+-		.dly = { 20, 47, 41 },
+-	}, {
+-		.name = "Smart1-win0",
+-		.phys_id = ROCKCHIP_VOP2_SMART1,
+-		.formats = formats_win_lite,
+-		.nformats = ARRAY_SIZE(formats_win_lite),
+-		.format_modifiers = format_modifiers,
+-		.base = 0x1e00,
+-		.layer_sel_id = 7,
+-		.supported_rotations = DRM_MODE_REFLECT_Y,
+-		.type = DRM_PLANE_TYPE_PRIMARY,
+-		.max_upscale_factor = 8,
+-		.max_downscale_factor = 8,
+-		.dly = { 20, 47, 41 },
+-	}, {
+ 		.name = "Esmart1-win0",
+ 		.phys_id = ROCKCHIP_VOP2_ESMART1,
+ 		.formats = formats_win_full_10bit_yuyv,
+@@ -222,7 +196,33 @@ static const struct vop2_win_data rk3568_vop_win_data[] = {
+ 		.max_downscale_factor = 4,
+ 		.dly = { 0, 27, 21 },
+ 		.feature = WIN_FEATURE_AFBDC | WIN_FEATURE_CLUSTER,
+-	},
++	}, {
++		.name = "Smart0-win0",
++		.phys_id = ROCKCHIP_VOP2_SMART0,
++		.base = 0x1c00,
++		.formats = formats_win_lite,
++		.nformats = ARRAY_SIZE(formats_win_lite),
++		.format_modifiers = format_modifiers,
++		.layer_sel_id = 3,
++		.supported_rotations = DRM_MODE_REFLECT_Y,
++		.type = DRM_PLANE_TYPE_OVERLAY,
++		.max_upscale_factor = 8,
++		.max_downscale_factor = 8,
++		.dly = { 20, 47, 41 },
++	}, {
++		.name = "Smart1-win0",
++		.phys_id = ROCKCHIP_VOP2_SMART1,
++		.formats = formats_win_lite,
++		.nformats = ARRAY_SIZE(formats_win_lite),
++		.format_modifiers = format_modifiers,
++		.base = 0x1e00,
++		.layer_sel_id = 7,
++		.supported_rotations = DRM_MODE_REFLECT_Y,
++		.type = DRM_PLANE_TYPE_OVERLAY,
++		.max_upscale_factor = 8,
++		.max_downscale_factor = 8,
++		.dly = { 20, 47, 41 },
++	}
+ };
+ 
+ static const struct vop2_data rk3566_vop = {
