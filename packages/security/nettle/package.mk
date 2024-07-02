@@ -8,8 +8,8 @@ PKG_SHA256="b4c518adb174e484cb4acea54118f02380c7133771e7e9beb98a0787194ee47c"
 PKG_LICENSE="GPL2"
 PKG_SITE="http://www.lysator.liu.se/~nisse/nettle"
 PKG_URL="https://ftp.gnu.org/gnu/nettle/nettle-${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_HOST="toolchain:host gmp:host"
-PKG_DEPENDS_TARGET="toolchain gmp"
+PKG_DEPENDS_HOST="autoconf:host gcc:host gmp:host"
+PKG_DEPENDS_TARGET="autoconf:host gcc:host gmp"
 PKG_LONGDESC="A low-level cryptographic library."
 
 PKG_CONFIGURE_OPTS_COMMON="--disable-documentation \
