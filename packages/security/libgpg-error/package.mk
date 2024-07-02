@@ -8,7 +8,7 @@ PKG_SHA256="69405349e0a633e444a28c5b35ce8f14484684518a508dc48a089992fe93e20a"
 PKG_LICENSE="GPLv2"
 PKG_SITE="https://www.gnupg.org"
 PKG_URL="https://www.gnupg.org/ftp/gcrypt/libgpg-error/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_TARGET="autoconf:host gcc:host"
 PKG_LONGDESC="A library that defines common error values for all GnuPG components."
 
 pre_configure_target() {
