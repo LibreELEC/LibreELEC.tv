@@ -8,7 +8,7 @@ PKG_SHA256="09120c9867ce7f2081d6aaa1775386b98c2f2f246135761aae47d81f58685b9c"
 PKG_LICENSE="GPLv2"
 PKG_SITE="https://www.gnupg.org/"
 PKG_URL="https://www.gnupg.org/ftp/gcrypt/libgcrypt/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
-PKG_DEPENDS_TARGET="toolchain libgpg-error"
+PKG_DEPENDS_TARGET="autoconf:host gcc:host libgpg-error"
 PKG_LONGDESC="A General purpose cryptographic library."
 PKG_TOOLCHAIN="autotools"
 # libgcrypt-1.7.x fails to build with LTO support
