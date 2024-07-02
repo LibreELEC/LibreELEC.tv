@@ -8,7 +8,7 @@ PKG_LICENSE="OSS"
 PKG_SITE="http://www.zlib.net"
 PKG_URL="https://zlib.net/fossils/${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_HOST="ccache:host cmake:host"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_TARGET="cmake:host gcc:host"
 PKG_LONGDESC="A general purpose (ZIP) data compression library."
 PKG_TOOLCHAIN="cmake-make"
 

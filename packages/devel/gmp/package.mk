@@ -9,7 +9,7 @@ PKG_LICENSE="LGPLv3+"
 PKG_SITE="http://gmplib.org/"
 PKG_URL="https://gmplib.org/download/gmp/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_HOST="ccache:host m4:host"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_TARGET="autoconf:host gcc:host"
 PKG_LONGDESC="A library for arbitrary precision arithmetic, operating on signed integers, rational numbers, and floating point numbers."
 PKG_BUILD_FLAGS="+pic:host"
 

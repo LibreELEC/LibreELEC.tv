@@ -8,7 +8,7 @@ PKG_LICENSE="BSD/GPLv2"
 PKG_SITE="http://www.zstd.net"
 PKG_URL="https://github.com/facebook/zstd/releases/download/v${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.zst"
 PKG_DEPENDS_HOST="cmake:host make:host"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_TARGET="cmake:host gcc:host"
 PKG_LONGDESC="A fast real-time compression algorithm."
 # Override toolchain as meson and ninja are not built yet
 # and zstd is a dependency of ccache

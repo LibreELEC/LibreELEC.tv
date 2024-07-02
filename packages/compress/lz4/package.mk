@@ -7,8 +7,8 @@ PKG_SHA256="0b0e3aa07c8c063ddf40b082bdf7e37a1562bda40a0ff5272957f3e987e0e54b"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/lz4/lz4"
 PKG_URL="https://github.com/lz4/lz4/archive/v${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_HOST="toolchain:host"
-PKG_DEPENDS_TARGET="toolchain"
+PKG_DEPENDS_HOST="cmake:host gcc:host"
+PKG_DEPENDS_TARGET="cmake:host gcc:host"
 PKG_LONGDESC="lz4 data compressor/decompressor"
 
 configure_package() {
