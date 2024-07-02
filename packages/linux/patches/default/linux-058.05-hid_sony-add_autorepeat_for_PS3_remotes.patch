@@ -3,7 +3,7 @@ From: Stefan Saraev <stefan@saraev.ca>
 Date: Tue, 22 Apr 2014 16:05:14 +0300
 Subject: [PATCH] [RFC] hid/sony: add autorepeat for PS3 remotes
 
-adapted to 4.6
+adapted to 6.10
 
 Betreff: [RFC] hid/sony: add autorepeat for PS3 remotes
 Von: David Dillow <dave@thedillows.org>
@@ -33,8 +33,8 @@ diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
 index 310436a..84f7f41 100644
 --- a/drivers/hid/hid-sony.c
 +++ b/drivers/hid/hid-sony.c
-@@ -1120,6 +1120,25 @@ static int ps3remote_mapping(struct hid_device *hdev, struct hid_input *hi,
- 	return 1;
+@@ -743,6 +743,25 @@ static int ps3remote_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	return -1;
  }
  
 +static int ps3remote_setup_repeat(struct hid_device *hdev)
@@ -59,14 +59,14 @@ index 310436a..84f7f41 100644
  static u8 *sony_report_fixup(struct hid_device *hdev, u8 *rdesc,
  		unsigned int *rsize)
  {
-@@ -2372,6 +2391,8 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		sony_init_output_report(sc, dualshock4_send_output_report);
+@@ -2015,6 +2034,8 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 
  	} else if (sc->quirks & MOTION_CONTROLLER) {
  		sony_init_output_report(sc, motion_send_output_report);
 +	} else if (sc->quirks & PS3REMOTE) {
 +		ret = ps3remote_setup_repeat(hdev);
- 	} else {
- 		ret = 0;
  	}
+ 
+ 	if (sc->quirks & SONY_LED_SUPPORT) {
 -- 
 2.5.0

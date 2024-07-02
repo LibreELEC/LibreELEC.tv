@@ -24,7 +24,7 @@ Signed-off-by: Sebastian Meyer <git-commit@mailhell.seb7.de>
 +		enable-active-high;
 +	};
 +
- 	wifi_pwrseq: wifi_pwrseq {
+ 	wifi_pwrseq: pwrseq {
  		compatible = "mmc-pwrseq-simple";
  		clocks = <&rtc 1>;
 @@ -20,6 +30,10 @@

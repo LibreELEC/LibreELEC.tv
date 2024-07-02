@@ -3796,15 +3796,15 @@ index a4a45daf93f2..058bc372f02b 100644
  }
  
 @@ -261,7 +263,8 @@ static int cdn_dp_connector_get_modes(struct drm_connector *connector)
- 	mutex_lock(&dp->lock);
- 	edid = dp->edid;
- 	if (edid) {
+ 		/* FIXME: get rid of drm_edid_raw() */
+ 		const struct edid *edid = drm_edid_raw(dp->drm_edid);
+ 
 -		DRM_DEV_DEBUG_KMS(dp->dev, "got edid: width[%d] x height[%d]\n",
 +		DRM_DEV_DEBUG_KMS(dp->mhdp.dev,
 +				  "got edid: width[%d] x height[%d]\n",
  				  edid->width_cm, edid->height_cm);
  
- 		dp->sink_has_audio = drm_detect_monitor_audio(edid);
+ 	}
 @@ -279,7 +282,8 @@ cdn_dp_connector_mode_valid(struct drm_connector *connector,
  			    struct drm_display_mode *mode)
  {
@@ -3839,7 +3839,7 @@ index a4a45daf93f2..058bc372f02b 100644
  				  "requested=%d, actual=%d, clock=%d\n",
  				  requested, actual, mode->clock);
  		return MODE_CLOCK_HIGH;
-@@ -335,59 +339,62 @@ static int cdn_dp_firmware_init(struct cdn_dp_device *dp)
+@@ -335,63 +339,66 @@ static int cdn_dp_firmware_init(struct cdn_dp_device *dp)
  	const u32 *iram_data, *dram_data;
  	const struct firmware *fw = dp->fw;
  	const struct cdn_firmware_header *hdr;
@@ -3891,11 +3891,17 @@ index a4a45daf93f2..058bc372f02b 100644
  		return ret;
  	}
  
- 	kfree(dp->edid);
--	dp->edid = drm_do_get_edid(&dp->connector,
--				   cdn_dp_get_edid_block, dp);
-+	dp->edid = drm_do_get_edid(&mhdp->connector.base,
-+				   cdns_mhdp_get_edid_block, mhdp);
+ 	drm_edid_free(dp->drm_edid);
+-	dp->drm_edid = drm_edid_read_custom(&dp->connector,
+-					    cdn_dp_get_edid_block, dp);
+-	drm_edid_connector_update(&dp->connector, dp->drm_edid);
++	dp->drm_edid = drm_edid_read_custom(&mhdp->connector.base,
++					    cdns_mhdp_get_edid_block, mhdp);
++	drm_edid_connector_update(&mhdp->connector, dp->drm_edid);
+ 
+-	dp->sink_has_audio = dp->connector.display_info.has_audio;
++	dp->sink_has_audio = mhdp->connector.display_info.has_audio;
+ 
  	return 0;
  }
  
@@ -3948,7 +3954,7 @@ index a4a45daf93f2..058bc372f02b 100644
  			      ret);
  		goto err_power_on;
  	}
-@@ -428,7 +435,7 @@ static int cdn_dp_enable_phy(struct cdn_dp_device *dp, struct cdn_dp_port *port)
+@@ -440,7 +447,7 @@ static int cdn_dp_enable_phy(struct cdn_dp_device *dp, struct cdn_dp_port *port)
  
  err_power_on:
  	if (phy_power_off(port->phy))
@@ -3957,7 +3963,7 @@ index a4a45daf93f2..058bc372f02b 100644
  	else
  		port->phy_enabled = false;
  
-@@ -446,7 +453,8 @@ static int cdn_dp_disable_phy(struct cdn_dp_device *dp,
+@@ -458,7 +465,8 @@ static int cdn_dp_disable_phy(struct cdn_dp_device *dp,
  	if (port->phy_enabled) {
  		ret = phy_power_off(port->phy);
  		if (ret) {
@@ -3986,8 +3992,8 @@ index a4a45daf93f2..058bc372f02b 100644
 +	dp->mhdp.dp.rate = 0;
 +	dp->mhdp.dp.num_lanes = 0;
  	if (!dp->connected) {
- 		kfree(dp->edid);
- 		dp->edid = NULL;
+ 		drm_edid_free(dp->drm_edid);
+ 		dp->drm_edid = NULL;
 @@ -492,11 +500,11 @@ static int cdn_dp_enable(struct cdn_dp_device *dp)
  {
  	int ret, i, lanes;
@@ -4460,7 +4466,7 @@ index 81ac9b658a70..8b1b15b92503 100644
 -	struct drm_display_mode mode;
 -	struct platform_device *audio_pdev;
  	struct work_struct event_work;
- 	struct edid *edid;
+ 	const struct drm_edid *drm_edid;
  
 @@ -77,29 +46,20 @@ struct cdn_dp_device {
  	bool suspended;
