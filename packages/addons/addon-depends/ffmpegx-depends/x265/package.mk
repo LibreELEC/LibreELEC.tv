@@ -14,5 +14,5 @@ PKG_TOOLCHAIN="make"
 
 pre_configure_target() {
   LDFLAGS+=" -ldl"
-  ${CMAKE} -DCMAKE_INSTALL_PREFIX=/usr -G "Unix Makefiles" ./source
+  ${CMAKE} -G "Unix Makefiles" ./source
 }
