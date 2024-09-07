@@ -422,6 +422,40 @@ devices = \
         'soc': 'RK3566'
       },
     },
+    'RK3588': {
+      'cm3588-nas': {
+        'config': 'cm3588-nas-rk3588_defconfig',
+        'dtb': 'rk3588-friendlyelec-cm3588-nas.dtb'
+      },
+      'nanopc-t6': {
+        'config': 'nanopc-t6-rk3588_defconfig',
+        'dtb': ''
+      },
+      'nanopi-r6c': {
+        'config': 'nanopi-r6c-rk3588s_defconfig',
+        'dtb': ''
+      },
+      'nanopi-r6s': {
+        'config': 'nanopi-r6s-rk3588s_defconfig',
+        'dtb': ''
+      },
+      'orangepi-5': {
+        'config': 'orangepi-5-rk3588s_defconfig',
+        'dtb': ''
+      },
+      'orangepi-5-plus': {
+        'config': 'orangepi-5-plus-rk3588_defconfig',
+        'dtb': ''
+      },
+      'rock-5a': {
+        'config': 'rock5a-rk3588s_defconfig',
+        'dtb': ''
+      },
+      'rock-5b': {
+        'config': 'rock5b-rk3588_defconfig',
+        'dtb': ''
+      },
+    },
   },
   'Samsung': {
     'Exynos': {

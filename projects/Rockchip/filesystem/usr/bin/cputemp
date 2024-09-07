@@ -7,7 +7,7 @@
 # try to find temperature of cpu
 for thermal_zone in /sys/devices/virtual/thermal/thermal_zone*; do
   [ -d "$thermal_zone" ] || continue
-  if [[ "$(cat $thermal_zone/type)" =~ '(cpu|soc)-thermal' ]]; then
+  if [[ "$(cat $thermal_zone/type)" =~ '(cpu|soc|package)-thermal' ]]; then
     TEMP="$(cat $thermal_zone/temp)"
     break
   fi
