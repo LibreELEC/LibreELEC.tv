@@ -1,0 +1,72 @@
+From 7051422474e4c4e302ede3d07ffd8ef2682e07a2 Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Tue, 22 Apr 2014 16:05:14 +0300
+Subject: [PATCH] [RFC] hid/sony: add autorepeat for PS3 remotes
+
+adapted to 4.6
+
+Betreff: [RFC] hid/sony: add autorepeat for PS3 remotes
+Von: David Dillow <dave@thedillows.org>
+Datum: 28.06.2013 04:28
+An: linux-input@vger.kernel.org
+Kopie (CC): Stephan Raue <stephan@openelec.tv>
+
+Some applications using the PS3 remote would like to have autorepeat
+from the device. Use the input subsystem's software emulation to provide
+this capability, and enable those that don't need it to turn it off.
+---
+I'm not sure this is the correct approach, or if it is even appropriate
+for a remote to do autorepeat. However, the media/rc subsystem does do
+it by default, and it's been requested by users, so there is at least
+some demand.
+
+This compiled against the hid-sony driver with the PS3 remote changes
+merged, but I have done no testing of it. If the approach seems
+reasonable, I'll try to test it when the MythTV is idle.
+
+Signed-off-by: Matt DeVillier <matt.devillier@gmail.com>
+---
+ drivers/hid/hid-sony.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index 310436a..84f7f41 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -1120,6 +1120,25 @@ static int ps3remote_mapping(struct hid_device *hdev, struct hid_input *hi,
+ 	return 1;
+ }
+ 
++static int ps3remote_setup_repeat(struct hid_device *hdev)
++{
++	struct hid_input *hidinput = list_first_entry(&hdev->inputs,
++						 struct hid_input, list);
++	struct input_dev *input = hidinput->input;
++
++	/*
++	 * Set up autorepeat defaults per the remote control subsystem;
++	 * this must be done after hid_hw_start(), as having these non-zero
++	 * at the time of input_register_device() tells the input system that
++	 * the hardware does the autorepeat, and the PS3 remote does not.
++	*/
++	set_bit(EV_REP, input->evbit);
++	input->rep[REP_DELAY]  = 500;
++	input->rep[REP_PERIOD] = 125;
++
++	return 0;
++}
++
+ static u8 *sony_report_fixup(struct hid_device *hdev, u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+@@ -2372,6 +2391,8 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		sony_init_output_report(sc, dualshock4_send_output_report);
+ 	} else if (sc->quirks & MOTION_CONTROLLER) {
+ 		sony_init_output_report(sc, motion_send_output_report);
++	} else if (sc->quirks & PS3REMOTE) {
++		ret = ps3remote_setup_repeat(hdev);
+ 	} else {
+ 		ret = 0;
+ 	}
+-- 
+2.5.0

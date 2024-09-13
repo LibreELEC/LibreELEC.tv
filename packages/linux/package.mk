@@ -20,7 +20,7 @@ case "${LINUX}" in
     PKG_SHA256="740368c264d071200577ef745c1e06362564daefd941c7c562905853c6f16598"
     PKG_URL="https://github.com/torvalds/linux/archive/${PKG_VERSION}.tar.gz"
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
-    PKG_PATCH_DIRS="default rtlwifi/6.10 rtlwifi/6.11"
+    PKG_PATCH_DIRS="amlogic rtlwifi/6.10 rtlwifi/6.11"
     ;;
   raspberrypi)
     PKG_VERSION="d6a3a3f106010d9576a700148220842cac4c5739" # 6.6.50

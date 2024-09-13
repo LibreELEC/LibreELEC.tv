@@ -1,0 +1,13 @@
+diff --git a/tools/perf/Makefile.config b/tools/perf/Makefile.config
+index 0294bfb6c5f8..153036bbed7e 100644
+--- a/tools/perf/Makefile.config
++++ b/tools/perf/Makefile.config
+@@ -35,7 +35,7 @@ ifeq ($(SRCARCH),x86)
+   ifeq (${IS_64_BIT}, 1)
+     CFLAGS += -DHAVE_ARCH_X86_64_SUPPORT -DHAVE_SYSCALL_TABLE -I$(OUTPUT)arch/x86/include/generated
+     ARCH_INCLUDE = ../../arch/x86/lib/memcpy_64.S ../../arch/x86/lib/memset_64.S
+-    LIBUNWIND_LIBS = -lunwind-x86_64 -lunwind -llzma
++    LIBUNWIND_LIBS = -lunwind-x86_64 -lunwind
+     $(call detected,CONFIG_X86_64)
+   else
+     LIBUNWIND_LIBS = -lunwind-x86 -llzma -lunwind
