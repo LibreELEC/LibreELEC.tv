@@ -148,8 +148,8 @@ show_config() {
   #   $DISTRO/config/functions
   #   $DISTRO/show_config
 
-  if [ -f distributions/${DISTRO}/show_config ]; then
-    . distributions/${DISTRO}/show_config
+  if [ -f "${DISTRO_DIR}/${DISTRO}/show_config" ]; then
+    . "${DISTRO_DIR}/${DISTRO}/show_config"
   fi
   if [ "$(type -t show_distro_config)" = "function" ]; then
     show_distro_config
