@@ -75,6 +75,8 @@ class Controller():
             xbmc.log('Running: %s' % command, xbmc.LOGDEBUG)
             os.system(command)
             os.remove(archive)
+            command = 'find {0}/DeviceHost -name DeviceHostLinux -exec chmod 755 {{}} \;'.format(dest_folder)
+            os.system(command)
             xbmcgui.Dialog().notification(ADDON_NAME, LS(30039), xbmcgui.NOTIFICATION_INFO)
             xbmc.log('NPVR.zip installed', xbmc.LOGDEBUG)
             if xbmcgui.Dialog().yesno("NextPVR Server", LS(30020)):
