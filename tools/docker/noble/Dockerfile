@@ -21,7 +21,7 @@ RUN apt-get install -y \
     wget bash bc gcc-13 cpp-13 sed patch patchutils tar bzip2 gzip xz-utils zstd perl gawk gperf zip \
       unzip diffutils lzop make file g++-13 xfonts-utils xsltproc default-jre-headless python3 \
       libc6-dev libncurses5-dev libjson-perl libxml-parser-perl libparse-yapp-perl rdfind \
-      golang-go git openssh-client \
+      golang-go git openssh-client rsync \
     --no-install-recommends
 
 RUN if [ "$(uname -m)" = "aarch64" ]; then \

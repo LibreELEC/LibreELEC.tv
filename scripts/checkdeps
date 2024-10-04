@@ -70,6 +70,7 @@ dep_map=(
   [patch]=patch
   [perl]=perl
   [rdfind]=rdfind
+  [rsync]=rsync
   [sed]=sed
   [tar]=tar
   [unzip]=unzip
