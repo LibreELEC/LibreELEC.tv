@@ -348,7 +348,7 @@ class MyUtility(object):
       raise
       return ""
 
-  # Use wget with same parameters as scripts/get is using
+  # Use same get command as scripts/get_archive is using
   @staticmethod
   def download_file(msgs, filename_data, filename_log, url):
     retries=10
@@ -357,10 +357,7 @@ class MyUtility(object):
     while attempts < retries:
       if stopped.is_set(): break
       attempts += 1
-      if url.startswith("ftp:"):
-        (result, output) = MyUtility.runcommand(msgs, "wget --output-file=- --timeout=30 --tries=3 --no-check-certificate -O %s %s" % (filename_data, url), logfile=filename_log)
-      else
-        (result, output) = MyUtility.runcommand(msgs, "wget --output-file=- --timeout=30 --tries=3 --passive-ftp --no-check-certificate -O %s %s" % (filename_data, url), logfile=filename_log)
+      (result, output) = MyUtility.runcommand(msgs, f"curl --silent --show-error --connect-timeout 30 --retry 3 --continue-at - --location --max-redirs 5 --output {filename_data} {url}", logfile=filename_log)
       if result == 0:
         return True
 
