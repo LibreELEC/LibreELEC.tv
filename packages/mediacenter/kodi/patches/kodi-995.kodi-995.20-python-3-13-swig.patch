@@ -1,0 +1,12 @@
+--- a/xbmc/interfaces/python/swig.cpp	2024-10-08 13:40:42.546823816 +0000
++++ b/xbmc/interfaces/python/swig.cpp	2024-10-08 13:40:42.546823816 +0000
+@@ -75,6 +75,9 @@
+ #if PY_VERSION_HEX >= 0x030C00A1
+       0,
+ #endif
++#if PY_VERSION_HEX >= 0x030D0000
++      0,
++#endif
+     };
+ 
+     static int size = (long*)&(py_type_object_header.tp_name) - (long*)&py_type_object_header;
