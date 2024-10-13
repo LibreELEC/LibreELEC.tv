@@ -362,6 +362,73 @@ devices = \
         'rockchip_legacy_boot': '1'
       },
     },
+    'RK3568': {
+      'nanopi-r5c': {
+        'dtb': 'rk3568-nanopi-r5c.dtb',
+        'config': 'nanopi-r5c-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'nanopi-r5s': {
+        'dtb': 'rk3568-nanopi-r5s.dtb',
+        'config': 'nanopi-r5s-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'odroid-m1': {
+        'dtb': 'rk3568-odroid-m1.dtb',
+        'config': 'odroid-m1-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'quartz64-a': {
+        'dtb': 'rk3566-quartz64-a.dtb',
+        'config': 'quartz64-a-rk3566_defconfig',
+        'soc': 'RK3566'
+      },
+      'quartz64-b': {
+        'dtb': 'rk3566-quartz64-b.dtb',
+        'config': 'quartz64-b-rk3566_defconfig',
+        'soc': 'RK3566'
+      },
+      'rock-3a': {
+        'dtb': 'rk3568-rock-3a.dtb',
+        'config': 'rock-3a-rk3568_defconfig',
+        'soc': 'RK3568'
+      },
+      'rock-3c': {
+        'dtb': 'rk3568-rock-3c.dtb',
+        'config': 'rock-3c-rk3566_defconfig',
+        'soc': 'RK3566'
+      },
+    },
+    'RK3588': {
+      'nanopc-t6': {
+        'dtb': 'rk3588-nanopc-t6.dtb',
+        'config': 'nanopc-t6-rk3588_defconfig'
+      },
+      'nanopi-r6c': {
+        'dtb': 'rk3588s-nanopi-r6c.dtb',
+        'config': 'nanopi-r6c-rk3588s_defconfig'
+      },
+      'nanopi-r6s': {
+        'dtb': 'rk3588s-nanopi-r6s.dtb',
+        'config': 'nanopi-r6s-rk3588s_defconfig'
+      },
+      'orangepi-5': {
+        'dtb': 'rk3588s-orangepi-5.dtb',
+        'config': 'orangepi-5-rk3588s_defconfig'
+      },
+      'orangepi-5-plus': {
+        'dtb': 'rk3588-orangepi-5-plus.dtb',
+        'config': 'orangepi-5-plus-rk3588_defconfig'
+      },
+      'rock-5a': {
+        'dtb': 'rk3588s-rock-5a.dtb',
+        'config': 'rock5a-rk3588s_defconfig'
+      },
+      'rock-5b': {
+        'dtb': 'rk3588-rock-5b.dtb',
+        'config': 'rock5b-rk3588_defconfig'
+      },
+    },
   },
   'Samsung': {
     'Exynos': {
