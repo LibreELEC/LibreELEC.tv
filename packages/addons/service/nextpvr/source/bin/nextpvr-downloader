@@ -61,6 +61,11 @@ fi
 # extract NextPVR
 kodi-send --action="Notification(Extracting NextPVR,starting,1000,${ICON})" >/dev/null
 mkdir -p ${ADDON_DIR}/nextpvr-bin
+
+ln -s ${ADDON_DIR}/local/libmediainfo.so ${ADDON_DIR}/nextpvr-bin
+chmod +x ${ADDON_DIR}/local/hdhomerun_config
+ln -s ${ADDON_DIR}/local/hdhomerun_config ${ADDON_DIR}/nextpvr-bin
+
 unzip ${NEXTPVR_FILE} -d ${ADDON_DIR}/nextpvr-bin >/dev/null
 
 if [ "$(uname -m)" != "x86_64" ]; then
