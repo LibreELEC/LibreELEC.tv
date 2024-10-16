@@ -1,0 +1,11 @@
+--- a/x86-64/src/wl/sys/wl_linux.c	2024-10-08 01:08:52.879388180 +0000
++++ b/x86-64/src/wl/sys/wl_linux.c	2024-10-08 01:11:18.724103453 +0000
+@@ -60,7 +60,7 @@
+ #include <asm/irq.h>
+ #include <asm/pgtable.h>
+ #include <asm/uaccess.h>
+-#include <asm/unaligned.h>
++#include <linux/unaligned.h>
+ 
+ #include <proto/802.1d.h>
+ 
