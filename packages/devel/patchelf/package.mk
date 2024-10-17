@@ -10,3 +10,4 @@ PKG_URL="https://github.com/NixOS/patchelf/releases/download/${PKG_VERSION}/patc
 PKG_DEPENDS_HOST="autotools:host"
 PKG_LONGDESC="A small utility to modify the dynamic linker and RPATH of ELF executables"
 PKG_TOOLCHAIN="autotools"
+PKG_BUILD_FLAGS="-cfg-libs:host"

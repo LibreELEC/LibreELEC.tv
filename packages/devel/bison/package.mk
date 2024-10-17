@@ -10,7 +10,7 @@ PKG_SITE="http://www.gnu.org/software/bison/"
 PKG_URL="http://ftpmirror.gnu.org/bison/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_HOST="ccache:host m4:host"
 PKG_LONGDESC="A general-purpose parser generator."
-PKG_BUILD_FLAGS="-parallel"
+PKG_BUILD_FLAGS="-parallel -cfg-libs:host"
 
 PKG_CONFIGURE_OPTS_HOST="--disable-rpath --with-gnu-ld"
 

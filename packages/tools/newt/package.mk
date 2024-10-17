@@ -10,6 +10,7 @@ PKG_URL="https://releases.pagure.org/newt/${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain slang popt"
 PKG_LONGDESC="Newt is a programming library for color text mode, widget based user interfaces."
 PKG_TOOLCHAIN="autotools"
+PKG_BUILD_FLAGS="-cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--disable-nls \
                            --without-python \

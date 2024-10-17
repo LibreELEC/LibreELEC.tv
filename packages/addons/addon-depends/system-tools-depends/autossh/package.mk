@@ -10,7 +10,7 @@ PKG_URL="http://www.harding.motd.ca/autossh/autossh-${PKG_VERSION}.tgz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="Automatically restart SSH sessions and tunnels."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="ac_cv_func_malloc_0_nonnull=yes \
                            ac_cv_func_realloc_0_nonnull=yes"

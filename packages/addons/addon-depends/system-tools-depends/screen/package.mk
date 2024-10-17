@@ -9,14 +9,10 @@ PKG_SITE="https://www.gnu.org/software/screen/"
 PKG_URL="https://ftpmirror.gnu.org/screen/${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain ncurses"
 PKG_LONGDESC="Screen is a window manager that multiplexes a physical terminal between several processes"
-PKG_BUILD_FLAGS="-sysroot -parallel"
+PKG_BUILD_FLAGS="-sysroot -parallel -cfg-libs"
 PKG_TOOLCHAIN="autotools"
 
 PKG_CONFIGURE_OPTS_TARGET="ac_cv_header_utempter_h=no \
                            --disable-pam \
                            --disable-telnet \
                            --disable-socket-dir"
-
-pre_configure_target() {
-  TARGET_CONFIGURE_OPTS=$(echo ${TARGET_CONFIGURE_OPTS} | sed -e "s|--disable-static||" -e "s|--enable-shared||")
-}

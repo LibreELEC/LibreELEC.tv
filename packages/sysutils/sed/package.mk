@@ -10,5 +10,6 @@ PKG_SITE="http://www.gnu.org/software/sed/"
 PKG_URL="https://mirrors.kernel.org/gnu/sed/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_HOST="ccache:host"
 PKG_LONGDESC="The sed (Stream EDitor) editor is a stream or batch (non-interactive) editor."
+PKG_BUILD_FLAGS="-cfg-libs:host"
 
 PKG_CONFIGURE_OPTS_HOST="--disable-nls --disable-acl --without-selinux"

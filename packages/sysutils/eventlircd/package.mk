@@ -11,6 +11,7 @@ PKG_URL="https://github.com/LibreELEC/eventlircd/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain systemd lirc"
 PKG_LONGDESC="The eventlircd daemon provides four functions for LIRC devices"
 PKG_TOOLCHAIN="autotools"
+PKG_BUILD_FLAGS="-cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--with-udev-dir=/usr/lib/udev \
                            --with-lircd-socket=/run/lirc/lircd"

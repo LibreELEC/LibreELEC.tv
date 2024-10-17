@@ -9,6 +9,7 @@ PKG_SITE="http://www.gnome.org"
 PKG_URL="http://launchpad.net/intltool/trunk/${PKG_VERSION}/+download/${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_HOST="ccache:host"
 PKG_LONGDESC="Tools to translate strings from various source files (.xml.in, .glade, .desktop.in, .server.in, .oaf.in)."
+PKG_BUILD_FLAGS="-cfg-libs:host"
 
 post_makeinstall_host() {
   mkdir -p  ${SYSROOT_PREFIX}/usr/share/aclocal

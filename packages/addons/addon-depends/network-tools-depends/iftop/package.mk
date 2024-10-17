@@ -10,7 +10,7 @@ PKG_URL="https://code.blinkace.com/pdw/iftop/-/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain ncurses libpcap libnl"
 PKG_LONGDESC="A tool to display bandwidth usage on an interface."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 pre_build_target() {
   mkdir -p ${PKG_BUILD}/.${TARGET_NAME}

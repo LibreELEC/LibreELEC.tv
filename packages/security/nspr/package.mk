@@ -11,7 +11,7 @@ PKG_DEPENDS_TARGET="autotools:host gcc:host nss:host nspr:host"
 PKG_DEPENDS_UNPACK="nss"
 PKG_LONGDESC="Netscape Portable Runtime (NSPR) provides a platform-neutral API for system level and libc like functions"
 PKG_TOOLCHAIN="configure"
-PKG_BUILD_FLAGS="-parallel"
+PKG_BUILD_FLAGS="-parallel -cfg-libs"
 
 if [ "${TARGET_ARCH}" = "x86_64" ]; then
   TARGET_USE_64="--enable-64bit"

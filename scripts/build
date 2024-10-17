@@ -159,9 +159,10 @@ TARGET_CONFIGURE_OPTS="--host=${TARGET_NAME} \
                        --sysconfdir=/etc \
                        --libdir=/usr/lib \
                        --libexecdir=/usr/lib \
-                       --localstatedir=/var \
-                       --disable-static \
-                       --enable-shared"
+                       --localstatedir=/var"
+if flag_enabled "cfg-libs" "yes"; then
+  TARGET_CONFIGURE_OPTS+=" --disable-static --enable-shared"
+fi
 
 TARGET_CMAKE_OPTS="-DCMAKE_TOOLCHAIN_FILE=${CMAKE_CONF} \
                    -DCMAKE_INSTALL_PREFIX=/usr \
@@ -187,9 +188,10 @@ HOST_CONFIGURE_OPTS="--host=${HOST_NAME} \
                      --sbindir=${TOOLCHAIN}/sbin \
                      --sysconfdir=${TOOLCHAIN}/etc \
                      --libexecdir=${TOOLCHAIN}/lib \
-                     --localstatedir=${TOOLCHAIN}/var \
-                     --disable-static \
-                     --enable-shared"
+                     --localstatedir=${TOOLCHAIN}/var"
+if flag_enabled "cfg-libs:host" "yes"; then
+  HOST_CONFIGURE_OPTS+=" --disable-static --enable-shared"
+fi
 
 HOST_CMAKE_OPTS="${CMAKE_GENERATOR} \
                  -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CONF} \

@@ -10,7 +10,7 @@ PKG_SITE="http://www.jedsoft.org/slang/"
 PKG_URL="https://www.jedsoft.org/releases/slang/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A library designed to allow a developer to create robust multi-platform software."
-PKG_BUILD_FLAGS="-parallel"
+PKG_BUILD_FLAGS="-parallel -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--without-pcre \
                            --without-onig"

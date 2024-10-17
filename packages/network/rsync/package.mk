@@ -10,7 +10,7 @@ PKG_URL="https://download.samba.org/pub/rsync/src/${PKG_NAME}-${PKG_VERSION}.tar
 PKG_DEPENDS_HOST="autotools:host zlib:host"
 PKG_DEPENDS_TARGET="toolchain zlib openssl"
 PKG_LONGDESC="A very fast method for bringing remote files into sync."
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs -cfg-libs:host"
 
 PKG_CONFIGURE_OPTS_HOST="--disable-md2man \
                          --disable-ipv6 \
@@ -33,14 +33,6 @@ PKG_CONFIGURE_OPTS_TARGET="--disable-acl-support \
                            --disable-zstd \
                            --with-included-popt \
                            --without-included-zlib"
-
-pre_configure_host() {
-  HOST_CONFIGURE_OPTS=$(echo ${HOST_CONFIGURE_OPTS} | sed -e "s|--disable-static||" -e "s|--enable-shared||")
-}
-
-pre_configure_target() {
-  TARGET_CONFIGURE_OPTS=$(echo ${TARGET_CONFIGURE_OPTS} | sed -e "s|--disable-static||" -e "s|--enable-shared||")
-}
 
 pre_make_host() {
   # do not detect LE git version

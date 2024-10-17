@@ -9,6 +9,7 @@ PKG_SITE="http://www.gnu.org/software/m4/"
 PKG_URL="http://ftpmirror.gnu.org/m4/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
 PKG_DEPENDS_HOST="ccache:host"
 PKG_LONGDESC="The m4 macro processor."
+PKG_BUILD_FLAGS="-cfg-libs:host"
 
 PKG_CONFIGURE_OPTS_HOST="gl_cv_func_gettimeofday_clobber=no --target=${TARGET_NAME}"
 

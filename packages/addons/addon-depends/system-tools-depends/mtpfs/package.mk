@@ -10,12 +10,11 @@ PKG_URL="https://github.com/cjd/mtpfs/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain fuse glib libmtp"
 PKG_LONGDESC="MTPfs is a FUSE filesystem that supports reading and writing from any MTP device."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--disable-mad"
 
 # TODO: mtpfs runs host utils while building, fix and set
 pre_configure_target() {
   export LIBS="-lusb-1.0 -ludev"
-  TARGET_CONFIGURE_OPTS=$(echo ${TARGET_CONFIGURE_OPTS} | sed -e "s|--disable-static||" -e "s|--enable-shared||")
 }

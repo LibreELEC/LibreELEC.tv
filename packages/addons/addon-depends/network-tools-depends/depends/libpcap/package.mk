@@ -11,16 +11,15 @@ PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A portable framework for low-level network monitoring."
 # use configure, not cmake. review cmake in future release.
 PKG_TOOLCHAIN="configure"
+PKG_BUILD_FLAGS="-cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="LIBS=-lpthread \
                            ac_cv_header_libusb_1_0_libusb_h=no \
                            --disable-shared \
                            --with-pcap=linux \
                            --disable-bluetooth \
-                           --disable-can \
                            --without-libnl \
-                           --disable-dbus \
-                           --disable-canusb"
+                           --disable-dbus"
 
 pre_configure_target() {
   # When cross-compiling, configure can't set linux version

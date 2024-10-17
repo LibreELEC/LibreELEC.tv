@@ -11,3 +11,4 @@ PKG_URL="http://ftpmirror.gnu.org/${PKG_NAME}/${PKG_NAME}-${PKG_VERSION}.tar.bz2
 PKG_DEPENDS_HOST="autotools:host"
 PKG_LONGDESC="mtools: A collection of utilities to access MS-DOS disks"
 PKG_TOOLCHAIN="autotools"
+PKG_BUILD_FLAGS="-cfg-libs:host"

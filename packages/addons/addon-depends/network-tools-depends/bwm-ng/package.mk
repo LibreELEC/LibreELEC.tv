@@ -10,7 +10,7 @@ PKG_URL="https://github.com/vgropp/bwm-ng/archive/v${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain ncurses libstatgrab"
 PKG_LONGDESC="A small and simple console-based live network and disk io bandwidth monitor."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--with-libstatgrab \
                            --with-time \

@@ -10,4 +10,4 @@ PKG_URL="https://github.com/Duckbox-Developers/dvbsnoop/archive/${PKG_VERSION}.t
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="dvbsnoop is a DVB/MPEG stream analyzer program"
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"

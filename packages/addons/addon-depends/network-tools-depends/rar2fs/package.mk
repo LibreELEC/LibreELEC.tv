@@ -9,7 +9,7 @@ PKG_SITE="https://github.com/hasse69/rar2fs"
 PKG_URL="https://github.com/hasse69/rar2fs/archive/refs/tags/v${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain fuse unrar"
 PKG_LONGDESC="FUSE file system for reading RAR archives"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 PKG_TOOLCHAIN="autotools"
 
 pre_configure_target() {

@@ -14,7 +14,6 @@ PKG_LONGDESC="A library which provides a secure layer over a reliable transport 
 
 PKG_CONFIGURE_OPTS_COMMON="--disable-doc \
                            --disable-full-test-suite \
-                           --disable-guile \
                            --disable-libdane \
                            --disable-padlock \
                            --disable-rpath \

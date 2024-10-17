@@ -11,7 +11,7 @@ PKG_SOURCE_DIR="asio-asio-${PKG_VERSION//./-}"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="Asio C++ Library."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--without-boost --without-openssl"
 

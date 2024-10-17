@@ -9,7 +9,7 @@ PKG_SITE="https://savannah.nongnu.org/projects/hddtemp"
 PKG_URL="https://github.com/vitlav/hddtemp/archive/v${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A utility that gives you the temperature of your hard drive by reading S.M.A.R.T.."
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 PKG_TOOLCHAIN="autotools"
 
 PKG_CONFIGURE_OPTS_TARGET="--with-db-path=/storage/.kodi/addons/virtual.system-tools/data/hddtemp.db"

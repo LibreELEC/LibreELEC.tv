@@ -13,12 +13,10 @@ PKG_LONGDESC="A full featured SSL VPN software solution that integrates OpenVPN 
 PKG_TOOLCHAIN="configure"
 
 PKG_CONFIGURE_OPTS_TARGET="ac_cv_have_decl_TUNSETPERSIST=no \
-                           --disable-server \
                            --disable-plugins \
                            --enable-iproute2 IPROUTE=/sbin/ip \
                            --enable-management \
                            --enable-fragment \
-                           --disable-multihome \
                            --disable-port-share \
                            --disable-debug"
 

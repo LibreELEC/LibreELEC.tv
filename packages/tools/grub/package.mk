@@ -13,6 +13,7 @@ PKG_DEPENDS_TARGET="toolchain flex freetype:host gettext:host grub:host"
 PKG_DEPENDS_UNPACK="gnulib"
 PKG_LONGDESC="GRUB is a Multiboot boot loader."
 PKG_TOOLCHAIN="configure"
+PKG_BUILD_FLAGS="-cfg-libs -cfg-libs:host"
 
 pre_configure_host() {
   unset CFLAGS

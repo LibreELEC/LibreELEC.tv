@@ -12,7 +12,7 @@ PKG_DEPENDS_HOST="autoconf:host automake:host m4:host make:host zlib:host"
 PKG_DEPENDS_TARGET="toolchain zlib elfutils:host"
 PKG_LONGDESC="A collection of utilities to handle ELF objects."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="+pic"
+PKG_BUILD_FLAGS="+pic -cfg-libs -cfg-libs:host"
 
 if [ "${LIBREELEC_VERSION}" = "devel" ]; then
   PKG_PROGRAMS="--enable-programs --program-prefix="
@@ -39,14 +39,6 @@ PKG_CONFIGURE_OPTS_TARGET="utrace_cv_cc_biarch=false \
                            --with-zlib \
                            --without-bzlib \
                            --without-lzma"
-
-pre_configure_host() {
-  HOST_CONFIGURE_OPTS=$(echo ${HOST_CONFIGURE_OPTS} | sed -e "s|--disable-static||" -e "s|--enable-shared||")
-}
-
-pre_configure_target() {
-  TARGET_CONFIGURE_OPTS=$(echo ${TARGET_CONFIGURE_OPTS} | sed -e "s|--disable-static||" -e "s|--enable-shared||")
-}
 
 post_makeinstall_target() {
   # don't install progs into sysroot

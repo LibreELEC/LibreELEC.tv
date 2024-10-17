@@ -10,6 +10,7 @@ PKG_SITE="https://www.X.org"
 PKG_URL="https://xorg.freedesktop.org/archive/individual/util/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="X.org autoconf utilities such as M4 macros."
+PKG_BUILD_FLAGS="-cfg-libs"
 
 post_makeinstall_target() {
   rm -rf ${INSTALL}/usr

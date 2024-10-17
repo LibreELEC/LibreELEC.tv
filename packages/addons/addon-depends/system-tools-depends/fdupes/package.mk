@@ -9,7 +9,7 @@ PKG_SITE="https://github.com/adrianlopezroche/fdupes"
 PKG_URL="https://github.com/adrianlopezroche/fdupes/releases/download/v${PKG_VERSION}/fdupes-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain ncurses sqlite"
 PKG_LONGDESC="A program for identifying or deleting duplicate files residing within specified directories."
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--without-ncurses"
 PKG_MAKE_OPTS_TARGET="PREFIX=/usr"

@@ -10,7 +10,7 @@ PKG_URL="https://github.com/mikebrady/shairport-sync/archive/${PKG_VERSION}.tar.
 PKG_DEPENDS_TARGET="toolchain alsa-lib avahi ffmpeg libconfig libdaemon libgcrypt libplist libsndfile libsodium nqptp openssl popt pulseaudio soxr util-linux xxd:host"
 PKG_LONGDESC="AirPlay audio player."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--with-alsa \
                            --with-avahi \

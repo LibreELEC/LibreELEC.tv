@@ -32,11 +32,11 @@ To control the build behaviour of your package, use variables in the top-down or
 | PKG_SOURCE_NAME | -   | no  | Force the filename of the application sources. Used when the filename is not the basename of `PKG_URL` |
 | PKG_PATCH_DIRS | -    | no  | Patches in `./patches` are automatically applied after package unpack. Use this option to include patches from an additional folder, e.g. `./patches/$PKG_PATCH_DIRS` |
 | PKG_NEED_UNPACK | -   | no  | Space separated list of files or folders to include in package stamp calculation. If the stamp is invalidated through changes to package files or dependent files/folders the package is cleaned and rebuilt. e.g. `PKG_NEED_UNPACK="$(get_pkg_directory linux)"` will trigger clean/rebuild of a Linux kernel driver package when a change to the `linux` kernel package is detected. |
-| PKG_TOOLCHAIN | auto  | no  | Control which build toolchain is used. For detailed information, see [reference](#toolchain-options). |
-| PKG_BUILD_FLAGS | -   | no  | A space separated list of flags with which to fine-tune the build process. Flags can be enabled or disabled with a `+` or `-` prefix. For detailed information, see the [Reference](#build_flags-options). |
+| PKG_TOOLCHAIN | auto  | no  | Control which build toolchain is used. For detailed information, see [Reference](#toolchain-options). |
+| PKG_BUILD_FLAGS | -   | no  | A space separated list of flags with which to fine-tune the build process. Flags can be enabled or disabled with a `+` or `-` prefix. For detailed information, see [Reference](#build_flags-options). |
 | PKG_PYTHON_VERSION | python3.8 | no | Define the Python version to be used. |
 | PKG_IS_KERNEL_PKG | - | no  | Set to `yes` for packages that include Linux kernel modules |
-| PKG_DEPENDS_CONFIG | - | no  | Space separated list of packages to add to PKG_CONFIG_PATH. Use this to build with support for `-sysroot` packages (See [reference](BUILD_FLAGS options). |
+| PKG_DEPENDS_CONFIG | - | no  | Space separated list of packages to add to PKG_CONFIG_PATH. Use this to build with support for `-sysroot` packages, see [Reference](#build_flags-options). |
 
 #### Meson Options
 | Variable    | Default | Required |Description |
@@ -133,6 +133,7 @@ Set the variable `PKG_BUILD_FLAGS` in the `package.mk` to enable/disable the sin
 | strip    | enabled  | target | strips executables (or not) |
 | sysroot  | enabled  | target | installs the package to the sysroot folder (or not) |
 | local-cc | disabled | host | use compiler from buildhost instead of host-gcc/g++ in toolchain |
+| cfg-libs | enabled  | all | `-cfg-libs` will not append --disable-static --enable-shared to CONFIGURE_OPTS |
 
 ###### Example
 ```

@@ -9,7 +9,7 @@ PKG_SITE="https://www.smartmontools.org"
 PKG_URL="https://downloads.sourceforge.net/sourceforge/smartmontools/smartmontools-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="Control and monitor storage systems using S.M.A.R.T."
-PKG_BUILD_FLAGS="-sysroot"
+PKG_BUILD_FLAGS="-sysroot -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="--prefix=/usr \
                            --without-initscriptdir \

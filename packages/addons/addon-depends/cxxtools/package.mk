@@ -13,8 +13,8 @@ PKG_DEPENDS_TARGET="toolchain cxxtools:host openssl"
 PKG_LONGDESC="Cxxtools is a collection of general-purpose C++ classes."
 PKG_BUILD_FLAGS="+pic"
 
-PKG_CONFIGURE_OPTS_HOST="--disable-demos --with-atomictype=pthread --disable-unittest"
-PKG_CONFIGURE_OPTS_TARGET="--enable-static --disable-shared --disable-demos --with-atomictype=pthread --disable-unittest"
+PKG_CONFIGURE_OPTS_HOST="--disable-demos --disable-unittest"
+PKG_CONFIGURE_OPTS_TARGET="--enable-static --disable-shared --disable-demos --disable-unittest"
 
 post_makeinstall_host() {
   rm -rf ${TOOLCHAIN}/bin/cxxtools-config

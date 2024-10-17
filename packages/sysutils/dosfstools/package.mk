@@ -12,6 +12,7 @@ PKG_DEPENDS_HOST="autotools:host"
 PKG_DEPENDS_TARGET="autotools:host gcc:host"
 PKG_DEPENDS_INIT="autotools:host gcc:host"
 PKG_LONGDESC="dosfstools contains utilities for making and checking MS-DOS FAT filesystems."
+PKG_BUILD_FLAGS="-cfg-libs -cfg-libs:host -cfg-libs:init"
 
 PKG_CONFIGURE_OPTS_TARGET="--enable-compat-symlinks"
 PKG_MAKE_OPTS_TARGET="PREFIX=/usr"

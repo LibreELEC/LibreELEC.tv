@@ -10,6 +10,7 @@ PKG_SITE="https://www.gnu.org/software/autoconf/"
 PKG_URL="https://ftpmirror.gnu.org/autoconf/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_HOST="ccache:host m4:host gettext:host"
 PKG_LONGDESC="A GNU tool for automatically configuring source code."
+PKG_BUILD_FLAGS="-cfg-libs:host"
 
 PKG_CONFIGURE_OPTS_HOST="EMACS=no \
                          ac_cv_path_M4=${TOOLCHAIN}/bin/m4 \

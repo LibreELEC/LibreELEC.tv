@@ -11,7 +11,7 @@ PKG_URL="https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/${PKG_NAME}-${PKG_
 PKG_DEPENDS_TARGET="toolchain openssl zlib"
 PKG_LONGDESC="An open re-implementation of the SSH package."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="+lto"
+PKG_BUILD_FLAGS="+lto -cfg-libs"
 
 PKG_CONFIGURE_OPTS_TARGET="ac_cv_header_rpc_types_h=no \
                            --sysconfdir=/etc/ssh \

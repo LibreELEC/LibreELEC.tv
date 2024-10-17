@@ -10,6 +10,7 @@ PKG_URL="http://netcologne.dl.sourceforge.net/project/xmlstar/${PKG_NAME}/${PKG_
 PKG_DEPENDS_HOST="libxml2:host libxslt:host"
 PKG_DEPENDS_TARGET="toolchain libxml2 libxslt"
 PKG_LONGDESC="XMLStarlet is a command-line XML utility which allows the modification and validation of XML documents."
+PKG_BUILD_FLAGS="-cfg-libs -cfg-libs:host"
 
 PKG_CONFIGURE_OPTS_HOST="  ac_cv_func_malloc_0_nonnull=yes \
                            ac_cv_func_realloc_0_nonnull=yes \

@@ -9,6 +9,7 @@ PKG_SITE="https://sourceforge.net/p/sshpass"
 PKG_URL="https://downloads.sourceforge.net/sshpass/sshpass-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="sshpass: a tool for non-interactive ssh password auth"
+PKG_BUILD_FLAGS="-cfg-libs"
 
 pre_configure_target() {
   export ac_cv_func_malloc_0_nonnull=yes
