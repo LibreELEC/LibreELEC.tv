@@ -122,8 +122,7 @@ Set the variable `PKG_BUILD_FLAGS` in the `package.mk` to enable/disable the sin
 | pic:host | disabled | host, bootstrap   | see above |
 | speed    | disabled | target, init      | replaces default `-O2` compiler optimization with `-O3` (can only enable; overrules size) |
 | size     | disabled | target, init      | replaces default `-O2` compiler optimization with `-Os` (can only enable) |
-| lto      | disabled | target, init      | enable LTO (Link Time optimization) in the compiler and linker unless disabled via `LTO_SUPPORT`. Compiles non-fat LTO objects (only bytecode) and performs single-threaded optimization at link stage |
-| lto-parallel | disabled | target, init  | same as `lto` but enables parallel optimization at link stage. Only enable this if the package build doesn't run multiple linkers in parallel otherwise this can result in lots of parallel processes! |
+| lto      | disabled | target, init      | enable LTO (Link Time optimization) in the compiler and linker unless disabled via `LTO_SUPPORT`. Compiles non-fat LTO objects (only bytecode) and automatically determines number of threads to use for optimization at link stage |
 | lto-fat  | disabled | target, init      | same as `lto` but compile fat LTO objects (bytecode plus optimized assembly). This increases compile time but can be useful to create static libraries suitable both for LTO and non-LTO linking |
 | lto-off  | disabled | target, init      | explicitly disable LTO in the compiler and linker |
 | bfd      | - | target, init | `+bfd` prefers bfd linker over default linker, `-bfd` disables using bfd |
