@@ -324,6 +324,10 @@ devices = \
         'dtb': 'rk3399-orangepi.dtb',
         'config': 'orangepi-rk3399_defconfig'
       },
+      'orangepi-4-lts': {
+        'dtb': 'rk3399-orangepi-4-lts.dtb',
+        'config': 'orangepi-4-lts-rk3399_defconfig'
+      },
       'rock960': {
         'dtb': 'rk3399-rock960.dtb',
         'config': 'rock960-rk3399_defconfig'
