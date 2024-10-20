@@ -1,0 +1,36 @@
+From 7198cca8f07045773f92befd8861bb5b3f8bd83d Mon Sep 17 00:00:00 2001
+From: Bitterblue Smith <rtl8821cerfe2@gmail.com>
+Date: Thu, 8 Aug 2024 01:20:36 +0300
+Subject: [PATCH 5/7] wifi: rtw88: usb: Update the RX stats after every frame
+
+Update the number of received unicast data frames and bytes every time
+a frame is received. This is what the PCI and SDIO drivers do.
+
+This has an influence on the power saving, bluetooth coexistence, and
+(in a future patch) the use of RX aggregation.
+
+Tested with RTL8822CU, RTL8811CU, and RTL8723DU.
+
+Tested-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Bitterblue Smith <rtl8821cerfe2@gmail.com>
+Signed-off-by: Ping-Ke Shih <pkshih@realtek.com>
+Link: https://patch.msgid.link/75a2ca52-8f01-45c5-926f-d3a68ae3b284@gmail.com
+---
+ drivers/net/wireless/realtek/rtw88/usb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/wireless/realtek/rtw88/usb.c b/drivers/net/wireless/realtek/rtw88/usb.c
+index 1c40d46a7eb4..10f1d724370e 100644
+--- a/drivers/net/wireless/realtek/rtw88/usb.c
++++ b/drivers/net/wireless/realtek/rtw88/usb.c
+@@ -581,6 +581,7 @@ static void rtw_usb_rx_handler(struct work_struct *work)
+ 		skb_reserve(skb, pkt_offset);
+ 
+ 		rtw_update_rx_freq_for_invalid(rtwdev, skb, &rx_status, &pkt_stat);
++		rtw_rx_stats(rtwdev, pkt_stat.vif, skb);
+ 		memcpy(skb->cb, &rx_status, sizeof(rx_status));
+ 		ieee80211_rx_irqsafe(rtwdev->hw, skb);
+ 	}
+-- 
+2.43.0
+

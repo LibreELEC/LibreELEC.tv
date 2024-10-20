@@ -64,7 +64,7 @@
 # for a list of additional drivers see packages/linux-drivers
 # Space separated list is supported,
 # e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
-  ADDITIONAL_DRIVERS="RTL8812AU"
+  ADDITIONAL_DRIVERS=""
 
 # Default size of system partition, in MB, eg. 512
   SYSTEM_SIZE=512
