@@ -20,4 +20,8 @@ if [ -n "${UBOOT_SYSTEM}" ]; then
   fi
 fi
 
-cp -av "${SRCDIR}"/"${DEVICE,,}"*.dtb "${DSTDIR}"
+if [ "${DEVICE}" = "RK3568" ]; then
+  cp -av "${SRCDIR}"/rk356*.dtb "${DSTDIR}"
+else
+  cp -av "${SRCDIR}"/"${DEVICE,,}"*.dtb "${DSTDIR}"
+fi
