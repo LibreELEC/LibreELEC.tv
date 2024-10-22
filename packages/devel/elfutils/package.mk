@@ -44,6 +44,10 @@ post_makeinstall_target() {
   # don't install progs into sysroot
   rm -fr ${SYSROOT_PREFIX}/usr/bin
 
+  # remove static libraries
+  rm ${SYSROOT_PREFIX}/usr/lib/lib{asm,dw,elf}.a
+  rm ${INSTALL}/usr/lib/lib{asm,dw,elf}.a
+
   if [ -n "${PKG_PROGRAMS_LIST}" ]; then
     for PKG_TEMP in $(find ${INSTALL}/usr/bin -type f); do
       listcontains "${PKG_PROGRAMS_LIST}" ${PKG_TEMP#${INSTALL}/usr/bin/} || rm ${PKG_TEMP}
