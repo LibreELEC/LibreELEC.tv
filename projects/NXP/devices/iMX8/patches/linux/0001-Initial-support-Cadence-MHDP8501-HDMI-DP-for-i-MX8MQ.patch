@@ -1706,7 +1706,7 @@ index 0000000000000..a0727cbbace55
 +#ifndef __CDNS_MHDP_HELPER_H__
 +#define __CDNS_MHDP_HELPER_H__
 +
-+#include <asm/unaligned.h>
++#include <linux/unaligned.h>
 +#include <linux/iopoll.h>
 +
 +/* mailbox regs offset */
@@ -4506,7 +4506,7 @@ index 0000000000000..7da05e1573e76
 + *
 + * Copyright (C) 2022-2024 NXP Semiconductor, Inc.
 + */
-+#include <asm/unaligned.h>
++#include <linux/unaligned.h>
 +#include <drm/bridge/cdns-mhdp-helper.h>
 +#include <linux/clk.h>
 +#include <linux/kernel.h>
