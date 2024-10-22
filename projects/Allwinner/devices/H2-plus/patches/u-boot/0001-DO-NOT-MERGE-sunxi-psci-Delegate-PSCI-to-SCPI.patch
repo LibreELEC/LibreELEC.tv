@@ -47,14 +47,13 @@ new file mode 100644
 index 000000000000..b3849b366e31
 --- /dev/null
 +++ b/arch/arm/cpu/armv7/sunxi/psci-scpi.c
-@@ -0,0 +1,451 @@
+@@ -0,0 +1,450 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) 2016 Chen-Yu Tsai <wens@csie.org>
 + * Copyright (C) 2018-2021 Samuel Holland <samuel@sholland.org>
 + */
 +
-+#include <common.h>
 +#include <asm/arch/cpu.h>
 +#include <asm/arch/cpucfg.h>
 +#include <asm/armv7.h>
