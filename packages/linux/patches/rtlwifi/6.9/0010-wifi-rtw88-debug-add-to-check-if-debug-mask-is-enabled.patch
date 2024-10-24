@@ -1,0 +1,46 @@
+From 1926a27299db00239d6bdc4c3f2bd3f842277d0d Mon Sep 17 00:00:00 2001
+From: Chin-Yen Lee <timlee@realtek.com>
+Date: Mon, 16 Oct 2023 13:35:53 +0800
+Subject: [PATCH] wifi: rtw88: debug: add to check if debug mask is enabled
+
+The coming dump function for FW malfunction will add a function to
+dump registers to reflect status. However, if we are not debugging
+the mechanism, we don't print anything, so avoid reading registers by
+checking debug mask to reduce IO.
+
+Signed-off-by: Chin-Yen Lee <timlee@realtek.com>
+Signed-off-by: Ping-Ke Shih <pkshih@realtek.com>
+Signed-off-by: Kalle Valo <kvalo@kernel.org>
+Link: https://lore.kernel.org/r/20231016053554.744180-2-pkshih@realtek.com
+---
+ drivers/net/wireless/realtek/rtw88/debug.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/net/wireless/realtek/rtw88/debug.h b/drivers/net/wireless/realtek/rtw88/debug.h
+index a9149c6c2b48c5..a03ced11bbe042 100644
+--- a/drivers/net/wireless/realtek/rtw88/debug.h
++++ b/drivers/net/wireless/realtek/rtw88/debug.h
+@@ -48,11 +48,23 @@ void __rtw_dbg(struct rtw_dev *rtwdev, enum rtw_debug_mask mask,
+ 
+ #define rtw_dbg(rtwdev, a...) __rtw_dbg(rtwdev, ##a)
+ 
++static inline bool rtw_dbg_is_enabled(struct rtw_dev *rtwdev,
++				      enum rtw_debug_mask mask)
++{
++	return !!(rtw_debug_mask & mask);
++}
++
+ #else
+ 
+ static inline void rtw_dbg(struct rtw_dev *rtwdev, enum rtw_debug_mask mask,
+ 			   const char *fmt, ...) {}
+ 
++static inline bool rtw_dbg_is_enabled(struct rtw_dev *rtwdev,
++				      enum rtw_debug_mask mask)
++{
++	return false;
++}
++
+ #endif /* CONFIG_RTW88_DEBUG */
+ 
+ #define rtw_info(rtwdev, a...) dev_info(rtwdev->dev, ##a)
