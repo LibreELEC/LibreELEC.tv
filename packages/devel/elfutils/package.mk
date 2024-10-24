@@ -3,8 +3,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="elfutils"
-PKG_VERSION="0.191"
-PKG_SHA256="df76db71366d1d708365fc7a6c60ca48398f14367eb2b8954efc8897147ad871"
+PKG_VERSION="0.192"
+PKG_SHA256="616099beae24aba11f9b63d86ca6cc8d566d968b802391334c91df54eab416b4"
 PKG_LICENSE="GPL"
 PKG_SITE="https://sourceware.org/elfutils/"
 PKG_URL="https://sourceware.org/elfutils/ftp/${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
@@ -43,6 +43,10 @@ PKG_CONFIGURE_OPTS_TARGET="utrace_cv_cc_biarch=false \
 post_makeinstall_target() {
   # don't install progs into sysroot
   rm -fr ${SYSROOT_PREFIX}/usr/bin
+
+  # remove static libraries
+  rm ${SYSROOT_PREFIX}/usr/lib/lib{asm,dw,elf}.a
+  rm ${INSTALL}/usr/lib/lib{asm,dw,elf}.a
 
   if [ -n "${PKG_PROGRAMS_LIST}" ]; then
     for PKG_TEMP in $(find ${INSTALL}/usr/bin -type f); do
