@@ -20,6 +20,7 @@ fi
 
 # update device tree
   for all_dtb in ${BOOT_ROOT}/*.dtb; do
+    [ -f "$all_dtb" ] || continue
     dtb=$(basename ${all_dtb})
 
     # device tree mappings for update from vendor to mainline kernel
@@ -55,6 +56,19 @@ fi
       fi
     fi
   done
+
+# update /rockchip device tree blobs
+  if [ -d ${BOOT_ROOT}/rockchip ]; then
+    echo -n "Updating Device Tree Blobs... "
+    for all_dtb in ${BOOT_ROOT}/rockchip/*.dtb; do
+      [ -f "$all_dtb" ] || continue
+      dtb=$(basename ${all_dtb})
+      if [ -f ${SYSTEM_ROOT}/usr/share/bootloader/${dtb} ]; then
+        cp -p ${SYSTEM_ROOT}/usr/share/bootloader/${dtb} ${BOOT_ROOT}/rockchip
+      fi
+    done
+    echo "done"
+  fi
 
 # update bootloader
  if [ -f ${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin ]; then

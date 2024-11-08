@@ -1,6 +1,22 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
+if [ -z "${DTB}" ]; then
+  echo "image: copying device tree blobs..."
+  mmd rockchip >"${SAVE_ERROR}" 2>&1 || show_error
+  mcopy "${RELEASE_DIR}/3rdparty/bootloader/"*.dtb ::/rockchip >"${SAVE_ERROR}" 2>&1 || show_error
+
+  echo "image: copying extlinux.conf..."
+  mkdir -p "${LE_TMP}/extlinux"
+  cat <<EOF >"${LE_TMP}/extlinux/extlinux.conf"
+LABEL ${DISTRO}
+  LINUX /${KERNEL_NAME}
+  FDTDIR /
+  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}
+EOF
+  mcopy -s "${LE_TMP}/extlinux" :: >"${SAVE_ERROR}" 2>&1 || show_error
+fi
+
 if [ -n "${UBOOT_SYSTEM}" ]; then
   BOOTLOADER_PATH="${RELEASE_DIR}/3rdparty/bootloader/u-boot-rockchip.bin"
   if [ -f "${BOOTLOADER_PATH}" ]; then
