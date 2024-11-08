@@ -28,7 +28,6 @@ addon() {
 
     # containerd
     cp -P $(get_build_dir containerd)/bin/containerd ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/containerd
-    cp -P $(get_build_dir containerd)/bin/containerd-shim ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/containerd-shim
     cp -P $(get_build_dir containerd)/bin/containerd-shim-runc-v2 ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/containerd-shim-runc-v2
 
     # ctop
