@@ -7,8 +7,7 @@ Subject: [PATCH 1/3] gallium: Add kmsro drivers for RP1 DSI, DPI, and VEC
 Signed-off-by: Dave Stevenson <dave.stevenson@raspberrypi.com>
 ---
  src/gallium/targets/dril/meson.build | 3 +++
- src/gallium/targets/dri/dri_target.c | 3 +++
- 2 files changed, 6 insertions(+)
+ 1 files changed, 3 insertions(+)
 
 diff --git a/src/gallium/targets/dril/meson.build b/src/gallium/targets/dril/meson.build
 index 66619bba0db..443923772e8 100644
@@ -24,20 +23,6 @@ index 66619bba0db..443923772e8 100644
                 'exynos_dri.so',
                 'gm12u320_dri.so',
                 'hdlcd_dri.so',
-diff --git a/src/gallium/targets/dri/dri_target.c b/src/gallium/targets/dri/dri_target.c
-index 9d3069eb004..79f60a7224a 100644
---- a/src/gallium/targets/dri/dri_target.c
-+++ b/src/gallium/targets/dri/dri_target.c
-@@ -101,6 +101,9 @@
- 
- #if defined(GALLIUM_KMSRO)
- DEFINE_LOADER_DRM_ENTRYPOINT(armada_drm)
-+DEFINE_LOADER_DRM_ENTRYPOINT(drm_rp1_dpi)
-+DEFINE_LOADER_DRM_ENTRYPOINT(drm_rp1_dsi)
-+DEFINE_LOADER_DRM_ENTRYPOINT(drm_rp1_vec)
- DEFINE_LOADER_DRM_ENTRYPOINT(exynos)
- DEFINE_LOADER_DRM_ENTRYPOINT(gm12u320)
- DEFINE_LOADER_DRM_ENTRYPOINT(hdlcd)
 -- 
 2.39.2
 
