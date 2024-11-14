@@ -1,93 +1,78 @@
-import shlex
 import socket
 import subprocess
 import threading
 
-import external_player
-import internal_player
-import service
+import utils
 
 
 class Librespot:
-
-    def __init__(self,
-                 bitrate='320',
-                 device_type='tv',
-                 max_retries='5',
-                 name='Librespot@{}',
-                 options='',
-                 **kwargs):
-        name = name.format(socket.gethostname())
-        self.command = [
-            'librespot',
-            '--bitrate', f'{bitrate}',
-            '--device-type', f'{device_type}',
-            '--disable-audio-cache',
-            '--disable-credential-cache',
-            '--name', f'{name}',
-            '--onevent', 'onevent.py',
-            '--quiet',
-        ] + shlex.split(options)
-        service.log(self.command)
-        self.file = ''
-        self._is_started = threading.Event()
-        self._is_stopped = threading.Event()
+    @utils.logged_method
+    def __init__(self, target, backend, device):
+        self._target = target
+        name = utils.get_setting("name").format(socket.gethostname())
+        self._command = [
+            "librespot",
+            "--backend", backend,
+            "--bitrate", "320",
+            "--device", device,
+            "--device-type", "tv",
+            "--disable-audio-cache",
+            "--disable-credential-cache",
+            "--name", name,
+            "--onevent", target.event_handler.get_onevent(),
+            "--quiet",
+        ]
+        self._failures = 0
+        self._max_failures = 5
         self._librespot = None
-        self._max_retries = int(max_retries)
-        self._retries = 0
-        self._thread = threading.Thread()
+        self._get_librespot = self._schedule_librespot()
 
-    def get_player(self, **kwargs):
-        return (internal_player if self.file else external_player).Player(**kwargs)
-
-    def restart(self):
-        if self._thread.is_alive():
-            self._librespot.terminate()
-        else:
-            self.start()
-
-    def start(self):
-        if not self._thread.is_alive() and self._retries < self._max_retries:
-            self._thread = threading.Thread(daemon=True, target=self._run)
-            self._thread.start()
-            self._is_started.wait(1)
-
-    def stop(self):
-        if self._thread.is_alive():
-            self._is_stopped.set()
-            self._librespot.terminate()
-            self._thread.join()
-
-    def start_sink(self):
-        pass
-
-    def stop_sink(self):
-        pass
-
-    def _run(self):
-        service.log('librespot thread started')
-        self._is_started.clear()
-        self._is_stopped.clear()
-        while not self._is_stopped.is_set():
-            with subprocess.Popen(self.command, stderr=subprocess.PIPE, text=True) as self._librespot:
-                self._is_started.set()
-                for line in self._librespot.stderr:
-                    service.log(line.rstrip())
-            self.stop_sink()
-            if self._librespot.returncode <= 0:
-                self._retries = 0
-            else:
-                self._retries += 1
-                if self._retries < self._max_retries:
-                    service.notification(
-                        f'librespot failed {self._retries}/{self._max_retries}')
-                else:
-                    service.notification('librespot failed too many times')
-                    break
-        service.log('librespot thread stopped')
-
+    @utils.logged_method
     def __enter__(self):
         return self
 
-    def __exit__(self, *args):
-        self.stop()
+    @utils.logged_method
+    def __exit__(self, *_):
+        self._get_librespot.close()
+
+    def _schedule_librespot(self):
+        while self._failures < self._max_failures:
+            with subprocess.Popen(
+                self._command, stderr=subprocess.PIPE, text=True
+            ) as self._librespot:
+                threading.Thread(target=self._monitor_librespot).start()
+                try:
+                    yield
+                finally:
+                    self._librespot.terminate()
+        utils.call_if_has(self._target, "on_librespot_broken")
+        utils.log("Librespot crashed too many times", True)
+        self._librespot = None
+        while True:
+            yield
+
+    def _monitor_librespot(self):
+        self._target.on_librespot_started()
+        with self._librespot as librespot:
+            for line in librespot.stderr:
+                utils.log(line.rstrip())
+        self._target.on_librespot_stopped()
+        if librespot.returncode < 0:
+            self._failures = 0
+        else:
+            self._failures += 1
+            next(self._get_librespot)
+
+    @utils.logged_method
+    def restart(self):
+        next(self._get_librespot)
+
+    @utils.logged_method
+    def start(self):
+        if self._librespot is None or self._librespot.poll() is not None:
+            next(self._get_librespot)
+
+    @utils.logged_method
+    def stop(self):
+        if self._librespot is not None:
+            self._librespot.terminate()

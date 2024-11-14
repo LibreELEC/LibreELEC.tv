@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
   <category  label="30100">
-    <setting label="30101" id="name"        type="text"   default="Librespot@{}"       />
-    <setting label="30102" id="dnd_kodi"    type="bool"   default="false"              />
-    <setting label="30103" id="options"     type="text"   default=""                   />
-    <setting label="30104" id="backend"     type="select" values="pulseaudio_rtp|alsa" />
-    <setting label="30105" id="alsa_device" type="text"   default="hw:2,0"             subsetting="true" visible="eq(-1,1)" />
+    <setting label="30101" id="name"        type="text"   default="Librespot@{}"   />
+    <setting label="30102" id="dnd_kodi"    type="bool"   default="false"          />
+    <setting label="30103" id="backend"     type="select" values="pulseaudio|alsa" />
+    <setting label="30104" id="player"      type="select" values="default|basic"   subsetting="true" visible="eq(-1,0)" />
+    <setting label="30105" id="alsa_device" type="text"   default="hw:2,0"         subsetting="true" visible="eq(-2,1)" />
   </category>
 </settings>
