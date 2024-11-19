@@ -1,0 +1,12 @@
+[Unit]
+Description=systemd-sysext enablement
+RequiresMountsFor=/var /storage
+ConditionPathExists=|/storage/.config/extensions
+
+[Mount]
+What=/storage/.config/extensions
+Where=/var/lib/extensions
+Options=bind
+
+[Install]
+WantedBy=local-fs.target
