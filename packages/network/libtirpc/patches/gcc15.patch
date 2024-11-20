@@ -1,0 +1,35 @@
+--- a/src/auth_none.c	2024-11-20 09:02:12.504925593 +0000
++++ b/src/auth_none.c	2024-11-20 09:03:45.129971786 +0000
+@@ -62,7 +62,7 @@
+ static bool_t authnone_refresh (AUTH *, void *);
+ static void authnone_destroy (AUTH *);
+ 
+-extern bool_t xdr_opaque_auth();
++extern bool_t xdr_opaque_auth(XDR *, struct opaque_auth *);
+ 
+ static struct auth_ops *authnone_ops();
+ 
+--- a/src/svc_auth_none.c	2024-11-20 09:10:27.426038143 +0000
++++ b/src/svc_auth_none.c	2024-11-20 09:10:27.426038143 +0000
+@@ -37,8 +37,8 @@
+ 
+ #include <rpc/rpc.h>
+ 
+-static bool_t	svcauth_none_destroy();
+-static bool_t   svcauth_none_wrap();
++static bool_t	svcauth_none_destroy(SVCAUTH *);
++static bool_t   svcauth_none_wrap(SVCAUTH *, XDR *, bool_t (*)(XDR *, ...), char *);
+ 
+ struct svc_auth_ops svc_auth_none_ops = {
+ 	svcauth_none_wrap,
+--- a/src/getpublickey.c	2024-11-20 09:16:57.168954233 +0000
++++ b/src/getpublickey.c	2024-11-20 09:16:57.168954233 +0000
+@@ -52,7 +52,7 @@
+ /*
+  * Hack to let ypserv/rpc.nisd use AUTH_DES.
+  */
+-int (*__getpublickey_LOCAL)() = 0;
++int (*__getpublickey_LOCAL)(const char *, char *) = 0;
+ 
+ /*
+  * Get somebody's public key
