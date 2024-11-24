@@ -7,7 +7,7 @@ PKG_VERSION="2023.02.20"
 PKG_SHA256="71d4048479ae28f1f5794619c3d72df9c01df49b1c628ef85fde37596dc31a33"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.gnu.org/software/autoconf-archive/"
-PKG_URL="http://ftpmirror.gnu.org/autoconf-archive/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_URL="https://ftpmirror.gnu.org/autoconf-archive/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_HOST="ccache:host"
 PKG_LONGDESC="autoconf-archive is an package of m4 macros"
 
