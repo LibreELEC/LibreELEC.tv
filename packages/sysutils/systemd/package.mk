@@ -63,7 +63,6 @@ PKG_MESON_OPTS_TARGET="--libdir=/usr/lib \
                        -Dlogind=true \
                        -Dhostnamed=true \
                        -Dlocaled=false \
-                       -Dmachined=false \
                        -Dportabled=false \
                        -Duserdb=false \
                        -Dhomed=disabled \
@@ -106,6 +105,12 @@ if [ "${PROJECT}" = "Generic" ]; then
   PKG_MESON_OPTS_TARGET+=" -Defi=true"
 else
   PKG_MESON_OPTS_TARGET+=" -Defi=false"
+fi
+
+if [ "${NSPAWN_SUPPORT}" = "yes" ]; then
+  PKG_MESON_OPTS_TARGET+=" -Dmachined=true"
+else
+  PKG_MESON_OPTS_TARGET+=" -Dmachined=false"
 fi
 
 pre_configure_target() {
@@ -156,8 +161,14 @@ post_makeinstall_target() {
   sed '/^ConditionNeedsUpdate=.*$/d' -i ${INSTALL}/usr/lib/systemd/system/systemd-hwdb-update.service
 
   # remove nspawn
-  safe_remove ${INSTALL}/usr/bin/systemd-nspawn
-  safe_remove ${INSTALL}/usr/lib/systemd/system/systemd-nspawn@.service
+  if [ ${NSPAWN_SUPPORT} != "yes" ]; then
+    safe_remove ${INSTALL}/usr/bin/systemd-nspawn
+    safe_remove ${INSTALL}/usr/lib/systemd/system/systemd-nspawn@.service
+    safe_remove ${INSTALL}/usr/lib/tmpfiles.d/z_02_systemd-nspawn.conf
+    safe_remove ${INSTALL}/usr/lib/systemd/system/nspawn-symlink.service
+  else
+    find_file_path scripts/nspawn-symlink && cp -PRv ${FOUND_PATH} ${INSTALL}/usr/bin
+  fi
 
   # remove timedatectl
   safe_remove ${INSTALL}/usr/bin/timedatectl
@@ -254,6 +265,9 @@ post_makeinstall_target() {
   ln -sf /storage/.config/logind.conf.d ${INSTALL}/etc/systemd/logind.conf.d
   ln -sf /storage/.config/sleep.conf.d ${INSTALL}/etc/systemd/sleep.conf.d
   ln -sf /storage/.config/timesyncd.conf.d ${INSTALL}/etc/systemd/timesyncd.conf.d
+  if [ "${NSPAWN_SUPPORT}" = "yes" ]; then
+    ln -sf /storage/.config/nspawn ${INSTALL}/etc/systemd/nspawn
+  fi
   safe_remove ${INSTALL}/etc/sysctl.d
   ln -sf /storage/.config/sysctl.d ${INSTALL}/etc/sysctl.d
   safe_remove ${INSTALL}/etc/tmpfiles.d
@@ -306,4 +320,7 @@ post_install() {
   enable_service network-base.service
   enable_service systemd-timesyncd.service
   enable_service systemd-timesyncd-setup.service
+  if [ "${NSPAWN_SUPPORT}" = "yes" ]; then
+    enable_service nspawn-symlink.service
+  fi
 }
