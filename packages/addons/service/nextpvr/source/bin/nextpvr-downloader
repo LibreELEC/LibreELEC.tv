@@ -40,7 +40,7 @@ echo "Downloading NextPVR"
 # download NextPVR
 rm -f ${CONTROL_FILE} ${DATA_FILE}
 (
-  curl -L -# -O -C - https://github.com/sub3/releases/releases/download/${NEXTPVR_VERSION%~*}/${NEXTPVR_FILE}  2>${DATA_FILE}
+  curl -L -# -O -C - https://github.com/sub3/releases/releases/download/${NEXTPVR_VERSION%~*}/${NEXTPVR_FILE} 2>${DATA_FILE}
   touch ${CONTROL_FILE}
 ) |
   while [ : ]; do
@@ -61,6 +61,12 @@ fi
 # extract NextPVR
 kodi-send --action="Notification(Extracting NextPVR,starting,1000,${ICON})" >/dev/null
 mkdir -p ${ADDON_DIR}/nextpvr-bin
+
+chmod +x ${ADDON_DIR}/lbin/hdhomerun_config
+chmod +x ${ADDON_DIR}/lbin/comskip
+ln -s ${ADDON_DIR}/lbin/hdhomerun_config ${ADDON_DIR}/nextpvr-bin
+ln -s ${ADDON_DIR}/lib.private/libmediainfo.so ${ADDON_DIR}/nextpvr-bin
+
 unzip ${NEXTPVR_FILE} -d ${ADDON_DIR}/nextpvr-bin >/dev/null
 
 if [ "$(uname -m)" != "x86_64" ]; then
