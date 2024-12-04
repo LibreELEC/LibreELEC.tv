@@ -15,6 +15,7 @@ PKG_LONGDESC="A library which includes support routines for C such as lists, tre
 PKG_MESON_OPTS_HOST="-Ddefault_library=static \
                      -Dinstalled_tests=false \
                      -Dlibmount=disabled \
+                     -Dintrospection=disabled \
                      -Dtests=false"
 
 PKG_MESON_OPTS_TARGET="-Ddefault_library=shared \
