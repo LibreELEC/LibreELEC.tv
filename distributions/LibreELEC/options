@@ -193,6 +193,9 @@
   DEBUG_GROUPS="kodi+=kodi+,kodi-platform+,p8-platform+,!mesa"
   DEBUG_GROUP_YES="kodi+"
 
+# include systemd-nspawn support (yes / no)
+  NSPAWN_SUPPORT="no"
+
 # build and install iSCSI support - iscsistart (yes / no)
   ISCSI_SUPPORT="no"
 
