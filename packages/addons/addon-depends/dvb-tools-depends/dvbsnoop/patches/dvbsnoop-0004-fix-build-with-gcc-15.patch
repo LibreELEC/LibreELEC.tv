@@ -1,0 +1,80 @@
+From 3e29c53dd3f664b015d3048f22fb1235b37b63ed Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 8 Dec 2024 11:33:28 +0000
+Subject: [PATCH] fix build with gcc 15
+
+update function declarations to allow build without the follow errors:
+
+error: initialization of 'void (*)(void)' from incompatible pointer type
+       'void (*)(...)' [-Wincompatible-pointer-types]
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ src/misc/sig_abort.c     | 4 ++--
+ src/private/userdefs.c   | 2 +-
+ src/private/userdefs.h   | 4 ++--
+ src/sections/sectables.c | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/misc/sig_abort.c b/src/misc/sig_abort.c
+index c359804..7443281 100644
+--- a/src/misc/sig_abort.c
++++ b/src/misc/sig_abort.c
+@@ -37,8 +37,8 @@ static void NullHandler   (int sig_nr);
+ // catch these signals 
+ static struct {
+    	int 	sig;
+-   	void	(*new_handler)();
+-   	void	(*org_handler)();
++   	void	(*new_handler)(int);
++   	void	(*org_handler)(int);
+ } signalList[] = {
+ 	{ SIGHUP,  SmoothHandler,   NullHandler }, // -1  terminate smoothly
+ 	{ SIGQUIT, SmoothHandler,   NullHandler }, // -3  terminate smoothly
+diff --git a/src/private/userdefs.c b/src/private/userdefs.c
+index ee632fa..1a1bb89 100644
+--- a/src/private/userdefs.c
++++ b/src/private/userdefs.c
+@@ -50,7 +50,7 @@
+ 
+ typedef struct _PRIVATE_PROVIDER_FUNC {
+     char     *str;          /* e.g. "premiere.de" */
+-    void     (*func)();     /* function for getting table & descriptors */
++    void     (*func)(PRIV_SECTION_ID_FUNC **, PRIV_DESCR_ID_FUNC **);     /* function for getting table & descriptors */
+ } PRIV_PROVIDER_FUNC;
+ 
+ 
+diff --git a/src/private/userdefs.h b/src/private/userdefs.h
+index d4da7ae..e3062f1 100644
+--- a/src/private/userdefs.h
++++ b/src/private/userdefs.h
+@@ -25,14 +25,14 @@
+ 
+ typedef struct _PRIVATE_SECTION_STRUCTURES_FUNC {
+     u_int    table_id;         	/* section table ID */
+-    void     (*func)();  	/* function for table decoding */
++    void     (*func)(unsigned char *, int);  	/* function for table decoding */
+ } PRIV_SECTION_ID_FUNC;
+ 
+ 
+ typedef struct _PRIVATE_DESCRIPTOR_STRUCTURES_FUNC {
+     u_int      descriptor_tag; 	/* descriptor tag ID */
+     DTAG_SCOPE tag_scope;	/* MPEG, DVB_SI, DSMCC_STREAM, ... */
+-    void       (*func)();  	/* function for descriptor decoding */
++    void       (*func)(unsigned char *);  	/* function for descriptor decoding */
+ } PRIV_DESCR_ID_FUNC;
+ 
+ 
+diff --git a/src/sections/sectables.c b/src/sections/sectables.c
+index 58837df..8ddcb4a 100644
+--- a/src/sections/sectables.c
++++ b/src/sections/sectables.c
+@@ -181,7 +181,7 @@ void decodeSI_packet (u_char *buf, int len, u_int pid)
+ typedef struct _TABLE_IF_FUNC {
+     u_int    from;          /* e.g. from tabel_id 1  */
+     u_int    to;            /*      to   tabel_id 3  */
+-    void     (*func)();     /*      function for table decoding */
++    void     (*func)(unsigned char *, int);     /*      function for table decoding */
+ } TABLE_ID_FUNC;
+ 
+ 
