@@ -39,7 +39,7 @@ elif [ -f /dev/.kernel_ipconfig ] && [ -f /proc/net/pnp ]; then
   cat /proc/net/pnp >/run/libreelec/resolv.conf
 else
   cat <<EOF >/run/libreelec/resolv.conf
-nameserver 8.8.8.8
-nameserver 8.8.4.4
+nameserver 1.1.1.1
+nameserver 1.0.0.1
 EOF
 fi
