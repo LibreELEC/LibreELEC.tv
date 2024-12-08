@@ -5,7 +5,7 @@ Before=samba-config.service
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/mount -o bind /storage/.kodi/addons/service.ntfs3g/bin/mount.ntfs3g /usr/sbin/mount.ntfs
-ExecStop=/usr/bin/umount /usr/sbin/mount.ntfs
+ExecStop=/bin/sh -c 'grep -q " /usr/sbin/mount.ntfs " /proc/self/mounts && umount /usr/sbin/mount.ntfs || true'
 RemainAfterExit=yes
 
 [Install]

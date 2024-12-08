@@ -2,7 +2,7 @@
 # Copyright (C) 2024-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="ntfs3g"
-PKG_REV="0"
+PKG_REV="1"
 PKG_LICENSE="GPLv3"
 PKG_DEPENDS_TARGET="toolchain fuse ntfs-3g_ntfsprogs"
 PKG_SECTION="service"
