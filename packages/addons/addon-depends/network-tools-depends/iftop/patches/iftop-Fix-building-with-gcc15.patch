@@ -1,0 +1,26 @@
+From 322c1aa1e0cc8ab1770929c42a2c84befd86d0dc Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 9 Dec 2024 11:45:03 +0000
+Subject: [PATCH] fix gcc-15 build
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ cfgfile.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cfgfile.h b/cfgfile.h
+index 11ba475..55f9b9c 100644
+--- a/cfgfile.h
++++ b/cfgfile.h
+@@ -13,7 +13,7 @@ typedef struct {
+     int value;
+ } config_enumeration_type;
+ 
+-int read_config();
++int read_config(char *, int);
+ 
+ char *config_get_string(const char *directive);
+ int config_get_bool(const char *directive);
+-- 
+2.43.0
+
