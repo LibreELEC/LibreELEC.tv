@@ -1,0 +1,63 @@
+From beadb59b90e8d3339d31f9f15525108072fde135 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 9 Dec 2024 10:13:02 +0000
+Subject: [PATCH] fix build with gcc-15
+
+---
+ src/iperf_api.c | 8 ++++----
+ src/iperf_api.h | 8 ++++----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/iperf_api.c b/src/iperf_api.c
+index bad0a63ad..901aec301 100644
+--- a/src/iperf_api.c
++++ b/src/iperf_api.c
+@@ -603,25 +603,25 @@ iperf_set_mapped_v4(struct iperf_test *ipt, const int val)
+ }
+ 
+ void 
+-iperf_set_on_new_stream_callback(struct iperf_test* ipt, void (*callback)())
++iperf_set_on_new_stream_callback(struct iperf_test* ipt, void (*callback)(struct iperf_stream *))
+ {
+         ipt->on_new_stream = callback;
+ }
+ 
+ void 
+-iperf_set_on_test_start_callback(struct iperf_test* ipt, void (*callback)())
++iperf_set_on_test_start_callback(struct iperf_test* ipt, void (*callback)(struct iperf_test *))
+ {
+         ipt->on_test_start = callback;
+ }
+ 
+ void 
+-iperf_set_on_test_connect_callback(struct iperf_test* ipt, void (*callback)())
++iperf_set_on_test_connect_callback(struct iperf_test* ipt, void (*callback)(struct iperf_test *))
+ {
+         ipt->on_connect = callback;
+ }
+ 
+ void 
+-iperf_set_on_test_finish_callback(struct iperf_test* ipt, void (*callback)())
++iperf_set_on_test_finish_callback(struct iperf_test* ipt, void (*callback)(struct iperf_test *))
+ {
+         ipt->on_test_finish = callback;
+ }
+diff --git a/src/iperf_api.h b/src/iperf_api.h
+index 2b71613e9..5e2519e47 100644
+--- a/src/iperf_api.h
++++ b/src/iperf_api.h
+@@ -213,10 +213,10 @@ void    iperf_set_dont_fragment( struct iperf_test* ipt, int dont_fragment );
+ void    iperf_set_test_congestion_control(struct iperf_test* ipt, char* cc);
+ void    iperf_set_test_mss(struct iperf_test* ipt, int mss);
+ void    iperf_set_mapped_v4(struct iperf_test* ipt, const int val);
+-void    iperf_set_on_new_stream_callback(struct iperf_test* ipt, void (*callback)());
+-void    iperf_set_on_test_start_callback(struct iperf_test* ipt, void (*callback)());
+-void    iperf_set_on_test_connect_callback(struct iperf_test* ipt, void (*callback)());
+-void    iperf_set_on_test_finish_callback(struct iperf_test* ipt, void (*callback)());
++void    iperf_set_on_new_stream_callback(struct iperf_test* ipt, void (*callback)(struct iperf_stream *));
++void    iperf_set_on_test_start_callback(struct iperf_test* ipt, void (*callback)(struct iperf_test *));
++void    iperf_set_on_test_connect_callback(struct iperf_test* ipt, void (*callback)(struct iperf_test *));
++void    iperf_set_on_test_finish_callback(struct iperf_test* ipt, void (*callback)(struct iperf_test *));
+ 
+ #if defined(HAVE_SSL)
+ void    iperf_set_test_client_username(struct iperf_test *ipt, const char *client_username);
