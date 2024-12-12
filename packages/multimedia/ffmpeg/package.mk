@@ -24,7 +24,6 @@ case "${PROJECT}" in
     PKG_PATCH_DIRS+=" rpi"
     ;;
   *)
-    PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
     case "${PROJECT}" in
       Allwinner | Rockchip)
         PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
@@ -48,6 +47,7 @@ get_graphicdrivers
 PKG_FFMPEG_HWACCEL="--enable-hwaccels"
 
 if [ "${V4L2_SUPPORT}" = "yes" ]; then
+  PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
   PKG_DEPENDS_TARGET+=" libdrm"
   PKG_NEED_UNPACK+=" $(get_pkg_directory libdrm)"
   PKG_FFMPEG_V4L2="--enable-v4l2_m2m --enable-libdrm"
@@ -65,8 +65,6 @@ if [ "${V4L2_SUPPORT}" = "yes" ]; then
   else
     PKG_FFMPEG_V4L2+=" --disable-libudev --disable-v4l2-request"
   fi
-else
-  PKG_FFMPEG_V4L2="--disable-v4l2_m2m --disable-libudev --disable-v4l2-request"
 fi
 
 if [ "${VAAPI_SUPPORT}" = "yes" ]; then
