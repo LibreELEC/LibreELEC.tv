@@ -2,7 +2,7 @@
 
 # base ffmpeg version
 FFMPEG_REPO="git://source.ffmpeg.org/ffmpeg.git"
-FFMPEG_VERSION="n6.0.1"
+FFMPEG_VERSION="n7.1"
 
 ALL_FEATURE_SETS="v4l2-drmprime v4l2-request libreelec rpi vf-deinterlace-v4l2m2m"
 
@@ -34,7 +34,7 @@ create_patch() {
       ;;
     libreelec)
       REPO="https://github.com/LibreELEC/FFmpeg"
-      REFSPEC="6.0-libreelec-misc"
+      REFSPEC="libreelec-misc-${FFMPEG_VERSION}"
       ;;
     rpi)
       REPO="https://github.com/jc-kynesim/rpi-ffmpeg"
