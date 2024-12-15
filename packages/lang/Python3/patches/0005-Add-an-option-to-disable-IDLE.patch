@@ -22,7 +22,7 @@ diff --git a/Makefile.pre.in b/Makefile.pre.in
 index 3f314d1354..5fad7f82fb 100644
 --- a/Makefile.pre.in
 +++ b/Makefile.pre.in
-@@ -2048,7 +2048,9 @@ bininstall: commoninstall altbininstall
+@@ -2291,7 +2291,9 @@ bininstall: commoninstall altbininstall
  	-rm -f $(DESTDIR)$(LIBPC)/python3-embed.pc
  	(cd $(DESTDIR)$(LIBPC); $(LN) -s python-$(VERSION)-embed.pc python3-embed.pc)
  	-rm -f $(DESTDIR)$(BINDIR)/idle3
@@ -32,7 +32,7 @@ index 3f314d1354..5fad7f82fb 100644
  	-rm -f $(DESTDIR)$(BINDIR)/pydoc3
  ifeq (@PYDOC@,yes)
  	(cd $(DESTDIR)$(BINDIR); $(LN) -s pydoc$(VERSION) pydoc3)
-@@ -2100,7 +2102,6 @@ LIBSUBDIRS=	asyncio \
+@@ -2339,7 +2341,6 @@ LIBSUBDIRS=	asyncio \
  		ensurepip ensurepip/_bundled \
  		html \
  		http \
@@ -40,8 +40,8 @@ index 3f314d1354..5fad7f82fb 100644
  		importlib importlib/resources importlib/metadata \
  		json \
  		logging \
-@@ -2267,6 +2268,10 @@ TESTSUBDIRS += test/test_lib2to3			\
- 		test/test_lib2to3/data/fixers/myfixes
+@@ -2501,6 +2502,10 @@ TESTSUBDIRS += test/test_lib2to3			\
+ LIBSUBDIRS += pydoc_data
  endif
  
 +ifeq (@IDLE@,yes)
@@ -51,10 +51,10 @@ index 3f314d1354..5fad7f82fb 100644
  TEST_MODULES=@TEST_MODULES@
  
  .PHONY: libinstall
-@@ -2484,7 +2489,9 @@ libainstall: all scripts
- ifeq (@LIB2TO3@,yes)
- 	$(INSTALL_SCRIPT) $(SCRIPT_2TO3) $(DESTDIR)$(BINDIR)/2to3-$(VERSION)
- endif
+@@ -2727,7 +2732,9 @@ libainstall: all scripts
+ 	$(INSTALL_SCRIPT) $(srcdir)/install-sh $(DESTDIR)$(LIBPL)/install-sh
+ 	$(INSTALL_SCRIPT) python-config.py $(DESTDIR)$(LIBPL)/python-config.py
+ 	$(INSTALL_SCRIPT) python-config $(DESTDIR)$(BINDIR)/python$(LDVERSION)-config
 +ifeq (@IDLE@,yes)
  	$(INSTALL_SCRIPT) $(SCRIPT_IDLE) $(DESTDIR)$(BINDIR)/idle$(VERSION)
 +endif
@@ -65,9 +65,9 @@ diff --git a/configure.ac b/configure.ac
 index f0354c580d..43086962e9 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -7567,6 +7567,12 @@ AC_ARG_ENABLE(lib2to3,
- 	AS_HELP_STRING([--disable-lib2to3], [disable lib2to3]),
- 	[ LIB2TO3="${enableval}" ], [ LIB2TO3=yes ])
+@@ -7788,6 +7788,12 @@ AC_ARG_ENABLE(lib2to3,
+ # substitute multiline block, must come after last PY_STDLIB_MOD()
+ AC_SUBST([MODULE_BLOCK])
  
 +AC_SUBST(IDLE)
 +
