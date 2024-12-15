@@ -1,7 +1,7 @@
-From 4eded8af13fe44c12ed2c26e40abfe9e9d08281f Mon Sep 17 00:00:00 2001
+From b28d1869b92f9876c838e288f4b4eeb357ae9e86 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Wed, 21 Jun 2023 13:16:01 +0100
-Subject: [PATCH 12/12] DVDVideoCodecDRMPRIME: Add setting to enable hw
+Subject: [PATCH 11/12] DVDVideoCodecDRMPRIME: Add setting to enable hw
  deinterlace
 
 HW deinterlace has lower cpu, but may have higher quality,
@@ -14,10 +14,10 @@ so allow user to choose appropriate setting.
  4 files changed, 39 insertions(+), 1 deletion(-)
 
 diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
-index 062d3afd2b..8c6e31965a 100644
+index 4e0f32669987..abbfbd767c05 100644
 --- a/addons/resource.language.en_gb/resources/strings.po
 +++ b/addons/resource.language.en_gb/resources/strings.po
-@@ -7311,6 +7311,11 @@ msgctxt "#13438"
+@@ -7513,6 +7513,11 @@ msgctxt "#13438"
  msgid "Allow hardware acceleration with DRM PRIME"
  msgstr ""
  
@@ -29,7 +29,7 @@ index 062d3afd2b..8c6e31965a 100644
  #: system/settings/settings.xml
  msgctxt "#13439"
  msgid "Allow hardware acceleration - MediaCodec"
-@@ -19424,6 +19429,12 @@ msgctxt "#36172"
+@@ -19896,6 +19901,12 @@ msgctxt "#36172"
  msgid "Enable PRIME decoding of video files"
  msgstr ""
  
@@ -43,10 +43,10 @@ index 062d3afd2b..8c6e31965a 100644
  #: system/settings/settings.xml
  msgctxt "#36173"
 diff --git a/system/settings/linux.xml b/system/settings/linux.xml
-index 531974f3f4..c2df62c047 100644
+index c99bd895275e..756448b8371a 100644
 --- a/system/settings/linux.xml
 +++ b/system/settings/linux.xml
-@@ -180,6 +180,18 @@
+@@ -192,6 +192,18 @@
            <default>true</default>
            <control type="toggle" />
          </setting>
@@ -66,7 +66,7 @@ index 531974f3f4..c2df62c047 100644
            <requirement>HAS_GLES</requirement>
            <visible>false</visible>
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 0182f30a61..cd3b4e89a2 100644
+index 4338324c931d..135a1e29af0a 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -41,6 +41,7 @@ namespace
@@ -93,7 +93,7 @@ index 0182f30a61..cd3b4e89a2 100644
    CDVDFactoryCodec::RegisterHWVideoCodec("drm_prime", CDVDVideoCodecDRMPRIME::Create);
  }
  
-@@ -650,7 +660,11 @@ void CDVDVideoCodecDRMPRIME::FilterTest(AVPixelFormat pix_fmt)
+@@ -651,7 +661,11 @@ void CDVDVideoCodecDRMPRIME::FilterTest(AVPixelFormat pix_fmt)
    m_deintFilterName.clear();
  
    // look twice, first for DRM_PRIME support, then for actual pixel format
@@ -107,17 +107,17 @@ index 0182f30a61..cd3b4e89a2 100644
      const AVFilter* filter;
      void* opaque{};
 diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
-index a4f91e9f92..e9cb3dc2be 100644
+index adf040f49c01..490513d3b9b1 100644
 --- a/xbmc/settings/Settings.h
 +++ b/xbmc/settings/Settings.h
-@@ -117,6 +117,7 @@ public:
+@@ -124,6 +124,7 @@ public:
    static constexpr auto SETTING_VIDEOPLAYER_USEMEDIACODEC = "videoplayer.usemediacodec";
    static constexpr auto SETTING_VIDEOPLAYER_USEMEDIACODECSURFACE =
        "videoplayer.usemediacodecsurface";
 +  static constexpr auto SETTING_VIDEOPLAYER_ALLOWHWDEINTERLACE = "videoplayer.primeallowhwdeinterlace";
+   static constexpr auto SETTING_VIDEOPLAYER_USEDECODERFILTER = "videoplayer.usedecoderfilter";
    static constexpr auto SETTING_VIDEOPLAYER_USEVDPAU = "videoplayer.usevdpau";
    static constexpr auto SETTING_VIDEOPLAYER_USEVDPAUMIXER = "videoplayer.usevdpaumixer";
-   static constexpr auto SETTING_VIDEOPLAYER_USEVDPAUMPEG2 = "videoplayer.usevdpaumpeg2";
 -- 
-2.39.2
+2.39.5
 

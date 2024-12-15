@@ -1,7 +1,7 @@
-From c2ced5695054a42fe4ba8520669d7c69e583e2a1 Mon Sep 17 00:00:00 2001
+From 0dbcdaef75f1513de2077bbf14825486c46b1bb8 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Tue, 20 Jun 2023 15:14:02 +0100
-Subject: [PATCH 11/12] DVDVideoCodecDRMPRIME: Request v4l2 buffers be
+Subject: [PATCH 10/12] DVDVideoCodecDRMPRIME: Request v4l2 buffers be
  allocated through cache
 
 This is an optional request, but will improve performance of sw deinterlace
@@ -11,7 +11,7 @@ if supported.
  1 file changed, 4 insertions(+)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 023334f5db..0182f30a61 100644
+index 9439f031800a..4338324c931d 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -367,6 +367,10 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
@@ -26,5 +26,5 @@ index 023334f5db..0182f30a61 100644
    {
      CLog::Log(LOGINFO, "CDVDVideoCodecDRMPRIME::{} - unable to open codec", __FUNCTION__);
 -- 
-2.39.2
+2.39.5
 

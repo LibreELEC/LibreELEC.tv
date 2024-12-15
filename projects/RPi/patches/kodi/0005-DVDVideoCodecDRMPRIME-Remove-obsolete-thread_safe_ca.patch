@@ -1,4 +1,4 @@
-From 4a3cb2af8b0751807d212044ba424d07f2a7ba55 Mon Sep 17 00:00:00 2001
+From 360f3a694cfeac822b5263f2d006e47d68801148 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Fri, 14 Apr 2023 19:59:42 +0100
 Subject: [PATCH 05/12] DVDVideoCodecDRMPRIME: Remove obsolete
@@ -9,7 +9,7 @@ Subject: [PATCH 05/12] DVDVideoCodecDRMPRIME: Remove obsolete
  1 file changed, 1 deletion(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 28bd0a9bc7..670b5f22ce 100644
+index a8edd55c92c5..f64e2ff8dfb2 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -355,7 +355,6 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
@@ -21,5 +21,5 @@ index 28bd0a9bc7..670b5f22ce 100644
  
    if (hints.extradata)
 -- 
-2.39.2
+2.39.5
 
