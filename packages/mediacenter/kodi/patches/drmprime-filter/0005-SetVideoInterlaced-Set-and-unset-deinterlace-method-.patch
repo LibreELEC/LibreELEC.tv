@@ -1,4 +1,4 @@
-From 540db79c945d141c64fae6b143374b08881181f5 Mon Sep 17 00:00:00 2001
+From 7102ce0a2a07e9f63903450f9070d686f8e4804c Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Tue, 30 Nov 2021 16:05:06 +0000
 Subject: [PATCH 5/7] SetVideoInterlaced: Set and unset deinterlace method name
@@ -9,10 +9,10 @@ Subject: [PATCH 5/7] SetVideoInterlaced: Set and unset deinterlace method name
  1 file changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index c214424ad1..1be249cc89 100644
+index 0210b72d037c..5cadc4ca00ea 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -806,14 +806,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+@@ -810,14 +810,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
      return true;
    }
  
@@ -28,7 +28,7 @@ index c214424ad1..1be249cc89 100644
  
    if (CServiceBroker::GetLogging().CanLogComponent(LOGVIDEO))
    {
-@@ -831,6 +824,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+@@ -835,6 +828,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
  
  void CDVDVideoCodecDRMPRIME::FilterClose()
  {
@@ -37,5 +37,5 @@ index c214424ad1..1be249cc89 100644
    {
      CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecDRMPRIME::FilterClose - Freeing filter graph");
 -- 
-2.39.2
+2.39.5
 
