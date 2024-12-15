@@ -1,0 +1,12 @@
+diff --git a/arch/arm/boot/dts/rockchip/rk3288.dtsi b/arch/arm/boot/dts/rockchip/rk3288.dtsi
+index 9ff190ab1d..1d5a4a68f6 100644
+--- a/arch/arm/boot/dts/rockchip/rk3288.dtsi
++++ b/arch/arm/boot/dts/rockchip/rk3288.dtsi
+@@ -1298,6 +1298,7 @@ vpu_mmu: iommu@ff9a0800 {
+ 		clock-names = "aclk", "iface";
+ 		#iommu-cells = <0>;
+ 		power-domains = <&power RK3288_PD_VIDEO>;
++		status = "disabled";
+ 	};
+ 
+ 	hevc: hevc@ff9c0000 {
