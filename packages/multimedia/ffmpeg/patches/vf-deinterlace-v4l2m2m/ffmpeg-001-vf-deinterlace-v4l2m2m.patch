@@ -1,4 +1,4 @@
-From d38cb51a9362250b53aa9c7637b17d90718f5f65 Mon Sep 17 00:00:00 2001
+From accf519d251f366afbbbffb67ebac3553a3c7cbb Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@siol.net>
 Date: Tue, 3 Dec 2019 21:01:18 +0100
 Subject: [PATCH] Add V4L2 m2m deinterlace filter
@@ -7,15 +7,15 @@ Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
  libavfilter/Makefile                 |    1 +
  libavfilter/allfilters.c             |    1 +
- libavfilter/vf_deinterlace_v4l2m2m.c | 1009 ++++++++++++++++++++++++++
- 3 files changed, 1011 insertions(+)
+ libavfilter/vf_deinterlace_v4l2m2m.c | 1011 ++++++++++++++++++++++++++
+ 3 files changed, 1013 insertions(+)
  create mode 100644 libavfilter/vf_deinterlace_v4l2m2m.c
 
 diff --git a/libavfilter/Makefile b/libavfilter/Makefile
-index b3d3d981dd..9103e3b395 100644
+index 91487afb21..84adb9ba46 100644
 --- a/libavfilter/Makefile
 +++ b/libavfilter/Makefile
-@@ -262,6 +262,7 @@ OBJS-$(CONFIG_DEFLATE_FILTER)                += vf_neighbor.o
+@@ -272,6 +272,7 @@ OBJS-$(CONFIG_DEFLATE_FILTER)                += vf_neighbor.o
  OBJS-$(CONFIG_DEFLICKER_FILTER)              += vf_deflicker.o
  OBJS-$(CONFIG_DEINTERLACE_QSV_FILTER)        += vf_vpp_qsv.o
  OBJS-$(CONFIG_DEINTERLACE_VAAPI_FILTER)      += vf_deinterlace_vaapi.o vaapi_vpp.o
@@ -24,10 +24,10 @@ index b3d3d981dd..9103e3b395 100644
  OBJS-$(CONFIG_DELOGO_FILTER)                 += vf_delogo.o
  OBJS-$(CONFIG_DENOISE_VAAPI_FILTER)          += vf_misc_vaapi.o vaapi_vpp.o
 diff --git a/libavfilter/allfilters.c b/libavfilter/allfilters.c
-index d7db46c2af..075f065f3c 100644
+index 9819f0f95b..c6d93340e6 100644
 --- a/libavfilter/allfilters.c
 +++ b/libavfilter/allfilters.c
-@@ -240,6 +240,7 @@ extern const AVFilter ff_vf_dedot;
+@@ -248,6 +248,7 @@ extern const AVFilter ff_vf_dedot;
  extern const AVFilter ff_vf_deflate;
  extern const AVFilter ff_vf_deflicker;
  extern const AVFilter ff_vf_deinterlace_qsv;
@@ -37,10 +37,10 @@ index d7db46c2af..075f065f3c 100644
  extern const AVFilter ff_vf_delogo;
 diff --git a/libavfilter/vf_deinterlace_v4l2m2m.c b/libavfilter/vf_deinterlace_v4l2m2m.c
 new file mode 100644
-index 0000000000..ff5ed500a9
+index 0000000000..bf163279ce
 --- /dev/null
 +++ b/libavfilter/vf_deinterlace_v4l2m2m.c
-@@ -0,0 +1,1009 @@
+@@ -0,0 +1,1011 @@
 +/*
 + * This file is part of FFmpeg.
 + *
@@ -85,13 +85,13 @@ index 0000000000..ff5ed500a9
 +#include "libavutil/hwcontext_drm.h"
 +#include "libavutil/internal.h"
 +#include "libavutil/mathematics.h"
++#include "libavutil/mem.h"
 +#include "libavutil/opt.h"
 +#include "libavutil/pixdesc.h"
 +#include "libavutil/time.h"
 +
 +#include "avfilter.h"
 +#include "formats.h"
-+#include "internal.h"
 +#include "video.h"
 +
 +typedef struct V4L2Queue V4L2Queue;
@@ -178,8 +178,8 @@ index 0000000000..ff5ed500a9
 +    case DRM_FORMAT_NV61:
 +        return V4L2_PIX_FMT_NV61;
 +    default:
-+        av_log(NULL, AV_LOG_WARNING, "%s unknown drm format 0x%llx using default v4l2_pix_fmt 0x%x\n",
-+	       __func__ , drm_format, V4L2_PIX_FMT_NV12);
++        av_log(NULL, AV_LOG_WARNING, "%s unknown drm format %s using default v4l2_pix_fmt %s\n",
++	       __func__ , av_fourcc2str(drm_format), av_fourcc2str(V4L2_PIX_FMT_NV12));
 +	return V4L2_PIX_FMT_NV12;
 +    }
 +}
@@ -333,12 +333,12 @@ index 0000000000..ff5ed500a9
 +    else if (!V4L2_TYPE_IS_OUTPUT(queue->format.type)) {
 +        if (V4L2_TYPE_IS_MULTIPLANAR(fmt->type) && fmt->fmt.pix_mp.pixelformat != v4l2_pix_fmt) {
 +            ctx->drm_out_format = drm_format_from_v4l2_pix_fmt(fmt->fmt.pix_mp.pixelformat);
-+            av_log(NULL, AV_LOG_DEBUG, "%s driver updated v4l2_pixfmt from: %x to %x, so now using %llx as drm output format\n",
-+                   __func__, v4l2_pix_fmt, fmt->fmt.pix_mp.pixelformat, ctx->drm_out_format);
++            av_log(NULL, AV_LOG_DEBUG, "%s driver updated v4l2_pixfmt from: %s to %s, so now using %s as drm output format\n",
++                   __func__, av_fourcc2str(v4l2_pix_fmt), av_fourcc2str(fmt->fmt.pix_mp.pixelformat), av_fourcc2str(ctx->drm_out_format));
 +        } else if (fmt->fmt.pix.pixelformat != v4l2_pix_fmt) {
 +                ctx->drm_out_format = drm_format_from_v4l2_pix_fmt(fmt->fmt.pix.pixelformat);
-+                av_log(NULL, AV_LOG_DEBUG, "%s driver updated v4l2_pixfmt from: %x to %x, so now using %llx as drm output format\n",
-+                       __func__, v4l2_pix_fmt, fmt->fmt.pix.pixelformat, ctx->drm_out_format);
++                av_log(NULL, AV_LOG_DEBUG, "%s driver updated v4l2_pixfmt from: %s to %s, so now using %s as drm output format\n",
++                       __func__, av_fourcc2str(v4l2_pix_fmt), av_fourcc2str(fmt->fmt.pix.pixelformat), av_fourcc2str(ctx->drm_out_format));
 +        }
 +    }
 +
@@ -818,7 +818,7 @@ index 0000000000..ff5ed500a9
 +    if (err < 0)
 +        goto fail_out1;
 +
-+    output_frame_1->interlaced_frame = 0;
++    output_frame_1->flags &= ~AV_FRAME_FLAG_INTERLACED;
 +
 +    output_frame_2 = av_frame_alloc();
 +    if (!output_frame_2) {
@@ -836,7 +836,7 @@ index 0000000000..ff5ed500a9
 +    if (err < 0)
 +        goto fail_out2;
 +
-+    output_frame_2->interlaced_frame = 0;
++    output_frame_2->flags &= ~AV_FRAME_FLAG_INTERLACED;
 +
 +    if (ctx->prev_in_frame && ctx->prev_in_frame->pts != AV_NOPTS_VALUE
 +       && input_frame->pts != AV_NOPTS_VALUE) {
@@ -874,13 +874,15 @@ index 0000000000..ff5ed500a9
 +    AVFilterContext *avctx         = outlink->src;
 +    DeintV4L2M2MContext *priv      = avctx->priv;
 +    DeintV4L2M2MContextShared *ctx = priv->shared;
++    FilterLink *fl_inlink          = ff_filter_link(inlink);
++    FilterLink *fl_outlink         = ff_filter_link(outlink);
 +    int ret;
 +
 +    ctx->height = avctx->inputs[0]->h;
 +    ctx->width = avctx->inputs[0]->w;
 +
-+    outlink->frame_rate = av_mul_q(inlink->frame_rate,
-+                                   (AVRational){ 2, 1 });
++    fl_outlink->frame_rate = av_mul_q(fl_inlink->frame_rate,
++                                      (AVRational){ 2, 1 });
 +    outlink->time_base  = av_mul_q(inlink->time_base,
 +                                   (AVRational){ 1, 2 });
 +
@@ -888,12 +890,12 @@ index 0000000000..ff5ed500a9
 +    if (ret)
 +        return ret;
 +
-+    if (!inlink->hw_frames_ctx) {
++    if (!fl_inlink->hw_frames_ctx) {
 +        av_log(priv, AV_LOG_ERROR, "No hw context provided on input\n");
 +        return AVERROR(EINVAL);
 +    }
 +
-+    ctx->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
++    ctx->hw_frames_ctx = av_buffer_ref(fl_inlink->hw_frames_ctx);
 +    if (!ctx->hw_frames_ctx)
 +            return AVERROR(ENOMEM);
 +
@@ -920,7 +922,7 @@ index 0000000000..ff5ed500a9
 +    int ret;
 +
 +    av_log(priv, AV_LOG_DEBUG, "input pts: %"PRId64" field :%d interlaced: %d\n",
-+          in->pts, in->top_field_first, in->interlaced_frame);
++          in->pts, !!(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST), !!(in->flags & AV_FRAME_FLAG_INTERLACED));
 +
 +    ctx->cur_in_frame = in;
 +
@@ -931,7 +933,7 @@ index 0000000000..ff5ed500a9
 +        ctx->drm_in_format = drm_desc->layers->format;
 +        ctx->drm_out_format = drm_desc->layers->format;
 +
-+	if (in->top_field_first)
++	if (!!(in->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST))
 +            ctx->field_order = V4L2_FIELD_INTERLACED_TB;
 +        else
 +            ctx->field_order = V4L2_FIELD_INTERLACED_BT;
