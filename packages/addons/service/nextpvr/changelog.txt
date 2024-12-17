@@ -1,1 +1,6 @@
+2
+- download NextPVR 7.0.1
+- install and configure, hdhomerun_config, comskip and libmediainfo
+- fix manual updates from NPVR.zip
+
 initial release

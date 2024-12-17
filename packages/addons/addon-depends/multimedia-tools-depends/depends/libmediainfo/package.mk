@@ -20,7 +20,7 @@ configure_target() {
         --host=${TARGET_NAME} \
         --build=${HOST_NAME} \
         --enable-static \
-        --disable-shared \
+        --enable-shared \
         --prefix=/usr \
         --enable-visibility
 }
@@ -36,6 +36,9 @@ makeinstall_target() {
     mkdir -p ${INSTALL}/usr/include/MediaInfo/${i}/
     cp -aP ../../../Source/MediaInfo/${i}/*.h ${INSTALL}/usr/include/MediaInfo/${i}/
   done
-  cp -P .libs/* ${INSTALL}/usr/lib
-  cp -P libmediainfo.pc ${INSTALL}/usr/lib/pkgconfig
+  cp -P .libs/libmediainfo.a ${INSTALL}/usr/lib
+  
+  # move shared lib so mediainfo will not detect it and perform a static build
+  mkdir -p ${INSTALL}/shared-lib
+  cp -P .libs/libmediainfo.so* ${INSTALL}/shared-lib
 }
