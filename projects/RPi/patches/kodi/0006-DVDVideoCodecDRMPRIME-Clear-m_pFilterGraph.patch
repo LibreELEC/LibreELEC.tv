@@ -1,4 +1,4 @@
-From 018e080fb3fea185df01d2659d59231aef787759 Mon Sep 17 00:00:00 2001
+From b551c28a08d24450c6b8afa4e29f61323f9ba934 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Wed, 31 May 2023 19:40:37 +0100
 Subject: [PATCH 06/12] DVDVideoCodecDRMPRIME: Clear m_pFilterGraph
@@ -8,10 +8,10 @@ Subject: [PATCH 06/12] DVDVideoCodecDRMPRIME: Clear m_pFilterGraph
  1 file changed, 1 insertion(+)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 670b5f22ce..8568f162ae 100644
+index f64e2ff8dfb2..31c28477cb58 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -866,6 +866,7 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
+@@ -867,6 +867,7 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
      // Disposed by above code
      m_pFilterIn = nullptr;
      m_pFilterOut = nullptr;
@@ -20,5 +20,5 @@ index 670b5f22ce..8568f162ae 100644
  }
  
 -- 
-2.39.2
+2.39.5
 

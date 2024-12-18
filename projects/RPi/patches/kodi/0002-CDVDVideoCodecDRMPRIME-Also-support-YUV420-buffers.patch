@@ -1,4 +1,4 @@
-From 7d18280622c8ac12dbf1f6d4d5ca9589e1a61b02 Mon Sep 17 00:00:00 2001
+From b7c319601e58efaf840360dfa2452d7621748528 Mon Sep 17 00:00:00 2001
 From: popcornmix <popcornmix@gmail.com>
 Date: Sat, 11 Sep 2021 14:03:05 +0100
 Subject: [PATCH 02/12] CDVDVideoCodecDRMPRIME: Also support YUV420 buffers
@@ -11,10 +11,10 @@ Need to call SetDimensions earlier and store the drm descriptor in expected plac
  1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index f5e26b203c..90f1fb07a9 100644
+index 3a5154dca4b4..2fc8232e8672 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -622,7 +622,7 @@ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+@@ -623,7 +623,7 @@ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
      pVideoPicture->videoBuffer = nullptr;
    }
  
@@ -23,7 +23,7 @@ index f5e26b203c..90f1fb07a9 100644
    {
      CVideoBufferDRMPRIMEFFmpeg* buffer =
          dynamic_cast<CVideoBufferDRMPRIMEFFmpeg*>(m_videoBufferPool->Get());
-@@ -700,7 +700,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+@@ -701,7 +701,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
  
    const AVFilter* srcFilter = avfilter_get_by_name("buffer");
    const AVFilter* outFilter = avfilter_get_by_name("buffersink");
@@ -32,7 +32,7 @@ index f5e26b203c..90f1fb07a9 100644
  
    std::string args = StringUtils::Format("video_size={}x{}:pix_fmt={}:time_base={}/{}:"
                                           "pixel_aspect={}/{}",
-@@ -848,6 +848,16 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
+@@ -849,6 +849,16 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
  
  CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
  {
@@ -50,5 +50,5 @@ index f5e26b203c..90f1fb07a9 100644
    if (ret < 0)
    {
 -- 
-2.39.2
+2.39.5
 

@@ -1,4 +1,4 @@
-From b359d89684418cc3a6f894434d212611c7c12cd5 Mon Sep 17 00:00:00 2001
+From 10ef3b029eed466b1e0811024cf5a0143f5c6132 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Wed, 31 May 2023 14:19:20 +0100
 Subject: [PATCH 08/12] DVDVideoCodecDRMPRIME: Rework filtering code to handle
@@ -10,7 +10,7 @@ Subject: [PATCH 08/12] DVDVideoCodecDRMPRIME: Rework filtering code to handle
  2 files changed, 68 insertions(+), 70 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index f515c5d5f1..b614312a77 100644
+index a05ae3ff89e8..d07cccffddc1 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -207,11 +207,7 @@ static const AVCodec* FindDecoder(CDVDStreamInfo& hints)
@@ -26,7 +26,7 @@ index f515c5d5f1..b614312a77 100644
  }
  
  enum AVPixelFormat CDVDVideoCodecDRMPRIME::GetFormat(struct AVCodecContext* avctx,
-@@ -645,27 +641,33 @@ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+@@ -646,27 +642,33 @@ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
    return true;
  }
  
@@ -74,7 +74,7 @@ index f515c5d5f1..b614312a77 100644
        }
      }
    }
-@@ -691,14 +693,17 @@ AVFrame *CDVDVideoCodecDRMPRIME::alloc_filter_frame(AVFilterContext * ctx, void
+@@ -692,14 +694,17 @@ AVFrame *CDVDVideoCodecDRMPRIME::alloc_filter_frame(AVFilterContext * ctx, void
    return frame;
  }
  
@@ -94,7 +94,7 @@ index f515c5d5f1..b614312a77 100644
      return true;
  
    if (!(m_pFilterGraph = avfilter_graph_alloc()))
-@@ -709,13 +714,12 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
+@@ -710,13 +715,12 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
  
    const AVFilter* srcFilter = avfilter_get_by_name("buffer");
    const AVFilter* outFilter = avfilter_get_by_name("buffersink");
@@ -109,7 +109,7 @@ index f515c5d5f1..b614312a77 100644
                                           m_pCodecContext->time_base.num ?
                                             m_pCodecContext->time_base.num : 1,
                                           m_pCodecContext->time_base.num ?
-@@ -772,6 +776,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
+@@ -773,6 +777,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
      return false;
    }
  
@@ -117,7 +117,7 @@ index f515c5d5f1..b614312a77 100644
    result = av_opt_set_int_list(m_pFilterOut, "pix_fmts", &pix_fmts[0],
                                 AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
    if (result < 0)
-@@ -780,43 +785,32 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
+@@ -781,43 +786,32 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
      return false;
    }
  
@@ -181,7 +181,7 @@ index f515c5d5f1..b614312a77 100644
    }
  
    if ((result = avfilter_graph_config(m_pFilterGraph,  nullptr)) < 0)
-@@ -831,8 +825,6 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
+@@ -832,8 +826,6 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool scale,
    if (test)
      return true;
  
@@ -190,7 +190,7 @@ index f515c5d5f1..b614312a77 100644
    if (CServiceBroker::GetLogging().CanLogComponent(LOGVIDEO))
    {
      char* graphDump = avfilter_graph_dump(m_pFilterGraph, nullptr);
-@@ -864,8 +856,8 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
+@@ -865,8 +857,8 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
  
  CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
  {
@@ -201,7 +201,7 @@ index f515c5d5f1..b614312a77 100644
    {
      CVideoBufferDMA* buffer = static_cast<CVideoBufferDMA*>(av_buffer_get_opaque(m_pFrame->buf[0]));
      buffer->SetDimensions(m_pFrame->width, m_pFrame->height);
-@@ -975,9 +967,10 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+@@ -976,9 +968,10 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
      return VC_ERROR;
    }
  
@@ -213,17 +213,17 @@ index f515c5d5f1..b614312a77 100644
  
      if (!m_deintFilterName.empty())
      {
-@@ -989,28 +982,33 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+@@ -990,28 +983,33 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
      m_checkedDeinterlace = true;
    }
  
 -  // we need to scale if the buffer isn't in DRM_PRIME format
 -  bool need_scale = !IsSupportedSwFormat(static_cast<AVPixelFormat>(m_pFrame->format)) && !IsSupportedHwFormat(static_cast<AVPixelFormat>(m_pFrame->format));
 -
-   if (!m_processInfo.GetVideoInterlaced() && m_pFrame->interlaced_frame)
+   if (!m_processInfo.GetVideoInterlaced() && !!(m_pFrame->flags & AV_FRAME_FLAG_INTERLACED))
      m_processInfo.SetVideoInterlaced(true);
  
-   std::string filterChain = GetFilterChain(m_pFrame->interlaced_frame);
+   std::string filterChain = GetFilterChain(!!(m_pFrame->flags & AV_FRAME_FLAG_INTERLACED));
 -  if (!filterChain.empty() || need_scale)
 +
 +  // we need to scale if the buffer isn't in DRM_PRIME format
@@ -257,7 +257,7 @@ index f515c5d5f1..b614312a77 100644
      }
  
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
-index df17f89b96..55675c3c2e 100644
+index df17f89b964c..55675c3c2ea8 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
 @@ -45,9 +45,9 @@ protected:
@@ -273,5 +273,5 @@ index df17f89b96..55675c3c2e 100644
  
    std::string m_name;
 -- 
-2.39.2
+2.39.5
 

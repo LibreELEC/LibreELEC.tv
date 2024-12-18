@@ -1,4 +1,4 @@
-From b62d5e56d76ce179e3a1169566aa2146da48b147 Mon Sep 17 00:00:00 2001
+From 9bad0c6121a228501c3cef5dd753a43d4ccb9994 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Fri, 2 Jun 2023 11:34:22 +0100
 Subject: [PATCH 07/12] DVDVideoCodecDRMPRIME: Move FilterTest from open to
@@ -12,7 +12,7 @@ and it may (later) influence the choice of deinterlacers available.
  2 files changed, 16 insertions(+), 9 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 8568f162ae..f515c5d5f1 100644
+index 31c28477cb58..a05ae3ff89e8 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -387,15 +387,7 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
@@ -32,7 +32,7 @@ index 8568f162ae..f515c5d5f1 100644
  
    return true;
  }
-@@ -983,6 +975,20 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+@@ -984,6 +976,20 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
      return VC_ERROR;
    }
  
@@ -54,7 +54,7 @@ index 8568f162ae..f515c5d5f1 100644
    bool need_scale = !IsSupportedSwFormat(static_cast<AVPixelFormat>(m_pFrame->format)) && !IsSupportedHwFormat(static_cast<AVPixelFormat>(m_pFrame->format));
  
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
-index bb88fde1f9..df17f89b96 100644
+index bb88fde1f924..df17f89b964c 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
 @@ -56,6 +56,7 @@ protected:
@@ -66,5 +66,5 @@ index bb88fde1f9..df17f89b96 100644
    AVFrame* m_pFrame = nullptr;
    AVFrame* m_pFilterFrame = nullptr;
 -- 
-2.39.2
+2.39.5
 
