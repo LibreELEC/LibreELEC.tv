@@ -1,0 +1,13 @@
+--- a/libav.h	2023-05-31 09:25:59.000000000 +0100
++++ b/libav.h	2024-11-30 21:51:58.063500472 +0000
+@@ -174,7 +174,9 @@
+ #define lav_codec_tag(s) s->codecpar->codec_tag
+ #define lav_sample_rate(s) s->codecpar->sample_rate
+ #define lav_bit_rate(s) s->codecpar->bit_rate
+-#define lav_channels(s) s->codecpar->channels
++/* #define lav_channels(s) s->codecpar->channels */
++/* ffmpeg 7 */
++#define lav_channels(s) s->codecpar->ch_layout.nb_channels
+ #define lav_width(s) s->codecpar->width
+ #define lav_height(s) s->codecpar->height
+ #define lav_profile(s) s->codecpar->profile
