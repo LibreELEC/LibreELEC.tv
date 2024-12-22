@@ -1,0 +1,30 @@
+--- a/tools.h	2017-01-07 09:06:17.000000000 +0000
++++ b/tools.h	2024-12-07 09:14:24.126672083 +0000
+@@ -32,10 +32,12 @@
+ /*******************************************************************************
+ /* common typedefs && logging.
+  ******************************************************************************/
+-#ifndef bool
+-  typedef int bool;
+-  #define false 0
+-  #define true  !(false)
++#if defined __STDC__ && defined __STDC_VERSION__ && __STDC_VERSION__ <= 201710L
++  #ifndef bool
++    typedef int bool;
++    #define false 0
++    #define true  !(false)
++  #endif
+ #endif
+ 
+ #define min(a,b)  (b<a?b:a)
+--- a/emulate.c	2017-01-07 09:06:17.000000000 +0000
++++ b/emulate.c	2024-12-07 09:21:15.216943907 +0000
+@@ -199,7 +199,7 @@
+ }
+ 
+ 
+-void em_lnb(int high_band, uint32_t high_val, uint32_t low_val) {
++void em_lnb(bool high_band, uint32_t high_val, uint32_t low_val) {
+   em_device.highband = high_band;
+   em_device.lnb_low = low_val;
+   em_device.lnb_high = high_val;

@@ -1,0 +1,70 @@
+From 8c7a865acea83d5144dd075ef40e0d4a3863b6b1 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 8 Dec 2024 11:51:12 +0000
+Subject: [PATCH] t2scan: fix -std=c23 build failure
+
+gcc-15 switched to -std=c23 by default:
+
+    https://gcc.gnu.org/git/?p=gcc.git;a=commitdiff;h=55e3bd376b2214e200fa76d12b67ff259b06c212
+
+As a result `t2scan` fails the build so only typedef int bool
+for __STDC_VERSION__ <= 201710L (C17)
+
+    ../tools.h:35:15: error: two or more data types in declaration specifiers
+       35 |   typedef int bool;
+          |               ^~~~
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ char-coding.h |  2 +-
+ emulate.c     |  2 +-
+ tools.h       | 10 ++++++----
+ 3 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/char-coding.h b/char-coding.h
+index 15bcdf9..93c78d2 100644
+--- a/char-coding.h
++++ b/char-coding.h
+@@ -31,7 +31,7 @@ int get_codepage_index(const char * codepage);
+ /*
+  * set the default charset that is used if a string does not include a charset definition in the first byte
+  */
+-void set_char_coding_default_charset();
++void set_char_coding_default_charset(char *);
+ 
+ /*
+  * reset default charset to the reset_to_charset
+diff --git a/emulate.c b/emulate.c
+index d0cd744..cfe7ebe 100644
+--- a/emulate.c
++++ b/emulate.c
+@@ -199,7 +199,7 @@ int  em_getproperty(struct dtv_properties * cmdseq) {
+ }
+ 
+ 
+-void em_lnb(int high_band, uint32_t high_val, uint32_t low_val) {
++void em_lnb(_Bool high_band, uint32_t high_val, uint32_t low_val) {
+   em_device.highband = high_band;
+   em_device.lnb_low = low_val;
+   em_device.lnb_high = high_val;
+diff --git a/tools.h b/tools.h
+index 20b6a0d..221580e 100644
+--- a/tools.h
++++ b/tools.h
+@@ -31,10 +31,12 @@
+ /*******************************************************************************
+ /* common typedefs && logging.
+  ******************************************************************************/
+-#ifndef bool
+-  typedef int bool;
+-  #define false 0
+-  #define true  !(false)
++#if defined __STDC__ && defined __STDC_VERSION__ && __STDC_VERSION__ <= 201710L
++  #ifndef bool
++    typedef int bool;
++    #define false 0
++    #define true  !(false)
++  #endif
+ #endif
+ 
+ #define min(a,b)  (b<a?b:a)
