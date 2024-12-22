@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libvncserver"
-PKG_VERSION="0.9.14"
-PKG_SHA256="83104e4f7e28b02f8bf6b010d69b626fae591f887e949816305daebae527c9a5"
+PKG_VERSION="0.9.15"
+PKG_SHA256="62352c7795e231dfce044beb96156065a05a05c974e5de9e023d688d8ff675d7"
 PKG_LICENSE="GPL"
 PKG_SITE="https://libvnc.github.io/"
 PKG_URL="https://github.com/LibVNC/libvncserver/archive/LibVNCServer-${PKG_VERSION}.tar.gz"
@@ -14,4 +14,7 @@ PKG_CMAKE_OPTS_TARGET="-DWITH_GCRYPT=0 \
                        -DWITH_GNUTLS=0 \
                        -DWITH_GTK=0 \
                        -DWITH_SDL=0 \
-                       -DWITH_TIGHTVNC_FILETRANSFER=0"
+                       -DWITH_TIGHTVNC_FILETRANSFER=0 \
+                       -DWITH_EXAMPLES=OFF \
+                       -DWITH_TESTS=OFF \
+                       -DWITH_QT=OFF"
