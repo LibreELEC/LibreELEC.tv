@@ -1,0 +1,21 @@
+From 8647a93f99121084e8749982f6f8f56e254d815d Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 9 Dec 2024 11:18:31 +1100
+Subject: [PATCH] Remove PyEval_ReleaseLock();
+
+---
+ libsrc/effectengine/Effect.cpp | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/libsrc/effectengine/Effect.cpp b/libsrc/effectengine/Effect.cpp
+index b89a36cb..a60c935a 100644
+--- a/libsrc/effectengine/Effect.cpp
++++ b/libsrc/effectengine/Effect.cpp
+@@ -120,7 +120,6 @@ void Effect::run()
+ 	// Clean up the thread state
+ 	Py_EndInterpreter(_interpreterThreadState);
+ 	_interpreterThreadState = nullptr;
+-	PyEval_ReleaseLock();
+ }
+ 
+ int Effect::getPriority() const
