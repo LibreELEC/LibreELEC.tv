@@ -1,0 +1,28 @@
+[Unit]
+Description=Getty on %I
+After=getty-pre.target
+Before=getty.target
+IgnoreOnIsolate=yes
+ConditionPathExists=/dev/tty0
+
+[Service]
+ExecStart=-/sbin/agetty -o '-p -- \\u' --noissue --noclear --nohostname - $TERM
+Type=idle
+Restart=always
+RestartSec=0
+UtmpIdentifier=%I
+StandardInput=tty
+StandardOutput=tty
+TTYPath=/dev/%I
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+IgnoreSIGPIPE=no
+SendSIGHUP=yes
+ImportCredential=agetty.*
+ImportCredential=login.*
+UnsetEnvironment=LANG LANGUAGE LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT LC_IDENTIFICATION
+
+[Install]
+WantedBy=getty.target
+DefaultInstance=tty1
