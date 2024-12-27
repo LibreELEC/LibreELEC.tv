@@ -1,0 +1,44 @@
+--- a/xbmc/filesystem/NFSFile.cpp	2024-11-15 21:22:52.000000000 +0000
++++ b/xbmc/filesystem/NFSFile.cpp	2024-12-12 13:15:36.937126708 +0000
+@@ -477,7 +477,11 @@
+ 
+   nfs_lseek(pContext, _pFileHandle, 0, SEEK_CUR, &offset);
+ 
++#ifdef LIBNFS_API_V2
++  int bytes = nfs_read(pContext, _pFileHandle, buffer, 32);
++#else
+   int bytes = nfs_read(pContext, _pFileHandle, 32, buffer);
++#endif
+   if (bytes < 0)
+   {
+     CLog::LogF(LOGERROR, "nfs_read - Error ({}, {})", bytes, nfs_get_error(pContext));
+@@ -742,7 +746,11 @@
+   if (m_pFileHandle == NULL || m_pNfsContext == NULL )
+     return -1;
+ 
++#ifdef LIBNFS_API_V2
++  numberOfBytesRead = nfs_read(m_pNfsContext, m_pFileHandle, (char *)lpBuf, uiBufSize);
++#else
+   numberOfBytesRead = nfs_read(m_pNfsContext, m_pFileHandle, uiBufSize, (char *)lpBuf);
++#endif
+ 
+   lock.unlock(); //no need to keep the connection lock after that
+ 
+@@ -843,10 +851,17 @@
+     }
+     //write chunk
+     //! @bug libnfs < 2.0.0 isn't const correct
++#ifdef LIBNFS_API_V2
++    writtenBytes = nfs_write(m_pNfsContext,
++                                  m_pFileHandle,
++                                  const_cast<char*>((const char *)lpBuf) + numberOfBytesWritten,
++                                  chunkSize);
++#else
+     writtenBytes = nfs_write(m_pNfsContext,
+                                   m_pFileHandle,
+                                   chunkSize,
+                                   const_cast<char*>((const char *)lpBuf) + numberOfBytesWritten);
++#endif
+     //decrease left bytes
+     leftBytes-= writtenBytes;
+     //increase overall written bytes
