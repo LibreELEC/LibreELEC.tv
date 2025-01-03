@@ -77,7 +77,7 @@ configure_package() {
   PKG_SAMBA_TARGET="smbclient,client/smbclient,smbtree,nmblookup,testparm"
 
   if [ "${SAMBA_SERVER}" = "yes" ]; then
-    PKG_SAMBA_TARGET+=",nmbd,rpcd_classic,rpcd_epmapper,rpcd_winreg,samba-dcerpcd,smbpasswd,smbd/smbd"
+    PKG_SAMBA_TARGET+=",nmbd,rpcd_classic,rpcd_epmapper,rpcd_winreg,samba-dcerpcd,smbpasswd,smbd/smbd,vfs_fruit,vfs_catia,vfs_streams_xattr"
   fi
 }
 
@@ -154,6 +154,10 @@ perform_manual_install() {
       cp -PR bin/default/source3/rpc_server/rpcd_classic ${INSTALL}/usr/libexec/samba
       cp -PR bin/default/source3/rpc_server/rpcd_epmapper ${INSTALL}/usr/libexec/samba
       cp -PR bin/default/source3/rpc_server/rpcd_winreg ${INSTALL}/usr/libexec/samba
+
+    mkdir -p ${INSTALL}/usr/lib/vfs
+      cp ${PKG_BUILD}/bin/modules/vfs/* ${INSTALL}/usr/lib/vfs/
+
   fi
 }
 
