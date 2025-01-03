@@ -1,0 +1,11 @@
+--- a/comskip.c	2024-12-09 13:06:15.051318034 +0000
++++ b/comskip.c	2024-12-09 13:07:54.348640394 +0000
+@@ -976,7 +976,7 @@
+ int					FindUniformThreshold(double percentile);
+ void				OutputFrameArray(bool screenOnly);
+ void                OutputBlackArray();
+-void				OutputFrame();
++void				OutputFrame(int frame_number);
+ void				OpenOutputFiles();
+ void				InitializeFrameArray(long i);
+ void				InitializeBlackArray(long i);
