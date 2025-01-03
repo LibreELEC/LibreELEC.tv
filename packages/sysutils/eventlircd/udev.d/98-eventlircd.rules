@@ -196,29 +196,23 @@ LABEL="end-usb"
 # and are known to be remote controls. For simplicity, the event map file names
 # have the format <BUSTYPE>_<VENDOR>_<PRODUCT>.evmap.
 #-------------------------------------------------------------------------------
-SUBSYSTEMS=="bluetooth", GOTO="begin-bluetooth"
-GOTO="end-bluetooth"
-LABEL="begin-bluetooth"
-
-ATTRS{name}=="Nintendo Wii Remote", \
+SUBSYSTEMS=="input", ATTRS{name}=="Nintendo Wii Remote", \
   ENV{eventlircd_enable}="true", \
   ENV{eventlircd_evmap}="wiimote.evmap"
 
-ATTRS{name}=="BD Remote Control", \
+SUBSYSTEMS=="input", ATTRS{name}=="BD Remote Control", \
   ENV{eventlircd_enable}="true", \
   ENV{eventlircd_evmap}="ps3remote.evmap"
 
 #PS3 BD Remote Version 2 (Bluetooth AND infrared 3 in 1 remote)
-ATTRS{name}=="Sony Computer Entertainment Inc BD Remote Control", \
+SUBSYSTEMS=="input", ATTRS{name}=="Sony Computer Entertainment Inc BD Remote Control", \
   ENV{eventlircd_enable}="true", \
   ENV{eventlircd_evmap}="ps3remote.evmap"
 
 # Amazon Fire TV stick remote
-ATTRS{name}=="Amazon Fire TV Remote", \
+SUBSYSTEMS=="input", ATTRS{name}=="Amazon Fire TV Remote", \
   ENV{eventlircd_enable}="true", \
   ENV{eventlircd_evmap}="aftvsremote.evmap"
-
-LABEL="end-bluetooth"
 
 # tell libinput to ignore devices handled by eventlircd
 ENV{eventlircd_enable}=="true", ENV{LIBINPUT_IGNORE_DEVICE}="1"
