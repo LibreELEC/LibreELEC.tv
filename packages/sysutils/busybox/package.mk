@@ -130,6 +130,7 @@ makeinstall_target() {
     cp ${PKG_DIR}/scripts/fs-resize ${INSTALL}/usr/lib/libreelec
     sed -e "s/@DISTRONAME@/${DISTRONAME}/g" \
         -i ${INSTALL}/usr/lib/libreelec/fs-resize
+    find_file_path config/post-update ${PKG_DIR}/scripts/post-update && cp -PRv ${FOUND_PATH} ${INSTALL}/usr/lib/libreelec
 
   mkdir -p ${INSTALL}/usr/lib/systemd/system-generators/
     cp ${PKG_DIR}/scripts/libreelec-target-generator ${INSTALL}/usr/lib/systemd/system-generators/
