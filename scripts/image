@@ -140,7 +140,7 @@ rm -rf ${STAMPS_INSTALL}
 mkdir -p ${INSTALL}
 
 # Create base layout of LibreELEC read-only file system
-for directory in etc dev proc run sys tmp usr var flash storage; do
+for directory in opt etc dev proc run sys tmp usr var flash storage; do
   mkdir -p ${INSTALL}/${directory}
 done
 
