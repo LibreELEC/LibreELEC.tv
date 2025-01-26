@@ -11,15 +11,15 @@ is running at the same time (voltage to high)
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- .../arm64/boot/dts/rockchip/rk3328-roc-cc.dts |  4 +++
+ .../arm64/boot/dts/rockchip/rk3328-roc.dtsi   |  4 +++
  .../arm64/boot/dts/rockchip/rk3328-rock64.dts |  4 +++
  arch/arm64/boot/dts/rockchip/rk3328.dtsi      | 35 +++++++++++++++++++
  3 files changed, 43 insertions(+)
 
-diff --git a/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts b/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts
+diff --git a/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi b/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi
 index aa22a0c22265..51c7723d6762 100644
---- a/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts
-+++ b/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts
+--- a/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi
 @@ -166,6 +166,10 @@ &gmac2io {
  	status = "okay";
  };
@@ -254,13 +254,13 @@ Subject: [PATCH] arm64: dts: rockchip: Add ir-receiver node for RK3328 ROC CC
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts | 14 ++++++++++++++
+ arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi | 14 ++++++++++++++
  1 file changed, 14 insertions(+)
 
-diff --git a/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts b/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts
+diff --git a/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi b/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi
 index 51c7723d6762..cf321302daec 100644
---- a/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts
-+++ b/arch/arm64/boot/dts/rockchip/rk3328-roc-cc.dts
+--- a/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3328-roc.dtsi
 @@ -88,6 +88,13 @@ vcc_phy: vcc-phy-regulator {
  		regulator-boot-on;
  	};
