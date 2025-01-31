@@ -1,0 +1,14 @@
+--- a/readline.h	2022-02-18 16:13:59.000000000 +0000
++++ b/readline.u	2025-01-31 13:31:09.481233005 +0000
+@@ -404,11 +404,7 @@
+ extern void rl_deactivate_mark (void);
+ extern int rl_mark_active_p (void);
+ 
+-#if defined (USE_VARARGS) && defined (PREFER_STDARG)
+ extern int rl_message (const char *, ...)  __attribute__((__format__ (printf, 1, 2)));
+-#else
+-extern int rl_message ();
+-#endif
+ 
+ extern int rl_show_char (int);
+ 
