@@ -3,8 +3,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="mesa"
-PKG_VERSION="24.3.4"
-PKG_SHA256="e641ae27191d387599219694560d221b7feaa91c900bcec46bf444218ed66025"
+PKG_VERSION="25.0.0-rc2"
+PKG_SHA256="c951b47a83f7ba467f305366c463f4245489da0eaceec4d7a1e2b2f96bc3457f"
 PKG_LICENSE="OSS"
 PKG_SITE="http://www.mesa3d.org/"
 PKG_URL="https://mesa.freedesktop.org/archive/mesa-${PKG_VERSION}.tar.xz"
@@ -32,7 +32,6 @@ PKG_MESON_OPTS_TARGET="-Dgallium-drivers=${GALLIUM_DRIVERS// /,} \
                        -Dgallium-opencl=disabled \
                        -Dshader-cache=enabled \
                        -Dshared-glapi=enabled \
-                       -Dopencl-spirv=false \
                        -Dopengl=true \
                        -Dgbm=enabled \
                        -Degl=enabled \
@@ -64,7 +63,7 @@ fi
 
 if listcontains "${GRAPHIC_DRIVERS}" "iris"; then
   PKG_DEPENDS_TARGET+=" mesa:host"
-  PKG_MESON_OPTS_TARGET+=" -Dintel-clc=system"
+  PKG_MESON_OPTS_TARGET+=" -Dmesa-clc=system"
 fi
 
 if listcontains "${GRAPHIC_DRIVERS}" "(nvidia|nvidia-ng)"; then
@@ -117,5 +116,6 @@ fi
 
 makeinstall_host() {
   mkdir -p "${TOOLCHAIN}/bin"
-    cp -a src/intel/compiler/intel_clc "${TOOLCHAIN}/bin"
+    cp -a src/compiler/clc/mesa_clc "${TOOLCHAIN}/bin"
+    cp -a src/compiler/spirv/vtn_bindgen "${TOOLCHAIN}/bin"
 }
