@@ -1,0 +1,12 @@
+diff -Naur icu4c-67-1/icu-release-67-1/icu4c/source/config/mh-linux icu4c-67-1-ldflags/icu-release-67-1/icu4c/source/config/mh-linux
+--- icu-release-67-1/icu4c/source/config/mh-linux	2020-04-22 19:49:10.000000000 +0200
++++ icu-release-67-1.ldflags/icu4c/source/config/mh-linux	2020-09-05 17:58:05.635014182 +0200
+@@ -23,7 +23,7 @@
+ LD_RPATH_PRE = -Wl,-rpath,
+ 
+ ## These are the library specific LDFLAGS
+-LDFLAGSICUDT=-nodefaultlibs -nostdlib
++#LDFLAGSICUDT=-nodefaultlibs -nostdlib
+ 
+ ## Compiler switch to embed a library name
+ # The initial tab in the next line is to prevent icu-config from reading it.
