@@ -1,0 +1,234 @@
+From 479812896bd8f629b5ef72c89b49de96948d84cd Mon Sep 17 00:00:00 2001
+From: Andreas Baierl <ichgeh@imkreisrum.de>
+Date: Mon, 17 Feb 2025 15:16:08 +0100
+Subject: [PATCH] media: meson: vdec: fix V4L2_BUF_FLAG_(KEY|P|B)FRAME
+
+ffmpeg needs the keyframe flag to be set correctly,
+otherwise AV_FRAME_FLAG_* can not be set.
+
+Fix that (only h264 atm).
+
+Register values and bits are borrowed from
+https://github.com/hardkernel/linux/tree/odroidg12-4.9.y/drivers/amlogic/media_modules/frame_provider/decoder/h264
+
+Signed-off-by: Andreas Baierl <ichgeh@imkreisrum.de>
+---
+ drivers/staging/media/meson/vdec/codec_h264.c | 19 +++++++++++++-
+ drivers/staging/media/meson/vdec/codec_hevc.c |  4 +--
+ .../staging/media/meson/vdec/codec_mpeg12.c   |  2 +-
+ drivers/staging/media/meson/vdec/codec_vp9.c  |  4 +--
+ .../staging/media/meson/vdec/vdec_helpers.c   | 25 +++++++++++++------
+ .../staging/media/meson/vdec/vdec_helpers.h   |  6 ++---
+ 6 files changed, 43 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/staging/media/meson/vdec/codec_h264.c b/drivers/staging/media/meson/vdec/codec_h264.c
+index d53c9a464bde..4edb4021c244 100644
+--- a/drivers/staging/media/meson/vdec/codec_h264.c
++++ b/drivers/staging/media/meson/vdec/codec_h264.c
+@@ -35,6 +35,11 @@
+ #define PIC_TOP_BOT	5
+ #define PIC_BOT_TOP	6
+ 
++/* Slice type */
++#define SLICE_TYPE_I 2
++#define SLICE_TYPE_P 5
++#define SLICE_TYPE_B 6
++
+ /* Size of Motion Vector per macroblock */
+ #define MB_MV_SIZE	96
+ 
+@@ -393,8 +398,11 @@ static void codec_h264_frames_ready(struct amvdec_session *sess, u32 status)
+ 		u32 buffer_index = frame_status & BUF_IDX_MASK;
+ 		u32 pic_struct = (frame_status >> PIC_STRUCT_BIT) &
+ 				 PIC_STRUCT_MASK;
++		u32 idr_flag = (frame_status & 0x400);
+ 		u32 offset = (frame_status >> OFFSET_BIT) & OFFSET_MASK;
+ 		u32 field = V4L2_FIELD_NONE;
++		u32 slice_type = (amvdec_read_dos(core, AV_SCRATCH_H) >> (i * 4)) & 0xf;
++		u32 type = 0;
+ 
+ 		/*
+ 		 * A buffer decode error means it was decoded,
+@@ -410,8 +418,17 @@ static void codec_h264_frames_ready(struct amvdec_session *sess, u32 status)
+ 		else if (pic_struct == PIC_BOT_TOP)
+ 			field = V4L2_FIELD_INTERLACED_BT;
+ 
++		if (idr_flag)
++			type = 4;
++		else if (slice_type == SLICE_TYPE_I)
++			type = 1;
++		else if (slice_type == SLICE_TYPE_P)
++			type = 2;
++		else if (slice_type == SLICE_TYPE_B || slice_type == 8)
++			type = 3;
++
+ 		offset |= get_offset_msb(core, i);
+-		amvdec_dst_buf_done_idx(sess, buffer_index, offset, field);
++		amvdec_dst_buf_done_idx(sess, buffer_index, offset, field, type);
+ 	}
+ }
+ 
+diff --git a/drivers/staging/media/meson/vdec/codec_hevc.c b/drivers/staging/media/meson/vdec/codec_hevc.c
+index b0d8623c3c7d..fe439770637c 100644
+--- a/drivers/staging/media/meson/vdec/codec_hevc.c
++++ b/drivers/staging/media/meson/vdec/codec_hevc.c
+@@ -499,7 +499,7 @@ static void codec_hevc_show_frames(struct amvdec_session *sess)
+ 		dev_dbg(sess->core->dev, "DONE frame poc %u; vbuf %u\n",
+ 			tmp->poc, tmp->vbuf->vb2_buf.index);
+ 		amvdec_dst_buf_done_offset(sess, tmp->vbuf, tmp->offset,
+-					   V4L2_FIELD_NONE, false);
++					   V4L2_FIELD_NONE, 0, false);
+ 
+ 		tmp->show = 0;
+ 		hevc->frames_num--;
+@@ -667,7 +667,7 @@ static void codec_hevc_flush_output(struct amvdec_session *sess)
+ 	struct hevc_frame *tmp, *n;
+ 
+ 	while ((tmp = codec_hevc_get_next_ready_frame(hevc))) {
+-		amvdec_dst_buf_done(sess, tmp->vbuf, V4L2_FIELD_NONE);
++		amvdec_dst_buf_done(sess, tmp->vbuf, V4L2_FIELD_NONE, 0);
+ 		tmp->show = 0;
+ 		hevc->frames_num--;
+ 	}
+diff --git a/drivers/staging/media/meson/vdec/codec_mpeg12.c b/drivers/staging/media/meson/vdec/codec_mpeg12.c
+index 48869cc3d973..05c52766fe52 100644
+--- a/drivers/staging/media/meson/vdec/codec_mpeg12.c
++++ b/drivers/staging/media/meson/vdec/codec_mpeg12.c
+@@ -187,7 +187,7 @@ static irqreturn_t codec_mpeg12_threaded_isr(struct amvdec_session *sess)
+ 	codec_mpeg12_update_dar(sess);
+ 	buffer_index = ((reg & 0xf) - 1) & 7;
+ 	offset = amvdec_read_dos(core, MREG_FRAME_OFFSET);
+-	amvdec_dst_buf_done_idx(sess, buffer_index, offset, field);
++	amvdec_dst_buf_done_idx(sess, buffer_index, offset, field, 0);
+ 
+ end:
+ 	amvdec_write_dos(core, MREG_BUFFEROUT, 0);
+diff --git a/drivers/staging/media/meson/vdec/codec_vp9.c b/drivers/staging/media/meson/vdec/codec_vp9.c
+index 8e3bbf0db4b3..1b1f1797110a 100644
+--- a/drivers/staging/media/meson/vdec/codec_vp9.c
++++ b/drivers/staging/media/meson/vdec/codec_vp9.c
+@@ -665,7 +665,7 @@ static void codec_vp9_flush_output(struct amvdec_session *sess)
+ 		if (!tmp->done) {
+ 			if (tmp->show)
+ 				amvdec_dst_buf_done(sess, tmp->vbuf,
+-						    V4L2_FIELD_NONE);
++						    V4L2_FIELD_NONE, 0);
+ 			else
+ 				v4l2_m2m_buf_queue(sess->m2m_ctx, tmp->vbuf);
+ 
+@@ -1427,7 +1427,7 @@ static void codec_vp9_show_frame(struct amvdec_session *sess)
+ 
+ 		if (!tmp->done) {
+ 			pr_debug("Doning %u\n", tmp->index);
+-			amvdec_dst_buf_done(sess, tmp->vbuf, V4L2_FIELD_NONE);
++			amvdec_dst_buf_done(sess, tmp->vbuf, V4L2_FIELD_NONE, 0);
+ 			tmp->done = 1;
+ 			vp9->frames_num--;
+ 		}
+diff --git a/drivers/staging/media/meson/vdec/vdec_helpers.c b/drivers/staging/media/meson/vdec/vdec_helpers.c
+index fbfdbf3ec19d..9a61dabd8ce9 100644
+--- a/drivers/staging/media/meson/vdec/vdec_helpers.c
++++ b/drivers/staging/media/meson/vdec/vdec_helpers.c
+@@ -280,7 +280,7 @@ EXPORT_SYMBOL_GPL(amvdec_remove_ts);
+ 
+ static void dst_buf_done(struct amvdec_session *sess,
+ 			 struct vb2_v4l2_buffer *vbuf,
+-			 u32 field, u64 timestamp,
++			 u32 field, u32 type, u64 timestamp,
+ 			 struct v4l2_timecode timecode, u32 flags)
+ {
+ 	struct device *dev = sess->core->dev_dec;
+@@ -303,6 +303,15 @@ static void dst_buf_done(struct amvdec_session *sess,
+ 	vbuf->flags = flags;
+ 	vbuf->timecode = timecode;
+ 
++	if (type == 1)
++		vbuf->flags |= V4L2_BUF_FLAG_KEYFRAME;
++	else if (type == 2)
++		vbuf->flags |= V4L2_BUF_FLAG_PFRAME;
++	else if (type == 3)
++		vbuf->flags |= V4L2_BUF_FLAG_BFRAME;
++	else if (type == 4)
++		vbuf->flags |= V4L2_BUF_FLAG_KEYFRAME;
++
+ 	if (sess->should_stop &&
+ 	    atomic_read(&sess->esparser_queued_bufs) <= 1) {
+ 		const struct v4l2_event ev = { .type = V4L2_EVENT_EOS };
+@@ -329,7 +338,7 @@ static void dst_buf_done(struct amvdec_session *sess,
+ }
+ 
+ void amvdec_dst_buf_done(struct amvdec_session *sess,
+-			 struct vb2_v4l2_buffer *vbuf, u32 field)
++			 struct vb2_v4l2_buffer *vbuf, u32 field, u32 type)
+ {
+ 	struct device *dev = sess->core->dev_dec;
+ 	struct amvdec_timestamp *tmp;
+@@ -357,14 +366,14 @@ void amvdec_dst_buf_done(struct amvdec_session *sess,
+ 	kfree(tmp);
+ 	spin_unlock_irqrestore(&sess->ts_spinlock, flags);
+ 
+-	dst_buf_done(sess, vbuf, field, timestamp, timecode, vbuf_flags);
++	dst_buf_done(sess, vbuf, field, type, timestamp, timecode, vbuf_flags);
+ 	atomic_dec(&sess->esparser_queued_bufs);
+ }
+ EXPORT_SYMBOL_GPL(amvdec_dst_buf_done);
+ 
+ void amvdec_dst_buf_done_offset(struct amvdec_session *sess,
+ 				struct vb2_v4l2_buffer *vbuf,
+-				u32 offset, u32 field, bool allow_drop)
++				u32 offset, u32 field, u32 type, bool allow_drop)
+ {
+ 	struct device *dev = sess->core->dev_dec;
+ 	struct amvdec_timestamp *match = NULL;
+@@ -411,14 +420,14 @@ void amvdec_dst_buf_done_offset(struct amvdec_session *sess,
+ 	}
+ 	spin_unlock_irqrestore(&sess->ts_spinlock, flags);
+ 
+-	dst_buf_done(sess, vbuf, field, timestamp, timecode, vbuf_flags);
++	dst_buf_done(sess, vbuf, field, type, timestamp, timecode, vbuf_flags);
+ 	if (match)
+ 		atomic_dec(&sess->esparser_queued_bufs);
+ }
+ EXPORT_SYMBOL_GPL(amvdec_dst_buf_done_offset);
+ 
+ void amvdec_dst_buf_done_idx(struct amvdec_session *sess,
+-			     u32 buf_idx, u32 offset, u32 field)
++			     u32 buf_idx, u32 offset, u32 field, u32 type)
+ {
+ 	struct vb2_v4l2_buffer *vbuf;
+ 	struct device *dev = sess->core->dev_dec;
+@@ -434,9 +443,9 @@ void amvdec_dst_buf_done_idx(struct amvdec_session *sess,
+ 	}
+ 
+ 	if (offset != -1)
+-		amvdec_dst_buf_done_offset(sess, vbuf, offset, field, true);
++		amvdec_dst_buf_done_offset(sess, vbuf, offset, field, type, true);
+ 	else
+-		amvdec_dst_buf_done(sess, vbuf, field);
++		amvdec_dst_buf_done(sess, vbuf, field, type);
+ }
+ EXPORT_SYMBOL_GPL(amvdec_dst_buf_done_idx);
+ 
+diff --git a/drivers/staging/media/meson/vdec/vdec_helpers.h b/drivers/staging/media/meson/vdec/vdec_helpers.h
+index 1a711679d26a..e30edb935e37 100644
+--- a/drivers/staging/media/meson/vdec/vdec_helpers.h
++++ b/drivers/staging/media/meson/vdec/vdec_helpers.h
+@@ -41,12 +41,12 @@ u32 amvdec_amfbc_size(u32 width, u32 height, u32 is_10bit, u32 use_mmu);
+  * @field: V4L2 interlaced field
+  */
+ void amvdec_dst_buf_done_idx(struct amvdec_session *sess, u32 buf_idx,
+-			     u32 offset, u32 field);
++			     u32 offset, u32 field, u32 type);
+ void amvdec_dst_buf_done(struct amvdec_session *sess,
+-			 struct vb2_v4l2_buffer *vbuf, u32 field);
++			 struct vb2_v4l2_buffer *vbuf, u32 field, u32 type);
+ void amvdec_dst_buf_done_offset(struct amvdec_session *sess,
+ 				struct vb2_v4l2_buffer *vbuf,
+-				u32 offset, u32 field, bool allow_drop);
++				u32 offset, u32 field, u32 type, bool allow_drop);
+ 
+ /**
+  * amvdec_add_ts() - Add a timestamp to the list
+-- 
+2.39.5
+
