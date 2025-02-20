@@ -2,8 +2,8 @@
 # Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libgpiod"
-PKG_VERSION="2.2"
-PKG_SHA256="ae35329db7027c740e90c883baf27c26311f0614e6a7b115771b28188b992aec"
+PKG_VERSION="2.2.2"
+PKG_SHA256="d0b1380c3cbabbb49b82f709b3288376d98347d4436613407d19cc4cbbfc45a6"
 PKG_LICENSE="GPLv2+"
 PKG_SITE="https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/about/"
 PKG_URL="https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/snapshot/libgpiod-${PKG_VERSION}.tar.gz"
