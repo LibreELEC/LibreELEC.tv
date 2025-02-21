@@ -11,9 +11,9 @@
   fi
 
 # TARGET_CPU:
-# generic cortex-a35 cortex-a53 cortex-a57 cortex-a72 cortex-a76
-# exynos-m1 qdf24xx thunderx xgene1 cortex-a57.cortex-a53
-# cortex-a72.cortex-a53
+# generic cortex-a35 cortex-a53 cortex-a55 cortex-a57 cortex-a72
+# cortex-a76 exynos-m1 qdf24xx thunderx xgene1 cortex-a57.cortex-a53
+# cortex-a72.cortex-a53 cortex-a76.cortex-a55
 
 # determine architecture's family
   case $TARGET_CPU in
@@ -21,7 +21,7 @@
       TARGET_SUBARCH=aarch64
       TARGET_VARIANT=armv8-a
       ;;
-    cortex-a76)
+    cortex-a55|cortex-a76|cortex-a76.cortex-a55)
       TARGET_SUBARCH=aarch64
       TARGET_VARIANT=armv8.2-a
       ;;
