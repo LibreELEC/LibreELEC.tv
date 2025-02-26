@@ -12,4 +12,8 @@ PKG_DEPENDS_TARGET="toolchain libglvnd mesa"
 PKG_NEED_UNPACK="$(get_pkg_directory mesa)"
 PKG_LONGDESC="libglu is the The OpenGL utility library"
 
-PKG_MESON_OPTS_TARGET="-Dgl_provider=gl"
+if [ "${DISPLAYSERVER}" = "x11" ]; then
+  PKG_MESON_OPTS_TARGET="-Dgl_provider=gl"
+else
+  PKG_MESON_OPTS_TARGET="-Dgl_provider=glvnd"
+fi
