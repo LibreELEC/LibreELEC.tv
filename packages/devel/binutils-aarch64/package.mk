@@ -12,8 +12,7 @@ PKG_DEPENDS_UNPACK+=" binutils"
 PKG_PATCH_DIRS+=" $(get_pkg_directory binutils)/patches"
 
 PKG_CONFIGURE_OPTS_HOST="--target=aarch64-none-elf \
-                         --with-sysroot=${SYSROOT_PREFIX} \
-                         --with-lib-path=${SYSROOT_PREFIX}/lib:${SYSROOT_PREFIX}/usr/lib \
+                         --with-sysroot=${TOOLCHAIN}/aarch64-none-elf/sysroot \
                          --without-ppl \
                          --enable-static \
                          --without-cloog \
@@ -47,9 +46,5 @@ make_host() {
 }
 
 makeinstall_host() {
-  cp -v ../include/libiberty.h ${SYSROOT_PREFIX}/usr/include
-  make -C libsframe install # bfd is reliant on libsframe
-  make -C bfd install # fix parallel build with libctf requiring bfd
-  # override the makeinfo binary with true - this does not build the documentation
   make MAKEINFO=true install
 }
