@@ -4,22 +4,14 @@ Date: Thu, 26 Dec 2019 11:01:51 +0100
 Subject: [PATCH 2/7] WIP: DRMPRIME deinterlace filter
 
 ---
- .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 379 +++++++++++++++---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 378 +++++++++++++++---
  .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h   |   9 +-
- 2 files changed, 328 insertions(+), 60 deletions(-)
+ 2 files changed, 327 insertions(+), 60 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 index 8b7b6e2655ba..2a7e24caf2d3 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -20,6 +20,7 @@
- #include "utils/CPUInfo.h"
- #include "utils/StringUtils.h"
- #include "utils/log.h"
-+#include "utils/StringUtils.h"
- 
- #if defined(HAVE_GBM)
- #include "windowing/gbm/WinSystemGbm.h"
 @@ -92,12 +93,15 @@ CDVDVideoCodecDRMPRIME::CDVDVideoCodecDRMPRIME(CProcessInfo& processInfo)
    : CDVDVideoCodec(processInfo)
  {
