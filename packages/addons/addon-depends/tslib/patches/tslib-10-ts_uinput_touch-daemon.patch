@@ -28,19 +28,19 @@ diff --git a/configure.ac b/configure.ac
 index dfdf269..6984002 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -69,6 +69,7 @@ TSLIB_CHECK_MODULE([dmc], [yes], [Enable building of dmc raw module (HP iPaq DMC
- TSLIB_CHECK_MODULE([input], [yes], [Enable building of generic input raw module (Linux /dev/input/eventN support)])
- TSLIB_CHECK_MODULE([touchkit], [yes], [Enable building of serial TouchKit raw module (Linux /dev/ttySX support)])
- TSLIB_CHECK_MODULE([galax], [yes], [Enable building of HID USB eGalax raw module (Linux /dev/hiddevN support)])
+@@ -128,6 +128,7 @@ TSLIB_CHECK_MODULE([corgi], [no], [Enable building of corgi raw module (Sharp Za
+ TSLIB_CHECK_MODULE([collie], [no], [Enable building of collie raw module (Sharp Zaurus sl-5500/5000d support)])
+ TSLIB_CHECK_MODULE([arctic2], [no], [Enable building of arctic2 raw module (IBM Arctic II support)])
+ TSLIB_CHECK_MODULE([dmc_dus3000], [no], [Enable building of dmc_dus3000 raw module (DMC DUS Series support)])
 +TSLIB_CHECK_MODULE([st1232], [yes], [Enable building of ST1232 raw module (Linux /dev/input/eventN support)])
- 
- 
- 
+ TSLIB_CHECK_MODULE([cy8mrln-palmpre], [no], [Enable building of cy8mrln-palmpre raw module])
+ TSLIB_CHECK_MODULE([galax], [no], [Enable building of HID USB eGalax raw module (Linux /dev/hiddevN support)])
+ TSLIB_CHECK_MODULE([one-wire-ts-input], [no], [Enable building of FriendlyARM one-wire raw module])
 diff --git a/plugins/Makefile.am b/plugins/Makefile.am
 index e938e17..e8e89e0 100644
 --- a/plugins/Makefile.am
 +++ b/plugins/Makefile.am
-@@ -121,6 +121,12 @@ else
+@@ -175,6 +175,12 @@ else
  CY8MRLN_PALMPRE_MODULE =
  endif
  
@@ -50,35 +50,35 @@ index e938e17..e8e89e0 100644
 +ST1232_MODULE =
 +endif
 +
- pluginexec_LTLIBRARIES = \
- 	$(LINEAR_MODULE) \
- 	$(DEJITTER_MODULE) \
-@@ -138,7 +144,8 @@ pluginexec_LTLIBRARIES = \
- 	$(INPUT_MODULE) \
- 	$(GALAX_MODULE) \
+ if ENABLE_WAVESHARE_MODULE
+ WAVESHARE_MODULE = waveshare.la
+ else
+@@ -215,7 +221,8 @@ pluginexec_LTLIBRARIES = \
  	$(TOUCHKIT_MODULE) \
--	$(CY8MRLN_PALMPRE_MODULE)
-+	$(CY8MRLN_PALMPRE_MODULE) \
+ 	$(CY8MRLN_PALMPRE_MODULE) \
+ 	$(ONE_WIRE_TS_INPUT_MODULE) \
+-	$(WAVESHARE_MODULE)
++	$(WAVESHARE_MODULE) \
 +	$(ST1232_MODULE)
    
  variance_la_SOURCES	= variance.c
  variance_la_LDFLAGS	= -module $(LTVSN)
-@@ -197,3 +204,7 @@ linear_h2200_la_LDFLAGS	= -module $(LTVSN)
- 
- cy8mrln_palmpre_la_SOURCES = cy8mrln-palmpre.c
- cy8mrln_palmpre_la_LDFLAGS = -module $(LTVSN)
+@@ -356,3 +363,7 @@ linear_h2200_la_LDFLAGS	= -module $(LTVSN)
+ one_wire_ts_input_la_SOURCES	= one-wire-ts-input-raw.c
+ one_wire_ts_input_la_LDFLAGS	= -module $(LTVSN)
+ one_wire_ts_input_la_LIBADD	= $(top_builddir)/src/libts.la
 +
-+st1232_la_SOURCES = st1232-raw.c
-+st1232_la_LDFLAGS = -module $(LTVSN)
-+st1232_la_LIBADD = $(top_builddir)/src/libts.la
++st1232_la_SOURCES	= st1232-raw.c
++st1232_la_LDFLAGS	= -module $(LTVSN)
++st1232_la_LIBADD	= $(top_builddir)/src/libts.la
 diff --git a/plugins/plugins.h b/plugins/plugins.h
 index 873aba5..d78877e 100644
 --- a/plugins/plugins.h
 +++ b/plugins/plugins.h
-@@ -16,3 +16,4 @@ TSLIB_DECLARE_MODULE(arctic2);
- TSLIB_DECLARE_MODULE(tatung);
- TSLIB_DECLARE_MODULE(input);
- TSLIB_DECLARE_MODULE(cy8mrln_palmpre);
+@@ -33,3 +33,4 @@ TSLIB_DECLARE_MODULE(arctic2);
+ TSLIB_DECLARE_MODULE(touchkit);
+ TSLIB_DECLARE_MODULE(ucb1x00);
+ TSLIB_DECLARE_MODULE(waveshare);
 +TSLIB_DECLARE_MODULE(st1232);
 diff --git a/plugins/st1232-raw.c b/plugins/st1232-raw.c
 new file mode 100644
@@ -393,8 +393,8 @@ diff --git a/src/Makefile.am b/src/Makefile.am
 index 5278d82..b561aa8 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -71,6 +71,10 @@ if ENABLE_STATIC_INPUT_MODULE
- libts_la_SOURCES += $(top_srcdir)/plugins/input-raw.c
+@@ -151,6 +151,10 @@ if ENABLE_STATIC_INPUT_MODULE
+ libts_la_SOURCES += $(top_srcdir)/plugins/cy8mrln-palmpre.c
  endif
  
 +if ENABLE_STATIC_ST1232_MODULE
@@ -402,15 +402,15 @@ index 5278d82..b561aa8 100644
 +endif
 +
  libts_la_LDFLAGS = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
- 		   -release $(LT_RELEASE) -export-dynamic
- libts_la_LIBADD  = -ldl
+ 		   -export-dynamic
+ if WINDOWS
 diff --git a/src/ts_load_module.c b/src/ts_load_module.c
 index 00486be..886ca0a 100644
 --- a/src/ts_load_module.c
 +++ b/src/ts_load_module.c
-@@ -73,6 +73,9 @@ static const struct {
- #ifdef TSLIB_STATIC_VARIANCE_MODULE
- 	{ "variance", variance_mod_init },
+@@ -120,6 +120,9 @@ static const struct {
+ #ifdef TSLIB_STATIC_WAVESHARE_MODULE
+ 	{ "waveshare", waveshare_mod_init },
  #endif
 +#ifdef TSLIB_STATIC_ST1232_MODULE
 +	{ "st1232", st1232_mod_init },
@@ -422,27 +422,33 @@ diff --git a/tests/Makefile.am b/tests/Makefile.am
 index b76522d..2e80c18 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
-@@ -11,7 +11,7 @@
- AM_CFLAGS               = -DTS_POINTERCAL=\"@TS_POINTERCAL@\" $(DEBUGFLAGS)
- INCLUDES		= -I$(top_srcdir)/src
+@@ -28,7 +28,7 @@
+ if LINUX
+ if SDL
+-bin_PROGRAMS		= ts_test_mt ts_calibrate ts_print ts_conf ts_print_mt ts_print_raw ts_finddev ts_verify
++bin_PROGRAMS		= ts_test_mt ts_calibrate ts_print ts_conf ts_print_mt ts_print_raw ts_finddev ts_verify ts_uinput_touch
+ else
+-bin_PROGRAMS		= ts_test ts_test_mt ts_calibrate ts_conf ts_print ts_print_mt ts_print_raw ts_harvest ts_finddev ts_verify
++bin_PROGRAMS		= ts_test ts_test_mt ts_calibrate ts_conf ts_print ts_print_mt ts_print_raw ts_harvest ts_finddev ts_verify ts_uinput_touch
+ endif
+ endif
+@@ -104,3 +104,11 @@ ts_finddev_LDADD	= $(top_builddir)/src/libts.la $(LIBEVDEV_LIBS)
  
--bin_PROGRAMS		= ts_test ts_calibrate ts_print ts_print_raw ts_harvest
-+bin_PROGRAMS		= ts_test ts_calibrate ts_print ts_print_raw ts_harvest ts_uinput_touch
- 
- ts_test_SOURCES		= ts_test.c fbutils.c fbutils.h font_8x8.c font_8x16.c font.h
- ts_test_LDADD		= $(top_builddir)/src/libts.la
-@@ -27,3 +27,6 @@ ts_calibrate_LDADD	= $(top_builddir)/src/libts.la
- 
- ts_harvest_SOURCES	= ts_harvest.c fbutils.c fbutils.h testutils.c testutils.h font_8x8.c font_8x16.c font.h
- ts_harvest_LDADD		= $(top_builddir)/src/libts.la
+ ts_conf_SOURCES		= ts_conf.c
+ ts_conf_LDADD		= $(top_builddir)/src/libts.la $(LIBEVDEV_LIBS)
 +
-+ts_uinput_touch_SOURCES	= ts_uinput_touch.c testutils.c testutils.h
-+ts_uinput_touch_LDADD		= $(top_builddir)/src/libts.la
++ts_uinput_touch_SOURCES	= ts_uinput_touch.c fbutils.h testutils.c testutils.h font_8x8.c font_8x16.c font.h
++ts_uinput_touch_LDADD	= $(top_builddir)/src/libts.la $(LIBEVDEV_LIBS)
++if FREEBSD
++ts_uinput_touch_SOURCES	+= fbutils-bsd.c
++else
++ts_uinput_touch_SOURCES	+= fbutils-linux.c
++endif
 diff --git a/tests/testutils.c b/tests/testutils.c
 index dbd5b41..bc3756f 100644
 --- a/tests/testutils.c
 +++ b/tests/testutils.c
-@@ -15,6 +15,7 @@
+@@ -16,6 +16,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <unistd.h>
@@ -450,47 +456,26 @@ index dbd5b41..bc3756f 100644
  #include <sys/time.h>
  #include "tslib.h"
  #include "fbutils.h"
-@@ -37,6 +38,9 @@ void getxy(struct tsdev *ts, int *x, int *y)
+@@ -87,6 +88,9 @@ void getxy(struct tsdev *ts, int *x, int *y)
  
  	do {
  		if (ts_read_raw(ts, &samp[0], 1) < 0) {
 +			if (errno == EINTR)
 +				return;
 +
- 			perror("ts_read");
- 			close_framebuffer ();
+ 			perror("ts_read_raw");
+ 			close_framebuffer();
  			exit(1);
-@@ -50,6 +54,9 @@ void getxy(struct tsdev *ts, int *x, int *y)
+@@ -99,6 +103,9 @@ void getxy(struct tsdev *ts, int *x, int *y)
  		if (index < MAX_SAMPLES-1)
  			index++;
  		if (ts_read_raw(ts, &samp[index], 1) < 0) {
 +			if (errno == EINTR)
 +				return;
 +
- 			perror("ts_read");
- 			close_framebuffer ();
+ 			perror("ts_read_raw");
+ 			close_framebuffer();
  			exit(1);
-diff --git a/tests/ts_calibrate.c b/tests/ts_calibrate.c
-index eb0aca3..522fa7c 100644
---- a/tests/ts_calibrate.c
-+++ b/tests/ts_calibrate.c
-@@ -237,12 +237,16 @@ int main()
- 
- 	get_sample (ts, &cal, 0, 50,        50,        "Top left");
- 	clearbuf(ts);
-+	usleep(500000);
- 	get_sample (ts, &cal, 1, xres - 50, 50,        "Top right");
- 	clearbuf(ts);
-+	usleep(500000);
- 	get_sample (ts, &cal, 2, xres - 50, yres - 50, "Bot right");
- 	clearbuf(ts);
-+	usleep(500000);
- 	get_sample (ts, &cal, 3, 50,        yres - 50, "Bot left");
- 	clearbuf(ts);
-+	usleep(500000);
- 	get_sample (ts, &cal, 4, xres / 2,  yres / 2,  "Center");
- 
- 	if (perform_calibration (&cal)) {
 diff --git a/tests/ts_uinput_touch.c b/tests/ts_uinput_touch.c
 new file mode 100644
 index 0000000..60efc46
@@ -1131,11 +1116,8 @@ Subject: [PATCH 03/11] ts_uinput_touch: add BTN_RIGHT event if tapped for more
 ---
  tests/ts_uinput_touch.c | 38 ++++++++++++++++++++++++++------------
  1 file changed, 26 insertions(+), 12 deletions(-)
- mode change 100644 => 100755 tests/ts_uinput_touch.c
 
 diff --git a/tests/ts_uinput_touch.c b/tests/ts_uinput_touch.c
-old mode 100644
-new mode 100755
 index 60efc46..489a22f
 --- a/tests/ts_uinput_touch.c
 +++ b/tests/ts_uinput_touch.c
@@ -1227,526 +1209,6 @@ index 60efc46..489a22f
        } else {
          send_event(uinput_fd, EV_ABS, ABS_PRESSURE, 0);
          send_event(uinput_fd, EV_SYN, 0, 0);
-
-From 0c95545167711eb2e906c8ef885956f3395e945a Mon Sep 17 00:00:00 2001
-From: Peter Vicman <peter.vicman@gmail.com>
-Date: Mon, 31 Aug 2015 10:52:51 +0200
-Subject: [PATCH 04/11] Add Waveshare touchscreen raw module inspiration from
- derekhe: https://github.com/derekhe/wavesahre-7inch-touchscreen-driver
-
----
- configure.ac            |   1 +
- plugins/Makefile.am     |  13 +++-
- plugins/plugins.h       |   1 +
- plugins/waveshare-raw.c | 202 ++++++++++++++++++++++++++++++++++++++++++++++++
- src/Makefile.am         |   4 +
- 5 files changed, 220 insertions(+), 1 deletion(-)
- create mode 100644 plugins/waveshare-raw.c
-
-diff --git a/configure.ac b/configure.ac
-index 6984002..598ede7 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -70,6 +70,7 @@ TSLIB_CHECK_MODULE([input], [yes], [Enable building of generic input raw module
- TSLIB_CHECK_MODULE([touchkit], [yes], [Enable building of serial TouchKit raw module (Linux /dev/ttySX support)])
- TSLIB_CHECK_MODULE([galax], [yes], [Enable building of HID USB eGalax raw module (Linux /dev/hiddevN support)])
- TSLIB_CHECK_MODULE([st1232], [yes], [Enable building of ST1232 raw module (Linux /dev/input/eventN support)])
-+TSLIB_CHECK_MODULE([waveshare], [yes], [Enable building of WaveShare raw module (Linux /dev/hidrawN support)])
- 
- 
- 
-diff --git a/plugins/Makefile.am b/plugins/Makefile.am
-index e8e89e0..98881b3 100644
---- a/plugins/Makefile.am
-+++ b/plugins/Makefile.am
-@@ -127,6 +127,12 @@ else
- ST1232_MODULE =
- endif
- 
-+if ENABLE_WAVESHARE_MODULE
-+WAVESHARE_MODULE = waveshare.la
-+else
-+WAVESHARE_MODULE =
-+endif
-+
- pluginexec_LTLIBRARIES = \
- 	$(LINEAR_MODULE) \
- 	$(DEJITTER_MODULE) \
-@@ -145,7 +151,8 @@ pluginexec_LTLIBRARIES = \
- 	$(GALAX_MODULE) \
- 	$(TOUCHKIT_MODULE) \
- 	$(CY8MRLN_PALMPRE_MODULE) \
--	$(ST1232_MODULE)
-+	$(ST1232_MODULE) \
-+	$(WAVESHARE_MODULE)
-   
- variance_la_SOURCES	= variance.c
- variance_la_LDFLAGS	= -module $(LTVSN)
-@@ -208,3 +215,7 @@ cy8mrln_palmpre_la_LDFLAGS = -module $(LTVSN)
- st1232_la_SOURCES = st1232-raw.c
- st1232_la_LDFLAGS = -module $(LTVSN)
- st1232_la_LIBADD = $(top_builddir)/src/libts.la
-+
-+waveshare_la_SOURCES = waveshare-raw.c
-+waveshare_la_LDFLAGS = -module $(LTVSN)
-+waveshare_la_LIBADD = $(top_builddir)/src/libts.la
-diff --git a/plugins/plugins.h b/plugins/plugins.h
-index d78877e..f347e25 100644
---- a/plugins/plugins.h
-+++ b/plugins/plugins.h
-@@ -17,3 +17,4 @@ TSLIB_DECLARE_MODULE(tatung);
- TSLIB_DECLARE_MODULE(input);
- TSLIB_DECLARE_MODULE(cy8mrln_palmpre);
- TSLIB_DECLARE_MODULE(st1232);
-+TSLIB_DECLARE_MODULE(waveshare);
-diff --git a/plugins/waveshare-raw.c b/plugins/waveshare-raw.c
-new file mode 100644
-index 0000000..ff13055
---- /dev/null
-+++ b/plugins/waveshare-raw.c
-@@ -0,0 +1,202 @@
-+/*
-+ * tslib driver for WaveShare touchscreens
-+ * Copyright (C) 2015 Peter Vicman
-+ * inspiration from derekhe: https://github.com/derekhe/wavesahre-7inch-touchscreen-driver
-+ *
-+ * This file is placed under the LGPL.  Please see the file COPYING for more
-+ * details.
-+ */
-+
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <fcntl.h>
-+#include <errno.h>
-+#include <string.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <sys/ioctl.h>
-+#include <linux/hidraw.h>
-+#include <stdbool.h>
-+
-+#include "config.h"
-+#include "tslib-private.h"
-+
-+struct tslib_input {
-+  struct tslib_module_info module;
-+  int vendor;
-+  int product;
-+  int len;
-+};
-+
-+static int waveshare_read(struct tslib_module_info *inf, struct ts_sample *samp, int nr)
-+{
-+  static bool reopen = true;
-+  struct stat devstat;
-+  struct hidraw_devinfo info;
-+  char name_buf[512];
-+  int cnt;
-+  bool found = false;
-+  struct tslib_input *i = (struct tslib_input *) inf;
-+  struct tsdev *ts = inf->dev;
-+  struct tsdev *ts_tmp;
-+  char *buf;
-+  int ret;
-+
-+  if (reopen == true) {
-+    reopen = false;
-+
-+    if (i->vendor > 0 && i->product > 0) {
-+      fprintf(stderr, "waveshare: searching for device using hidraw....\n");
-+      for (cnt=0; cnt<HIDRAW_MAX_DEVICES; cnt++) {
-+        snprintf(name_buf, sizeof(buf), "/dev/hidraw%d", cnt);
-+        fprintf(stderr, "waveshare: device: %s\n", name_buf);
-+        ret = stat(name_buf, &devstat);
-+        if (ret < 0)
-+          continue;
-+
-+        ts_tmp = ts_open(name_buf, 0);
-+        if (!ts_tmp) {
-+          continue;
-+        }
-+
-+        fprintf(stderr, "  opened\n");
-+        ret = ioctl(ts_tmp->fd, HIDIOCGRAWINFO, &info);
-+        if (ret < 0) {
-+          ts_close(ts_tmp);
-+          continue;
-+        }
-+
-+        info.vendor &= 0xFFFF;
-+        info.product &= 0xFFFF;
-+        fprintf(stderr, "  vid=%04X, pid=%04X\n", info.vendor, info.product);
-+
-+        if (i->vendor == info.vendor && i->product == info.product) {
-+          if (ts->fd > 0)
-+            close(ts->fd);
-+
-+          ts->fd = ts_tmp->fd;
-+          free(ts_tmp);
-+          found = true;
-+          fprintf(stderr, "  correct device\n");
-+          break;
-+        }
-+
-+        ts_close(ts_tmp);
-+      } /* for HIDRAW_MAX_DEVICES */
-+
-+      if (found == false) {
-+        return -1;
-+      }
-+    } /* vid/pid set */
-+  } /* reopen */
-+
-+  buf = alloca(i->len * nr);
-+
-+  ret = read(ts->fd, buf, i->len * nr);
-+  if(ret > 0) {
-+    while(ret >= (int) i->len) {
-+      /*
-+        0000271: aa01 00e4 0139 bb01 01e0 0320 01e0 0320 01e0 0320 01e0 0320 cc  .....9..... ... ... ... .
-+
-+        "aa" is start of the command, "01" means clicked while "00" means unclicked.
-+        "00e4" and "0139" is the X,Y position (HEX).
-+        "bb" is start of multi-touch, and the following bytes are the position of each point.
-+      */
-+      samp->pressure = buf[1] & 0xff;
-+      samp->x = ((buf[2] & 0xff) << 8) | (buf[3] & 0xff);
-+      samp->y = ((buf[4] & 0xff) << 8) | (buf[5] & 0xff);
-+      gettimeofday(&samp->tv, NULL);
-+#ifdef DEBUG
-+        fprintf(stderr, "waveshare raw: %d %d %d\n", samp->x, samp->y, samp->pressure);
-+        fprintf(stderr, "%x %x %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
-+#endif
-+      samp++;
-+      buf += i->len;
-+      ret -= i->len;
-+    }
-+  } else {
-+    return -1;
-+  }
-+
-+  return nr;
-+}
-+
-+static const struct tslib_ops waveshare_ops =
-+{
-+  .read = waveshare_read,
-+};
-+
-+static int parse_vid_pid(struct tslib_module_info *inf, char *str, void *data)
-+{
-+  struct tslib_input *i = (struct tslib_input *)inf;
-+
-+  if (strlen(str) < 9 || (int) data != 1)
-+    return 0;   /* -1 */
-+
-+  str[4] = str[9] = '\0';
-+  i->vendor = strtol(&str[0], NULL, 16);
-+  i->product = strtol(&str[5], NULL, 16);
-+//#ifdef DEBUG
-+  fprintf(stderr, "waveshare vid:pid - %04X:%04X\n", i->vendor, i->product);
-+//#endif /*DEBUG*/
-+  return 0;
-+}
-+
-+static int parse_len(struct tslib_module_info *inf, char *str, void *data)
-+{
-+  struct tslib_input *i = (struct tslib_input *)inf;
-+  int v;
-+  int err = errno;
-+
-+  v = atoi(str);
-+
-+  if (v < 0)
-+    return -1;
-+
-+  errno = err;
-+  switch ((int) data) {
-+    case 1:
-+      i->len = v;
-+      fprintf(stderr, "waveshare raw data len: %d bytes\n", i->len);
-+      break;
-+    default:
-+      return -1;
-+  }
-+  return 0;
-+}
-+
-+static const struct tslib_vars raw_vars[] =
-+{
-+  { "vid_pid", (void *) 1, parse_vid_pid },
-+  { "len", (void *) 1, parse_len },
-+};
-+
-+#define NR_VARS (sizeof(raw_vars) / sizeof(raw_vars[0]))
-+
-+TSAPI struct tslib_module_info *waveshare_mod_init(struct tsdev *dev, const char *params)
-+{
-+  struct tslib_input *i;
-+
-+  (void) dev;
-+
-+  i = malloc(sizeof(struct tslib_input));
-+  if (i == NULL)
-+    return NULL;
-+
-+  i->module.ops = &waveshare_ops;
-+  i->vendor = 0;
-+  i->product = 0;
-+  i->len = 25;
-+
-+  if (tslib_parse_vars(&i->module, raw_vars, NR_VARS, params)) {
-+    free(i);
-+    return NULL;
-+  }
-+
-+  return &(i->module);
-+}
-+
-+#ifndef TSLIB_STATIC_WAVESHARE_MODULE
-+  TSLIB_MODULE_INIT(waveshare_mod_init);
-+#endif
-diff --git a/src/Makefile.am b/src/Makefile.am
-index b561aa8..a8fded9 100644
---- a/src/Makefile.am
-+++ b/src/Makefile.am
-@@ -75,6 +75,10 @@ if ENABLE_STATIC_ST1232_MODULE
- libts_la_SOURCES += $(top_srcdir)/plugins/st1232-raw.c
- endif
- 
-+if ENABLE_STATIC_WAVESHARE_MODULE
-+libts_la_SOURCES += $(top_srcdir)/plugins/waveshare-raw.c
-+endif
-+
- libts_la_LDFLAGS = -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE) \
- 		   -release $(LT_RELEASE) -export-dynamic
- libts_la_LIBADD  = -ldl
-
-From 72128c5f16db89d7b644dd184c1b1c6dbe6ef79e Mon Sep 17 00:00:00 2001
-From: Peter Vicman <peter.vicman@gmail.com>
-Date: Sun, 20 Sep 2015 10:30:33 +0200
-Subject: [PATCH 05/11] waveshare: remove reopening device based on vid/pid
-
----
- plugins/waveshare-raw.c | 76 -------------------------------------------------
- 1 file changed, 76 deletions(-)
-
-diff --git a/plugins/waveshare-raw.c b/plugins/waveshare-raw.c
-index ff13055..0839af0 100644
---- a/plugins/waveshare-raw.c
-+++ b/plugins/waveshare-raw.c
-@@ -24,73 +24,16 @@
- 
- struct tslib_input {
-   struct tslib_module_info module;
--  int vendor;
--  int product;
-   int len;
- };
- 
- static int waveshare_read(struct tslib_module_info *inf, struct ts_sample *samp, int nr)
- {
--  static bool reopen = true;
--  struct stat devstat;
--  struct hidraw_devinfo info;
--  char name_buf[512];
--  int cnt;
--  bool found = false;
-   struct tslib_input *i = (struct tslib_input *) inf;
-   struct tsdev *ts = inf->dev;
--  struct tsdev *ts_tmp;
-   char *buf;
-   int ret;
- 
--  if (reopen == true) {
--    reopen = false;
--
--    if (i->vendor > 0 && i->product > 0) {
--      fprintf(stderr, "waveshare: searching for device using hidraw....\n");
--      for (cnt=0; cnt<HIDRAW_MAX_DEVICES; cnt++) {
--        snprintf(name_buf, sizeof(buf), "/dev/hidraw%d", cnt);
--        fprintf(stderr, "waveshare: device: %s\n", name_buf);
--        ret = stat(name_buf, &devstat);
--        if (ret < 0)
--          continue;
--
--        ts_tmp = ts_open(name_buf, 0);
--        if (!ts_tmp) {
--          continue;
--        }
--
--        fprintf(stderr, "  opened\n");
--        ret = ioctl(ts_tmp->fd, HIDIOCGRAWINFO, &info);
--        if (ret < 0) {
--          ts_close(ts_tmp);
--          continue;
--        }
--
--        info.vendor &= 0xFFFF;
--        info.product &= 0xFFFF;
--        fprintf(stderr, "  vid=%04X, pid=%04X\n", info.vendor, info.product);
--
--        if (i->vendor == info.vendor && i->product == info.product) {
--          if (ts->fd > 0)
--            close(ts->fd);
--
--          ts->fd = ts_tmp->fd;
--          free(ts_tmp);
--          found = true;
--          fprintf(stderr, "  correct device\n");
--          break;
--        }
--
--        ts_close(ts_tmp);
--      } /* for HIDRAW_MAX_DEVICES */
--
--      if (found == false) {
--        return -1;
--      }
--    } /* vid/pid set */
--  } /* reopen */
--
-   buf = alloca(i->len * nr);
- 
-   ret = read(ts->fd, buf, i->len * nr);
-@@ -127,22 +70,6 @@ static const struct tslib_ops waveshare_ops =
-   .read = waveshare_read,
- };
- 
--static int parse_vid_pid(struct tslib_module_info *inf, char *str, void *data)
--{
--  struct tslib_input *i = (struct tslib_input *)inf;
--
--  if (strlen(str) < 9 || (int) data != 1)
--    return 0;   /* -1 */
--
--  str[4] = str[9] = '\0';
--  i->vendor = strtol(&str[0], NULL, 16);
--  i->product = strtol(&str[5], NULL, 16);
--//#ifdef DEBUG
--  fprintf(stderr, "waveshare vid:pid - %04X:%04X\n", i->vendor, i->product);
--//#endif /*DEBUG*/
--  return 0;
--}
--
- static int parse_len(struct tslib_module_info *inf, char *str, void *data)
- {
-   struct tslib_input *i = (struct tslib_input *)inf;
-@@ -168,7 +95,6 @@ static int parse_len(struct tslib_module_info *inf, char *str, void *data)
- 
- static const struct tslib_vars raw_vars[] =
- {
--  { "vid_pid", (void *) 1, parse_vid_pid },
-   { "len", (void *) 1, parse_len },
- };
- 
-@@ -185,8 +111,6 @@ TSAPI struct tslib_module_info *waveshare_mod_init(struct tsdev *dev, const char
-     return NULL;
- 
-   i->module.ops = &waveshare_ops;
--  i->vendor = 0;
--  i->product = 0;
-   i->len = 25;
- 
-   if (tslib_parse_vars(&i->module, raw_vars, NR_VARS, params)) {
-
-From 8b6a678e507211d5d51081655af244561a931d8f Mon Sep 17 00:00:00 2001
-From: Peter Vicman <peter.vicman@gmail.com>
-Date: Sun, 20 Sep 2015 10:42:31 +0200
-Subject: [PATCH 06/11] ts_reconfig: reload all modules useful to reload
- calibration data without closing and opening device
-
----
- src/Makefile.am   |  2 +-
- src/ts_reconfig.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- src/tslib.h       |  5 +++++
- 3 files changed, 54 insertions(+), 1 deletion(-)
- create mode 100644 src/ts_reconfig.c
-
-diff --git a/src/Makefile.am b/src/Makefile.am
-index a8fded9..606a5ae 100644
---- a/src/Makefile.am
-+++ b/src/Makefile.am
-@@ -17,7 +17,7 @@ include_HEADERS  = tslib.h
- lib_LTLIBRARIES  = libts.la
- libts_la_SOURCES = ts_attach.c ts_close.c ts_config.c ts_error.c \
- 		   ts_fd.c ts_load_module.c ts_open.c ts_parse_vars.c \
--		   ts_read.c ts_read_raw.c ts_option.c
-+		   ts_read.c ts_read_raw.c ts_option.c ts_reconfig.c
- 
- if ENABLE_STATIC_LINEAR_MODULE
- libts_la_SOURCES += $(top_srcdir)/plugins/linear.c
-diff --git a/src/ts_reconfig.c b/src/ts_reconfig.c
-new file mode 100644
-index 0000000..c94ec3e
---- /dev/null
-+++ b/src/ts_reconfig.c
-@@ -0,0 +1,48 @@
-+/*
-+ *  tslib/src/ts_reconfig.c
-+ *    based on tslib/src/ts_close.c
-+ *
-+ *  Copyright (C) 2001 Russell King.
-+ *
-+ * This file is placed under the LGPL.  Please see the file
-+ * COPYING for more details.
-+ *
-+ *
-+ * Reloads all modules - useful to reload calibration data.
-+ */
-+#include "config.h"
-+#include <stdlib.h>
-+#ifdef HAVE_UNISTD_H
-+#include <unistd.h>
-+#endif
-+#include <dlfcn.h>
-+
-+#include "tslib-private.h"
-+
-+int ts_reconfig(struct tsdev *ts)
-+{
-+	void *handle;
-+	int ret;
-+	struct tslib_module_info *info, *next;
-+	int fd;
-+	
-+	info = ts->list;
-+	while(info) {
-+		/* Save the "next" pointer now because info will be freed */
-+		next = info->next;
-+		
-+		handle = info->handle;
-+		info->ops->fini(info);
-+		if (handle)
-+			dlclose(handle);
-+		
-+		info = next;
-+	}
-+
-+	fd = ts->fd;	/* save temp */
-+	memset(ts, 0, sizeof(struct tsdev));
-+	ts->fd = fd;
-+
-+	ret = ts_config(ts);
-+	return ret;
-+}
-diff --git a/src/tslib.h b/src/tslib.h
-index df8e284..28156ba 100644
---- a/src/tslib.h
-+++ b/src/tslib.h
-@@ -57,6 +57,11 @@ enum ts_param {
- TSAPI int ts_close(struct tsdev *);
- 
- /*
-+ * Reloads all modules - useful to reload calibration data.
-+ */
-+TSAPI int ts_reconfig(struct tsdev *);
-+
-+/*
-  * Configure the touchscreen device.
-  */
- TSAPI int ts_config(struct tsdev *);
 
 From df81ed55ed9c99a8636f0b8524e0c5da0d00d33d Mon Sep 17 00:00:00 2001
 From: Peter Vicman <peter.vicman@gmail.com>
@@ -1925,179 +1387,6 @@ index 489a22f..871c5e4 100755
      }
  
      ret = ts_read(ts, &samp, 1);
-
-From dbf1c882dbc239065df422f9e16da955c0b7653f Mon Sep 17 00:00:00 2001
-From: Peter Vicman <peter.vicman@gmail.com>
-Date: Sun, 20 Sep 2015 10:47:44 +0200
-Subject: [PATCH 08/11] plugins: compile statically
-
----
- plugins/Makefile.am    |  2 ++
- plugins/dmc-raw.c      |  6 +++++-
- plugins/plugins.h      |  5 ++++-
- plugins/touchkit-raw.c |  6 +++++-
- src/Makefile.am        | 12 ++++++++++++
- src/ts_load_module.c   | 12 ++++++++++++
- 6 files changed, 40 insertions(+), 3 deletions(-)
-
-diff --git a/plugins/Makefile.am b/plugins/Makefile.am
-index 98881b3..87fa18b 100644
---- a/plugins/Makefile.am
-+++ b/plugins/Makefile.am
-@@ -194,6 +194,7 @@ tatung_la_LDFLAGS	= -module $(LTVSN)
- 
- dmc_la_SOURCES		= dmc-raw.c
- dmc_la_LDFLAGS		= -module $(LTVSN)
-+dmc_la_LIBADD			= $(top_builddir)/src/libts.la
- 
- input_la_SOURCES	= input-raw.c
- input_la_LDFLAGS	= -module $(LTVSN)
-@@ -205,6 +206,7 @@ galax_la_LIBADD = $(top_builddir)/src/libts.la
- 
- touchkit_la_SOURCES	= touchkit-raw.c
- touchkit_la_LDFLAGS	= -module $(LTVSN)
-+touchkit_la_LIBADD	= $(top_builddir)/src/libts.la
- 
- linear_h2200_la_SOURCES	= linear-h2200.c
- linear_h2200_la_LDFLAGS	= -module $(LTVSN)
-diff --git a/plugins/dmc-raw.c b/plugins/dmc-raw.c
-index f9f5381..59980cc 100644
---- a/plugins/dmc-raw.c
-+++ b/plugins/dmc-raw.c
-@@ -123,7 +123,7 @@ static const struct tslib_ops dmc_ops =
- 	.read	= dmc_read,
- };
- 
--TSAPI struct tslib_module_info *mod_init(struct tsdev *dev, const char *params)
-+TSAPI struct tslib_module_info *dmc_mod_init(struct tsdev *dev, const char *params)
- {
- 	struct tslib_dmc *m;
- 
-@@ -137,3 +137,7 @@ TSAPI struct tslib_module_info *mod_init(struct tsdev *dev, const char *params)
- 	m->module.ops = &dmc_ops;
- 	return (struct tslib_module_info*)m;
- }
-+
-+#ifndef TSLIB_STATIC_DMC_MODULE
-+	TSLIB_MODULE_INIT(dmc_mod_init);
-+#endif
-diff --git a/plugins/plugins.h b/plugins/plugins.h
-index f347e25..798f9b3 100644
---- a/plugins/plugins.h
-+++ b/plugins/plugins.h
-@@ -6,7 +6,6 @@ TSLIB_DECLARE_MODULE(dejitter);
- TSLIB_DECLARE_MODULE(linear_h2200);
- TSLIB_DECLARE_MODULE(variance);
- TSLIB_DECLARE_MODULE(pthres);
--
- TSLIB_DECLARE_MODULE(ucb1x00);
- TSLIB_DECLARE_MODULE(corgi);
- TSLIB_DECLARE_MODULE(collie);
-@@ -16,5 +15,9 @@ TSLIB_DECLARE_MODULE(arctic2);
- TSLIB_DECLARE_MODULE(tatung);
- TSLIB_DECLARE_MODULE(input);
- TSLIB_DECLARE_MODULE(cy8mrln_palmpre);
-+TSLIB_DECLARE_MODULE(galax);
-+TSLIB_DECLARE_MODULE(dmc);
-+TSLIB_DECLARE_MODULE(touchkit);
- TSLIB_DECLARE_MODULE(st1232);
- TSLIB_DECLARE_MODULE(waveshare);
-+
-diff --git a/plugins/touchkit-raw.c b/plugins/touchkit-raw.c
-index e072f21..68179a3 100644
---- a/plugins/touchkit-raw.c
-+++ b/plugins/touchkit-raw.c
-@@ -144,7 +144,7 @@ static const struct tslib_ops touchkit_ops = {
- 	.read = touchkit_read,
- };
- 
--TSAPI struct tslib_module_info *mod_init(struct tsdev *dev, const char *params)
-+TSAPI struct tslib_module_info *touchkit_mod_init(struct tsdev *dev, const char *params)
- {
- 	struct tslib_module_info *m;
- 
-@@ -155,3 +155,7 @@ TSAPI struct tslib_module_info *mod_init(struct tsdev *dev, const char *params)
- 	m->ops = &touchkit_ops;
- 	return m;
- }
-+
-+#ifndef TSLIB_STATIC_TOUCHKIT_MODULE
-+	TSLIB_MODULE_INIT(touchkit_mod_init);
-+#endif
-diff --git a/src/Makefile.am b/src/Makefile.am
-index 606a5ae..2f31519 100644
---- a/src/Makefile.am
-+++ b/src/Makefile.am
-@@ -71,6 +71,18 @@ if ENABLE_STATIC_INPUT_MODULE
- libts_la_SOURCES += $(top_srcdir)/plugins/input-raw.c
- endif
- 
-+if ENABLE_STATIC_DMC_MODULE
-+libts_la_SOURCES += $(top_srcdir)/plugins/dmc-raw.c
-+endif
-+
-+if ENABLE_STATIC_GALAX_MODULE
-+libts_la_SOURCES += $(top_srcdir)/plugins/galax-raw.c
-+endif
-+
-+if ENABLE_STATIC_TOUCHKIT_MODULE
-+libts_la_SOURCES += $(top_srcdir)/plugins/touchkit-raw.c
-+endif
-+
- if ENABLE_STATIC_ST1232_MODULE
- libts_la_SOURCES += $(top_srcdir)/plugins/st1232-raw.c
- endif
-diff --git a/src/ts_load_module.c b/src/ts_load_module.c
-index 886ca0a..903c921 100644
---- a/src/ts_load_module.c
-+++ b/src/ts_load_module.c
-@@ -76,6 +76,18 @@ static const struct {
- #ifdef TSLIB_STATIC_ST1232_MODULE
- 	{ "st1232", st1232_mod_init },
- #endif
-+#ifdef TSLIB_STATIC_CY8MRLN_PALMPRE_MODULE
-+	{ "cy8mrln-palmpre", cy8mrln_palmpre_mod_init },
-+#endif
-+#ifdef TSLIB_STATIC_DMC_MODULE
-+	{ "dmc", dmc_mod_init },
-+#endif
-+#ifdef TSLIB_STATIC_TOUCHKIT_MODULE
-+	{ "touchkit", touchkit_mod_init },
-+#endif
-+#ifdef TSLIB_STATIC_WAVESHARE_MODULE
-+	{ "waveshare", waveshare_mod_init },
-+#endif
- };
- 
- #define countof(arr) (sizeof(arr) / sizeof((arr)[0]))
-
-From 72d2fe9e2ff18a9589510fd28e485b238a7bcbff Mon Sep 17 00:00:00 2001
-From: Peter Vicman <peter.vicman@gmail.com>
-Date: Mon, 21 Sep 2015 09:36:38 +0200
-Subject: [PATCH 09/11] file permission, tabs
-
----
- plugins/Makefile.am     | 2 +-
- tests/ts_uinput_touch.c | 0
- 2 files changed, 1 insertion(+), 1 deletion(-)
- mode change 100755 => 100644 tests/ts_uinput_touch.c
-
-diff --git a/plugins/Makefile.am b/plugins/Makefile.am
-index 87fa18b..4ed04c1 100644
---- a/plugins/Makefile.am
-+++ b/plugins/Makefile.am
-@@ -194,7 +194,7 @@ tatung_la_LDFLAGS	= -module $(LTVSN)
- 
- dmc_la_SOURCES		= dmc-raw.c
- dmc_la_LDFLAGS		= -module $(LTVSN)
--dmc_la_LIBADD			= $(top_builddir)/src/libts.la
-+dmc_la_LIBADD		= $(top_builddir)/src/libts.la
- 
- input_la_SOURCES	= input-raw.c
- input_la_LDFLAGS	= -module $(LTVSN)
-diff --git a/tests/ts_uinput_touch.c b/tests/ts_uinput_touch.c
-old mode 100755
-new mode 100644
 
 From aff635ded1b41ade1b2cf2203cdf30f7fcd61127 Mon Sep 17 00:00:00 2001
 From: Peter Vicman <peter.vicman@gmail.com>

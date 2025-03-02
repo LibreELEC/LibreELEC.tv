@@ -1,0 +1,37 @@
+--- tslib-1.22/tests/ts_uinput_touch.c	2021-01-16 09:48:58.293958850 +0000
++++ tslib-1.22/tests/ts_uinput_touch.c	2021-01-16 09:48:55.976940037 +0000
+@@ -44,6 +44,7 @@
+ #include <linux/input.h>
+ #include <linux/uinput.h>
+ #include "tslib.h"
++#include "fbutils.h"
+ #include "testutils.h"
+ 
+ #define die(str, args...) do { \
+@@ -76,7 +77,6 @@
+ char *uinput_names[] = {"/dev/uinput", "/dev/input/uinput", "/dev/misc/uinput"};
+ #define UINPUT_NAMES_NUM ((int) (sizeof(uinput_names)/sizeof(char *)))
+ 
+-__u32 xres = 0, yres = 0;
+ bool calibration_mode = false;
+ int sock = -1;
+ 
+@@ -292,9 +292,6 @@
+   }
+ }
+ 
+-/* we don't use fb but this function is called in case of an error */
+-void close_framebuffer(void) {}
+-
+ static void send_socket_crosshair_str(char *str)
+ {
+   if (send(sock, str, strlen(str), 0) == -1) {
+@@ -446,6 +443,8 @@
+   struct sigaction sa;
+   struct sockaddr_un remote_addr;
+ 
++  xres = 0, yres = 0;
++
+   printf("\nts_uinput_touch environment variables:\n");
+   printf("       TSLIB_TSDEVICE: '%s'\n", getenv("TSLIB_TSDEVICE"));
+   printf("      TSLIB_PLUGINDIR: '%s'\n", getenv("TSLIB_PLUGINDIR"));

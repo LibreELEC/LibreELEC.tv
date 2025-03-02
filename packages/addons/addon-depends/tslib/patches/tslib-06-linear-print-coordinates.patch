@@ -1,17 +1,18 @@
 diff -aurN a/plugins/linear.c b/plugins/linear.c
 --- a/plugins/linear.c	2013-08-08 02:23:04.000000000 +0200
 +++ b/plugins/linear.c	2015-09-04 20:21:50.376205701 +0200
-@@ -187,11 +187,11 @@
- 		for (index = 0; index < 7; index++)
- 			if (fscanf(pcal_fd, "%d", &lin->a[index]) != 1) break;
- 		fscanf(pcal_fd, "%d %d", &lin->cal_res_x, &lin->cal_res_y);
+@@ -357,12 +357,12 @@
+ #endif
+ 		}
+ 
 -#ifdef DEBUG
 +/*#ifdef DEBUG*/
  		printf("Linear calibration constants: ");
- 		for(index=0;index<7;index++) printf("%d ",lin->a[index]);
+ 		for (index = 0; index < 7; index++)
+ 			printf("%d ", lin->a[index]);
  		printf("\n");
 -#endif /*DEBUG*/
 +/*#endif*/ /*DEBUG*/
  		fclose(pcal_fd);
  	}
-		
+ 
