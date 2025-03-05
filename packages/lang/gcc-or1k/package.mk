@@ -16,7 +16,7 @@ if [ "${MOLD_SUPPORT}" = "yes" ]; then
 fi
 
 PKG_CONFIGURE_OPTS_HOST="--target=or1k-none-elf \
-                         --with-sysroot=${SYSROOT_PREFIX} \
+                         --with-sysroot=${TOOLCHAIN}/or1k-none-elf/sysroot \
                          --with-gmp=${TOOLCHAIN} \
                          --with-mpfr=${TOOLCHAIN} \
                          --with-mpc=${TOOLCHAIN} \
@@ -55,6 +55,13 @@ PKG_CONFIGURE_OPTS_HOST="--target=or1k-none-elf \
 unpack() {
   mkdir -p ${PKG_BUILD}
   tar --strip-components=1 -xf ${SOURCES}/gcc/gcc-${PKG_VERSION}.tar.xz -C ${PKG_BUILD}
+}
+
+pre_configure_host() {
+  unset CPPFLAGS
+  unset CFLAGS
+  unset CXXFLAGS
+  unset LDFLAGS
 }
 
 post_makeinstall_host() {

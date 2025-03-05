@@ -21,12 +21,13 @@ fi
 
 make_target() {
   # As of atf 2.11.0 - the supported compile for .S is gcc (not as.)
-  unset AS
+  unset AR AS CC CPP CXX LD NM OBJCOPY OBJDUMP STRIP RANLIB
+  unset CPPFLAGS CFLAGS CXXFLAGS LDFLAGS
   if [ "${ATF_PLATFORM}" = "imx8mq" ]; then
-    CROSS_COMPILE="${TARGET_KERNEL_PREFIX}" LDFLAGS="" CFLAGS="" make PLAT=${ATF_PLATFORM} LOG_LEVEL=0 bl31
+    CROSS_COMPILE="${TARGET_KERNEL_PREFIX}" make PLAT=${ATF_PLATFORM} LOG_LEVEL=0 bl31
   else
     # as of atf 2.12.0 - sun50i_a64 builds use LTO, include -ffat-lto-objects to support this
-    CROSS_COMPILE="${TARGET_KERNEL_PREFIX}" LDFLAGS="" CFLAGS="-ffat-lto-objects" make PLAT=${ATF_PLATFORM} bl31
+    CROSS_COMPILE="${TARGET_KERNEL_PREFIX}" CFLAGS="-ffat-lto-objects" make PLAT=${ATF_PLATFORM} bl31
   fi
 }
 
