@@ -2,8 +2,8 @@
 # Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libfreeaptx"
-PKG_VERSION="0.1.1"
-PKG_SHA256="7acf514446cae59585d9bc21e4f98f4a3856f4741c3a7a09d06e8ac5bf2f7315"
+PKG_VERSION="0.2.2"
+PKG_SHA256="c0ed01b7e535878cc34bd1321f335e2617f2d51496b13e1036fc675c799be3b5"
 PKG_LICENSE="LGPL"
 PKG_SITE="https://github.com/iamthehorker/libfreeaptx"
 PKG_URL="https://github.com/iamthehorker/libfreeaptx/archive/${PKG_VERSION}.tar.gz"
