@@ -19,15 +19,15 @@ diff --git a/Makefile.pre.in b/Makefile.pre.in
 index 5fad7f82fb..7b6c9811a6 100644
 --- a/Makefile.pre.in
 +++ b/Makefile.pre.in
-@@ -2108,7 +2108,6 @@ LIBSUBDIRS=	asyncio \
- 		multiprocessing multiprocessing/dummy \
+@@ -2348,7 +2348,6 @@ LIBSUBDIRS=	asyncio \
+ 		pathlib \
  		re \
  		site-packages \
 -		sqlite3 \
+ 		sysconfig \
  		tkinter \
  		tomllib \
- 		turtledemo \
-@@ -2272,6 +2271,10 @@ ifeq (@IDLE@,yes)
+@@ -2506,6 +2505,10 @@ ifeq (@IDLE@,yes)
  LIBSUBDIRS += idlelib idlelib/Icons
  endif
  
@@ -42,7 +42,7 @@ diff --git a/configure.ac b/configure.ac
 index 561e33f550..d1c54bd67c 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -4516,6 +4516,13 @@ AS_VAR_IF([posix_threads], [stub], [
+@@ -4642,6 +4642,13 @@ AS_VAR_IF([posix_threads], [stub], [
    AC_DEFINE([HAVE_PTHREAD_STUBS], [1], [Define if platform requires stubbed pthreads support])
  ])
  
