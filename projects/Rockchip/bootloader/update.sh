@@ -20,6 +20,7 @@ fi
 
 # update device tree
   for all_dtb in ${BOOT_ROOT}/*.dtb; do
+    [ -f "$all_dtb" ] || continue
     dtb=$(basename ${all_dtb})
 
     # device tree mappings for update from vendor to mainline kernel
@@ -39,7 +40,7 @@ fi
     esac
 
     if [ "${dtb}" != "${new_dtb}" -a -f ${SYSTEM_ROOT}/usr/share/bootloader/${new_dtb} ]; then
-      echo -n "Replacing ${dtb} with ${new_dtb} ... "
+      echo -n "Replacing ${dtb} with ${new_dtb}... "
       cp -p ${SYSTEM_ROOT}/usr/share/bootloader/${new_dtb} ${BOOT_ROOT} && \
       sed -e "s/FDT \/${dtb}/FDT \/${new_dtb}/g" \
           -i ${BOOT_ROOT}/extlinux/extlinux.conf && \
@@ -51,15 +52,28 @@ fi
         cp -p ${SYSTEM_ROOT}/usr/share/bootloader/${dtb} ${BOOT_ROOT}
         echo "done"
       elif [ "$(grep -c "FDT /${dtb}" ${BOOT_ROOT}/extlinux/extlinux.conf)" -ne 0 ]; then
-	 non_existend_dtb="${dtb}"
+        non_existend_dtb="${dtb}"
       fi
     fi
   done
 
+# update /rockchip device tree blobs
+  if [ -d ${BOOT_ROOT}/rockchip ]; then
+    echo -n "Updating Device Tree Blobs... "
+    for all_dtb in ${BOOT_ROOT}/rockchip/*.dtb; do
+      [ -f "$all_dtb" ] || continue
+      dtb=$(basename ${all_dtb})
+      if [ -f ${SYSTEM_ROOT}/usr/share/bootloader/${dtb} ]; then
+        cp -p ${SYSTEM_ROOT}/usr/share/bootloader/${dtb} ${BOOT_ROOT}/rockchip
+      fi
+    done
+    echo "done"
+  fi
+
 # update bootloader
  if [ -f ${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin ]; then
-    echo -n "Updating fit image u-boot-rockchip.bin ... "
-    dd if=${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin of=${BOOT_DISK} bs=32k seek=1 conv=fsync,notrunc &>/dev/null
+    echo -n "Updating U-Boot... "
+    dd if=${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin of=${BOOT_DISK} bs=32k seek=1 conv=fsync &>/dev/null
     echo "done"
   fi
 
@@ -74,4 +88,3 @@ fi
     echo "Please check documentation to find out which boards are supported by this package."
     sleep 10
   fi
-
