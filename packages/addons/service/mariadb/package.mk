@@ -22,7 +22,6 @@ PKG_ADDON_TYPE="xbmc.service"
 configure_package() {
   PKG_CMAKE_OPTS_HOST=" \
     -DCMAKE_INSTALL_MESSAGE=NEVER \
-    -DSTACK_DIRECTION=-1 \
     -DHAVE_IB_GCC_ATOMIC_BUILTINS=1 \
     -DCMAKE_CROSSCOMPILING=OFF"
 
@@ -31,7 +30,6 @@ configure_package() {
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_CONFIG=mysql_release \
     -DFEATURE_SET=classic \
-    -DSTACK_DIRECTION=1 \
     -DDISABLE_LIBMYSQLCLIENT_SYMBOL_VERSIONING=ON \
     -DCMAKE_CROSSCOMPILING=ON \
     -DIMPORT_EXECUTABLES=${PKG_BUILD}/.${HOST_NAME}/import_executables.cmake \
