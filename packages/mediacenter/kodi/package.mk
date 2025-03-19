@@ -58,6 +58,24 @@ configure_package() {
                    -DAPP_RENDER_SYSTEM=gles \
                    -DWAYLANDPP_SCANNER=${TOOLCHAIN}/bin/wayland-scanner++ \
                    -DWAYLANDPP_PROTOCOLS_DIR=${SYSROOT_PREFIX}/usr/share/waylandpp/protocols"
+  else # GBM
+    if [ ! "${KODIPLAYER_DRIVER}" = "default" ]; then
+      PKG_DEPENDS_TARGET+=" ${KODIPLAYER_DRIVER}"
+    fi
+    PKG_DEPENDS_TARGET+=" libinput libdisplay-info"
+    KODI_PLATFORM="-DCORE_PLATFORM_NAME=gbm"
+    if [ ! "${OPENGL}" = "no" ]; then
+      KODI_PLATFORM+=" -DAPP_RENDER_SYSTEM=gl"
+    else
+      KODI_PLATFORM+=" -DAPP_RENDER_SYSTEM=gles"
+    fi
+    CFLAGS+=" -DEGL_NO_X11"
+    CXXFLAGS+=" -DEGL_NO_X11"
+    if [ "${PROJECT}" = "Generic" ]; then
+      PKG_APPLIANCE_XML="${PKG_DIR}/config/appliance-gbm-generic.xml"
+    else
+      PKG_APPLIANCE_XML="${PKG_DIR}/config/appliance-gbm.xml"
+    fi 
   fi
 
   if [ ! "${OPENGL}" = "no" ]; then
@@ -215,20 +233,6 @@ configure_package() {
     KODI_ARCH="-DWITH_CPU=${TARGET_ARCH}"
   else
     KODI_ARCH="-DWITH_ARCH=${TARGET_ARCH}"
-  fi
-
-  if [ ! "${KODIPLAYER_DRIVER}" = "default" -a "${DISPLAYSERVER}" = "no" ]; then
-    PKG_DEPENDS_TARGET+=" ${KODIPLAYER_DRIVER} libinput libdisplay-info"
-    if [ "${OPENGLES_SUPPORT}" = yes -a "${KODIPLAYER_DRIVER}" = "${OPENGLES}" ]; then
-      KODI_PLATFORM="-DCORE_PLATFORM_NAME=gbm -DAPP_RENDER_SYSTEM=gles"
-      CFLAGS+=" -DEGL_NO_X11"
-      CXXFLAGS+=" -DEGL_NO_X11"
-      if [ "${PROJECT}" = "Generic" ]; then
-        PKG_APPLIANCE_XML="${PKG_DIR}/config/appliance-gbm-generic.xml"
-      else
-        PKG_APPLIANCE_XML="${PKG_DIR}/config/appliance-gbm.xml"
-      fi
-    fi
   fi
 
   if [ "${PROJECT}" = "Allwinner" -o "${PROJECT}" = "Rockchip" -o "${PROJECT}" = "RPi" ]; then
