@@ -3,7 +3,7 @@
 
 PKG_NAME="jre.zulu"
 PKG_VERSION="1.0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_LICENSE="GPL2"
 PKG_DEPENDS_TARGET="jre-libbluray libXext libXi libXrender chrome-libXtst jre-libXinerama"
 PKG_DEPENDS_UNPACK="jdk-${TARGET_ARCH}-zulu"
