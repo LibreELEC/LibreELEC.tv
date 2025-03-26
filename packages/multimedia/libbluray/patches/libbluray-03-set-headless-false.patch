@@ -6,16 +6,20 @@ Subject: [PATCH] disable X11 check because it will not run in headless mode
 https://github.com/fandangos/libbluray/commit/47726b99922899bb9c4ea688356199f2068d156a
 https://github.com/PojavLauncherTeam/PojavLauncher/issues/713#issuecomment-769816262
 
+temporary folder is set to /storage/.kodi/userdata/addon_data/tools.jre.zulu/libbluray-bdj-cache
+
 ---
  src/libbluray/bdj/bdj.c | 2 ++
  1 file changed, 2 insertions(+)
 
 --- a/src/libbluray/bdj/bdj.c
 +++ b/src/libbluray/bdj/bdj.c
-@@ -903,6 +903,8 @@ static int _create_jvm(void *jvm_lib, co
+@@ -903,6 +903,10 @@ static int _create_jvm(void *jvm_lib, co
      option[n++].optionString = str_dup   ("-Xms256M");
      option[n++].optionString = str_dup   ("-Xmx256M");
      option[n++].optionString = str_dup   ("-Xss2048k");
++    option[n++].optionString = str_dup   ("-Djava.io.tmpdir=/storage/.kodi/userdata/addon_data/tools.jre.zulu");
++    BD_DEBUG(DBG_BDJ | DBG_CRIT, "Use /storage/.kodi/userdata/addon_data/tools.jre.zulu as cache dir.\n");
 +    option[n++].optionString = str_dup   ("-Djava.awt.headless=false");
 +    BD_DEBUG(DBG_CRIT | DBG_BDJ, "Disable X11 check\n");
  #ifdef HAVE_BDJ_J2ME
