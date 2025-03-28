@@ -1,0 +1,25 @@
+From 40253d13dbeb8ad09547f29dc7a4d7fe0acfa7a5 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 23:40:09 +1100
+Subject: [PATCH] Allow build with cmake 4.0.0
+
+use min...max syntax to allow build with newer cmake.
+
+ref: https://cmake.org/cmake/help/latest/command/cmake_minimum_required.html
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2f9d0f05..b04c8846 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ set(CMAKE_LEGACY_CYGWIN_WIN32 0)
+ 
+ # 3.0.2 preferred, but we can often get by with 2.8.
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION} LESS 3.0.2)
+   message(WARNING "You should use cmake 3.0.2 or newer for configuration to run correctly.")
+ endif()

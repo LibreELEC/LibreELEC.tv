@@ -1,0 +1,27 @@
+From 7a4014b1e239fc34ef130487620545f1e8e69299 Mon Sep 17 00:00:00 2001
+From: "Benjamin A. Beasley" <code@musicinmybrain.net>
+Date: Wed, 5 Mar 2025 18:05:23 -0500
+Subject: [PATCH] Update minimum CMake version to 3.12; support CMake 4.0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+CMake 4.0 drops support for CMake <3.5, so minimum versions need to be
+adjusted for forward compatibility. As long as we are touching the
+minimum version, let’s advance to 3.12, which can be considered the
+oldest “modern” CMake release, and which is available in all known
+supported Linux distributions today.
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/vendor/github.com/muflihun/easyloggingpp/CMakeLists.txt b/vendor/github.com/muflihun/easyloggingpp/CMakeLists.txt
+index 538cc8a0b..265b0b380 100644
+--- a/vendor/github.com/muflihun/easyloggingpp/CMakeLists.txt
++++ b/vendor/github.com/muflihun/easyloggingpp/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8.12)
++cmake_minimum_required(VERSION 3.12)
+ 
+ project(Easyloggingpp CXX)
+ 
