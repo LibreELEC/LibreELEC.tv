@@ -1,0 +1,22 @@
+From 14b5e8e68704c7c97fa7787c3b070298833fc4c3 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 21:31:04 +1100
+Subject: [PATCH] Allow compile with cmake 4.0.0
+
+Upstream https://github.com/kode54/dumb/ has been made read only.
+
+Match min version with main CMakeLists.txt
+---
+ lib/dumb/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/dumb/CMakeLists.txt b/lib/dumb/CMakeLists.txt
+index ba7659c..9856003 100644
+--- a/lib/dumb/CMakeLists.txt
++++ b/lib/dumb/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.1)
++cmake_minimum_required(VERSION 3.5)
+ project(libdumb C)
+ include(GNUInstallDirs)
+ include(CheckCCompilerFlag)
