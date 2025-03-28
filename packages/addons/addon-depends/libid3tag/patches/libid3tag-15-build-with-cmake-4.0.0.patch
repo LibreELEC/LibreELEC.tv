@@ -1,0 +1,24 @@
+From b0d4d3d42805ab386522eed65d515826c1a27f15 Mon Sep 17 00:00:00 2001
+From: heitbaum <heitbaum@noreply.codeberg.org>
+Date: Fri, 28 Mar 2025 11:22:50 +0000
+Subject: [PATCH] Allow build with cmake 4.0.0
+
+use min...max syntax to allow build with newer cmake.
+ref: https://cmake.org/cmake/help/latest/command/cmake_minimum_required.html
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d181300..a1d6fdc 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.1.0)
++cmake_minimum_required(VERSION 3.1.0...3.10)
+ project(id3tag VERSION 0.16.3)
+ 
+ option(BUILD_SHARED_LIBS "Build dynamic library" ON)
+-- 
+2.45.2
+
