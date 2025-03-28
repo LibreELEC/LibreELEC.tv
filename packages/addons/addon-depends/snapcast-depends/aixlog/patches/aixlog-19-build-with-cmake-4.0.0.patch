@@ -1,0 +1,25 @@
+From be22e5273a8c935c141b4c75212f1f8b6b3fbd39 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 23:01:09 +1100
+Subject: [PATCH] Allow build with cmake 4.0.0
+
+use min...max syntax to allow build with newer cmake.
+
+ref: https://cmake.org/cmake/help/latest/command/cmake_minimum_required.html
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e9baa87..6324684 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,7 +9,7 @@
+ # This software may be modified and distributed under the terms
+ # of the MIT license.  See the LICENSE file for details.
+ 
+-cmake_minimum_required(VERSION 3.0.0)
++cmake_minimum_required(VERSION 3.0.0...3.10)
+ 
+ project(aixlog VERSION 1.5.0 LANGUAGES CXX)
+ set(PROJECT_DESCRIPTION "Header-only C++ logging library")
