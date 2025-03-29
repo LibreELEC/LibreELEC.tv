@@ -1,0 +1,27 @@
+From 2d7a3b9b6a7c7ef0d651d866b4ab11fb1ea24664 Mon Sep 17 00:00:00 2001
+From: Hennadii Stepanov <32963518+hebasto@users.noreply.github.com>
+Date: Sat, 16 Nov 2024 21:26:55 +0000
+Subject: [PATCH] cmake: Update minimum required version
+
+Compatibility with versions of CMake older than 3.10 is now deprecated
+and will be removed from a future version.
+
+See: https://cmake.org/cmake/help/v3.31/release/3.31.html
+---
+ CMakeLists.txt             | 2 +-
+ test-export/CMakeLists.txt | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 25578930b4..04e6933bee 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -19,7 +19,7 @@
+ #       start libevent.sln
+ #
+ 
+-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+ 
+ if (POLICY CMP0042)
+     cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default.

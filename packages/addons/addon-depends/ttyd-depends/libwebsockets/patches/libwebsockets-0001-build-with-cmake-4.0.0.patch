@@ -1,0 +1,25 @@
+From f1ce4d40c73674773b49cf37c0a7eb2f80327a08 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 12:31:12 +0000
+Subject: [PATCH] allow compile with cmake 4.0.0
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 57c35232..eda93224 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -22,7 +22,7 @@
+ # IN THE SOFTWARE.
+ #
+ 
+-cmake_minimum_required(VERSION 2.8.12)
++cmake_minimum_required(VERSION 3.5)
+ include(CheckFunctionExists)
+ include(CheckSymbolExists)
+ include(CheckIncludeFile)
+-- 
+2.43.0
+

@@ -1,0 +1,95 @@
+From 6a130ba36867c23eb3dcbff32a1abb7386eb2eab Mon Sep 17 00:00:00 2001
+From: Ihor Dutchak <ihor.youw@gmail.com>
+Date: Tue, 5 Mar 2024 11:16:18 +0200
+Subject: [PATCH] Avoid CMake backward compatibility warning
+
+Avoid a message:
+```
+Compatibility with CMake < 3.5 will be removed from a future version of CMake.
+
+Update the VERSION argument <min> value or use a ...<max> suffix to tell
+CMake that the project does not need compatibility with older versions.
+```
+---
+ BUILD.cmake.md                                | 2 +-
+ CMakeLists.txt                                | 2 +-
+ hidtest/CMakeLists.txt                        | 2 +-
+ libusb/CMakeLists.txt                         | 2 +-
+ linux/CMakeLists.txt                          | 2 +-
+ mac/CMakeLists.txt                            | 2 +-
+ subprojects/hidapi_build_cmake/CMakeLists.txt | 2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/BUILD.cmake.md b/BUILD.cmake.md
+index 5555fd2ea..573f910de 100644
+--- a/BUILD.cmake.md
++++ b/BUILD.cmake.md
+@@ -159,7 +159,7 @@ endif()
+ HIDAPI can be easily used as a subdirectory of a larger CMake project:
+ ```cmake
+ # root CMakeLists.txt
+-cmake_minimum_required(VERSION 3.4.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.4.3...3.25 FATAL_ERROR)
+ 
+ add_subdirectory(hidapi)
+ add_subdirectory(my_application)
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b4c99be51..d7086813c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.1.3...3.25 FATAL_ERROR)
+ 
+ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+     add_subdirectory(src)
+diff --git a/hidtest/CMakeLists.txt b/hidtest/CMakeLists.txt
+index 701a4fb91..19c50e1fb 100644
+--- a/hidtest/CMakeLists.txt
++++ b/hidtest/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.1.3...3.25 FATAL_ERROR)
+ project(hidtest C)
+ 
+ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+diff --git a/libusb/CMakeLists.txt b/libusb/CMakeLists.txt
+index 617cd551a..4c458c569 100644
+--- a/libusb/CMakeLists.txt
++++ b/libusb/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.6.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.6.3...3.25 FATAL_ERROR)
+ 
+ list(APPEND HIDAPI_PUBLIC_HEADERS "hidapi_libusb.h")
+ 
+diff --git a/linux/CMakeLists.txt b/linux/CMakeLists.txt
+index 0970ac3f1..9c627087f 100644
+--- a/linux/CMakeLists.txt
++++ b/linux/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.6.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.6.3...3.25 FATAL_ERROR)
+ 
+ add_library(hidapi_hidraw
+     ${HIDAPI_PUBLIC_HEADERS}
+diff --git a/mac/CMakeLists.txt b/mac/CMakeLists.txt
+index ccb0b91d4..0a1c1d95b 100644
+--- a/mac/CMakeLists.txt
++++ b/mac/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.4.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.4.3...3.25 FATAL_ERROR)
+ 
+ list(APPEND HIDAPI_PUBLIC_HEADERS "hidapi_darwin.h")
+ 
+diff --git a/subprojects/hidapi_build_cmake/CMakeLists.txt b/subprojects/hidapi_build_cmake/CMakeLists.txt
+index 80aed67d5..4586ce6a6 100644
+--- a/subprojects/hidapi_build_cmake/CMakeLists.txt
++++ b/subprojects/hidapi_build_cmake/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.1.3...3.25 FATAL_ERROR)
+ project(hidapi LANGUAGES C)
+ 
+ file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/root")

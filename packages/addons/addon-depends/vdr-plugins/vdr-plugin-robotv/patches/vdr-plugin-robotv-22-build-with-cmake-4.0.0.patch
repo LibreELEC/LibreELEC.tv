@@ -1,0 +1,34 @@
+From 1d1df90bc57455453e0561885aed4680f6561d3a Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 07:54:49 +0000
+Subject: [PATCH] [cmake] allow build with cmake-4.0.0
+
+use min...max syntax to allow build with newer cmake.
+ref: https://cmake.org/cmake/help/latest/command/cmake_minimum_required.html
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ CMakeLists.txt             | 2 +-
+ src/demuxer/CMakeLists.txt | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index dff9943..5473bba 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ project(robotv)
+ 
+ set(PLUGIN "robotv")
+diff --git a/src/demuxer/CMakeLists.txt b/src/demuxer/CMakeLists.txt
+index 8b53c75..7906a0a 100644
+--- a/src/demuxer/CMakeLists.txt
++++ b/src/demuxer/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ project(robotvdmx)
+ 
+ # set C++11 for robotv

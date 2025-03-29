@@ -1,0 +1,8 @@
+--- a/CMakeLists.txt	2021-05-10 17:40:30.000000000 +0000
++++ b/CMakeLists.txt	2025-03-28 00:15:53.012191534 +0000
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8.12)
++cmake_minimum_required(VERSION 3.0...3.10)
+ project(libogg)
+ 
+ # Required modules

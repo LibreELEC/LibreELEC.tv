@@ -14,4 +14,5 @@ PKG_BUILD_FLAGS="-sysroot"
 PKG_CMAKE_OPTS_TARGET="-DCMAKE_INSTALL_PREFIX=/usr \
                        -DCMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES=${SYSROOT_PREFIX}/usr/include \
                        -DBUILD_UNIT_TESTS=OFF \
-                       -DCMAKE_SKIP_RPATH=ON"
+                       -DCMAKE_SKIP_RPATH=ON \
+                       -DUSE_INTERNAL_TINYXML=OFF"

@@ -1,0 +1,31 @@
+From 233242bcb8bf583d29e25f6b116711ef28b386ec Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 16:23:50 +1100
+Subject: [PATCH] Allow build with CMake 4.0.0
+
+Update kodi-platform to require the same CMake as https://github.com/xbmc/xbmc/blob/master/CMakeLists.txt thus addressing the following build failure when compiling with cmake-4.0.0
+
+CMake Error at CMakeLists.txt:3 (cmake_minimum_required):
+  Compatibility with CMake < 3.5 has been removed from CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+  Or, add -DCMAKE_POLICY_VERSION_MINIMUM=3.5 to try configuring anyway.
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index feb7e9d..8b67753 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,6 +1,6 @@
+ project(kodiplatform)
+ 
+-cmake_minimum_required(VERSION 2.6)
++cmake_minimum_required(VERSION 3.16)
+ enable_language(CXX)
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
