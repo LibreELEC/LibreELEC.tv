@@ -1,0 +1,22 @@
+From cdcb81af96c42a55686a0940734fc042636c6ad2 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 28 Mar 2025 22:41:11 +1100
+Subject: [PATCH] allow build with cmake-4.0.0
+
+use min...max syntax to allow build with newer cmake.
+
+ref: https://cmake.org/cmake/help/latest/command/cmake_minimum_required.html
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ab7c6a81..0a6d3bc0 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required (VERSION 3.3.2)
++cmake_minimum_required (VERSION 3.3.2...3.10)
+ 
+ project (libde265
+     LANGUAGES C CXX

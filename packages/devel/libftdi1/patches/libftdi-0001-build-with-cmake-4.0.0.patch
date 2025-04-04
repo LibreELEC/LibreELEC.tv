@@ -1,0 +1,2427 @@
+From cdb28383402d248dbc6062f4391b038375c52385 Mon Sep 17 00:00:00 2001
+From: Fabrice Fontaine <fontaine.fabrice@gmail.com>
+Date: Fri, 17 Jul 2020 21:25:03 +0200
+Subject: [PATCH 01/42] CMakeLists.txt: fix paths when FTDIPP is set
+
+Use the same project name (i.e. libftdi1 and not libftdipp1) when FTDIPP
+is enabled as suggested by Aurelien Jarno in
+http://developer.intra2net.com/mailarchive/html/libftdi/2020/msg00044.html
+
+Without this change, the libftdi1.pc config file defines the include
+path as /usr/local/include/libftdipp1 while the ftdi.h file is actually
+installed in /usr/local/include/libftdi1
+
+This is an issue for example for libsigrok which will fail on:
+
+In file included from src/hardware/asix-sigma/protocol.c:27:
+src/hardware/asix-sigma/protocol.h:28:10: fatal error: ftdi.h: No such file or directory
+   28 | #include <ftdi.h>
+      |          ^~~~~~~~
+
+Fixes:
+ - http://autobuild.buildroot.org/results/1427f44e36752c337791597fab47a1889552a2fe
+
+Signed-off-by: Fabrice Fontaine <fontaine.fabrice@gmail.com>
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5aecafc..3b0b87c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -136,7 +136,7 @@ endif ()
+ 
+ add_subdirectory(src)
+ if ( FTDIPP )
+-  project(libftdipp1 C CXX)
++  project(libftdi1 C CXX)
+   add_subdirectory(ftdipp)
+ endif ()
+ if ( PYTHON_BINDINGS )
+-- 
+2.43.0
+
+From 7c5aa3b8c0fe0862886c7202cc1e2e44434ea4de Mon Sep 17 00:00:00 2001
+From: Xiaofan Chen <xiaofanc@gmail.com>
+Date: Fri, 31 Jul 2020 10:25:45 +0800
+Subject: [PATCH 02/42] Ignore purge_test example build for MinGW
+
+termios.h is not available on MinGW.
+---
+ examples/CMakeLists.txt | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/examples/CMakeLists.txt b/examples/CMakeLists.txt
+index 6fc3c09..dd8ffbe 100644
+--- a/examples/CMakeLists.txt
++++ b/examples/CMakeLists.txt
+@@ -15,7 +15,9 @@ add_executable(baud_test baud_test.c)
+ add_executable(stream_test stream_test.c)
+ add_executable(eeprom eeprom.c)
+ add_executable(async async.c)
+-add_executable(purge_test purge_test.c)
++if(NOT MINGW)
++    add_executable(purge_test purge_test.c)
++endif(NOT MINGW)
+ 
+ # Linkage
+ target_link_libraries(simple ftdi1)
+@@ -29,7 +31,9 @@ target_link_libraries(baud_test ftdi1)
+ target_link_libraries(stream_test ftdi1)
+ target_link_libraries(eeprom ftdi1)
+ target_link_libraries(async ftdi1)
+-target_link_libraries(purge_test ftdi1)
++if(NOT MINGW)
++    target_link_libraries(purge_test ftdi1)
++endif(NOT MINGW)
+ 
+ # libftdi++ examples
+ if( FTDIPP )
+-- 
+2.43.0
+
+From 6dd18122a81e6030dd239391df6ffde8cb8c59c7 Mon Sep 17 00:00:00 2001
+From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+Date: Fri, 31 Jul 2020 11:00:50 +0200
+Subject: [PATCH 03/42] Fix GCC fall-through warnings.
+
+When compiling ftdi.c in the context of blackmagic debug, more enabled
+warnings and -Werror made me to add appended fixes.
+
+Fixing the signedness of baudrate would probably be more logically by
+making all baudrate and clk unsigned, but would need more code changes.
+I decided to make clk signed as a fix with minimal
+impact. The FTDI chips are far away from 2 GHz clock rate...
+---
+ src/ftdi.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index f5b7018..03d7b07 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -1328,7 +1328,7 @@ static int ftdi_to_clkbits_AM(int baudrate, unsigned long *encoded_divisor)
+    AM Type chips have only four fractional subdivisors at value[15:14]
+    for subdivisors 0, 0.5, 0.25, 0.125
+ */
+-static int ftdi_to_clkbits(int baudrate, unsigned int clk, int clk_div, unsigned long *encoded_divisor)
++static int ftdi_to_clkbits(int baudrate, int clk, int clk_div, unsigned long *encoded_divisor)
+ {
+     static const char frac_code[8] = {0, 3, 2, 4, 1, 5, 6, 7};
+     int best_baud = 0;
+@@ -3044,10 +3044,13 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+         case TYPE_2232H:
+         case TYPE_4232H:
+             i += 2;
++			/* Fall through*/
+         case TYPE_R:
+             i += 2;
++			/* Fall through*/
+         case TYPE_2232C:
+             i += 2;
++			/* Fall through*/
+         case TYPE_AM:
+         case TYPE_BM:
+             i += 0x94;
+@@ -3438,15 +3441,20 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+     {
+         case TYPE_230X:
+             free_start += 2;
++			/* Fall through*/
+         case TYPE_232H:
+             free_start += 6;
++			/* Fall through*/
+         case TYPE_2232H:
+         case TYPE_4232H:
+             free_start += 2;
++			/* Fall through*/
+         case TYPE_R:
+             free_start += 2;
++			/* Fall through*/
+         case TYPE_2232C:
+             free_start++;
++			/* Fall through*/
+         case TYPE_AM:
+         case TYPE_BM:
+             free_start += 0x14;
+-- 
+2.43.0
+
+From 11a50ae5b80b3e03694a19e84513345d0794e563 Mon Sep 17 00:00:00 2001
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Date: Mon, 24 Aug 2020 19:27:22 +0200
+Subject: [PATCH 04/42] Fix building unit tests without FTDIPP
+
+Needed to run the baudrate unit tests.
+
+Probably another fallout from:
+
+****************************
+commit 0209a3633dc877a577af07d883eb5059e22f6a91
+
+cmake: do not check for g++ when FTDIPP is disabled
+****************************
+---
+ CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3b0b87c..58f664a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -150,6 +150,7 @@ if ( EXAMPLES )
+ endif ()
+ add_subdirectory(packages)
+ if ( BUILD_TESTS )
++  project(libftdi1 C CXX)
+   add_subdirectory(test)
+ endif ()
+ 
+-- 
+2.43.0
+
+From 45ebed3754aa2814583f4d433155f87f24f5351f Mon Sep 17 00:00:00 2001
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Date: Mon, 24 Aug 2020 19:45:41 +0200
+Subject: [PATCH 05/42] examples/bitbang_cbus.c: Check return value of fgets()
+
+---
+ examples/bitbang_cbus.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/examples/bitbang_cbus.c b/examples/bitbang_cbus.c
+index b902b50..359097e 100644
+--- a/examples/bitbang_cbus.c
++++ b/examples/bitbang_cbus.c
+@@ -60,8 +60,9 @@ int main(void)
+     while (1)
+     {
+         // Set bitmask from input
+-        fgets(input, sizeof(input) - 1, stdin);
+-        if (input[0] == '\n') break;
++        char *s = fgets(input, sizeof(input) - 1, stdin);
++        if (s == NULL || input[0] == '\n')
++            break;
+         bitmask = strtol(input, NULL, 0);
+         printf("Using bitmask 0x%02x\n", bitmask);
+         f = ftdi_set_bitmode(ftdi, bitmask, BITMODE_CBUS);
+-- 
+2.43.0
+
+From cb9b8a53f1536640fe4d8dfccf79268fbbd49180 Mon Sep 17 00:00:00 2001
+From: Tomasz Wasilczyk <tomkiewi@gmail.com>
+Date: Thu, 11 Mar 2021 15:43:12 -0800
+Subject: [PATCH 06/42] Don't spam stderr when flashing FT232H eeprom
+
+---
+ src/ftdi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 03d7b07..db66b87 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3421,7 +3421,7 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+             set_ft232h_cbus(eeprom, output);
+ 
+             output[0x1e] = eeprom->chip;
+-            fprintf(stderr,"FIXME: Build FT232H specific EEPROM settings\n");
++            /* FIXME: Build FT232H specific EEPROM settings */
+             break;
+         case TYPE_230X:
+             output[0x00] = 0x80; /* Actually, leave the default value */
+-- 
+2.43.0
+
+From 1050ad206d3ff01e5b5bac08a44b25ed0d9b5488 Mon Sep 17 00:00:00 2001
+From: Tomasz Wasilczyk <tomkiewi@gmail.com>
+Date: Thu, 11 Mar 2021 15:47:06 -0800
+Subject: [PATCH 07/42] ftdi_eeprom_initdefaults const arguments
+
+This function don't need to modify its arguments.
+---
+ src/ftdi.c | 4 ++--
+ src/ftdi.h | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index db66b87..88216bf 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -2576,8 +2576,8 @@ int ftdi_set_error_char(struct ftdi_context *ftdi,
+     \retval -2: No struct ftdi_eeprom
+     \retval -3: No connected device or device not yet opened
+ */
+-int ftdi_eeprom_initdefaults(struct ftdi_context *ftdi, char * manufacturer,
+-                             char * product, char * serial)
++int ftdi_eeprom_initdefaults(struct ftdi_context *ftdi, const char * manufacturer,
++                             const char * product, const char * serial)
+ {
+     struct ftdi_eeprom *eeprom;
+ 
+diff --git a/src/ftdi.h b/src/ftdi.h
+index fb45008..0603335 100644
+--- a/src/ftdi.h
++++ b/src/ftdi.h
+@@ -609,8 +609,8 @@ extern "C"
+ 
+     /* init eeprom for the given FTDI type */
+     int ftdi_eeprom_initdefaults(struct ftdi_context *ftdi,
+-                                 char * manufacturer, char *product,
+-                                 char * serial);
++                                 const char * manufacturer, const char *product,
++                                 const char * serial);
+     int ftdi_eeprom_build(struct ftdi_context *ftdi);
+     int ftdi_eeprom_decode(struct ftdi_context *ftdi, int verbose);
+ 
+-- 
+2.43.0
+
+From 9d638dab09426be6349d41a269281921febcfa34 Mon Sep 17 00:00:00 2001
+From: Tomasz Wasilczyk <twasilczyk@google.com>
+Date: Wed, 21 Apr 2021 12:39:52 -0700
+Subject: [PATCH 08/42] Don't fail reading missing strings.
+
+This happens i.e. when serial number is not set -- in such case the
+string is missing from string descriptor list.
+---
+ src/ftdi.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 88216bf..5ec3e2c 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -485,27 +485,39 @@ int ftdi_usb_get_strings2(struct ftdi_context *ftdi, struct libusb_device *dev,
+     if (libusb_get_device_descriptor(dev, &desc) < 0)
+         ftdi_error_return(-11, "libusb_get_device_descriptor() failed");
+ 
+-    if (manufacturer != NULL)
++    if (manufacturer != NULL && mnf_len > 0)
+     {
+-        if (libusb_get_string_descriptor_ascii(ftdi->usb_dev, desc.iManufacturer, (unsigned char *)manufacturer, mnf_len) < 0)
++        if (desc.iManufacturer == 0)
++        {
++            manufacturer[0] = '\0';
++        }
++        else if (libusb_get_string_descriptor_ascii(ftdi->usb_dev, desc.iManufacturer, (unsigned char *)manufacturer, mnf_len) < 0)
+         {
+             ftdi_usb_close_internal (ftdi);
+             ftdi_error_return(-7, "libusb_get_string_descriptor_ascii() failed");
+         }
+     }
+ 
+-    if (description != NULL)
++    if (description != NULL && desc_len > 0)
+     {
+-        if (libusb_get_string_descriptor_ascii(ftdi->usb_dev, desc.iProduct, (unsigned char *)description, desc_len) < 0)
++        if (desc.iProduct == 0)
++        {
++            description[0] = '\0';
++        }
++        else if (libusb_get_string_descriptor_ascii(ftdi->usb_dev, desc.iProduct, (unsigned char *)description, desc_len) < 0)
+         {
+             ftdi_usb_close_internal (ftdi);
+             ftdi_error_return(-8, "libusb_get_string_descriptor_ascii() failed");
+         }
+     }
+ 
+-    if (serial != NULL)
++    if (serial != NULL && serial_len > 0)
+     {
+-        if (libusb_get_string_descriptor_ascii(ftdi->usb_dev, desc.iSerialNumber, (unsigned char *)serial, serial_len) < 0)
++        if (desc.iSerialNumber == 0)
++        {
++            serial[0] = '\0';
++        }
++        else if (libusb_get_string_descriptor_ascii(ftdi->usb_dev, desc.iSerialNumber, (unsigned char *)serial, serial_len) < 0)
+         {
+             ftdi_usb_close_internal (ftdi);
+             ftdi_error_return(-9, "libusb_get_string_descriptor_ascii() failed");
+-- 
+2.43.0
+
+From 231d8d35405dd0423db6cb1950ae77df9f742aa6 Mon Sep 17 00:00:00 2001
+From: Tomasz Wasilczyk <twasilczyk@google.com>
+Date: Wed, 21 Apr 2021 12:42:08 -0700
+Subject: [PATCH 09/42] Remove legacy EEPROM fields from FT4232H.
+
+These are not present when flashed with FT_Prog tool.
+---
+ src/ftdi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 5ec3e2c..2f77ac3 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3113,7 +3113,8 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+     }
+ 
+     // Legacy port name and PnP fields for FT2232 and newer chips
+-    if (ftdi->type > TYPE_BM)
++    // It doesn't appear when written with FT_Prog for FT4232H chip.
++    if (ftdi->type > TYPE_BM && ftdi->type != TYPE_4232H)
+     {
+         output[i & eeprom_size_mask] = 0x02; /* as seen when written with FTD2XX */
+         i++;
+-- 
+2.43.0
+
+From 31865800dffc58f2db3ae06a7bbba61bb279b265 Mon Sep 17 00:00:00 2001
+From: Tomasz Wasilczyk <twasilczyk@google.com>
+Date: Wed, 21 Apr 2021 12:43:34 -0700
+Subject: [PATCH 10/42] Don't set EEPROM serial when it's not used.
+
+This makes a difference in USB enumeration -- if serial is missing,
+its string is not present in string descriptor list.
+---
+ src/ftdi.c | 25 +++++++++++++------------
+ 1 file changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 2f77ac3..92c5fae 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -2606,7 +2606,7 @@ int ftdi_eeprom_initdefaults(struct ftdi_context *ftdi, const char * manufacture
+         ftdi_error_return(-3, "No connected device or device not yet opened");
+ 
+     eeprom->vendor_id = 0x0403;
+-    eeprom->use_serial = 1;
++    eeprom->use_serial = (serial != NULL);
+     if ((ftdi->type == TYPE_AM) || (ftdi->type == TYPE_BM) ||
+             (ftdi->type == TYPE_R))
+         eeprom->product_id = 0x6001;
+@@ -3101,15 +3101,18 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+     }
+     output[0x11] = product_size*2 + 2;
+ 
+-    // Addr 12: Offset of the serial string + 0x80, calculated later
+-    // Addr 13: Length of serial string
+-    output[0x12] = i | 0x80; // calculate offset
+-    output[i & eeprom_size_mask] = serial_size*2 + 2, i++;
+-    output[i & eeprom_size_mask] = 0x03, i++;
+-    for (j = 0; j < serial_size; j++)
+-    {
+-        output[i & eeprom_size_mask] = eeprom->serial[j], i++;
+-        output[i & eeprom_size_mask] = 0x00, i++;
++    if (eeprom->use_serial) {
++        // Addr 12: Offset of the serial string + 0x80, calculated later
++         // Addr 13: Length of serial string
++         output[0x12] = i | 0x80; // calculate offset
++         output[i & eeprom_size_mask] = serial_size*2 + 2, i++;
++         output[i & eeprom_size_mask] = 0x03, i++;
++         for (j = 0; j < serial_size; j++)
++         {
++             output[i & eeprom_size_mask] = eeprom->serial[j], i++;
++             output[i & eeprom_size_mask] = 0x00, i++;
++         }
++         output[0x13] = serial_size*2 + 2;
+     }
+ 
+     // Legacy port name and PnP fields for FT2232 and newer chips
+@@ -3124,8 +3127,6 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+         i++;
+     }
+ 
+-    output[0x13] = serial_size*2 + 2;
+-
+     if (ftdi->type > TYPE_AM) /* use_serial not used in AM devices */
+     {
+         if (eeprom->use_serial)
+-- 
+2.43.0
+
+From 32e899fa5ecd30aad0a25ea8d7e208d203aaa0ae Mon Sep 17 00:00:00 2001
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Date: Sun, 2 May 2021 09:32:02 +0200
+Subject: [PATCH 11/42] Add Tomasz Wasilczyk to AUTHORS
+
+---
+ AUTHORS | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/AUTHORS b/AUTHORS
+index e8f5a69..bd31f0a 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -83,6 +83,7 @@ see Changelog for full details:
+   Thomas Klose <thomas.klose@hiperscan.com>
+   Tim Ansell <mithro@mithis.com>
+   Tom Saunders <trsaunders@gmail.com>
++  Tomasz Wasilczyk <twasilczyk@google.com>
+   Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+   Vladimir Yakovlev <nagos@inbox.ru>
+   Wilfried Holzke <libftdi@holzke.net>
+-- 
+2.43.0
+
+From 0684c1b1be9ccb893829c20a8505c91e101bbf43 Mon Sep 17 00:00:00 2001
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Date: Tue, 4 May 2021 18:51:15 +0200
+Subject: [PATCH 12/42] Fix indentation
+
+---
+ src/ftdi.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 92c5fae..0a7fb27 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3103,16 +3103,16 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+ 
+     if (eeprom->use_serial) {
+         // Addr 12: Offset of the serial string + 0x80, calculated later
+-         // Addr 13: Length of serial string
+-         output[0x12] = i | 0x80; // calculate offset
+-         output[i & eeprom_size_mask] = serial_size*2 + 2, i++;
+-         output[i & eeprom_size_mask] = 0x03, i++;
+-         for (j = 0; j < serial_size; j++)
+-         {
+-             output[i & eeprom_size_mask] = eeprom->serial[j], i++;
+-             output[i & eeprom_size_mask] = 0x00, i++;
+-         }
+-         output[0x13] = serial_size*2 + 2;
++        // Addr 13: Length of serial string
++        output[0x12] = i | 0x80; // calculate offset
++        output[i & eeprom_size_mask] = serial_size*2 + 2, i++;
++        output[i & eeprom_size_mask] = 0x03, i++;
++        for (j = 0; j < serial_size; j++)
++        {
++            output[i & eeprom_size_mask] = eeprom->serial[j], i++;
++            output[i & eeprom_size_mask] = 0x00, i++;
++        }
++        output[0x13] = serial_size*2 + 2;
+     }
+ 
+     // Legacy port name and PnP fields for FT2232 and newer chips
+-- 
+2.43.0
+
+From b5b8fab6063ad90bb5ef05a72708ecde1796bc81 Mon Sep 17 00:00:00 2001
+From: Fabrice Fontaine <fontaine.fabrice@gmail.com>
+Date: Fri, 13 May 2022 18:11:50 +0200
+Subject: [PATCH 13/42] CMakeLists.txt: fix static build with libusb and
+ -latomic
+
+Use pkg-config to retrieve libusb dependencies such as -latomic and
+avoid the following static build failure:
+
+/nvmedata/autobuild/instance-29/output-1/per-package/libftdi1/host/bin/../lib/gcc/sparc-buildroot-linux-uclibc/10.3.0/../../../../sparc-buildroot-linux-uclibc/bin/ld: /nvmedata/autobuild/instance-29/output-1/per-package/libftdi1/host/sparc-buildroot-linux-uclibc/sysroot/lib/libusb-1.0.a(core.o): in function `libusb_unref_device':
+/nvmedata/autobuild/instance-29/output-1/build/libusb-1.0.25/libusb/core.c:1186: undefined reference to `__atomic_fetch_add_4'
+
+Fixes:
+ - http://autobuild.buildroot.org/results/1ca7cd85ae60ad4797a6d8a83b2fb51d7eab96d9
+
+Signed-off-by: Fabrice Fontaine <fontaine.fabrice@gmail.com>
+---
+ CMakeLists.txt | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 58f664a..d20aa94 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -25,8 +25,16 @@ if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+ endif(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+ 
+ # find libusb
+-find_package ( USB1 REQUIRED )
+-include_directories ( ${LIBUSB_INCLUDE_DIR} )
++find_package( PkgConfig )
++if (PkgConfig_FOUND)
++  pkg_check_modules( LIBUSB libusb-1.0 )
++  if (LIBUSB_FOUND)
++    include_directories ( ${LIBUSB_INCLUDE_DIRS} )
++  else()
++    find_package ( USB1 REQUIRED )
++    include_directories ( ${LIBUSB_INCLUDE_DIR} )
++  endif()
++endif()
+ 
+ # Find Boost
+ if (FTDIPP OR BUILD_TESTS)
+-- 
+2.43.0
+
+From 7017c0dce1e251108d1bc8a41bfeef3ff9a89ba6 Mon Sep 17 00:00:00 2001
+From: Fabian Vogt <fvogt@suse.de>
+Date: Tue, 29 Aug 2023 14:57:27 +0200
+Subject: [PATCH 14/42] Fix race during build of python bindings
+
+The CMake documentation says about add_custom_command that the output must
+not be used as dependency in more than one target, but this was the case
+here: Both the doc_i target and the SWIG target depended on ftdi1_doc.i.
+Make the SWIG target depend on doc_i instead.
+
+This fixes that ftdi1_doc.i was built twice with parallel builds, leading
+to random errors.
+
+Signed-off-by: Fabian Vogt <fvogt@suse.de>
+---
+ python/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
+index 5b6f420..1a8142b 100644
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -25,7 +25,7 @@ link_directories ( ${CMAKE_CURRENT_BINARY_DIR}/../src )
+ if ( DOCUMENTATION )
+   set(CMAKE_SWIG_FLAGS -DDOXYGEN=${DOXYGEN_FOUND})
+   # manually add dependency for new cmake / swig versions
+-  set_property(SOURCE ftdi1.i PROPERTY DEPENDS ftdi1_doc.i)
++  set_property(SOURCE ftdi1.i PROPERTY DEPENDS doc_i)
+ endif()
+ if(NOT CMAKE_VERSION VERSION_LESS 3.8.0)
+   swig_add_library ( ftdi1 LANGUAGE python SOURCES ftdi1.i )
+-- 
+2.43.0
+
+From 3861e7dc9e83f2f6ff4e1579cf3bbf63a6827105 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Tue, 1 Aug 2023 11:53:35 +0200
+Subject: [PATCH 15/42] CMake: bump the minimal required version to 2.8.12
+
+The older CMake versions are deprecated.
+
+Remove support for CMake code compatible with CMake older than 2.8.8.
+
+Also move cmake_minimum_required() command before the project()
+command invocation.
+---
+ CMakeLists.txt | 46 +++++++++++++++++++++-------------------------
+ 1 file changed, 21 insertions(+), 25 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d20aa94..48a028c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,3 +1,5 @@
++cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
++
+ # Project
+ project(libftdi1 C)
+ set(MAJOR_VERSION 1)
+@@ -12,7 +14,6 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+    set(CMAKE_BUILD_TYPE     RelWithDebInfo)
+ endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
+ set(CMAKE_COLOR_MAKEFILE ON)
+-cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+ 
+ add_definitions(-Wall)
+ 
+@@ -211,30 +212,25 @@ set ( LIBFTDI_VERSION_MINOR ${MINOR_VERSION} )
+ 
+ set ( LIBFTDI_USE_FILE ${CMAKE_INSTALL_PREFIX}/${LIBFTDI_CMAKE_CONFIG_DIR}/UseLibFTDI1.cmake )
+ 
+-if(CMAKE_VERSION VERSION_LESS 2.8.8) 
+-  configure_file ( cmake/LibFTDI1Config.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1Config.cmake @ONLY )
+-  configure_file ( cmake/LibFTDI1ConfigVersion.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1ConfigVersion.cmake @ONLY )
+-else ()
+-  include(CMakePackageConfigHelpers)
+-
+-  configure_package_config_file (
+-    cmake/LibFTDI1Config.cmake.in
+-    ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1Config.cmake
+-    INSTALL_DESTINATION ${LIBFTDI_CMAKE_CONFIG_DIR}
+-    PATH_VARS
+-      LIBFTDI_USE_FILE
+-      LIBFTDI_ROOT_DIR
+-      LIBFTDI_INCLUDE_DIR
+-      LIBFTDI_INCLUDE_DIRS
+-      LIBFTDI_LIBRARY_DIRS
+-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+-  )
+-  write_basic_package_version_file (
+-    LibFTDI1ConfigVersion.cmake 
+-    VERSION ${LIBFTDI_VERSION_STRING} 
+-    COMPATIBILITY AnyNewerVersion
+-  )
+-endif ()
++include(CMakePackageConfigHelpers)
++
++configure_package_config_file (
++  cmake/LibFTDI1Config.cmake.in
++  ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1Config.cmake
++  INSTALL_DESTINATION ${LIBFTDI_CMAKE_CONFIG_DIR}
++  PATH_VARS
++    LIBFTDI_USE_FILE
++    LIBFTDI_ROOT_DIR
++    LIBFTDI_INCLUDE_DIR
++    LIBFTDI_INCLUDE_DIRS
++    LIBFTDI_LIBRARY_DIRS
++  NO_CHECK_REQUIRED_COMPONENTS_MACRO
++)
++write_basic_package_version_file (
++  LibFTDI1ConfigVersion.cmake
++  VERSION ${LIBFTDI_VERSION_STRING}
++  COMPATIBILITY AnyNewerVersion
++)
+ 
+ 
+ install ( FILES 
+-- 
+2.43.0
+
+From 2080e757c936392ae390c4accd1ae02a52b2f2d8 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 3 Aug 2023 15:48:58 +0200
+Subject: [PATCH 16/42] Fix typos and harmonize spaces
+
+---
+ src/ftdi.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 0a7fb27..3a51b26 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -83,7 +83,7 @@ static void ftdi_usb_close_internal (struct ftdi_context *ftdi)
+ 
+     \retval  0: all fine
+     \retval -1: couldn't allocate read buffer
+-    \retval -2: couldn't allocate struct  buffer
++    \retval -2: couldn't allocate struct buffer
+     \retval -3: libusb_init() failed
+ 
+     \remark This should be called before all functions
+@@ -112,7 +112,7 @@ int ftdi_init(struct ftdi_context *ftdi)
+         ftdi_error_return(-3, "libusb_init() failed");
+ 
+     ftdi_set_interface(ftdi, INTERFACE_ANY);
+-    ftdi->bitbang_mode = 1; /* when bitbang is enabled this holds the number of the mode  */
++    ftdi->bitbang_mode = 1; /* when bitbang is enabled this holds the number of the mode */
+ 
+     eeprom = (struct ftdi_eeprom *)malloc(sizeof(struct ftdi_eeprom));
+     if (eeprom == 0)
+@@ -298,7 +298,7 @@ struct ftdi_version_info ftdi_get_library_version(void)
+ /**
+     Finds all ftdi devices with given VID:PID on the usb bus. Creates a new
+     ftdi_device_list which needs to be deallocated by ftdi_list_free() after
+-    use.  With VID:PID 0:0, search for the default devices
++    use. With VID:PID 0:0, search for the default devices
+     (0x403:0x6001, 0x403:0x6010, 0x403:0x6011, 0x403:0x6014, 0x403:0x6015)
+ 
+     \param ftdi pointer to ftdi_context
+@@ -639,7 +639,7 @@ int ftdi_usb_open_dev(struct ftdi_context *ftdi, libusb_device *dev)
+         ftdi_error_return(-12, "libusb_get_configuration () failed");
+     // set configuration (needed especially for windows)
+     // tolerate EBUSY: one device with one configuration, but two interfaces
+-    //    and libftdi sessions to both interfaces (e.g. FT2232)
++    // and libftdi sessions to both interfaces (e.g. FT2232)
+     if (desc.bNumConfigurations > 0 && cfg != cfg0)
+     {
+         if (libusb_set_configuration(ftdi->usb_dev, cfg0) < 0)
+@@ -1316,7 +1316,7 @@ static int ftdi_to_clkbits_AM(int baudrate, unsigned long *encoded_divisor)
+     return best_baud;
+ }
+ 
+-/*  ftdi_to_clkbits Convert a requested baudrate for a given system clock  and predivisor
++/*  ftdi_to_clkbits Convert a requested baudrate for a given system clock and predivisor
+                     to encoded divisor and the achievable baudrate
+     Function is only used internally
+     \internal
+@@ -3072,7 +3072,7 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+             i = 0xa0;
+             break;
+     }
+-    /* Wrap around 0x80 for 128 byte EEPROMS (Internale and 93x46) */
++    /* Wrap around 0x80 for 128 byte EEPROMS (Internal and 93x46) */
+     eeprom_size_mask = eeprom->size -1;
+     free_end = i & eeprom_size_mask;
+ 
+@@ -3136,7 +3136,7 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+     }
+ 
+     /* Bytes and Bits specific to (some) types
+-       Write linear, as this allows easier fixing*/
++       Write linear, as this allows easier fixing */
+     switch (ftdi->type)
+     {
+         case TYPE_AM:
+@@ -3208,7 +3208,7 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+ 
+             if (eeprom->external_oscillator)
+                 output[0x00] |= 0x02;
+-            output[0x01] = 0x40; /* Hard coded Endpoint Size*/
++            output[0x01] = 0x40; /* Hard coded Endpoint Size */
+ 
+             if (eeprom->suspend_pull_downs)
+                 output[0x0A] |= 0x4;
+@@ -3440,7 +3440,7 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+         case TYPE_230X:
+             output[0x00] = 0x80; /* Actually, leave the default value */
+             /*FIXME: Make DBUS & CBUS Control configurable*/
+-            output[0x0c] = 0;    /* DBUS drive 4mA, CBUS drive 4 mA like factory default */
++            output[0x0c] = 0;    /* DBUS drive 4mA, CBUS drive 4mA like factory default */
+             for (j = 0; j <= 6; j++)
+             {
+                 output[0x1a + j] = eeprom->cbus_function[j];
+-- 
+2.43.0
+
+From b006371dbde50c000cd822143310d9b605b6dfe1 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Sat, 5 Aug 2023 08:32:58 +0200
+Subject: [PATCH 17/42] Add .editorconfig for C and CMake files
+
+---
+ .editorconfig | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 .editorconfig
+
+diff --git a/.editorconfig b/.editorconfig
+new file mode 100644
+index 0000000..40392cd
+--- /dev/null
++++ b/.editorconfig
+@@ -0,0 +1,16 @@
++root = true
++
++[*]
++end_of_line = lf
++trim_trailing_whitespace = true
++insert_final_newline = false
++
++[{CMakeLists.txt,*.cmake}]
++indent_style = space
++indent_size = 2
++tab_width = 2
++
++[{*.c,*.h}]
++indent_style = space
++indent_size = 4
++tab_width = 4
+-- 
+2.43.0
+
+From 0fad6f389a7cad0513b23f73b2439700e53d47b3 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Wed, 9 Aug 2023 14:28:15 +0200
+Subject: [PATCH 18/42] EEPROM: fix checksum for FT230X series
+
+ftdi_eeprom_build() computes the checksum via reading the "Factory
+Configuration Data" region. ftdi_eeprom_decode() computes the checksum
+only on the EEPROM buffer. Hence, both checksums differ.
+
+Add the info from "Factory Configuration Data" to the EEPROM buffer.
+---
+ src/ftdi.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 3a51b26..cf53e04 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3503,6 +3503,8 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+                 i = 0x50;
+             }
+             value = data;
++            output[i * 2] = data;
++            output[(i * 2) + 1] = data >> 8;
+         }
+         else {
+             value = output[i*2];
+-- 
+2.43.0
+
+From ee93e3056cd496221d2c701dfd92e67f888376f3 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Wed, 9 Aug 2023 14:38:26 +0200
+Subject: [PATCH 19/42] EEPROM: mention FT230X in the dynamic content
+ calculation
+
+---
+ src/ftdi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index cf53e04..349df8a 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3049,7 +3049,7 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+     // Dynamic content
+     // Strings start at 0x94 (TYPE_AM, TYPE_BM)
+     // 0x96 (TYPE_2232C), 0x98 (TYPE_R) and 0x9a (TYPE_x232H)
+-    // 0xa0 (TYPE_232H)
++    // 0xa0 (TYPE_232H, TYPE_230X)
+     i = 0;
+     switch (ftdi->type)
+     {
+-- 
+2.43.0
+
+From 4d12b998630865d3f631ec67011473657e75fb43 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Wed, 9 Aug 2023 20:20:43 +0200
+Subject: [PATCH 20/42] examples: eeprom: add the missing newlines
+
+---
+ examples/eeprom.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/examples/eeprom.c b/examples/eeprom.c
+index 247589a..45f5dff 100644
+--- a/examples/eeprom.c
++++ b/examples/eeprom.c
+@@ -151,14 +151,14 @@ int main(int argc, char **argv)
+         if (res > 1)
+         {
+             int i = 1;
+-            fprintf(stderr, "%d FTDI devices found: Only Readout on EEPROM done. ",res);
++            fprintf(stderr, "%d FTDI devices found: Only Readout on EEPROM done. \n",res);
+             fprintf(stderr, "Use VID/PID/desc/serial to select device\n");
+             for (curdev = devlist; curdev != NULL; curdev= curdev->next, i++)
+             {
+                 f = ftdi_usb_open_dev(ftdi,  curdev->dev);
+                 if (f<0)
+                 {
+-                    fprintf(stderr, "Unable to open device %d: (%s)",
++                    fprintf(stderr, "Unable to open device %d: (%s)\n",
+                             i, ftdi_get_error_string(ftdi));
+                     continue;
+                 }
+@@ -175,7 +175,7 @@ int main(int argc, char **argv)
+             f = ftdi_usb_open_dev(ftdi,  devlist[0].dev);
+             if (f<0)
+             {
+-                fprintf(stderr, "Unable to open device %d: (%s)",
++                fprintf(stderr, "Unable to open device %d: (%s)\n",
+                         i, ftdi_get_error_string(ftdi));
+             }
+         }
+@@ -210,7 +210,7 @@ int main(int argc, char **argv)
+         f = ftdi_erase_eeprom(ftdi); /* needed to determine EEPROM chip type */
+         if (f < 0)
+         {
+-            fprintf(stderr, "Erase failed: %s",
++            fprintf(stderr, "Erase failed: %s\n",
+                     ftdi_get_error_string(ftdi));
+             retval =  -2;
+             goto done;
+@@ -277,7 +277,7 @@ int main(int argc, char **argv)
+         f=(ftdi_eeprom_build(ftdi));
+         if (f < 0)
+         {
+-            fprintf(stderr, "Erase failed: %s",
++            fprintf(stderr, "Erase failed: %s\n",
+                     ftdi_get_error_string(ftdi));
+             retval = -2;
+             goto done;
+-- 
+2.43.0
+
+From 629ed337dcc50d73beccf2a7fe4c94c1d0efd9fb Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Tue, 29 Aug 2023 10:57:00 +0200
+Subject: [PATCH 21/42] Align is_not_pnp property
+
+As seen when written with FTD2XX.
+---
+ src/ftdi.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 349df8a..3d16674 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3125,6 +3125,8 @@ int ftdi_eeprom_build(struct ftdi_context *ftdi)
+         i++;
+         output[i & eeprom_size_mask] = eeprom->is_not_pnp; /* as seen when written with FTD2XX */
+         i++;
++        output[i & eeprom_size_mask] = 0x00;
++        i++;
+     }
+ 
+     if (ftdi->type > TYPE_AM) /* use_serial not used in AM devices */
+-- 
+2.43.0
+
+From 0b76f232305f15d8615d0f15f9f8bdab8210567c Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Tue, 29 Aug 2023 10:50:28 +0200
+Subject: [PATCH 22/42] FT4232: show mode for both C and D channels
+
+---
+ src/ftdi.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 3d16674..2fb3cf8 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3885,6 +3885,13 @@ int ftdi_eeprom_decode(struct ftdi_context *ftdi, int verbose)
+                     channel_mode[eeprom->channel_b_type],
+                     (eeprom->channel_b_driver)?" VCP":"",
+                     (eeprom->high_current_b)?" High Current IO":"");
++        if (ftdi->type == TYPE_4232H)
++        {
++            fprintf(stdout,"Channel C has Mode UART%s\n",
++                    (eeprom->channel_c_driver)?" VCP":"");
++            fprintf(stdout,"Channel D has Mode UART%s\n",
++                    (eeprom->channel_d_driver)?" VCP":"");
++        }
+         if (((ftdi->type == TYPE_BM) || (ftdi->type == TYPE_2232C)) &&
+                 eeprom->use_usb_version)
+             fprintf(stdout,"Use explicit USB Version %04x\n",eeprom->usb_version);
+-- 
+2.43.0
+
+From 7dfd1d076f14a1b2adbb31e6e8e46aa9f46ba579 Mon Sep 17 00:00:00 2001
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+Date: Tue, 29 Aug 2023 15:47:41 +0200
+Subject: [PATCH 23/42] FT2232C: show mode for B channel
+
+Idea by Yegor Yefremov. Thanks!
+---
+ src/ftdi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 2fb3cf8..4b16468 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -3880,7 +3880,7 @@ int ftdi_eeprom_decode(struct ftdi_context *ftdi, int verbose)
+                     (eeprom->data_order)?"LSB":"MSB",
+                     (eeprom->flow_control)?"":"No ");
+         }
+-        if ((ftdi->type == TYPE_2232H) || (ftdi->type == TYPE_4232H))
++        if ((ftdi->type == TYPE_2232H) || (ftdi->type == TYPE_4232H) || (ftdi->type == TYPE_2232C))
+             fprintf(stdout,"Channel B has Mode %s%s%s\n",
+                     channel_mode[eeprom->channel_b_type],
+                     (eeprom->channel_b_driver)?" VCP":"",
+-- 
+2.43.0
+
+From b7e2b9c53cb1bd4c42538dfb61502f805100bf89 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 31 Jul 2023 12:23:41 +0200
+Subject: [PATCH 24/42] EEPROM: make user_data_addr value readable
+
+Before this change, the user_data_addr could be only written
+but not read.
+---
+ src/ftdi.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 4b16468..6b78fa3 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -4183,6 +4183,9 @@ int ftdi_get_eeprom_value(struct ftdi_context *ftdi, enum ftdi_eeprom_value valu
+         case EXTERNAL_OSCILLATOR:
+             *value = ftdi->eeprom->external_oscillator;
+             break;
++        case USER_DATA_ADDR:
++            *value = ftdi->eeprom->user_data_addr;
++            break;
+         default:
+             ftdi_error_return(-1, "Request for unknown EEPROM value");
+     }
+-- 
+2.43.0
+
+From 4de44fefc63f112f5c804c191da101cd8252978f Mon Sep 17 00:00:00 2001
+From: Chris Johnson <chris.a.johnson@garmin.com>
+Date: Wed, 3 May 2023 08:52:01 -0500
+Subject: [PATCH 25/42] Introduce ftdi_set_module_detach_mode()
+
+Added a public setter to allow the usage of the
+AUTO_DETACH_REATACH_SIO_MODULE feature added in
+5bf1c1e3ff1616fda20c26cc3e3df7b807744c99.
+---
+ src/ftdi.c | 18 ++++++++++++++++++
+ src/ftdi.h |  1 +
+ 2 files changed, 19 insertions(+)
+
+diff --git a/src/ftdi.c b/src/ftdi.c
+index 6b78fa3..534e3dd 100644
+--- a/src/ftdi.c
++++ b/src/ftdi.c
+@@ -2217,6 +2217,24 @@ int ftdi_set_bitmode(struct ftdi_context *ftdi, unsigned char bitmask, unsigned
+     return 0;
+ }
+ 
++/**
++    Set module detach mode.
++
++    \param ftdi pointer to ftdi_context
++    \param mode detach mode to use.
++
++    \retval  0: all fine
++    \retval -1: can't enable bitbang mode
++*/
++int ftdi_set_module_detach_mode(struct ftdi_context *ftdi, enum ftdi_module_detach_mode mode)
++{
++    if (ftdi == NULL)
++        ftdi_error_return(-1, "FTDI context invalid");
++
++    ftdi->module_detach_mode = mode;
++    return 0;
++}
++
+ /**
+     Disable bitbang mode.
+ 
+diff --git a/src/ftdi.h b/src/ftdi.h
+index 0603335..ffeb452 100644
+--- a/src/ftdi.h
++++ b/src/ftdi.h
+@@ -520,6 +520,7 @@ extern "C"
+     int ftdi_init(struct ftdi_context *ftdi);
+     struct ftdi_context *ftdi_new(void);
+     int ftdi_set_interface(struct ftdi_context *ftdi, enum ftdi_interface interface);
++    int ftdi_set_module_detach_mode(struct ftdi_context *ftdi, enum ftdi_module_detach_mode mode);
+ 
+     void ftdi_deinit(struct ftdi_context *ftdi);
+     void ftdi_free(struct ftdi_context *ftdi);
+-- 
+2.43.0
+
+From 9c0949fff4d2e6dfdf6701fc481b46a337a051d8 Mon Sep 17 00:00:00 2001
+From: Matthias Klein <matthias@extraklein.de>
+Date: Fri, 18 Nov 2022 09:59:40 +0100
+Subject: [PATCH 26/42] ftdi_readstream: fix timeout setting
+
+Divide the whole seconds into tv_sec, and the remaining microseconds into tv_usec.
+
+Signed-off-by: Matthias Klein <matthias@extraklein.de>
+---
+ src/ftdi_stream.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/ftdi_stream.c b/src/ftdi_stream.c
+index f5f1287..4229d94 100644
+--- a/src/ftdi_stream.c
++++ b/src/ftdi_stream.c
+@@ -241,7 +241,8 @@ ftdi_readstream(struct ftdi_context *ftdi,
+     {
+         FTDIProgressInfo  *progress = &state.progress;
+         const double progressInterval = 1.0;
+-        struct timeval timeout = { 0, ftdi->usb_read_timeout * 1000};
++        struct timeval timeout = { ftdi->usb_read_timeout / 1000,
++            (ftdi->usb_read_timeout % 1000) * 1000 };
+         struct timeval now;
+ 
+         int err = libusb_handle_events_timeout(ftdi->usb_ctx, &timeout);
+-- 
+2.43.0
+
+From 7828006e4d0fd4fd72b77151045aaa61c053ffc3 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Wed, 30 Aug 2023 11:57:01 +0200
+Subject: [PATCH 27/42] CMake: fix indentation and normalize braces
+
+---
+ CMakeLists.txt                        | 53 +++++++++++++--------------
+ examples/CMakeLists.txt               | 21 ++++++-----
+ examples/cmake_example/CMakeLists.txt |  4 +-
+ ftdipp/CMakeLists.txt                 | 35 +++++++++---------
+ packages/CMakeLists.txt               | 22 +++++------
+ python/CMakeLists.txt                 | 28 +++++++-------
+ python/examples/CMakeLists.txt        |  5 +--
+ src/CMakeLists.txt                    | 12 +++---
+ 8 files changed, 90 insertions(+), 90 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 48a028c..9d7f9b6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -11,7 +11,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+ 
+ # CMake
+ if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+-   set(CMAKE_BUILD_TYPE     RelWithDebInfo)
++  set(CMAKE_BUILD_TYPE     RelWithDebInfo)
+ endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
+ set(CMAKE_COLOR_MAKEFILE ON)
+ 
+@@ -22,7 +22,7 @@ include(CMakeOptions.txt)
+ # Debug build
+ message("-- Build type: ${CMAKE_BUILD_TYPE}")
+ if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+-   add_definitions(-DDEBUG)
++  add_definitions(-DDEBUG)
+ endif(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+ 
+ # find libusb
+@@ -59,7 +59,7 @@ set(CPACK_COMPONENT_SHAREDLIBS_GROUP "Development")
+ set(CPACK_COMPONENT_STATICLIBS_GROUP "Development")
+ set(CPACK_COMPONENT_HEADERS_GROUP    "Development")
+ 
+-# guess LIB_SUFFIX, don't take debian multiarch into account 
++# guess LIB_SUFFIX, don't take debian multiarch into account
+ if ( NOT DEFINED LIB_SUFFIX )
+   if( CMAKE_SYSTEM_NAME MATCHES "Linux"
+       AND NOT CMAKE_CROSSCOMPILING
+@@ -73,9 +73,9 @@ endif ()
+ 
+ if(NOT APPLE)
+   if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+-      SET(PACK_ARCH "")
+-    else(CMAKE_SIZEOF_VOID_P EQUAL 8)
+-      SET(PACK_ARCH .x86_64)
++    SET(PACK_ARCH "")
++  else(CMAKE_SIZEOF_VOID_P EQUAL 8)
++    SET(PACK_ARCH .x86_64)
+   endif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+ else(NOT APPLE)
+   SET(PACK_ARCH "")
+@@ -85,8 +85,8 @@ endif(NOT APPLE)
+ set(CPACK_PACKAGE_VERSION              ${VERSION_STRING})
+ set(CPACK_PACKAGE_CONTACT              "Intra2net AG <libftdi@developer.intra2net.com>")
+ set(CPACK_PACKAGE_DESCRIPTION          "libftdi1 library.")
+-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY  ${CPACK_PACKAGE_DESCRIPTION}
+-                                       )
++set(CPACK_PACKAGE_DESCRIPTION_SUMMARY  ${CPACK_PACKAGE_DESCRIPTION})
++
+ # Package settings
+ if ( UNIX )
+   set(CPACK_GENERATOR                    "DEB;RPM")
+@@ -125,22 +125,22 @@ add_custom_target(dist
+     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+ 
+ if ( DOCUMENTATION )
+-   find_package ( Doxygen REQUIRED)
++  find_package ( Doxygen REQUIRED)
+ 
+-   # Copy doxy.config.in
+-   set(top_srcdir ${CMAKE_SOURCE_DIR})
+-   configure_file(${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile )
+-   configure_file(${CMAKE_SOURCE_DIR}/doc/Doxyfile.xml.in ${CMAKE_BINARY_DIR}/Doxyfile.xml )
++  # Copy doxy.config.in
++  set(top_srcdir ${CMAKE_SOURCE_DIR})
++  configure_file(${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile )
++  configure_file(${CMAKE_SOURCE_DIR}/doc/Doxyfile.xml.in ${CMAKE_BINARY_DIR}/Doxyfile.xml )
+ 
+-   # Run doxygen
+-   add_custom_command(
++  # Run doxygen
++  add_custom_command(
+     OUTPUT ${CMAKE_BINARY_DIR}/doc/html/index.html
+     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc
+     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+     DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
+-   )
++  )
+ 
+-   add_custom_target(docs ALL DEPENDS ${CMAKE_BINARY_DIR}/doc/html/index.html)
++  add_custom_target(docs ALL DEPENDS ${CMAKE_BINARY_DIR}/doc/html/index.html)
+ endif ()
+ 
+ add_subdirectory(src)
+@@ -169,10 +169,10 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
+ set(includedir  ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
+ 
+ if(${UNIX})
+-   set(libdir      ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
++  set(libdir      ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
+ endif(${UNIX})
+ if(${WIN32})
+-   set(libdir      ${CMAKE_INSTALL_PREFIX}/bin)
++  set(libdir      ${CMAKE_INSTALL_PREFIX}/bin)
+ endif(${WIN32})
+ 
+ configure_file(${CMAKE_SOURCE_DIR}/libftdi1.pc.in ${CMAKE_BINARY_DIR}/libftdi1.pc @ONLY)
+@@ -232,14 +232,13 @@ write_basic_package_version_file (
+   COMPATIBILITY AnyNewerVersion
+ )
+ 
+-
+-install ( FILES 
+-            ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1Config.cmake
+-            ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1ConfigVersion.cmake
+-            cmake/UseLibFTDI1.cmake
+-
+-          DESTINATION ${LIBFTDI_CMAKE_CONFIG_DIR}
+-        )
++install (
++  FILES
++    ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1Config.cmake
++    ${CMAKE_CURRENT_BINARY_DIR}/LibFTDI1ConfigVersion.cmake
++    cmake/UseLibFTDI1.cmake
++  DESTINATION ${LIBFTDI_CMAKE_CONFIG_DIR}
++)
+ 
+ include(CPack)
+ 
+diff --git a/examples/CMakeLists.txt b/examples/CMakeLists.txt
+index dd8ffbe..382cb33 100644
+--- a/examples/CMakeLists.txt
++++ b/examples/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ # Includes
+ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
+-		${CMAKE_CURRENT_BINARY_DIR}
+-		)
++  ${CMAKE_CURRENT_BINARY_DIR}
++)
+ 
+ # Targets
+ add_executable(simple simple.c)
+@@ -16,7 +16,7 @@ add_executable(stream_test stream_test.c)
+ add_executable(eeprom eeprom.c)
+ add_executable(async async.c)
+ if(NOT MINGW)
+-    add_executable(purge_test purge_test.c)
++  add_executable(purge_test purge_test.c)
+ endif(NOT MINGW)
+ 
+ # Linkage
+@@ -32,19 +32,20 @@ target_link_libraries(stream_test ftdi1)
+ target_link_libraries(eeprom ftdi1)
+ target_link_libraries(async ftdi1)
+ if(NOT MINGW)
+-    target_link_libraries(purge_test ftdi1)
++  target_link_libraries(purge_test ftdi1)
+ endif(NOT MINGW)
+ 
+ # libftdi++ examples
+ if( FTDIPP )
+-	include_directories(BEFORE ${CMAKE_SOURCE_DIR}/ftdipp
+-			${Boost_INCLUDE_DIRS})
++  include_directories(BEFORE ${CMAKE_SOURCE_DIR}/ftdipp
++    ${Boost_INCLUDE_DIRS}
++  )
+ 
+-	# Target
+-	add_executable(find_all_pp find_all_pp.cpp)
++  # Target
++  add_executable(find_all_pp find_all_pp.cpp)
+ 
+-	# Linkage
+-	target_link_libraries(find_all_pp ftdipp1)
++  # Linkage
++  target_link_libraries(find_all_pp ftdipp1)
+ endif( FTDIPP )
+ 
+ # Source includes
+diff --git a/examples/cmake_example/CMakeLists.txt b/examples/cmake_example/CMakeLists.txt
+index fe203ed..5a1e1a7 100644
+--- a/examples/cmake_example/CMakeLists.txt
++++ b/examples/cmake_example/CMakeLists.txt
+@@ -9,5 +9,5 @@ add_executable ( example main.c )
+ target_link_libraries( example ${LIBFTDI_LIBRARIES} )
+ 
+ install ( TARGETS example
+-          DESTINATION bin )
+-          
++          DESTINATION bin
++)
+diff --git a/ftdipp/CMakeLists.txt b/ftdipp/CMakeLists.txt
+index fac5bcc..38932ae 100644
+--- a/ftdipp/CMakeLists.txt
++++ b/ftdipp/CMakeLists.txt
+@@ -6,8 +6,9 @@ set(cpp_headers ${CMAKE_CURRENT_SOURCE_DIR}/ftdi.hpp CACHE INTERNAL "List of cpp
+ 
+ # Includes
+ include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}
+-	${CMAKE_CURRENT_SOURCE_DIR}
+-	${CMAKE_SOURCE_DIR}/src)
++  ${CMAKE_CURRENT_SOURCE_DIR}
++  ${CMAKE_SOURCE_DIR}/src
++)
+ 
+ include_directories(${Boost_INCLUDE_DIRS})
+ 
+@@ -24,24 +25,24 @@ set_target_properties(ftdipp1 PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+ target_link_libraries(ftdipp1 ftdi1 ${LIBUSB_LIBRARIES} ${BOOST_LIBRARIES})
+ 
+ install ( TARGETS ftdipp1
+-					RUNTIME DESTINATION bin
+-					LIBRARY DESTINATION lib${LIB_SUFFIX}
+-					ARCHIVE DESTINATION lib${LIB_SUFFIX}
+-				)
++          RUNTIME DESTINATION bin
++          LIBRARY DESTINATION lib${LIB_SUFFIX}
++          ARCHIVE DESTINATION lib${LIB_SUFFIX}
++)
+ 
+ # Static library
+ if ( STATICLIBS )
+-	add_library(ftdipp1-static STATIC ${cpp_sources})
+-	set_target_properties(ftdipp1-static PROPERTIES OUTPUT_NAME "ftdipp1")
+-	set_target_properties(ftdipp1-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+-
+-	install ( TARGETS ftdipp1-static
+-						ARCHIVE DESTINATION lib${LIB_SUFFIX}
+-						COMPONENT staticlibs
+-					)
++  add_library(ftdipp1-static STATIC ${cpp_sources})
++  set_target_properties(ftdipp1-static PROPERTIES OUTPUT_NAME "ftdipp1")
++  set_target_properties(ftdipp1-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
++
++  install ( TARGETS ftdipp1-static
++            ARCHIVE DESTINATION lib${LIB_SUFFIX}
++            COMPONENT staticlibs
++  )
+ endif ()
+ 
+ install ( FILES ${cpp_headers}
+-					DESTINATION include/${PROJECT_NAME}
+-					COMPONENT headers
+-				)
++          DESTINATION include/${PROJECT_NAME}
++          COMPONENT headers
++)
+diff --git a/packages/CMakeLists.txt b/packages/CMakeLists.txt
+index 4bf58d2..204bbe0 100644
+--- a/packages/CMakeLists.txt
++++ b/packages/CMakeLists.txt
+@@ -1,19 +1,19 @@
+ # Debian
+ if("${PACKAGE}" STREQUAL "Debian")
+ 
+-   # Settings
+-   set(REVISION                           0)
+-   set(CPACK_GENERATOR                    "DEB" PARENT_SCOPE)
+-   set(CPACK_PACKAGE_VERSION              ${CPACK_PACKAGE_VERSION}-${REVISION} PARENT_SCOPE)
++  # Settings
++  set(REVISION                           0)
++  set(CPACK_GENERATOR                    "DEB" PARENT_SCOPE)
++  set(CPACK_PACKAGE_VERSION              ${CPACK_PACKAGE_VERSION}-${REVISION} PARENT_SCOPE)
+ 
+-   # Dependencies
+-   set(CPACK_DEBIAN_PACKAGE_DEPENDS       "libusb-1.0-0" PARENT_SCOPE)
+-   set(DEBIAN_PACKAGE_BUILDS_DEPENDS      "cmake, libusb2-dev" PARENT_SCOPE)
++  # Dependencies
++  set(CPACK_DEBIAN_PACKAGE_DEPENDS       "libusb-1.0-0" PARENT_SCOPE)
++  set(DEBIAN_PACKAGE_BUILDS_DEPENDS      "cmake, libusb2-dev" PARENT_SCOPE)
+ 
+-   # Bundles
+-   message("-- Installing udev rules to /etc/udev/rules.d")
+-   install(FILES 99-libftdi.rules
+-           DESTINATION /etc/udev/rules.d)
++  # Bundles
++  message("-- Installing udev rules to /etc/udev/rules.d")
++  install(FILES 99-libftdi.rules
++          DESTINATION /etc/udev/rules.d)
+ 
+ endif("${PACKAGE}" STREQUAL "Debian")
+ 
+diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
+index 1a8142b..f8ac423 100644
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -55,23 +55,23 @@ install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/ftdi1.py DESTINATION ${PYTHON_MODULE
+ install ( TARGETS ${SWIG_MODULE_ftdi1_REAL_NAME} LIBRARY DESTINATION ${PYTHON_MODULE_PATH} )
+ 
+ if ( DOCUMENTATION )
+-    # Run doxygen to only generate the xml
+-    add_custom_command ( OUTPUT ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
+-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc
+-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.xml
+-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+-        DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
+-    )
++  # Run doxygen to only generate the xml
++  add_custom_command ( OUTPUT ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
++    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc
++    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.xml
++    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
++    DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
++  )
+ 
+-    # generate .i from doxygen .xml
+-    add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
+-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxy2swig.py -n
++  # generate .i from doxygen .xml
++  add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
++    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxy2swig.py -n
+             ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
+             ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
+-        DEPENDS ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
+-    )
+-    add_custom_target ( doc_i DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i )
+-    add_dependencies( ${SWIG_MODULE_ftdi1_REAL_NAME} doc_i )
++    DEPENDS ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
++  )
++  add_custom_target ( doc_i DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i )
++  add_dependencies( ${SWIG_MODULE_ftdi1_REAL_NAME} doc_i )
+ 
+ endif ()
+ 
+diff --git a/python/examples/CMakeLists.txt b/python/examples/CMakeLists.txt
+index b4ed93d..232595f 100644
+--- a/python/examples/CMakeLists.txt
++++ b/python/examples/CMakeLists.txt
+@@ -1,5 +1,4 @@
+ install ( FILES simple.py complete.py cbus.py
+           DESTINATION share/libftdi/examples
+-          PERMISSIONS OWNER_READ GROUP_READ WORLD_READ 
+-        )
+-
++          PERMISSIONS OWNER_READ GROUP_READ WORLD_READ
++)
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 17b3617..cf630ba 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ # Includes
+ include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}
+-                     ${CMAKE_CURRENT_SOURCE_DIR}
+-                     )
++                      ${CMAKE_CURRENT_SOURCE_DIR}
++)
+ 
+ # Version information
+ set(SNAPSHOT_VERSION "unknown")
+@@ -9,7 +9,7 @@ execute_process(COMMAND git describe
+                 OUTPUT_VARIABLE GIT_DESCRIBE_OUTPUT
+                 RESULT_VARIABLE GIT_DESCRIBE_RESULT
+                 OUTPUT_STRIP_TRAILING_WHITESPACE
+-                )
++)
+ if(${GIT_DESCRIBE_RESULT} STREQUAL 0)
+   set(SNAPSHOT_VERSION ${GIT_DESCRIBE_OUTPUT})
+ endif ()
+@@ -36,7 +36,7 @@ install ( TARGETS ftdi1
+           RUNTIME DESTINATION bin
+           LIBRARY DESTINATION lib${LIB_SUFFIX}
+           ARCHIVE DESTINATION lib${LIB_SUFFIX}
+-        )
++)
+ 
+ if ( STATICLIBS )
+   add_library(ftdi1-static STATIC ${c_sources})
+@@ -46,10 +46,10 @@ if ( STATICLIBS )
+   install ( TARGETS ftdi1-static
+             ARCHIVE DESTINATION lib${LIB_SUFFIX}
+             COMPONENT staticlibs
+-          )
++  )
+ endif ()
+ 
+ install ( FILES ${c_headers}
+           DESTINATION include/${PROJECT_NAME}
+           COMPONENT headers
+-        )
++)
+-- 
+2.43.0
+
+From d2c44d28fec89b22cb27e61d402087d229282a2a Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 31 Aug 2023 09:07:51 +0200
+Subject: [PATCH 28/42] examples/eeprom.c: use AUTO_DETACH_REATACH_SIO_MODULE
+
+This way, the device's state remains unchanged after the
+eeprom invocation.
+
+Bonus: remove trailing white spaces.
+---
+ examples/eeprom.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/examples/eeprom.c b/examples/eeprom.c
+index 45f5dff..3d03ac3 100644
+--- a/examples/eeprom.c
++++ b/examples/eeprom.c
+@@ -90,6 +90,8 @@ int main(int argc, char **argv)
+         return EXIT_FAILURE;
+     }
+ 
++    ftdi->module_detach_mode = AUTO_DETACH_REATACH_SIO_MODULE;
++
+     while ((i = getopt(argc, argv, "d::ev:p:l:P:S:w")) != -1)
+     {
+         switch (i)
+@@ -200,7 +202,7 @@ int main(int argc, char **argv)
+             fprintf(stderr, "\n");
+             fprintf(stderr, "unable to open ftdi device: %d (%s)\n",
+                     f, ftdi_get_error_string(ftdi));
+-            
++
+             retval = -1;
+             goto done;
+         }
+-- 
+2.43.0
+
+From 61a6bac98bbac623fb33b6153a063b6436f84721 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 31 Aug 2023 09:23:29 +0200
+Subject: [PATCH 29/42] CMake: require 2.8.12 for cmake_example
+
+Make CMake minimal version requirement consistent for the entire
+project.
+---
+ examples/cmake_example/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/examples/cmake_example/CMakeLists.txt b/examples/cmake_example/CMakeLists.txt
+index 5a1e1a7..36002df 100644
+--- a/examples/cmake_example/CMakeLists.txt
++++ b/examples/cmake_example/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required ( VERSION 2.8 )
++cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+ 
+ project ( example C )
+ 
+-- 
+2.43.0
+
+From 18bae9b40640804d0a35e9dca6787d6c34c66703 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 31 Aug 2023 09:23:30 +0200
+Subject: [PATCH 30/42] CMake: rework documentation creation section
+
+Add comments and also make the if ( DOCUMENTATION ) section more
+readable.
+---
+ CMakeLists.txt | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9d7f9b6..1745dc8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -137,11 +137,16 @@ if ( DOCUMENTATION )
+     OUTPUT ${CMAKE_BINARY_DIR}/doc/html/index.html
+     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc
+     COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
++    COMMENT "Generating API documentation"
+     DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
+   )
+ 
+-  add_custom_target(docs ALL DEPENDS ${CMAKE_BINARY_DIR}/doc/html/index.html)
+-endif ()
++  add_custom_target(
++    docs ALL
++    COMMENT "Documentation target docs"
++    DEPENDS ${CMAKE_BINARY_DIR}/doc/html/index.html
++  )
++endif ( DOCUMENTATION )
+ 
+ add_subdirectory(src)
+ if ( FTDIPP )
+-- 
+2.43.0
+
+From 5a85740e9701abc4fd439bee10d31b039ea5ed3e Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 31 Aug 2023 09:34:10 +0200
+Subject: [PATCH 31/42] Doxygen: resolve warnings
+
+Remove obsolete values like MSCGEN_PATH, TCL_SUBST, etc. from the
+configuration file. All these options used the default values, hence
+it is safe to remove them.
+
+Paper type a4wide doesn't exist, so use a4.
+---
+ doc/Doxyfile.in | 30 +-----------------------------
+ 1 file changed, 1 insertion(+), 29 deletions(-)
+
+diff --git a/doc/Doxyfile.in b/doc/Doxyfile.in
+index a4f59ee..d7ddff8 100644
+--- a/doc/Doxyfile.in
++++ b/doc/Doxyfile.in
+@@ -230,12 +230,6 @@ TAB_SIZE               = 4
+ 
+ ALIASES                =
+ 
+-# This tag can be used to specify a number of word-keyword mappings (TCL only).
+-# A mapping has the form "name=value". For example adding "class=itcl::class"
+-# will allow you to use the command class in the itcl::class meaning.
+-
+-TCL_SUBST              =
+-
+ # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
+ # only. Doxygen will then generate output that is more tailored for C. For
+ # instance, some of the names that are used will be different. The list of all
+@@ -1006,13 +1000,6 @@ VERBATIM_HEADERS       = YES
+ 
+ ALPHABETICAL_INDEX     = NO
+ 
+-# The COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns in
+-# which the alphabetical index list will be split.
+-# Minimum value: 1, maximum value: 20, default value: 5.
+-# This tag requires that the tag ALPHABETICAL_INDEX is set to YES.
+-
+-COLS_IN_ALPHA_INDEX    = 5
+-
+ # In case all classes in a project start with a common prefix, all classes will
+ # be put under the same header in the alphabetical index. The IGNORE_PREFIX tag
+ # can be used to specify a prefix (or a list of prefixes) that should be ignored
+@@ -1615,7 +1602,7 @@ COMPACT_LATEX          = NO
+ # The default value is: a4.
+ # This tag requires that the tag GENERATE_LATEX is set to YES.
+ 
+-PAPER_TYPE             = a4wide
++PAPER_TYPE             = a4
+ 
+ # The EXTRA_PACKAGES tag can be used to specify one or more LaTeX package names
+ # that should be included in the LaTeX output. The package can be specified just
+@@ -2072,12 +2059,6 @@ EXTERNAL_GROUPS        = YES
+ 
+ EXTERNAL_PAGES         = YES
+ 
+-# The PERL_PATH should be the absolute path and name of the perl script
+-# interpreter (i.e. the result of 'which perl').
+-# The default file (with absolute path) is: /usr/bin/perl.
+-
+-PERL_PATH              = /usr/bin/perl
+-
+ #---------------------------------------------------------------------------
+ # Configuration options related to the dot tool
+ #---------------------------------------------------------------------------
+@@ -2091,15 +2072,6 @@ PERL_PATH              = /usr/bin/perl
+ 
+ CLASS_DIAGRAMS         = YES
+ 
+-# You can define message sequence charts within doxygen comments using the \msc
+-# command. Doxygen will then run the mscgen tool (see:
+-# http://www.mcternan.me.uk/mscgen/)) to produce the chart and insert it in the
+-# documentation. The MSCGEN_PATH tag allows you to specify the directory where
+-# the mscgen tool resides. If left empty the tool is assumed to be found in the
+-# default search path.
+-
+-MSCGEN_PATH            =
+-
+ # You can include diagrams made with dia in doxygen documentation. Doxygen will
+ # then run dia to produce the diagram and insert it in the documentation. The
+ # DIA_PATH tag allows you to specify the directory where the dia binary resides.
+-- 
+2.43.0
+
+From 91d2d1f1be6615a02f8d2ac0b90607fb7a3dd770 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Fri, 1 Sep 2023 11:33:02 +0200
+Subject: [PATCH 32/42] CMake: disable deprecated behavior
+
+Set policies CMP0011, CMP0057, CMP0099 to the new behavior. Since
+version 3.27.4 if the policy is not set to the new behavior, CMake
+will generate a warning.
+---
+ CMakeLists.txt | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1745dc8..f36912d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,6 +9,23 @@ set(VERSION_STRING ${MAJOR_VERSION}.${MINOR_VERSION})
+ set(VERSION ${VERSION_STRING})
+ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+ 
++# Support new if() IN_LIST operator
++if(POLICY CMP0057)
++  cmake_policy(SET CMP0057 NEW)
++endif()
++
++# Included scripts do automatic cmake_policy() PUSH and POP
++if(POLICY CMP0011)
++  cmake_policy(SET CMP0011 NEW)
++endif()
++
++# Target link properties INTERFACE_LINK_OPTIONS, INTERFACE_LINK_DIRECTORIES
++# and INTERFACE_LINK_DEPENDS are now transitive over private dependencies
++# of static libraries
++if(POLICY CMP0099)
++  cmake_policy(SET CMP0099 NEW)
++endif()
++
+ # CMake
+ if("${CMAKE_BUILD_TYPE}" STREQUAL "")
+   set(CMAKE_BUILD_TYPE     RelWithDebInfo)
+-- 
+2.43.0
+
+From e5136ce5407ceffd388f69c1582a6b0d6167f61d Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 11 Sep 2023 10:03:59 +0200
+Subject: [PATCH 33/42] CMake: use dedicated recipe for documentation
+ generation
+
+Use PROJECT_SOURCE_DIR and PROJECT_BINARY_DIR to refer to the top
+source directory.
+---
+ CMakeLists.txt        | 22 +---------------------
+ doc/CMakeLists.txt    | 26 ++++++++++++++++++++++++++
+ doc/Doxyfile.in       |  8 ++++----
+ doc/Doxyfile.xml.in   |  2 +-
+ python/CMakeLists.txt | 22 +++++++++++++---------
+ 5 files changed, 45 insertions(+), 35 deletions(-)
+ create mode 100644 doc/CMakeLists.txt
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f36912d..24da84d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -142,27 +142,7 @@ add_custom_target(dist
+     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+ 
+ if ( DOCUMENTATION )
+-  find_package ( Doxygen REQUIRED)
+-
+-  # Copy doxy.config.in
+-  set(top_srcdir ${CMAKE_SOURCE_DIR})
+-  configure_file(${CMAKE_SOURCE_DIR}/doc/Doxyfile.in ${CMAKE_BINARY_DIR}/Doxyfile )
+-  configure_file(${CMAKE_SOURCE_DIR}/doc/Doxyfile.xml.in ${CMAKE_BINARY_DIR}/Doxyfile.xml )
+-
+-  # Run doxygen
+-  add_custom_command(
+-    OUTPUT ${CMAKE_BINARY_DIR}/doc/html/index.html
+-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc
+-    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile
+-    COMMENT "Generating API documentation"
+-    DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
+-  )
+-
+-  add_custom_target(
+-    docs ALL
+-    COMMENT "Documentation target docs"
+-    DEPENDS ${CMAKE_BINARY_DIR}/doc/html/index.html
+-  )
++  add_subdirectory(doc)
+ endif ( DOCUMENTATION )
+ 
+ add_subdirectory(src)
+diff --git a/doc/CMakeLists.txt b/doc/CMakeLists.txt
+new file mode 100644
+index 0000000..983301d
+--- /dev/null
++++ b/doc/CMakeLists.txt
+@@ -0,0 +1,26 @@
++find_package ( Doxygen REQUIRED )
++
++# Copy doxy.config.in
++configure_file(
++  ${PROJECT_SOURCE_DIR}/doc/Doxyfile.in
++  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
++)
++
++configure_file(
++  ${PROJECT_SOURCE_DIR}/doc/Doxyfile.xml.in
++  ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.xml
++)
++
++# Run doxygen
++add_custom_command(
++  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/index.html
++  COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
++  COMMENT "Generating API documentation"
++  DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
++)
++
++add_custom_target(
++  docs ALL
++  COMMENT "Documentation target docs"
++  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/index.html
++)
+diff --git a/doc/Doxyfile.in b/doc/Doxyfile.in
+index d7ddff8..a05fe57 100644
+--- a/doc/Doxyfile.in
++++ b/doc/Doxyfile.in
+@@ -58,7 +58,7 @@ PROJECT_LOGO           =
+ # entered, it will be relative to the location where doxygen was started. If
+ # left blank the current directory will be used.
+ 
+-OUTPUT_DIRECTORY       = doc
++OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@
+ 
+ # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
+ # directories (in 2 levels) under the output directory of each output format and
+@@ -759,8 +759,8 @@ WARN_LOGFILE           =
+ # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
+ # Note: If this tag is empty the current directory is searched.
+ 
+-INPUT                  = @top_srcdir@/src \
+-                         @top_srcdir@/ftdipp
++INPUT                  = @PROJECT_SOURCE_DIR@/src \
++                         @PROJECT_SOURCE_DIR@/ftdipp
+ 
+ # This tag can be used to specify the character encoding of the source files
+ # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
+@@ -833,7 +833,7 @@ EXCLUDE_SYMBOLS        =
+ # that contain example code fragments that are included (see the \include
+ # command).
+ 
+-EXAMPLE_PATH           = @top_srcdir@/examples
++EXAMPLE_PATH           = @PROJECT_SOURCE_DIR@/examples
+ 
+ # If the value of the EXAMPLE_PATH tag contains directories, you can use the
+ # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
+diff --git a/doc/Doxyfile.xml.in b/doc/Doxyfile.xml.in
+index 8a32509..ab57478 100644
+--- a/doc/Doxyfile.xml.in
++++ b/doc/Doxyfile.xml.in
+@@ -2,7 +2,7 @@
+ 
+ # xml generation only
+ # keep settings but shut off all other generation
+-@INCLUDE = Doxyfile
++@INCLUDE = doc/Doxyfile
+ 
+ GENERATE_TODOLIST      = NO
+ GENERATE_TESTLIST      = NO
+diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
+index f8ac423..6ab14cd 100644
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -56,24 +56,28 @@ install ( TARGETS ${SWIG_MODULE_ftdi1_REAL_NAME} LIBRARY DESTINATION ${PYTHON_MO
+ 
+ if ( DOCUMENTATION )
+   # Run doxygen to only generate the xml
+-  add_custom_command ( OUTPUT ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
+-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/doc
+-    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile.xml
+-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
++  add_custom_command ( OUTPUT ${PROJECT_BINARY_DIR}/doc/xml/ftdi_8c.xml
++    COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/doc/Doxyfile.xml
++    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
++    COMMENT "Generating ftdi_8c.xml"
+     DEPENDS ${c_headers};${c_sources};${cpp_sources};${cpp_headers}
+   )
+ 
+   # generate .i from doxygen .xml
+   add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
+     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/doxy2swig.py -n
+-            ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
+-            ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
+-    DEPENDS ${CMAKE_BINARY_DIR}/doc/xml/ftdi_8c.xml
++      ${PROJECT_BINARY_DIR}/doc/xml/ftdi_8c.xml
++      ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
++    COMMENT "Generating ftdi1_doc.i from ftdi_8c.xml"
++    DEPENDS ${PROJECT_BINARY_DIR}/doc/xml/ftdi_8c.xml
++  )
++  add_custom_target ( doc_i
++    COMMENT "Python API bindings documentation"
++    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i
+   )
+-  add_custom_target ( doc_i DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/ftdi1_doc.i )
+   add_dependencies( ${SWIG_MODULE_ftdi1_REAL_NAME} doc_i )
+ 
+-endif ()
++endif ( DOCUMENTATION )
+ 
+ set ( LIBFTDI_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/${PYTHON_MODULE_PATH} )
+ set ( LIBFTDI_PYTHON_MODULE_PATH ${LIBFTDI_PYTHON_MODULE_PATH} PARENT_SCOPE ) # for ftdiconfig.cmake
+-- 
+2.43.0
+
+From 3dc444f99bbc780f06ee6115c086e30f2dda471a Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 11 Sep 2023 10:04:00 +0200
+Subject: [PATCH 34/42] CMake: report CMake version
+
+---
+ CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 24da84d..39857a2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,7 @@
+ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+ 
++message(STATUS "CMake version: ${CMAKE_VERSION}")
++
+ # Project
+ project(libftdi1 C)
+ set(MAJOR_VERSION 1)
+-- 
+2.43.0
+
+From 161caf3db4e2ff1c18328c0f628614987e50ffcc Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 11 Sep 2023 10:04:01 +0200
+Subject: [PATCH 35/42] CMake: rework findlibusb module
+
+Rename the module to FindLibUSB.cmake and use it as the only way
+of finding libusb.
+
+Bonus: perform CMake linting of the module.
+---
+ CMakeLists.txt                             | 14 +++-----------
+ cmake/{FindUSB1.cmake => FindLibUSB.cmake} | 13 +++++++------
+ 2 files changed, 10 insertions(+), 17 deletions(-)
+ rename cmake/{FindUSB1.cmake => FindLibUSB.cmake} (77%)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 39857a2..947fb34 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -44,17 +44,9 @@ if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+   add_definitions(-DDEBUG)
+ endif(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+ 
+-# find libusb
+-find_package( PkgConfig )
+-if (PkgConfig_FOUND)
+-  pkg_check_modules( LIBUSB libusb-1.0 )
+-  if (LIBUSB_FOUND)
+-    include_directories ( ${LIBUSB_INCLUDE_DIRS} )
+-  else()
+-    find_package ( USB1 REQUIRED )
+-    include_directories ( ${LIBUSB_INCLUDE_DIR} )
+-  endif()
+-endif()
++# Find libusb
++find_package ( LibUSB REQUIRED )
++include_directories ( ${LIBUSB_INCLUDE_DIR} )
+ 
+ # Find Boost
+ if (FTDIPP OR BUILD_TESTS)
+diff --git a/cmake/FindUSB1.cmake b/cmake/FindLibUSB.cmake
+similarity index 77%
+rename from cmake/FindUSB1.cmake
+rename to cmake/FindLibUSB.cmake
+index b90e297..766fc82 100644
+--- a/cmake/FindUSB1.cmake
++++ b/cmake/FindLibUSB.cmake
+@@ -1,4 +1,4 @@
+-# - Try to find the freetype library
++# - Try to find the libusb library
+ # Once done this defines
+ #
+ #  LIBUSB_FOUND - system has libusb
+@@ -10,7 +10,6 @@
+ # Redistribution and use is allowed according to the terms of the BSD license.
+ # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
+ 
+-
+ if (LIBUSB_INCLUDE_DIR AND LIBUSB_LIBRARIES)
+ 
+   # in cache already
+@@ -22,16 +21,18 @@ else (LIBUSB_INCLUDE_DIR AND LIBUSB_LIBRARIES)
+   find_package(PkgConfig)
+   pkg_check_modules(PC_LIBUSB libusb-1.0)
+ 
+-  FIND_PATH(LIBUSB_INCLUDE_DIR libusb.h
++  find_path(LIBUSB_INCLUDE_DIR libusb.h
+     PATH_SUFFIXES libusb-1.0
+     PATHS ${PC_LIBUSB_INCLUDEDIR} ${PC_LIBUSB_INCLUDE_DIRS})
+ 
+-  FIND_LIBRARY(LIBUSB_LIBRARIES NAMES usb-1.0
++  find_library(LIBUSB_LIBRARIES NAMES usb-1.0
+     PATHS ${PC_LIBUSB_LIBDIR} ${PC_LIBUSB_LIBRARY_DIRS})
+ 
+   include(FindPackageHandleStandardArgs)
+-  FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBUSB DEFAULT_MSG LIBUSB_LIBRARIES LIBUSB_INCLUDE_DIR)
++  find_package_handle_standard_args(
++    LibUSB DEFAULT_MSG LIBUSB_LIBRARIES LIBUSB_INCLUDE_DIR
++  )
+ 
+-  MARK_AS_ADVANCED(LIBUSB_INCLUDE_DIR LIBUSB_LIBRARIES)
++  mark_as_advanced(LIBUSB_INCLUDE_DIR LIBUSB_LIBRARIES)
+ 
+ endif (LIBUSB_INCLUDE_DIR AND LIBUSB_LIBRARIES)
+-- 
+2.43.0
+
+From bc05652f65d4d5415d58e29ff525ddc7c8c1c8dd Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 11 Sep 2023 10:04:02 +0200
+Subject: [PATCH 36/42] CMake: rework subdirectory handling
+
+Move all mandatory subdirs to the top and also make if clauses more
+readable.
+---
+ CMakeLists.txt | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 947fb34..7f72e0c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -135,29 +135,34 @@ add_custom_target(dist
+             | bzip2 > ${CMAKE_BINARY_DIR}/${ARCHIVE_NAME}.tar.bz2
+     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+ 
++add_subdirectory(src)
++add_subdirectory(packages)
++
+ if ( DOCUMENTATION )
+   add_subdirectory(doc)
+ endif ( DOCUMENTATION )
+ 
+-add_subdirectory(src)
+ if ( FTDIPP )
+   project(libftdi1 C CXX)
+   add_subdirectory(ftdipp)
+-endif ()
++endif ( FTDIPP )
++
+ if ( PYTHON_BINDINGS )
+-add_subdirectory(python)
+-endif ()
++  add_subdirectory(python)
++endif ( PYTHON_BINDINGS )
++
+ if ( FTDI_EEPROM )
+   add_subdirectory(ftdi_eeprom)
+-endif ()
++endif ( FTDI_EEPROM )
++
+ if ( EXAMPLES )
+   add_subdirectory(examples)
+-endif ()
+-add_subdirectory(packages)
++endif ( EXAMPLES )
++
+ if ( BUILD_TESTS )
+   project(libftdi1 C CXX)
+   add_subdirectory(test)
+-endif ()
++endif ( BUILD_TESTS )
+ 
+ # PkgConfig
+ set(prefix      ${CMAKE_INSTALL_PREFIX})
+-- 
+2.43.0
+
+From 09203ccd2a8798ed246c6075be6ffe56c38be16a Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 11 Sep 2023 10:04:03 +0200
+Subject: [PATCH 37/42] ftdipp/CMakeLists.txt: remove VIM modline settings
+
+Indentation settings will be handled via the EditorConfig project.
+---
+ ftdipp/CMakeLists.txt | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/ftdipp/CMakeLists.txt b/ftdipp/CMakeLists.txt
+index 38932ae..fa2711f 100644
+--- a/ftdipp/CMakeLists.txt
++++ b/ftdipp/CMakeLists.txt
+@@ -1,5 +1,3 @@
+-# vim: ts=2:sw=2:sts=2
+-
+ # Targets
+ set(cpp_sources ${CMAKE_CURRENT_SOURCE_DIR}/ftdi.cpp CACHE INTERNAL "List of cpp sources" )
+ set(cpp_headers ${CMAKE_CURRENT_SOURCE_DIR}/ftdi.hpp CACHE INTERNAL "List of cpp headers" )
+-- 
+2.43.0
+
+From e7f734f82c69aea10f1f9bde57f228339fcb56f3 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Mon, 11 Sep 2023 10:04:04 +0200
+Subject: [PATCH 38/42] CMake: make the project compatible with building as a
+ subproject
+
+Use CMAKE_CURRENT_*_DIR in the main CMakeLists.txt and PROJECT_*_DIR
+in the subdirectories.
+---
+ CMakeLists.txt             | 14 +++++++-------
+ examples/CMakeLists.txt    |  4 ++--
+ ftdi_eeprom/CMakeLists.txt |  2 +-
+ ftdipp/CMakeLists.txt      |  2 +-
+ python/CMakeLists.txt      |  2 +-
+ test/CMakeLists.txt        |  2 +-
+ 6 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7f72e0c..6284c8d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,7 +9,7 @@ set(MINOR_VERSION 5)
+ set(PACKAGE libftdi1)
+ set(VERSION_STRING ${MAJOR_VERSION}.${MINOR_VERSION})
+ set(VERSION ${VERSION_STRING})
+-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
++set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+ 
+ # Support new if() IN_LIST operator
+ if(POLICY CMP0057)
+@@ -117,7 +117,7 @@ if ( WIN32 )
+   set ( CPACK_NSIS_MODIFY_PATH             ON )
+ endif ()
+ 
+-set(CPACK_RESOURCE_FILE_LICENSE        ${CMAKE_SOURCE_DIR}/LICENSE)
++set(CPACK_RESOURCE_FILE_LICENSE        ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+ 
+ set(CPACK_SOURCE_GENERATOR             TGZ)
+ set(CPACK_SOURCE_IGNORE_FILES          "\\\\.git;~$;build/")
+@@ -132,8 +132,8 @@ endif ()
+ set(ARCHIVE_NAME ${CMAKE_PROJECT_NAME}-${VERSION_STRING})
+ add_custom_target(dist
+     COMMAND git archive --prefix=${ARCHIVE_NAME}/ HEAD
+-            | bzip2 > ${CMAKE_BINARY_DIR}/${ARCHIVE_NAME}.tar.bz2
+-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
++      | bzip2 > ${PROJECT_BINARY_DIR}/${ARCHIVE_NAME}.tar.bz2
++    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ add_subdirectory(src)
+ add_subdirectory(packages)
+@@ -176,9 +176,9 @@ if(${WIN32})
+   set(libdir      ${CMAKE_INSTALL_PREFIX}/bin)
+ endif(${WIN32})
+ 
+-configure_file(${CMAKE_SOURCE_DIR}/libftdi1.pc.in ${CMAKE_BINARY_DIR}/libftdi1.pc @ONLY)
+-configure_file(${CMAKE_SOURCE_DIR}/libftdipp1.pc.in ${CMAKE_BINARY_DIR}/libftdipp1.pc @ONLY)
+-install(FILES ${CMAKE_BINARY_DIR}/libftdi1.pc ${CMAKE_BINARY_DIR}/libftdipp1.pc
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libftdi1.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libftdi1.pc @ONLY)
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libftdipp1.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libftdipp1.pc @ONLY)
++install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libftdi1.pc ${CMAKE_CURRENT_BINARY_DIR}/libftdipp1.pc
+         DESTINATION lib${LIB_SUFFIX}/pkgconfig)
+ 
+ if (UNIX OR MINGW)
+diff --git a/examples/CMakeLists.txt b/examples/CMakeLists.txt
+index 382cb33..9ec7bff 100644
+--- a/examples/CMakeLists.txt
++++ b/examples/CMakeLists.txt
+@@ -37,7 +37,7 @@ endif(NOT MINGW)
+ 
+ # libftdi++ examples
+ if( FTDIPP )
+-  include_directories(BEFORE ${CMAKE_SOURCE_DIR}/ftdipp
++  include_directories(BEFORE ${PROJECT_SOURCE_DIR}/ftdipp
+     ${Boost_INCLUDE_DIRS}
+   )
+ 
+@@ -49,4 +49,4 @@ if( FTDIPP )
+ endif( FTDIPP )
+ 
+ # Source includes
+-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
++include_directories(BEFORE ${PROJECT_SOURCE_DIR}/src)
+diff --git a/ftdi_eeprom/CMakeLists.txt b/ftdi_eeprom/CMakeLists.txt
+index 8737c4b..525421e 100644
+--- a/ftdi_eeprom/CMakeLists.txt
++++ b/ftdi_eeprom/CMakeLists.txt
+@@ -27,7 +27,7 @@ set ( EEPROM_MAJOR_VERSION 0 )
+ set ( EEPROM_MINOR_VERSION 17 )
+ set ( EEPROM_VERSION_STRING ${EEPROM_MAJOR_VERSION}.${EEPROM_MINOR_VERSION} )
+ 
+-include_directories ( BEFORE ${CMAKE_SOURCE_DIR}/src )
++include_directories ( BEFORE ${PROJECT_SOURCE_DIR}/src )
+ include_directories ( BEFORE ${CMAKE_CURRENT_BINARY_DIR} )
+ 
+ configure_file(
+diff --git a/ftdipp/CMakeLists.txt b/ftdipp/CMakeLists.txt
+index fa2711f..5e23a07 100644
+--- a/ftdipp/CMakeLists.txt
++++ b/ftdipp/CMakeLists.txt
+@@ -5,7 +5,7 @@ set(cpp_headers ${CMAKE_CURRENT_SOURCE_DIR}/ftdi.hpp CACHE INTERNAL "List of cpp
+ # Includes
+ include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}
+   ${CMAKE_CURRENT_SOURCE_DIR}
+-  ${CMAKE_SOURCE_DIR}/src
++  ${PROJECT_SOURCE_DIR}/src
+ )
+ 
+ include_directories(${Boost_INCLUDE_DIRS})
+diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
+index 6ab14cd..5e406ff 100644
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -18,7 +18,7 @@ find_package ( PythonInterp REQUIRED )
+ find_package ( PythonLibs REQUIRED )
+ 
+ include ( UseSWIG )
+-include_directories ( BEFORE ${CMAKE_SOURCE_DIR}/src )
++include_directories ( BEFORE ${PROJECT_SOURCE_DIR}/src )
+ include_directories ( ${PYTHON_INCLUDE_DIRS} )
+ link_directories ( ${CMAKE_CURRENT_BINARY_DIR}/../src )
+ 
+diff --git a/test/CMakeLists.txt b/test/CMakeLists.txt
+index 392c910..c44c614 100644
+--- a/test/CMakeLists.txt
++++ b/test/CMakeLists.txt
+@@ -2,7 +2,7 @@ find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+ 
+ enable_testing()
+ 
+-INCLUDE_DIRECTORIES(BEFORE ${CMAKE_SOURCE_DIR}/src ${Boost_INCLUDE_DIRS})
++INCLUDE_DIRECTORIES(BEFORE ${PROJECT_SOURCE_DIR}/src ${Boost_INCLUDE_DIRS})
+ 
+ set(cpp_tests basic.cpp baudrate.cpp)
+ 
+-- 
+2.43.0
+
+From 3c7141a77b6caa55375ad77239d8716c5f371f5d Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 12 Oct 2023 09:11:12 +0200
+Subject: [PATCH 39/42] CMake: fix multiarch support
+
+Let CMake determine the exact library destination path.
+
+Patch taken from the Debian package:
+https://sources.debian.org/src/libftdi1/1.5-6/debian/patches/01-cmake-multiarch.diff/
+---
+ CMakeLists.txt        | 6 +++---
+ ftdipp/CMakeLists.txt | 6 +++---
+ src/CMakeLists.txt    | 6 +++---
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6284c8d..985e658 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -170,7 +170,7 @@ set(exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
+ set(includedir  ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME})
+ 
+ if(${UNIX})
+-  set(libdir      ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
++  set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+ endif(${UNIX})
+ if(${WIN32})
+   set(libdir      ${CMAKE_INSTALL_PREFIX}/bin)
+@@ -179,7 +179,7 @@ endif(${WIN32})
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libftdi1.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libftdi1.pc @ONLY)
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libftdipp1.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libftdipp1.pc @ONLY)
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libftdi1.pc ${CMAKE_CURRENT_BINARY_DIR}/libftdipp1.pc
+-        DESTINATION lib${LIB_SUFFIX}/pkgconfig)
++        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+ 
+ if (UNIX OR MINGW)
+   configure_file ( libftdi1-config.in ${CMAKE_CURRENT_BINARY_DIR}/libftdi1-config @ONLY )
+@@ -189,7 +189,7 @@ endif ()
+ 
+ # config script install path
+ if ( NOT DEFINED LIBFTDI_CMAKE_CONFIG_DIR )
+-  set ( LIBFTDI_CMAKE_CONFIG_DIR lib${LIB_SUFFIX}/cmake/libftdi1 )
++  set ( LIBFTDI_CMAKE_CONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/libftdi1 )
+ endif ()
+ 
+ set ( LIBFTDI_INCLUDE_DIR ${includedir} )
+diff --git a/ftdipp/CMakeLists.txt b/ftdipp/CMakeLists.txt
+index 5e23a07..360a831 100644
+--- a/ftdipp/CMakeLists.txt
++++ b/ftdipp/CMakeLists.txt
+@@ -24,8 +24,8 @@ target_link_libraries(ftdipp1 ftdi1 ${LIBUSB_LIBRARIES} ${BOOST_LIBRARIES})
+ 
+ install ( TARGETS ftdipp1
+           RUNTIME DESTINATION bin
+-          LIBRARY DESTINATION lib${LIB_SUFFIX}
+-          ARCHIVE DESTINATION lib${LIB_SUFFIX}
++          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+ # Static library
+@@ -35,7 +35,7 @@ if ( STATICLIBS )
+   set_target_properties(ftdipp1-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+ 
+   install ( TARGETS ftdipp1-static
+-            ARCHIVE DESTINATION lib${LIB_SUFFIX}
++            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+             COMPONENT staticlibs
+   )
+ endif ()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index cf630ba..e145af1 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -34,8 +34,8 @@ target_link_libraries(ftdi1 ${LIBUSB_LIBRARIES})
+ 
+ install ( TARGETS ftdi1
+           RUNTIME DESTINATION bin
+-          LIBRARY DESTINATION lib${LIB_SUFFIX}
+-          ARCHIVE DESTINATION lib${LIB_SUFFIX}
++          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
++          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+ )
+ 
+ if ( STATICLIBS )
+@@ -44,7 +44,7 @@ if ( STATICLIBS )
+   set_target_properties(ftdi1-static PROPERTIES OUTPUT_NAME "ftdi1")
+   set_target_properties(ftdi1-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+   install ( TARGETS ftdi1-static
+-            ARCHIVE DESTINATION lib${LIB_SUFFIX}
++            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+             COMPONENT staticlibs
+   )
+ endif ()
+-- 
+2.43.0
+
+From ed8aad3c13e0952476c4a70761246938cea9c81e Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Thu, 12 Oct 2023 09:11:13 +0200
+Subject: [PATCH 40/42] CMake: use ${PC_LIBUSB_LIBRARIES} instead of a library
+ name
+
+Patch taken from the Debian package:
+https://sources.debian.org/src/libftdi1/1.5-6/debian/patches/02-kfreebsd.diff/
+---
+ cmake/FindLibUSB.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmake/FindLibUSB.cmake b/cmake/FindLibUSB.cmake
+index 766fc82..8bb3b11 100644
+--- a/cmake/FindLibUSB.cmake
++++ b/cmake/FindLibUSB.cmake
+@@ -25,7 +25,7 @@ else (LIBUSB_INCLUDE_DIR AND LIBUSB_LIBRARIES)
+     PATH_SUFFIXES libusb-1.0
+     PATHS ${PC_LIBUSB_INCLUDEDIR} ${PC_LIBUSB_INCLUDE_DIRS})
+ 
+-  find_library(LIBUSB_LIBRARIES NAMES usb-1.0
++  find_library(LIBUSB_LIBRARIES NAMES ${PC_LIBUSB_LIBRARIES}
+     PATHS ${PC_LIBUSB_LIBDIR} ${PC_LIBUSB_LIBRARY_DIRS})
+ 
+   include(FindPackageHandleStandardArgs)
+-- 
+2.43.0
+
+From abd19b721f7e9b4d514ed319ece173ebc7b1ea72 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dan=20Hor=C3=A1k?= <dan@danny.cz>
+Date: Mon, 19 Dec 2022 17:40:43 +0100
+Subject: [PATCH 41/42] python: move from distutils to sysconfig
+
+The distutils module was deprecated in Python 3.10, and will be removed
+in 3.12 [1], thus switch to the sysconfig module instead.
+
+[1] https://peps.python.org/pep-0632/
+---
+ python/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
+index 5e406ff..9358419 100644
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -42,7 +42,7 @@ endif ()
+ 
+ set_target_properties ( ${SWIG_MODULE_ftdi1_REAL_NAME} PROPERTIES NO_SONAME ON )
+ 
+-execute_process ( COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print( sysconfig.get_python_lib( plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}' ) )"
++execute_process ( COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print( sysconfig.get_path( 'platlib', vars={'platbase': '${CMAKE_INSTALL_PREFIX}'} ) )"
+                   OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+                   OUTPUT_STRIP_TRAILING_WHITESPACE )
+ 
+-- 
+2.43.0
+
+From de9f01ece34d2fe6e842e0250a38f4b16eda2429 Mon Sep 17 00:00:00 2001
+From: Yegor Yefremov <yegorslists@googlemail.com>
+Date: Tue, 12 Dec 2023 14:20:36 +0100
+Subject: [PATCH 42/42] CMake: bump the minimal required version to 3.5
+
+Older CMake versions are treated as deprecated.
+---
+ CMakeLists.txt                        | 2 +-
+ examples/cmake_example/CMakeLists.txt | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 985e658..2ce1ad4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+ 
+ message(STATUS "CMake version: ${CMAKE_VERSION}")
+ 
+diff --git a/examples/cmake_example/CMakeLists.txt b/examples/cmake_example/CMakeLists.txt
+index 36002df..7d60693 100644
+--- a/examples/cmake_example/CMakeLists.txt
++++ b/examples/cmake_example/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+ 
+ project ( example C )
+ 
+-- 
+2.43.0
+

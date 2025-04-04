@@ -1,0 +1,59 @@
+From bd2de4836b6b48d64da0cf010727209ad259a4f4 Mon Sep 17 00:00:00 2001
+From: Azat Khuzhin <azat@libevent.org>
+Date: Wed, 26 Jun 2019 00:59:41 +0300
+Subject: [PATCH] Require cmake >= 3.1.2 (for correct openssl 1.0.2 detection)
+
+@ygj6 reported:
+  "My platform is MacOS 10.13.5, This problem only happens on Mac.
+
+   As written in the file CMakeLists.txt, the minimum required version of cmake is 3.1:
+     cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+   So I built this project with cmake-3.1.0, but I got the following errors:
+
+       CMake Error at /usr/local/cmake-3.1.0/share/cmake/Modules/FindOpenSSL.cmake:293 (list):
+         list GET given empty list
+       Call Stack (most recent call first):
+         CMakeLists.txt:824 (find_package)
+
+       CMake Error at /usr/local/cmake-3.1.0/share/cmake/Modules/FindOpenSSL.cmake:294 (list):
+         list GET given empty list
+       Call Stack (most recent call first):
+         CMakeLists.txt:824 (find_package)
+
+       CMake Error at /usr/local/cmake-3.1.0/share/cmake/Modules/FindOpenSSL.cmake:296 (list):
+         list GET given empty list
+       Call Stack (most recent call first):
+         CMakeLists.txt:824 (find_package)
+
+       CMake Error at /usr/local/cmake-3.1.0/share/cmake/Modules/FindOpenSSL.cmake:298 (list):
+         list GET given empty list
+       Call Stack (most recent call first):
+         CMakeLists.txt:824 (find_package)
+
+   I googled this error and got this answer:
+     https://bugs.archlinux.org/task/43688
+
+   It is a bug in FindOpenSSL.cmake on cmake-3.1.0 and fixed on cmake-3.1.2 .
+   Of course, It was successful when rebuilding with cmake-3.1.2 .
+   So I suggest setting the minimum version required for cmake to 3.1.2 or higher.
+   "
+
+Closes: #845
+Refs: https://github.com/Kitware/CMake/commit/de4ccee75a89519f95fcbcca75abc46577bfefea
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e2089f832a..5aca8a9247 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -19,7 +19,7 @@
+ #       start libevent.sln
+ #
+ 
+-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.1.2 FATAL_ERROR)
+ 
+ if (POLICY CMP0054)
+     cmake_policy(SET CMP0054 NEW)

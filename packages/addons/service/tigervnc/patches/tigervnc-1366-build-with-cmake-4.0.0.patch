@@ -1,0 +1,49 @@
+From cb3c78f43394930f890bfb6fb34834d8d1a58496 Mon Sep 17 00:00:00 2001
+From: Pierre Ossman <ossman@cendio.se>
+Date: Fri, 5 Nov 2021 12:53:11 +0100
+Subject: [PATCH 3/3] Raise CMake requirement to 3.10
+
+It's difficult to support both old and new versions, so raise the
+requirement to the oldest that is commonly used, which is CMake 3.10.2
+on Ubuntu 18.04.
+---
+ CMakeLists.txt                               | 22 +-------------------
+ 5 files changed, 6 insertions(+), 33 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3f54fbfe9b..50247c7dac 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,10 +2,7 @@
+ # Setup
+ #
+ 
+-cmake_minimum_required(VERSION 2.8.11)
+-if(POLICY CMP0022)
+-  cmake_policy(SET CMP0022 OLD)
+-endif()
++cmake_minimum_required(VERSION 3.10.0)
+ 
+ # Internal cmake modules
+ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+@@ -105,20 +99,6 @@ else()
+   message(STATUS "32-bit build")
+ endif()
+ 
+-# Versions of CMake before 2.8.7 do not properly support resource compilation
+-# with MinGW.  Boo!
+-if(MINGW AND "${CMAKE_VERSION}" VERSION_LESS "2.8.7")
+-  if(NOT DEFINED RC)
+-    set(CMAKE_RC_COMPILER_INIT windres)
+-  else()
+-    set(CMAKE_RC_COMPILER_INIT ${RC})
+-  endif()
+-  enable_language(RC)
+-  message(STATUS "Resource compiler: ${CMAKE_RC_COMPILER}")
+-  set(CMAKE_RC_COMPILE_OBJECT
+-    "<CMAKE_RC_COMPILER> <FLAGS> <DEFINES> -o <OBJECT> --output-format=coff <SOURCE>")
+-endif()
+-
+ # MinGW64 has header support but no library support for IActiveDesktop, so we
+ # need to check for both the header and library and use our own implementation
+ # in common/os if either doesn't exist.

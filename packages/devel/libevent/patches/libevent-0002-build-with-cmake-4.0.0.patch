@@ -1,0 +1,58 @@
+From acfac7ae4a3edbbb7ce4ceee7208b4245a6e203e Mon Sep 17 00:00:00 2001
+From: Ingo Bauersachs <ingo.bauersachs@xovis.com>
+Date: Thu, 1 Dec 2022 18:39:52 +0100
+Subject: [PATCH] Make dependency paths relocatable
+
+The generated configurations for both CMake and pkg-config included
+absolute paths to dependencies (OpenSSL, MbedTLS). This is contrary
+to the general CMake advise to create relocatable packages [1].
+
+Additionally, when building both mbedtls and libevent via CMake's
+FetchContent in the same project, loading the project would fail with
+
+  INTERFACE_INCLUDE_DIRECTORIES property contains path:
+    "/home/user/project/cmake-build/_deps/mbedtls-build/include"
+  which is prefixed in the source directory.
+
+The required changes include:
+- Adding the outer includes only to the BUILD_INTERFACE solves the
+  makes the CMake paths relocatable and thus solves the FetchContent
+  problem.
+- Updates to libevent_*.pc.in fixes the relocatable issues for
+  pkg-config and properly declares currently missing dependencies.
+- Using components for linking to OpenSSL (requiring CMake 3.4)
+  and MbedTLS. The new MbedTLS target names now match the component
+  names of the MbedTLS' CMake project.
+- Use the Threads CMake library reference instead of a direct
+  reference to support both built-in pthread and -lpthread.
+
+v2 (azat): get back CMAKE_REQUIRED_LIBRARIES
+
+[1] https://cmake.org/cmake/help/v3.25/manual/cmake-packages.7.html#creating-relocatable-packages
+---
+ CMakeLists.txt                | 28 +++++++++++-----------------
+ cmake/AddEventLibrary.cmake   | 31 ++++++++++---------------------
+ cmake/FindMbedTLS.cmake       | 20 +++++++++++---------
+ cmake/LibeventConfig.cmake.in | 21 ++++++++++++++++++---
+ libevent_core.pc.in           |  5 +----
+ libevent_extra.pc.in          |  6 ++----
+ libevent_mbedtls.pc.in        |  8 +++-----
+ libevent_openssl.pc.in        |  9 ++++-----
+ libevent_pthreads.pc.in       |  8 +++-----
+ test-export/CMakeLists.txt    |  3 ++-
+ test-export/test-export.py    | 18 ++++++++++++++++--
+ 11 files changed, 81 insertions(+), 76 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7199ab820d..c0c1c2fa97 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -19,7 +19,7 @@
+ #       start libevent.sln
+ #
+ 
+-cmake_minimum_required(VERSION 3.1.2 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.4 FATAL_ERROR)
+ 
+ if (POLICY CMP0054)
+     cmake_policy(SET CMP0054 NEW)

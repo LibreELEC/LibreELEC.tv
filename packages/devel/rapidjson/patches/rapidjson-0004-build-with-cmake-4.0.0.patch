@@ -1,0 +1,26 @@
+From ebd87cb468fb4cb060b37e579718c4a4125416c1 Mon Sep 17 00:00:00 2001
+From: Christian Fersch <git@chron.visiondesigns.de>
+Date: Mon, 15 Jan 2024 07:44:16 +0100
+Subject: [PATCH] Increase CMake minimum version to 3.5 (fixes #2159)
+
+---
+ CMakeLists.txt | 16 ++--------------
+ 1 file changed, 2 insertions(+), 14 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1b3a79de9..c02301c98 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,11 +1,4 @@
+-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+-if(POLICY CMP0025)
+-  # detect Apple's Clang
+-  cmake_policy(SET CMP0025 NEW)
+-endif()
+-if(POLICY CMP0054)
+-  cmake_policy(SET CMP0054 NEW)
+-endif()
++CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+ 
+ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
+ 
