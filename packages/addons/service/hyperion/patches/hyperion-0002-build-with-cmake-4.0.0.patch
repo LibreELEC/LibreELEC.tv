@@ -1,0 +1,112 @@
+From f4dc444284ffb941c202610e8e60af37d1a5b99c Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 31 Mar 2025 03:39:43 +0000
+Subject: [PATCH] CMakeLists.txt: update to build with cmake 4.0.0
+
+---
+ CMakeLists.txt                          | 7 +------
+ src/hyperion-aml/CMakeLists.txt         | 2 +-
+ src/hyperion-dispmanx/CMakeLists.txt    | 2 +-
+ src/hyperion-framebuffer/CMakeLists.txt | 2 +-
+ src/hyperion-osx/CMakeLists.txt         | 2 +-
+ src/hyperion-remote/CMakeLists.txt      | 2 +-
+ src/hyperion-v4l2/CMakeLists.txt        | 2 +-
+ src/hyperion-x11/CMakeLists.txt         | 2 +-
+ 8 files changed, 8 insertions(+), 13 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index cb05792..3245063 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,12 +2,7 @@
+ project(hyperion)
+ 
+ # define the minimum cmake version (as required by cmake)
+-cmake_minimum_required(VERSION 2.8)
+-
+-IF ( POLICY CMP0026 )
+-	CMAKE_POLICY( SET CMP0026 OLD )
+-ENDIF()
+-
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ SET ( DEFAULT_AMLOGIC    OFF )
+ SET ( DEFAULT_DISPMANX   OFF )
+diff --git a/src/hyperion-aml/CMakeLists.txt b/src/hyperion-aml/CMakeLists.txt
+index 492c1ac..b63f5d6 100644
+--- a/src/hyperion-aml/CMakeLists.txt
++++ b/src/hyperion-aml/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ # Configure minimum CMAKE version
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ # Set the project name
+ project(hyperion-aml)
+diff --git a/src/hyperion-dispmanx/CMakeLists.txt b/src/hyperion-dispmanx/CMakeLists.txt
+index 987c37d..bbc9aaa 100644
+--- a/src/hyperion-dispmanx/CMakeLists.txt
++++ b/src/hyperion-dispmanx/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ # Configure minimum CMAKE version
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ # Set the project name
+ project(hyperion-dispmanx)
+diff --git a/src/hyperion-framebuffer/CMakeLists.txt b/src/hyperion-framebuffer/CMakeLists.txt
+index e9056b5..508cc97 100644
+--- a/src/hyperion-framebuffer/CMakeLists.txt
++++ b/src/hyperion-framebuffer/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ # Configure minimum CMAKE version
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ # Set the project name
+ project(hyperion-framebuffer)
+diff --git a/src/hyperion-osx/CMakeLists.txt b/src/hyperion-osx/CMakeLists.txt
+index c492de6..c18afb1 100644
+--- a/src/hyperion-osx/CMakeLists.txt
++++ b/src/hyperion-osx/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ # Configure minimum CMAKE version
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ # Set the project name
+ project(hyperion-osx)
+diff --git a/src/hyperion-remote/CMakeLists.txt b/src/hyperion-remote/CMakeLists.txt
+index 6af8fd0..a8885b9 100644
+--- a/src/hyperion-remote/CMakeLists.txt
++++ b/src/hyperion-remote/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ project(hyperion-remote)
+ 
+diff --git a/src/hyperion-v4l2/CMakeLists.txt b/src/hyperion-v4l2/CMakeLists.txt
+index 1c09746..33dd295 100644
+--- a/src/hyperion-v4l2/CMakeLists.txt
++++ b/src/hyperion-v4l2/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ project(hyperion-v4l2)
+ 
+diff --git a/src/hyperion-x11/CMakeLists.txt b/src/hyperion-x11/CMakeLists.txt
+index 6ddbe5d..e1dde89 100644
+--- a/src/hyperion-x11/CMakeLists.txt
++++ b/src/hyperion-x11/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ # Configure minimum CMAKE version
+-cmake_minimum_required(VERSION 2.8)
++cmake_minimum_required(VERSION 2.8...3.10)
+ 
+ # Set the project name
+ project(hyperion-x11)
+-- 
+2.43.0
+
