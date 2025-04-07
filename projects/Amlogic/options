@@ -66,14 +66,6 @@
   # e.g. ADDITIONAL_DRIVERS+=" DRIVER1 DRIVER2"
     ADDITIONAL_DRIVERS+=""
 
-  # build and install driver addons (yes / no)
-    DRIVER_ADDONS_SUPPORT="no"
-
-  # driver addons to install:
-  # for a list of additional drivers see packages/linux-driver-addons
-  # Space separated list is supported,
-    DRIVER_ADDONS="crazycat dvb-latest"
-
   # additional packages to install:
     ADDITIONAL_PACKAGES+=" dtc ethmactool emmctool flashrom pciutils"
 
