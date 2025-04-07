@@ -6,8 +6,9 @@
 # short project description
   DESCRIPTION="LibreELEC is a fast and user-friendly Kodi Entertainment Center distribution."
 
-
-### USER INTERFACE SETTINGS ###
+# Distribution Specific source location
+  DISTRO_MIRROR="http://sources.libreelec.tv/mirror"
+  DISTRO_SRC="http://sources.libreelec.tv/$DISTRO_VERSION"
 
 # Welcome Message for e.g. SSH Server (up to 5 Lines)
   GREETING0="##############################################"
@@ -169,10 +170,6 @@
   KODI_PIPEWIRE_SUPPORT="no"
 
 ### KODI ADDONS ###
-
-# Distribution Specific source location
-  DISTRO_MIRROR="http://sources.libreelec.tv/mirror"
-  DISTRO_SRC="http://sources.libreelec.tv/$DISTRO_VERSION"
 
 # Addon Server Url
   ADDON_SERVER_URL="https://addons.libreelec.tv"
