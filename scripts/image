@@ -64,24 +64,24 @@ else
   GIT_HASH=$(git rev-parse HEAD)
 fi
 
-if [ "${LIBREELEC_VERSION}" = "devel" ]; then
+if [ "${DISTRO_VERSION}" = "devel" ]; then
   GIT_ABBREV=${GIT_HASH:0:7}
-  DEVEL_VERSION=${LIBREELEC_VERSION}
+  DEVEL_VERSION=${DISTRO_VERSION}
   case "${BUILD_PERIODIC}" in
     nightly)
-      LIBREELEC_VERSION=nightly-$(date +%Y%m%d)-${GIT_ABBREV}
+      DISTRO_VERSION=nightly-$(date +%Y%m%d)-${GIT_ABBREV}
       ;;
     daily)
-      LIBREELEC_VERSION=daily-$(date +%Y%j)-${GIT_ABBREV}
+      DISTRO_VERSION=daily-$(date +%Y%j)-${GIT_ABBREV}
       ;;
     weekly)
-      LIBREELEC_VERSION=weekly-$(date +%G%V)-${GIT_ABBREV}
+      DISTRO_VERSION=weekly-$(date +%G%V)-${GIT_ABBREV}
       ;;
     monthly)
-      LIBREELEC_VERSION=monthly-$(date +%Y%m)-${GIT_ABBREV}
+      DISTRO_VERSION=monthly-$(date +%Y%m)-${GIT_ABBREV}
       ;;
     *)
-      LIBREELEC_VERSION=devel-$(date +%Y%m%d%H%M%S)-${GIT_ABBREV}
+      DISTRO_VERSION=devel-$(date +%Y%m%d%H%M%S)-${GIT_ABBREV}
       ;;
   esac
 fi
@@ -101,17 +101,17 @@ else
 fi
 
 if [ -n "${CUSTOM_VERSION}" ]; then
-  LIBREELEC_VERSION="${CUSTOM_VERSION}"
+  DISTRO_VERSION="${CUSTOM_VERSION}"
 fi
 
 LIBREELEC_ARCH="${DEVICE:-${PROJECT}}.${TARGET_ARCH}"
-TARGET_VERSION="${LIBREELEC_ARCH}-${LIBREELEC_VERSION}"
+TARGET_VERSION="${LIBREELEC_ARCH}-${DISTRO_VERSION}"
 
 if [ -n "${CUSTOM_IMAGE_NAME}" ]; then
   IMAGE_NAME="${CUSTOM_IMAGE_NAME}"
 else
   if [ "${DEVEL_VERSION}" = "devel" ]; then
-    IMAGE_NAME="${DISTRONAME}-${LIBREELEC_ARCH}-${OS_VERSION}-${LIBREELEC_VERSION}"
+    IMAGE_NAME="${DISTRONAME}-${LIBREELEC_ARCH}-${OS_VERSION}-${DISTRO_VERSION}"
   else
     IMAGE_NAME="${DISTRONAME}-${TARGET_VERSION}"
   fi
@@ -166,10 +166,10 @@ echo "${TARGET_VERSION}" >${INSTALL}/etc/release
 # Create /etc/os-release
 cat <<EOF >${INSTALL}/etc/os-release
 NAME="${DISTRONAME}"
-VERSION="${LIBREELEC_VERSION}"
+VERSION="${DISTRO_VERSION}"
 ID="${DISTRONAME,,}"
 VERSION_ID="${OS_VERSION}"
-PRETTY_NAME="${DISTRONAME} (${LIBREELEC_BUILD}): ${LIBREELEC_VERSION}"
+PRETTY_NAME="${DISTRONAME} (${LIBREELEC_BUILD}): ${DISTRO_VERSION}"
 HOME_URL="https://libreelec.tv"
 BUG_REPORT_URL="${ORIGIN_URL}"
 BUILD_ID="${GIT_HASH}"
@@ -188,7 +188,7 @@ ${GREETING1}
 ${GREETING2}
 ${GREETING3}
 ${GREETING4}
-${DISTRONAME} (${LIBREELEC_BUILD}): ${LIBREELEC_VERSION} (${LIBREELEC_ARCH})
+${DISTRONAME} (${LIBREELEC_BUILD}): ${DISTRO_VERSION} (${LIBREELEC_ARCH})
 EOF
 
 ln -sf /etc/issue ${INSTALL}/etc/motd
@@ -406,7 +406,7 @@ if [ "${1}" = "release" -o "${1}" = "mkimage" -o "${1}" = "noobs" ]; then
 
     sed -e "s%@DISTRONAME@%${DISTRONAME}%g" \
       -e "s%@PROJECT@%${DEVICE:-${PROJECT}}%g" \
-      -e "s%@LIBREELEC_VERSION@%${LIBREELEC_VERSION}%g" \
+      -e "s%@DISTRO_VERSION@%${DISTRO_VERSION}%g" \
       -e "s%@RELEASE_DATE@%$(date +%F)%g" \
       -e "s%@KERNEL_VERSION@%$(kernel_version)%g" \
       -e "s%@DESCRIPTION@%${DESCRIPTION}%g" \

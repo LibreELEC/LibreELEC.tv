@@ -742,7 +742,7 @@ get_libreelec_branch() {
   git rev-parse --abbrev-ref HEAD
 }
 
-# 1: LibreELEC variable, eg. LIBREELEC_VERSION
+# 1: LibreELEC variable, eg. DISTRO_VERSION
 get_libreelec_option() {
   local variable="$1"
   cd $LIBREELEC_DIR
@@ -1047,17 +1047,17 @@ LIBREELEC_DIR="$(get_abs_path "${LIBREELEC_DIR}")"
 
 DISTRO_SOURCE="$(get_libreelec_option DISTRO_SRC)"
 DISTRO_MIRROR="$(get_libreelec_option DISTRO_MIRROR)"
-LIBREELEC_VER="$(get_libreelec_option LIBREELEC_VERSION)"
+DISTRO_VER="$(get_libreelec_option DISTRO_VERSION)"
 
 if [ ${IS_MIRROR} = no ]; then
-  TARGET_DIR="$(get_abs_path "${TARGET_DIR}/${LIBREELEC_VER}")"
+  TARGET_DIR="$(get_abs_path "${TARGET_DIR}/${DISTRO_VER}")"
 else
   TARGET_DIR="$(get_abs_path "${TARGET_DIR}/mirror")"
 fi
 check_exists TARGET_DIR || exit
 
 if [ ${IS_MIRROR} = no ]; then
-  DOWNLOAD_DIR="$(get_abs_path "${DOWNLOAD_DIR}/${LIBREELEC_VER}")"
+  DOWNLOAD_DIR="$(get_abs_path "${DOWNLOAD_DIR}/${DISTRO_VER}")"
 else
   DOWNLOAD_DIR="$(get_abs_path "${DOWNLOAD_DIR}/mirror")"
 fi
@@ -1070,9 +1070,9 @@ fi
 
 echo
 if [ ${IS_MIRROR} = yes ]; then
-  echo "Synchronising LibreELEC.tv (branch: $(get_libreelec_branch), version: ${LIBREELEC_VER}) with MIRROR server ${TARGET_DIR}"
+  echo "Synchronising LibreELEC.tv (branch: $(get_libreelec_branch), version: ${DISTRO_VER}) with MIRROR server ${TARGET_DIR}"
 else
-  echo "Synchronising LibreELEC.tv (branch: $(get_libreelec_branch), version: ${LIBREELEC_VER}) with SOURCE server ${TARGET_DIR}"
+  echo "Synchronising LibreELEC.tv (branch: $(get_libreelec_branch), version: ${DISTRO_VER}) with SOURCE server ${TARGET_DIR}"
 fi
 echo
 echo "Distro Source is: ${DISTRO_SOURCE}"
