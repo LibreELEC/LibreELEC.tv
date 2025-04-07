@@ -78,6 +78,12 @@ makeinstall_target() {
   # brcm pcie firmware is only needed by x86_64
   [ "${TARGET_ARCH}" != "x86_64" ] && rm -fr ${FW_TARGET_DIR}/brcm/*-pcie.*
 
+  # add nvidia firmware for nouveau
+  if listcontains "${GRAPHIC_DRIVERS}" "nouveau"; then
+    cp -Lrv ${PKG_FW_SOURCE}/nvidia ${FW_TARGET_DIR}/
+    rm -rv ${FW_TARGET_DIR}/nvidia/tegra*
+  fi
+
   # Cleanup - which may be project or device specific
   find_file_path scripts/cleanup.sh && ${FOUND_PATH} ${FW_TARGET_DIR} || true
 }
