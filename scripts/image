@@ -139,7 +139,7 @@ rm -rf ${INSTALL}
 rm -rf ${STAMPS_INSTALL}
 mkdir -p ${INSTALL}
 
-# Create base layout of LibreELEC read-only file system
+# Create base layout of read-only file system
 for directory in etc dev proc run sys tmp usr var flash storage; do
   mkdir -p ${INSTALL}/${directory}
 done
@@ -374,7 +374,7 @@ if [ "${1}" = "release" -o "${1}" = "mkimage" -o "${1}" = "noobs" ]; then
 
     RELEASE_DIR="${TARGET_IMG}/${IMAGE_NAME}-${1}"
 
-    # eg. LibreELEC_RPi, LibreELEC_RPi2 etc.
+    # eg. Distro_RPi, Distro_RPi2 etc.
     NOOBS_DISTRO="${DISTRONAME}_${DEVICE:-${PROJECT}}"
 
     # Create release dir
