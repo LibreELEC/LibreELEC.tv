@@ -91,12 +91,12 @@ ORIGIN_URL="$(git remote -v | awk '$1 == "origin" { print $2 }' | head -1 | sed 
 
 [ "${BUILDER_NAME,,}" = "official" ] && BUILDER_NAME=
 if [ "${OFFICIAL}" = "yes" ]; then
-  LIBREELEC_BUILD="official"
+  DISTRO_BUILD="official"
 else
   if [ -n "${BUILDER_NAME}" ]; then
-    LIBREELEC_BUILD="${BUILDER_NAME}"
+    DISTRO_BUILD="${BUILDER_NAME}"
   else
-    LIBREELEC_BUILD="community"
+    DISTRO_BUILD="community"
   fi
 fi
 
@@ -169,12 +169,12 @@ NAME="${DISTRONAME}"
 VERSION="${DISTRO_VERSION}"
 ID="${DISTRONAME,,}"
 VERSION_ID="${OS_VERSION}"
-PRETTY_NAME="${DISTRONAME} (${LIBREELEC_BUILD}): ${DISTRO_VERSION}"
+PRETTY_NAME="${DISTRONAME} (${DISTRO_BUILD}): ${DISTRO_VERSION}"
 HOME_URL="https://libreelec.tv"
 BUG_REPORT_URL="${ORIGIN_URL}"
 BUILD_ID="${GIT_HASH}"
 DISTRO_ARCH="${DISTRO_ARCH}"
-LIBREELEC_BUILD="${LIBREELEC_BUILD}"
+DISTRO_BUILD="${DISTRO_BUILD}"
 LIBREELEC_PROJECT="${PROJECT}"
 EOF
 [ -n "${DEVICE}" ] && echo "LIBREELEC_DEVICE=\"${DEVICE}\"" >>${INSTALL}/etc/os-release
@@ -188,7 +188,7 @@ ${GREETING1}
 ${GREETING2}
 ${GREETING3}
 ${GREETING4}
-${DISTRONAME} (${LIBREELEC_BUILD}): ${DISTRO_VERSION} (${DISTRO_ARCH})
+${DISTRONAME} (${DISTRO_BUILD}): ${DISTRO_VERSION} (${DISTRO_ARCH})
 EOF
 
 ln -sf /etc/issue ${INSTALL}/etc/motd
