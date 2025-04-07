@@ -54,7 +54,7 @@ while getopts ":hc" opt; do
 done
 
 source /etc/os-release
-SYSTEM_ARCH="${LIBREELEC_ARCH#*.}"
+SYSTEM_ARCH="${DISTRO_ARCH#*.}"
 
 # If running in SAFE mode, send FAILED logs
 if [ "$(cat "/storage/.config/boot.status" 2>/dev/null)" = "SAFE" ]; then

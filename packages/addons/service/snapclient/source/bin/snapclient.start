@@ -7,7 +7,7 @@
 oe_setup_addon service.snapclient
 
 . /etc/os-release
-case "$LIBREELEC_ARCH" in
+case "$DISTRO_ARCH" in
   RPi*.arm)
     if [ "$sc_a" == "true" ]; then
       ALSA="/proc/asound/ALSA"
