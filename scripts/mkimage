@@ -313,7 +313,9 @@ if [ "${PROJECT}" = "Generic" ]; then
   echo "image: creating vmdk for open virtual appliance..."
   qemu-img convert -O vmdk -o subformat=streamOptimized "${DISK_BASENAME}.tmp" "${DISK_BASENAME}.vmdk"
   # generate ovf from template
-  sed -e "s,@DISTRO@,${DISTRO},g" -e "s,@DISK@,${IMAGE_NAME},g" \
+  sed -e "s,@DISTRO@,${DISTRO},g" \
+    -e "s,@DISTRO_HOME_URL@,${DISTRO_HOME_URL},g" \
+    -e "s,@DISK@,${IMAGE_NAME},g" \
     -e "s,@OVA_SIZE@,$((${OVA_SIZE} * 1024 * 1024)),g" \
     "${PROJECT_DIR}/${PROJECT}/config/ovf.template" >"${DISK_BASENAME}.ovf"
   # combine ovf and vmdk into official ova
