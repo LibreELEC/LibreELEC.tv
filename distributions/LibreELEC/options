@@ -1,19 +1,19 @@
 ### DISTRO INFORMATION ###
 
-# Name of the Distro to build (full name, without special characters)
+# Distro name (full name, without special characters)
   DISTRONAME="LibreELEC"
 
-# short project description
+# Short distro description
   DESCRIPTION="LibreELEC is a fast and user-friendly Kodi Entertainment Center distribution."
 
-# Distribution Specific source location
-  DISTRO_MIRROR="http://sources.libreelec.tv/mirror"
-  DISTRO_SRC="http://sources.libreelec.tv/$DISTRO_VERSION"
+# Distribution Source location
+  DISTRO_MIRROR="https://sources.libreelec.tv/mirror"
+  DISTRO_SRC="https://sources.libreelec.tv/$DISTRO_VERSION"
 
 # Distribution Home URL
   DISTRO_HOME_URL="https://libreelec.tv"
 
-# Welcome Message for e.g. SSH Server (up to 5 Lines)
+# Welcome Message for SSH Server (up to 5 Lines)
   GREETING0="##############################################"
   GREETING1="#                 LibreELEC                  #"
   GREETING2="#            https://libreelec.tv            #"
