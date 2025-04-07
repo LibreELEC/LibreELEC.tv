@@ -177,7 +177,7 @@ DISTRO_ARCH="${DISTRO_ARCH}"
 DISTRO_BUILD="${DISTRO_BUILD}"
 DISTRO_PROJECT="${PROJECT}"
 EOF
-[ -n "${DEVICE}" ] && echo "LIBREELEC_DEVICE=\"${DEVICE}\"" >>${INSTALL}/etc/os-release
+[ -n "${DEVICE}" ] && echo "DISTRO_DEVICE=\"${DEVICE}\"" >>${INSTALL}/etc/os-release
 [ -n "${BUILDER_NAME}" ] && echo "BUILDER_NAME=\"${BUILDER_NAME}\"" >>${INSTALL}/etc/os-release
 [ -n "${BUILDER_VERSION}" ] && echo "BUILDER_VERSION=\"${BUILDER_VERSION}\"" >>${INSTALL}/etc/os-release
 
