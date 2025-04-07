@@ -25,35 +25,35 @@ mkimage_bootini(){
 
 mkimage_uEnv(){
   echo "image: creating uEnv.ini"
-cat << EOF > "${LE_TMP}/uEnv.ini"
+cat << EOF > "${IMG_TMP}/uEnv.ini"
 dtb_name=/amlogic/${DTB}
 bootargs=boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}
 EOF
-  mcopy -s "${LE_TMP}/uEnv.ini" ::
+  mcopy -s "${IMG_TMP}/uEnv.ini" ::
 }
 
 mkimage_extlinux(){
   echo "image: copying exlinux.conf"
-  mkdir -p "${LE_TMP}/extlinux"
-  cat << EOF > "${LE_TMP}/extlinux/extlinux.conf"
+  mkdir -p "${IMG_TMP}/extlinux"
+  cat << EOF > "${IMG_TMP}/extlinux/extlinux.conf"
 LABEL ${DISTRO}
   LINUX /${KERNEL_NAME}
   FDT /amlogic/${DTB}
   APPEND boot=LABEL=${DISTRO_BOOTLABEL} disk=LABEL=${DISTRO_DISKLABEL} quiet ${EXTRA_CMDLINE}
 EOF
-  mcopy -s -o "${LE_TMP}/extlinux" ::
+  mcopy -s -o "${IMG_TMP}/extlinux" ::
 }
 
 mkimage_extlinux_fdtdir(){
   echo "image: copying exlinux.conf"
-  mkdir -p "${LE_TMP}/extlinux"
-  cat << EOF > "${LE_TMP}/extlinux/extlinux.conf"
+  mkdir -p "${IMG_TMP}/extlinux"
+  cat << EOF > "${IMG_TMP}/extlinux/extlinux.conf"
 LABEL ${DISTRO}
   LINUX /${KERNEL_NAME}
   FDTDIR /
   APPEND boot=LABEL=${DISTRO_BOOTLABEL} disk=LABEL=${DISTRO_DISKLABEL} quiet ${EXTRA_CMDLINE}
 EOF
-  mcopy -s -o "${LE_TMP}/extlinux" ::
+  mcopy -s -o "${IMG_TMP}/extlinux" ::
 }
 
 mkimage_dtb(){
