@@ -1,0 +1,28 @@
+From: Nobuhiro Iwamatsu <iwamatsu@debian.org>
+Date: Tue, 23 Aug 2011 09:22:39 +0900
+Subject: Avoid setting Intel Architecture specific CFLAGS
+
+Bug-Debian: http://bugs.debian.org/638925
+Forwarded: not-needed
+Last-Update: 2014-05-18
+---
+ Makefile | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 599b145..331a81d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -68,12 +68,10 @@ BUILDFOR	:= $(shell file /usr/bin/make | sed -e 's!.*ELF \(32\|64\)-bit.*!\1!')-
+ 
+ ifeq ($(origin CFLAGS),undefined)
+ ifeq ($(BUILDFOR),32-bit)
+-CFLAGS		+= -m32
+ LIBDIR		:= /lib
+ USRLIBDIR	:= /usr/lib
+ else
+ ifeq ($(BUILDFOR),64-bit)
+-CFLAGS		+= -m64
+ LIBDIR		:= /lib64
+ USRLIBDIR	:= /usr/lib64
+ endif
