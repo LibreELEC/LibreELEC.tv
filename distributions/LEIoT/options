@@ -1,0 +1,269 @@
+### DISTRO INFORMATION ###
+
+# Distro name (full name, without special characters)
+  DISTRONAME="LEIoT"
+
+# Short distro description
+  DESCRIPTION="LibreELEC for IoT (LEIoT) is a simple appliance OS for containers."
+
+# Distribution Source location                                                            
+  DISTRO_MIRROR="https://src.leiot.org/mirror"
+  DISTRO_SRC="https://src.leiot.org/$DISTRO_VERSION"
+
+# Distribution Home URL
+  DISTRO_HOME_URL="https://leiot.org"
+
+# Welcome Message for SSH Server (up to 5 Lines)
+  GREETING0="##############################################"
+  GREETING1="#                   LEIoT                    #"
+  GREETING2="#             https://leiot.org              #"
+  GREETING3="##############################################"
+  GREETING4=""
+
+# Root password to integrate in the target system
+  ROOT_PASSWORD="libreelec"
+
+# Partition labels for USB/SD installation media
+  DISTRO_BOOTLABEL="LEIOT"
+  DISTRO_DISKLABEL="STORAGE"
+
+
+### BUILDSYSTEM SETTINGS ####
+
+# LTO (Link Time Optimization) support
+  LTO_SUPPORT="yes"
+
+# GOLD (Google Linker) support
+  GOLD_SUPPORT="yes"
+
+# MOLD (Modern Linker) support
+  MOLD_SUPPORT="no"
+
+# default linker (bfd / gold / mold)
+  DEFAULT_LINKER="gold"
+
+# HARDENING (security relevant linker and compiler flags) support
+  HARDENING_SUPPORT="no"
+
+# Default supported get handlers (archive, git, file etc.)
+  GET_HANDLER_SUPPORT="archive"
+
+# use local ccache on build host, if available, for early package
+# builds before ccache has been built
+  LOCAL_CCACHE_SUPPORT="yes"
+
+### OS CONFIGURATION ###
+
+# Install glibc locales to the build (yes / no)
+  GLIBC_LOCALES="yes"
+
+# Install arm-mem package on ARM32 (yes / no)
+  if [ "${TARGET_ARCH}" = "arm" ]; then
+    ARM_MEM_SUPPORT="yes"
+  else
+    ARM_MEM_SUPPORT="no"
+  fi
+
+# additional drivers to install:
+# for a list of additional drivers see packages/linux-drivers
+# Space separated list is supported,
+# e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
+  ADDITIONAL_DRIVERS=""
+
+# Default size of system partition, in MB, eg. 512
+  SYSTEM_SIZE=1024
+
+# Default system partition offset, in sectors, eg. 2048
+  SYSTEM_PART_START=8192
+
+# Size of storage partition, in MB. Must be >=32
+  STORAGE_SIZE=32
+
+# build with swap support (yes / no)
+  SWAP_SUPPORT="yes"
+
+# swap support enabled per default (yes / no)
+  SWAP_ENABLED_DEFAULT="yes"
+
+# swapfile size if SWAP_SUPPORT=yes in MB
+  SWAPFILESIZE="2048"
+
+# debug tty path
+  DEBUG_TTY="/dev/tty3"
+
+# local console login prompt (yes / no)
+  LOCAL_LOGIN="yes"
+
+### KODI SETTINGS ###
+# Mediacenter to use (kodi / no)
+  MEDIACENTER="no"
+
+# Skins to install (Estuary)
+# Space separated list is supported,
+# e.g. SKINS="Estuary"
+  SKINS=""
+
+# Default Skin (Estuary)
+  SKIN_DEFAULT=""
+
+# install extra subtitle Fonts for KODI (yes / no)
+  KODI_EXTRA_FONTS="no"
+
+# build and install PulseAudio support (yes / no)
+  PULSEAUDIO_SUPPORT="no"
+
+# build and install pipewire support (yes / no)
+  PIPEWIRE_SUPPORT="no"
+
+# build and install eSpeak-NG support (yes / no)
+  ESPEAK_SUPPORT="no"
+
+# build and install with BluRay support (yes / no)
+  KODI_BLURAY_SUPPORT="no"
+
+# build and install with BD+ support
+# (BD+ decryption support in KODI) (yes / no)
+  BLURAY_BDPLUS_SUPPORT="no"
+
+# build and install with AACS support
+# (BD decryption support in KODI) (yes / no)
+  BLURAY_AACS_SUPPORT="no"
+
+# build and install with DVDCSS support
+# (DVD decryption support in KODI) (yes / no)
+  KODI_DVDCSS_SUPPORT="no"
+
+# build and install bluetooth support (yes / no)
+  BLUETOOTH_SUPPORT="no"
+
+# build and install with KODI webfrontend (yes / no)
+  KODI_WEBSERVER_SUPPORT="no"
+
+# build and install Avahi (Zeroconf) daemon (yes / no)
+  AVAHI_DAEMON="yes"
+
+# build with UPnP support (yes / no)
+  KODI_UPNP_SUPPORT="yes"
+
+# build with MySQL support (mariadb / none)
+  KODI_MYSQL_SUPPORT="mariadb"
+
+# build Kodi with optical drive support (yes / no)
+  KODI_OPTICAL_SUPPORT="yes"
+
+# build with AirPlay support (stream videos from iDevices to KODI) (yes / no)
+  KODI_AIRPLAY_SUPPORT="yes"
+
+# build with AirTunes support (stream music from iDevices to KODI) (yes / no)
+  KODI_AIRTUNES_SUPPORT="yes"
+
+# build with libnfs support (mounting nfs shares with KODI) (yes / no)
+  KODI_NFS_SUPPORT="yes"
+
+# build with Samba Client support (mounting SAMBA shares with KODI) (yes / no)
+  KODI_SAMBA_SUPPORT="yes"
+
+# build kodi with alsa support (yes/no)
+  KODI_ALSA_SUPPORT="yes"
+
+# build kodi with pulseaudio support (yes/no)
+  KODI_PULSEAUDIO_SUPPORT="yes"
+
+# build kodi with pipewire support (yes/no)
+  KODI_PIPEWIRE_SUPPORT="no"
+
+### KODI ADDONS ###
+
+# Addon Server Url
+  ADDON_SERVER_URL="https://addons.libreelec.tv"
+
+# set the default addon project
+  ADDON_PROJECT="${DEVICE:-$PROJECT}"
+
+# Settings package name - blank if not required
+  DISTRO_PKG_SETTINGS=""
+  DISTRO_PKG_SETTINGS_ID=""
+
+
+### ADDITIONAL PROGRAMS / FUNCTIONS ###
+
+# Testpackages for development (yes / no)
+  TESTING="no"
+
+# Configure debug groups (space delimited key=value pairs, with each value comma-delimited) and default group when DEBUG=yes
+# Use ! or - prefix to prevent a dependent package from being built with debug. Add + suffix to build dependenencies with debug.
+  DEBUG_GROUPS=""
+  DEBUG_GROUP_YES=""
+
+# build and install iSCSI support - iscsistart (yes / no)
+  ISCSI_SUPPORT="no"
+
+# build with NFS support (mounting nfs shares via the OS) (yes / no)
+  NFS_SUPPORT="no"
+
+# build with Samba Client support (mounting samba shares via the OS) (yes / no)
+  SAMBA_SUPPORT="no"
+
+# build and install Samba Server (yes / no)
+  SAMBA_SERVER="no"
+
+# build and install SFTP Server (yes / no)
+  SFTP_SERVER="yes"
+
+# build and install OpenVPN support (yes / no)
+  OPENVPN_SUPPORT="yes"
+
+# build and install WireGuard support (yes / no)
+  WIREGUARD_SUPPORT="yes"
+
+# build and install diskmounter support (udevil)
+# this service provide auto mounting support for external drives in the
+# mediacenter also automount internally drives at boottime via udev (yes / no)
+  UDEVIL="yes"
+
+# Support for partitioning and formatting disks in initramfs (yes / no)
+# This adds support for parted and mkfs.ext3/4 to initramfs for OEM usage
+  INITRAMFS_PARTED_SUPPORT="no"
+
+# build and install nano text editor (yes / no)
+  NANO_EDITOR="yes"
+
+# cron support (yes / no)
+  CRON_SUPPORT="yes"
+
+# build with installer (yes / no)
+  INSTALLER_SUPPORT="yes"
+
+# build and install remote support (yes / no)
+  REMOTE_SUPPORT="no"
+
+# IR remote keymaps supported in default config
+  IR_REMOTE_KEYMAPS="rc6_mce xbox_360 xbox_one"
+
+# build and install Joystick support (yes / no)
+  JOYSTICK_SUPPORT="no"
+
+# build and install CEC adapter support (yes / no)
+  CEC_SUPPORT="no"
+
+# build and install CEC framework support (yes / no)
+  CEC_FRAMEWORK_SUPPORT="no"
+
+# OEM packages for OEM's (yes / no)
+  OEM_SUPPORT="no"
+
+# build and install ALSA Audio support (yes / no)
+  ALSA_SUPPORT="no"
+
+# additional packages to install:
+# Space separated list is supported,
+# e.g. ADDITIONAL_PACKAGES="PACKAGE1 PACKAGE2"
+  ADDITIONAL_PACKAGES="avahi curl docker htop Python3"
+
+# build and install driver addons (yes / no)
+  DRIVER_ADDONS_SUPPORT="no"
+
+# driver addons to install:
+# for a list of additional drivers see packages/linux-driver-addons
+# Space separated list is supported,
+  DRIVER_ADDONS=""

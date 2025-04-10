@@ -1,0 +1,5 @@
+# VERSION: set full version, use "devel" for development version
+  DISTRO_VERSION="devel"
+
+# OS_VERSION: OS Version
+  OS_VERSION="13.0"
