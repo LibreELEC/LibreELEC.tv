@@ -1,0 +1,10 @@
+--- a/CMakeLists.txt	2025-03-28 00:26:02.527981499 +0000
++++ b/CMakeLists.txt	2025-03-28 04:27:36.151280308 +0000
+@@ -1,6 +1,6 @@
+ project(p8-platform)
+ 
+-cmake_minimum_required(VERSION 2.8.9)
++cmake_minimum_required(VERSION 2.8.9...3.10)
+ enable_language(CXX)
+ 
+ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
