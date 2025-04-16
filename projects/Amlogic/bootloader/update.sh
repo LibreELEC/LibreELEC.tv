@@ -26,8 +26,10 @@ mount -o remount,rw $BOOT_ROOT
 if [ -d $BOOT_ROOT/amlogic ]; then
   for dtbfile in $BOOT_ROOT/amlogic/*.dtb; do
     dtb=$(basename $dtbfile)
-    echo "Updating $dtb"
-    cp -p $SYSTEM_ROOT/usr/share/bootloader/$dtb $BOOT_ROOT/amlogic/ 2>/dev/null || true
+    if [ -f $SYSTEM_ROOT/usr/share/bootloader/$dtb ]; then
+      echo "Updating $dtb"
+      cp -p $SYSTEM_ROOT/usr/share/bootloader/$dtb $BOOT_ROOT/amlogic/
+    fi
   done
 fi
 
@@ -35,8 +37,10 @@ fi
 if [ -f $BOOT_ROOT/extlinux/extlinux.conf ]; then
   for dtbfile in $BOOT_ROOT/*.dtb; do
     dtb=$(basename $dtbfile)
-    echo "Updating $dtb"
-    cp -p $SYSTEM_ROOT/usr/share/bootloader/$dtb $BOOT_ROOT/ 2>/dev/null || true
+    if [ -f $SYSTEM_ROOT/usr/share/bootloader/$dtb ]; then
+      echo "Updating $dtb"
+      cp -p $SYSTEM_ROOT/usr/share/bootloader/$dtb $BOOT_ROOT/
+    fi
   done
 fi
 
@@ -44,8 +48,10 @@ fi
 if [ -d $BOOT_ROOT/dtb ]; then
   for dtbfile in $BOOT_ROOT/dtb/*.dtb; do
     dtb=$(basename $dtbfile)
-    echo "Updating $dtb"
-    cp -p $SYSTEM_ROOT/usr/share/bootloader/$dtb $BOOT_ROOT/dtb/ 2>/dev/null || true
+    if [ -f $SYSTEM_ROOT/usr/share/bootloader/$dtb ]; then
+      echo "Updating $dtb"
+      cp -p $SYSTEM_ROOT/usr/share/bootloader/$dtb $BOOT_ROOT/dtb/
+    fi
   done
 fi
 
@@ -53,8 +59,10 @@ fi
 if [ -f $BOOT_ROOT/uEnv.ini ]; then
   for scriptfile in $SYSTEM_ROOT/usr/share/bootloader/*_autoscript* $SYSTEM_ROOT/usr/share/bootloader/*.scr; do
     script=$(basename $scriptfile)
-    echo "Updating $script"
-    cp -p $SYSTEM_ROOT/usr/share/bootloader/$script $BOOT_ROOT/ 2>/dev/null || true
+    if [ -f $SYSTEM_ROOT/usr/share/bootloader/$script ]; then
+      echo "Updating $script"
+      cp -p $SYSTEM_ROOT/usr/share/bootloader/$script $BOOT_ROOT/
+    fi
   done
 fi
 
