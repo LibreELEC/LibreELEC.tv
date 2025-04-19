@@ -1,0 +1,140 @@
+From 308656a1992c1df76a3fe1902a228cc98dfb7c8f Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 15 Jan 2025 02:16:29 +0000
+Subject: [PATCH] Allow compile with -std=c23
+
+When compiling with -std=c23 the following errors are observed.
+
+    common/qtypes.h:37:15: error: cannot use keyword 'false' as enumeration constant
+       37 | typedef enum{ false, true, ENSURE_INT_QBOOL = 0x70000000 } qboolean;
+          |               ^~~~~
+    common/qtypes.h:37:23: error: cannot use keyword 'true' as enumeration constant
+       37 | typedef enum{ false, true, ENSURE_INT_QBOOL = 0x70000000 } qboolean;
+          |                       ^~~~
+
+    common/net_main.c:869:9: error: too many arguments to function 'pp->procedure'; expected 0, have 1
+      869 |         pp->procedure(pp->arg);
+          |         ^~            ~~~~~~~
+    common/net.h:320:12: note: declared here
+      320 |     void (*procedure) ();
+          |            ^~~~~~~~~
+
+    common/net_main.c:112:56: error: initialization of 'void (*)(void *)' from incompatible pointer type 'void (*)(void)' [-Wincompatible-pointer-types]
+      112 | static PollProcedure slistSendProcedure = { NULL, 0.0, Slist_Send };
+          |                                                        ^~~~~~~~~~
+    common/net_main.c:113:56: error: initialization of 'void (*)(void *)' from incompatible pointer type 'void (*)(void)' [-Wincompatible-pointer-types]
+      113 | static PollProcedure slistPollProcedure = { NULL, 0.0, Slist_Poll };
+          |                                                        ^~~~~~~~~~
+    common/net_dgrm.c:512:8: error: initialization of 'void (*)(void *)' from incompatible pointer type 'void (*)(struct test_poll_state *)' [-Wincompatible-pointer-types]
+      512 |        Test_Poll,
+          |        ^~~~~~~~~
+    common/net_dgrm.c:647:7: error: initialization of 'void (*)(void *)' from incompatible pointer type 'void (*)(struct test_poll_state *)' [-Wincompatible-pointer-types]
+      647 |       Test2_Poll,
+          |       ^~~~~~~~~~
+
+Fix:
+- update enum as false0 and true1 as the enum are already 0 and 1, and map to false/true
+- Update the function declarations to pass (void *) as procedure
+---
+ common/net.h      | 2 +-
+ common/net_dgrm.c | 6 ++++--
+ common/net_main.c | 8 ++++----
+ common/qtypes.h   | 2 +-
+ 4 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/common/net.h b/common/net.h
+index d5b57c8e..bdc0acc0 100644
+--- a/common/net.h
++++ b/common/net.h
+@@ -317,7 +317,7 @@ void NET_Poll(void);
+ typedef struct _PollProcedure {
+     struct _PollProcedure *next;
+     double nextTime;
+-    void (*procedure) ();
++    void (*procedure) (void *);
+     void *arg;
+ } PollProcedure;
+ 
+diff --git a/common/net_dgrm.c b/common/net_dgrm.c
+index fd1d2fbd..f5533680 100644
+--- a/common/net_dgrm.c
++++ b/common/net_dgrm.c
+@@ -434,7 +434,7 @@ struct test_poll_state
+ 
+ 
+ static void
+-Test_Poll(struct test_poll_state *state)
++Test_Poll(void *vstate)
+ {
+     netadr_t clientaddr;
+     int control;
+@@ -445,6 +445,7 @@ Test_Poll(struct test_poll_state *state)
+     int frags;
+     int connectTime;
+     byte playerNumber;
++    struct test_poll_state *state = (struct test_poll_state *) vstate;
+ 
+     while (1) {
+ 	len = state->driver->Read(state->socket, net_message.data,
+@@ -570,13 +571,14 @@ Test_f(void)
+ 
+ 
+ static void
+-Test2_Poll(struct test_poll_state *state)
++Test2_Poll(void *vstate)
+ {
+     netadr_t clientaddr;
+     int control;
+     int len;
+     char *name;
+     char *value;
++    struct test_poll_state *state = (struct test_poll_state *) vstate;
+ 
+     len = state->driver->Read(state->socket, net_message.data,
+ 			      net_message.maxsize, &clientaddr);
+diff --git a/common/net_main.c b/common/net_main.c
+index 190baa76..954e1445 100644
+--- a/common/net_main.c
++++ b/common/net_main.c
+@@ -107,8 +107,8 @@ qboolean slistLocal = true;
+ static double slistStartTime;
+ static int slistLastShown;
+ 
+-static void Slist_Send(void);
+-static void Slist_Poll(void);
++static void Slist_Send(void *);
++static void Slist_Poll(void *);
+ static PollProcedure slistSendProcedure = { NULL, 0.0, Slist_Send };
+ static PollProcedure slistPollProcedure = { NULL, 0.0, Slist_Poll };
+ 
+@@ -370,7 +370,7 @@ NET_Slist_f(void)
+ 
+ 
+ static void
+-Slist_Send(void)
++Slist_Send(void *arg)
+ {
+     int i;
+ 
+@@ -391,7 +391,7 @@ Slist_Send(void)
+ 
+ 
+ static void
+-Slist_Poll(void)
++Slist_Poll(void *arg)
+ {
+     int i;
+ 
+diff --git a/common/qtypes.h b/common/qtypes.h
+index ecb39ea9..a339b706 100644
+--- a/common/qtypes.h
++++ b/common/qtypes.h
+@@ -34,7 +34,7 @@ typedef unsigned char byte;
+ typedef enum{ false, true };
+ typedef int qboolean;
+ #else
+-typedef enum{ false, true, ENSURE_INT_QBOOL = 0x70000000 } qboolean;
++typedef enum{ false0, true1, ENSURE_INT_QBOOL = 0x70000000 } qboolean;
+ #endif
+ 
+ #ifndef offsetof

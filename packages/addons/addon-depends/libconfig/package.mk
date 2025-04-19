@@ -2,11 +2,11 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libconfig"
-PKG_VERSION="1.7.3"
-PKG_SHA256="68757e37c567fd026330c8a8449aa5f9cac08a642f213f2687186b903bd7e94e"
+PKG_VERSION="ca412e1d54d7c723028034d013a4f05f048b23c1"
+PKG_SHA256="bc51d74b1799b663c164902bd49990f653340a1e89d9b0377a66cedc3f84cc77"
 PKG_LICENSE="LGPL"
 PKG_SITE="https://github.com/hyperrealm/libconfig"
-PKG_URL="https://github.com/hyperrealm/libconfig/archive/v${PKG_VERSION}.tar.gz"
+PKG_URL="https://github.com/hyperrealm/libconfig/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A C/C++ configuration file library."
 PKG_TOOLCHAIN="autotools"
@@ -21,4 +21,5 @@ PKG_CONFIGURE_OPTS_TARGET="--enable-static \
 pre_configure_target() {
   cd ..
   rm -rf .${TARGET_NAME}
+  rm lib/grammar.c
 }

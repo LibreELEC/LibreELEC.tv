@@ -3,8 +3,8 @@
 # Copyright (C) 2019-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="readline"
-PKG_VERSION="8.2"
-PKG_SHA256="3feb7171f16a84ee82ca18a36d7b9be109a52c04f492a053331d7d1095007c35"
+PKG_VERSION="8.3-beta"
+PKG_SHA256="c33018ec63b1636e5a86a1e7c9168333ccd074fe834826e79fd159b2450c0246"
 PKG_LICENSE="MIT"
 PKG_SITE="http://www.gnu.org/software/readline/"
 PKG_URL="https://ftpmirror.gnu.org/readline/${PKG_NAME}-${PKG_VERSION}.tar.gz"

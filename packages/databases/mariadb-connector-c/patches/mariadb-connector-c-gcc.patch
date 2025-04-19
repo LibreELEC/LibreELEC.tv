@@ -1,0 +1,21 @@
++++ a/include/ma_global.h	2024-11-22 10:01:02.006088573 +0000
++++ b/include/ma_global.h	2024-11-22 10:01:02.006088573 +0000
+@@ -684,7 +684,6 @@
+ typedef char		my_bool; /* Small bool */
+ typedef unsigned long long my_ulonglong;
+ #if !defined(bool) && !defined(bool_defined) && (!defined(HAVE_BOOL) || !defined(__cplusplus))
+-typedef char		bool;	/* Ordinary boolean values 0 1 */
+ #endif
+ 	/* Macros for converting *constants* to the right type */
+ #define INT8(v)		(int8) (v)
+--- a/libmariadb/ma_alloc.c	2024-11-22 10:08:46.473445080 +0000
++++ b/libmariadb/ma_alloc.c	2024-11-22 10:08:46.473445080 +0000
+@@ -170,7 +170,7 @@
+   va_list args;
+   char **ptr,*start,*res;
+   size_t tot_length,length;
+-
++if(myFlags){}
+   va_start(args,myFlags);
+   tot_length=0;
+   while ((ptr=va_arg(args, char **)))

@@ -1,0 +1,23 @@
+From 129d87bd5fd5f2436a467d4b7d43e0d102a867da Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 20 Nov 2024 10:40:03 +1100
+Subject: [PATCH] Fix build when compiling with -std=c23
+
+Fixes the build when using gcc 15
+---
+ open-vm-tools/lib/lock/ul.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/open-vm-tools/lib/lock/ul.c b/open-vm-tools/lib/lock/ul.c
+index d376a98af..fc9fdb714 100644
+--- a/open-vm-tools/lib/lock/ul.c
++++ b/open-vm-tools/lib/lock/ul.c
+@@ -29,7 +29,7 @@
+ static Bool mxInPanic = FALSE;  // track when involved in a panic
+ static Bool mxUserCollectLockingTree = FALSE;
+ 
+-Bool (*MXUserTryAcquireForceFail)() = NULL;
++Bool (*MXUserTryAcquireForceFail)(const char *) = NULL;
+ 
+ static MX_Rank (*MXUserMxCheckRank)(void) = NULL;
+ static void (*MXUserMxLockLister)(void) = NULL;
