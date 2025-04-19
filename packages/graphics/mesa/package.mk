@@ -3,8 +3,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="mesa"
-PKG_VERSION="25.0.4"
-PKG_SHA256="76293cf4372ca4e4e73fd6c36c567b917b608a4db9d11bd2e33068199a7df04d"
+PKG_VERSION="25.1.0-rc1"
+PKG_SHA256="ebd43e93b70ac80c025efd51bb23ea67ed4b46f5c6ce3d5beb312d292093492e"
 PKG_LICENSE="OSS"
 PKG_SITE="http://www.mesa3d.org/"
 PKG_URL="https://mesa.freedesktop.org/archive/mesa-${PKG_VERSION}.tar.xz"
@@ -119,5 +119,5 @@ fi
 makeinstall_host() {
   mkdir -p "${TOOLCHAIN}/bin"
     cp -a src/compiler/clc/mesa_clc "${TOOLCHAIN}/bin"
-    cp -a src/compiler/spirv/vtn_bindgen "${TOOLCHAIN}/bin"
+    cp -a src/compiler/spirv/vtn_bindgen2 "${TOOLCHAIN}/bin"
 }
