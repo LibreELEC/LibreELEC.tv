@@ -25,9 +25,9 @@ diff --git a/drivers/gpu/drm/sun4i/Kconfig b/drivers/gpu/drm/sun4i/Kconfig
  	depends on DRM && COMMON_CLK
  	depends on ARCH_SUNXI || COMPILE_TEST
 +	select DRM_BRIDGE_CONNECTOR
+	select DRM_CLIENT_SELECTION
  	select DRM_GEM_DMA_HELPER
  	select DRM_KMS_HELPER
- 	select DRM_PANEL
 diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
 index 8f8d3bdba5ce..93831cdf1917 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c

@@ -21,7 +21,7 @@ index 3a8350cad812..841af6f55c7d 100644
  
  static int imx8mq_pcie_init_phy(struct imx_pcie *imx_pcie)
  {
--	/* TODO: Currently this code assumes external oscillator is being used */
+-	/* TODO: This code assumes external oscillator is being used */
 -	regmap_update_bits(imx_pcie->iomuxc_gpr,
 -			   imx_pcie_grp_offset(imx_pcie),
 -			   IMX8MQ_GPR_PCIE_REF_USE_PAD,
@@ -34,8 +34,8 @@ index 3a8350cad812..841af6f55c7d 100644
 +				   IMX8MQ_GPR_PCIE_REF_USE_PAD);
 +	}
  	/*
- 	 * Regarding the datasheet, the PCIE_VPH is suggested to be 1.8V. If the PCIE_VPH is
- 	 * supplied by 3.3V, the VREG_BYPASS should be cleared to zero.
+ 	 * Per the datasheet, the PCIE_VPH is suggested to be 1.8V.  If the
+ 	 * PCIE_VPH is supplied by 3.3V, the VREG_BYPASS should be cleared
 -- 
 2.39.2
 
