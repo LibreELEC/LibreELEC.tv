@@ -1,0 +1,24 @@
+--- a/bootstrap.conf	2023-12-20 15:54:46.000000000 +0000
++++ b/bootstrap.conf	2025-04-19 04:54:21.402235320 +0000
+@@ -85,6 +85,7 @@
+   # changes to gnulib and update the hash above when they've merged.  Do not
+   # add new patches here.
+   patch -d grub-core/lib/gnulib -p2 < grub-core/lib/gnulib-patches/fix-width.patch
++  patch -d grub-core/lib/gnulib -p2 < grub-core/lib/gnulib-patches/fix-unterminated-string-initialization.patch
+ 
+   for patchname in \
+       0001-Support-POTFILES-shell \
+--- /dev/null	2025-04-18 22:05:54.154307831 +0000
++++ a/grub-core/lib/gnulib-patches/fix-unterminated-string-initialization.patch	2025-04-19 04:33:15.890395708 +0000
+@@ -0,0 +1,11 @@
++--- a/lib/base64.c	2025-04-19 04:11:46.591729777 +0000
+++++ b/lib/base64.c	2025-04-19 04:24:36.861877165 +0000
++@@ -61,7 +61,7 @@
++   return ch;
++ }
++ 
++-static const char b64c[64] =
+++static const char b64c[64] __attribute__((nonstring)) =
++   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
++ 
++ /* Base64 encode IN array of size INLEN into OUT array. OUT needs
