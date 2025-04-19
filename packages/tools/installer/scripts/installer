@@ -281,9 +281,9 @@ EOF
 
     cat << EOF > $TMPDIR/part1/EFI/BOOT/grub.cfg
 set timeout="0"
-set default="LibreELEC"
+set default="@DISTRONAME@"
 
-menuentry "LibreELEC" {
+menuentry "@DISTRONAME@" {
 	search --set -f /KERNEL
 	linux /KERNEL boot=UUID=$UUID_SYSTEM disk=UUID=$UUID_STORAGE quiet
 }
