@@ -1,8 +1,6 @@
 [Unit]
 Description=LEDfix Service
-After=network-online.target graphical.target
-Requires=graphical.target
-Wants=kodi.target
+After=network-online.target
 
 [Service]
 Type=oneshot
@@ -11,4 +9,4 @@ RemainAfterExit=yes
 StartLimitInterval=0
 
 [Install]
-WantedBy=kodi.target
+WantedBy=multi-user.target
