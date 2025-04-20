@@ -94,6 +94,9 @@
 # local console login prompt (yes / no)
   LOCAL_LOGIN="no"
 
+# Enable SSH on boot (yes / no)
+  SSH_ENABLED_DEFAULT="no"
+
 ### KODI SETTINGS ###
 # Mediacenter to use (kodi / no)
   MEDIACENTER="kodi"
