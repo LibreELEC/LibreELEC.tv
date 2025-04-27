@@ -17,13 +17,13 @@ diff -Naur nvidia-kmod-570.133.07-x86_64.old/kernel/Kbuild nvidia-kmod-570.133.0
 -EXTRA_CFLAGS += -I$(src)
 -EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 -EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
--EXTRA_CFLAGS += -DNV_VERSION_STRING=\"570.133.07\"
+-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"570.144\"
 +ccflags-y += -std=gnu17
 +ccflags-y += -I$(src)/common/inc
 +ccflags-y += -I$(src)
 +ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 +ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
-+ccflags-y += -DNV_VERSION_STRING=\"570.133.07\"
++ccflags-y += -DNV_VERSION_STRING=\"570.144\"
  
  ifneq ($(SYSSRCHOST1X),)
 - EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
@@ -134,13 +134,13 @@ diff -Naur nvidia-kmod-570.133.07-x86_64.old/kernel-open/Kbuild nvidia-kmod-570.
 -EXTRA_CFLAGS += -I$(src)
 -EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 -EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
--EXTRA_CFLAGS += -DNV_VERSION_STRING=\"570.133.07\"
+-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"570.144\"
 +ccflags-y += -std=gnu17
 +ccflags-y += -I$(src)/common/inc
 +ccflags-y += -I$(src)
 +ccflags-y += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-format-extra-args
 +ccflags-y += -D__KERNEL__ -DMODULE -DNVRM
-+ccflags-y += -DNV_VERSION_STRING=\"570.133.07\"
++ccflags-y += -DNV_VERSION_STRING=\"570.144\"
  
  ifneq ($(SYSSRCHOST1X),)
 - EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
