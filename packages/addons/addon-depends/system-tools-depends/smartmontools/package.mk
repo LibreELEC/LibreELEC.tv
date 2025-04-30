@@ -2,8 +2,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="smartmontools"
-PKG_VERSION="7.4"
-PKG_SHA256="e9a61f641ff96ca95319edfb17948cd297d0cd3342736b2c49c99d4716fb993d"
+PKG_VERSION="7.5"
+PKG_SHA256="690b83ca331378da9ea0d9d61008c4b22dde391387b9bbad7f29387f2595f76e"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.smartmontools.org"
 PKG_URL="https://downloads.sourceforge.net/sourceforge/smartmontools/smartmontools-${PKG_VERSION}.tar.gz"
