@@ -7,28 +7,6 @@ diff -Naur a/Makefile.am b/Makefile.am
  ACLOCAL_AMFLAGS=-I m4
  
  pkgconfigdir=$(libdir)/pkgconfig
-@@ -11,21 +11,6 @@
- if USE_LINUX
- udevrulesdir=@UDEV@/rules.d
- hwdbdir=@UDEV@/hwdb.d
--udevrules_DATA=@UDEV_RULES@
--hwdb_DATA=69-libmtp.hwdb
--noinst_DATA=libmtp.usermap libmtp.fdi
--
--libmtp.usermap: util/mtp-hotplug
--	util/mtp-hotplug > libmtp.usermap
--
--@UDEV_RULES@: util/mtp-hotplug
--	util/mtp-hotplug -u -p"@UDEV@" @UDEV_GROUP@ @UDEV_MODE@ > @UDEV_RULES@
--
--libmtp.fdi: util/mtp-hotplug
--	util/mtp-hotplug -H > libmtp.fdi
--
--$(hwdb_DATA): util/mtp-hotplug
--	util/mtp-hotplug -w > $(hwdb_DATA)
- 
- CLEANFILES = libmtp.usermap @UDEV_RULES@ libmtp.fdi libmtp.hwdb
- endif
 diff -Naur a/Makefile.in b/Makefile.in
 --- a/Makefile.in	2016-02-10 12:17:34.000000000 -0800
 +++ b/Makefile.in	2016-04-22 14:14:22.638794537 -0700
@@ -92,23 +70,3 @@ diff -Naur a/Makefile.in b/Makefile.in
  	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
  	install-ps-am install-strip install-udevrulesDATA installcheck \
  	installcheck-am installdirs installdirs-am maintainer-clean \
-@@ -944,19 +931,6 @@
- 
- .PRECIOUS: Makefile
- 
--
--@USE_LINUX_TRUE@libmtp.usermap: util/mtp-hotplug
--@USE_LINUX_TRUE@	util/mtp-hotplug > libmtp.usermap
--
--@USE_LINUX_TRUE@@UDEV_RULES@: util/mtp-hotplug
--@USE_LINUX_TRUE@	util/mtp-hotplug -u -p"@UDEV@" @UDEV_GROUP@ @UDEV_MODE@ > @UDEV_RULES@
--
--@USE_LINUX_TRUE@libmtp.fdi: util/mtp-hotplug
--@USE_LINUX_TRUE@	util/mtp-hotplug -H > libmtp.fdi
--
--@USE_LINUX_TRUE@$(hwdb_DATA): util/mtp-hotplug
--@USE_LINUX_TRUE@	util/mtp-hotplug -w > $(hwdb_DATA)
--
- # Tell versions [3.59,3.63) of GNU make to not export all variables.
- # Otherwise a system limit (for SysV at least) may be exceeded.
- .NOEXPORT:
