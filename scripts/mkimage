@@ -10,8 +10,8 @@
 ################################################################################
 
 # set variables
-LE_TMP=$(mktemp -d -p ${TARGET_IMG})
-SAVE_ERROR="${LE_TMP}/save_error"
+IMG_TMP=$(mktemp -d -p ${TARGET_IMG})
+SAVE_ERROR="${IMG_TMP}/save_error"
 
 if [ -z "${SYSTEM_SIZE}" -o -z "${SYSTEM_PART_START}" ]; then
   echo "mkimage: SYSTEM_SIZE and SYSTEM_PART_START must be configured!"
@@ -27,7 +27,7 @@ DISK="${DISK_BASENAME}.img"
 # functions
 cleanup() {
   echo -e "image: cleanup...\n"
-  rm -rf "${LE_TMP}"
+  rm -rf "${IMG_TMP}"
 }
 
 show_error() {
@@ -36,7 +36,7 @@ show_error() {
   if [ -s "${SAVE_ERROR}" ]; then
     cat "${SAVE_ERROR}"
   else
-    echo "Folder ${LE_TMP} might be out of free space..."
+    echo "Folder ${IMG_TMP} might be out of free space..."
   fi
   echo
   cleanup
@@ -88,26 +88,26 @@ fi
 echo "image: creating sparse file for part2..."
 STORAGE_PART_COUNT=$((${STORAGE_PART_END} - ${STORAGE_PART_START} + 1))
 sync
-dd if="${DISK}" of="${LE_TMP}/part2.ext4" bs=512 count=0 seek="${STORAGE_PART_COUNT}" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
+dd if="${DISK}" of="${IMG_TMP}/part2.ext4" bs=512 count=0 seek="${STORAGE_PART_COUNT}" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
 
 # create filesystem on part2
 echo "image: creating filesystem on part2..."
-mke2fs -F -q -t ext4 -O ^orphan_file -m 0 "${LE_TMP}/part2.ext4"
-tune2fs -L "${DISTRO_DISKLABEL}" -U ${UUID_STORAGE} "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
-e2fsck -n "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
+mke2fs -F -q -t ext4 -O ^orphan_file -m 0 "${IMG_TMP}/part2.ext4"
+tune2fs -L "${DISTRO_DISKLABEL}" -U ${UUID_STORAGE} "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
+e2fsck -n "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 sync
 
 # add resize mark
-mkdir "${LE_TMP}/part2.fs"
-touch "${LE_TMP}/part2.fs/.please_resize_me"
+mkdir "${IMG_TMP}/part2.fs"
+touch "${IMG_TMP}/part2.fs/.please_resize_me"
 echo "image: populating filesystem on part2..."
-populatefs -U -d "${LE_TMP}/part2.fs" "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
+populatefs -U -d "${IMG_TMP}/part2.fs" "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 sync
-e2fsck -n "${LE_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
+e2fsck -n "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 
 # merge part2 into disk image
 echo "image: merging part2 into disk image..."
-dd if="${LE_TMP}/part2.ext4" of="${DISK}" bs=512 seek="${STORAGE_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+dd if="${IMG_TMP}/part2.ext4" of="${DISK}" bs=512 seek="${STORAGE_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
 
 # create disk image for virtual appliance
 if [ "${PROJECT}" = "Generic" ]; then
@@ -120,24 +120,24 @@ fi
 echo "image: creating sparse file for part1..."
 SYSTEM_PART_COUNT=$((${SYSTEM_PART_END} - ${SYSTEM_PART_START} + 1))
 sync
-dd if=/dev/zero of="${LE_TMP}/part1.fat" bs=512 count=0 seek="${SYSTEM_PART_COUNT}" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
+dd if=/dev/zero of="${IMG_TMP}/part1.fat" bs=512 count=0 seek="${SYSTEM_PART_COUNT}" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
 
 shopt -s expand_aliases # enables alias expansion in script
-alias mcopy='mcopy -i "${LE_TMP}/part1.fat" -o'
-alias mmd='mmd -i "${LE_TMP}/part1.fat"'
+alias mcopy='mcopy -i "${IMG_TMP}/part1.fat" -o'
+alias mmd='mmd -i "${IMG_TMP}/part1.fat"'
 
 # create filesystem on part1
 echo "image: creating filesystem on part1..."
 
 if [ "${BOOTLOADER}" = "syslinux" -o "${BOOTLOADER}" = "bcm2835-bootloader" -o "${BOOTLOADER}" = "u-boot" ]; then
-  mformat -i "${LE_TMP}/part1.fat" -v "${DISTRO_BOOTLABEL}" -N "${UUID_SYSTEM//-/}" :: >"${SAVE_ERROR}" 2>&1 || show_error
+  mformat -i "${IMG_TMP}/part1.fat" -v "${DISTRO_BOOTLABEL}" -N "${UUID_SYSTEM//-/}" :: >"${SAVE_ERROR}" 2>&1 || show_error
 fi
 sync
 
 if [ "${BOOTLOADER}" = "syslinux" ]; then
   # create bootloader configuration
   echo "image: creating bootloader configuration..."
-  cat <<EOF >"${LE_TMP}/syslinux.cfg"
+  cat <<EOF >"${IMG_TMP}/syslinux.cfg"
 SAY Wait for installer mode to start automatically in 5 seconds...
 SAY
 SAY Options
@@ -163,7 +163,7 @@ LABEL run
   APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} portable quiet
 EOF
 
-  cat <<EOF >"${LE_TMP}/grub.cfg"
+  cat <<EOF >"${IMG_TMP}/grub.cfg"
 set timeout="25"
 set default="Installer"
 menuentry "Installer" {
@@ -180,11 +180,11 @@ menuentry "Run" {
 }
 EOF
 
-  mcopy "${LE_TMP}/syslinux.cfg" :: >"${SAVE_ERROR}" 2>&1 || show_error
+  mcopy "${IMG_TMP}/syslinux.cfg" :: >"${SAVE_ERROR}" 2>&1 || show_error
 
   # install syslinux
   echo "image: installing syslinux to part1..."
-  syslinux.mtools -i "${LE_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
+  syslinux.mtools -i "${IMG_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
 
   # copy files
   echo "image: copying files to part1..."
@@ -197,16 +197,16 @@ EOF
   mcopy "${TOOLCHAIN}/share/syslinux/bootx64.efi" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
   mcopy "${TOOLCHAIN}/share/syslinux/ldlinux.e64" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
   mcopy "${TOOLCHAIN}/share/grub/bootia32.efi" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
-  mcopy "${LE_TMP}/grub.cfg" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
+  mcopy "${IMG_TMP}/grub.cfg" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
 
 elif [ "${BOOTLOADER}" = "bcm2835-bootloader" ]; then
   # create bootloader configuration
   echo "image: creating bootloader configuration..."
-  cat <<EOF >"${LE_TMP}/cmdline.txt"
+  cat <<EOF >"${IMG_TMP}/cmdline.txt"
 boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}
 EOF
 
-  mcopy "${LE_TMP}/cmdline.txt" :: >"${SAVE_ERROR}" 2>&1 || show_error
+  mcopy "${IMG_TMP}/cmdline.txt" :: >"${SAVE_ERROR}" 2>&1 || show_error
 
   # copy files
   echo "image: copying files to part1..."
@@ -253,16 +253,16 @@ elif [ "${BOOTLOADER}" = "u-boot" -a -n "${UBOOT_SYSTEM}" ]; then
       mcopy -s "${RELEASE_DIR}/3rdparty/bootloader/overlays" :: >"${SAVE_ERROR}" 2>&1 || show_error
     fi
 
-    mkdir -p "${LE_TMP}/extlinux"
+    mkdir -p "${IMG_TMP}/extlinux"
 
-    cat <<EOF >"${LE_TMP}/extlinux/extlinux.conf"
+    cat <<EOF >"${IMG_TMP}/extlinux/extlinux.conf"
 LABEL ${DISTRO}
   LINUX /${KERNEL_NAME}
   FDT /${DTB}
   APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}
 EOF
 
-    mcopy -s "${LE_TMP}/extlinux" :: >"${SAVE_ERROR}" 2>&1 || show_error
+    mcopy -s "${IMG_TMP}/extlinux" :: >"${SAVE_ERROR}" 2>&1 || show_error
   fi
 
   if [ -f "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/bootloader/mkimage" ]; then
@@ -288,32 +288,34 @@ fi # bootloader
 # run fsck
 echo "image: checking filesystem on part1..."
 sync
-fsck.fat -n "${LE_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
+fsck.fat -n "${IMG_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
 
 # merge part1 into disk image
 echo "image: merging part1 into disk image..."
-dd if="${LE_TMP}/part1.fat" of="${DISK}" bs=512 seek="${SYSTEM_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+dd if="${IMG_TMP}/part1.fat" of="${DISK}" bs=512 seek="${SYSTEM_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
 
 # finalize virtual appliance
 if [ "${PROJECT}" = "Generic" ]; then
   # change syslinux default to 'run'
   echo "image: modifying files on part1 for open virtual appliance..."
-  sed -e "/DEFAULT/ s/installer/run/" -i "${LE_TMP}/syslinux.cfg"
-  sed -e "/set default=/s/\"Installer\"/\"Run\"/" -i "${LE_TMP}/grub.cfg"
-  mcopy "${LE_TMP}/syslinux.cfg" :: >"${SAVE_ERROR}" 2>&1 || show_error
-  mcopy "${LE_TMP}/grub.cfg" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
+  sed -e "/DEFAULT/ s/installer/run/" -i "${IMG_TMP}/syslinux.cfg"
+  sed -e "/set default=/s/\"Installer\"/\"Run\"/" -i "${IMG_TMP}/grub.cfg"
+  mcopy "${IMG_TMP}/syslinux.cfg" :: >"${SAVE_ERROR}" 2>&1 || show_error
+  mcopy "${IMG_TMP}/grub.cfg" ::/EFI/BOOT >"${SAVE_ERROR}" 2>&1 || show_error
   sync
   # run fsck
   echo "image: checking filesystem on part1..."
-  fsck.fat -n "${LE_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
+  fsck.fat -n "${IMG_TMP}/part1.fat" >"${SAVE_ERROR}" 2>&1 || show_error
   # merge modified part1 into tmp disk image
   echo "image: merging part1 into open virtual appliance..."
-  dd if="${LE_TMP}/part1.fat" of="${DISK_BASENAME}.tmp" bs=512 seek="${SYSTEM_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+  dd if="${IMG_TMP}/part1.fat" of="${DISK_BASENAME}.tmp" bs=512 seek="${SYSTEM_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
   # create vmdk from tmp ${DISK}
   echo "image: creating vmdk for open virtual appliance..."
   qemu-img convert -O vmdk -o subformat=streamOptimized "${DISK_BASENAME}.tmp" "${DISK_BASENAME}.vmdk"
   # generate ovf from template
-  sed -e "s,@DISTRO@,${DISTRO},g" -e "s,@DISK@,${IMAGE_NAME},g" \
+  sed -e "s,@DISTRO@,${DISTRO},g" \
+    -e "s,@DISTRO_HOME_URL@,${DISTRO_HOME_URL},g" \
+    -e "s,@DISK@,${IMAGE_NAME},g" \
     -e "s,@OVA_SIZE@,$((${OVA_SIZE} * 1024 * 1024)),g" \
     "${PROJECT_DIR}/${PROJECT}/config/ovf.template" >"${DISK_BASENAME}.ovf"
   # combine ovf and vmdk into official ova

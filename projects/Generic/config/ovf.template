@@ -19,14 +19,14 @@ xmlns:vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemS
     <Name>@DISTRO@</Name>
     <ProductSection>
       <Info>Meta-information about the installed software</Info>
-      <Product>LibreELEC</Product>
-      <Vendor>LibreELEC</Vendor>
-      <ProductUrl>https://libreelec.tv</ProductUrl>
-      <VendorUrl>https://libreelec.tv</VendorUrl>
+      <Product>@DISTRO@</Product>
+      <Vendor>@DISTRO@</Vendor>
+      <ProductUrl>@DISTRO_HOME_URL@</ProductUrl>
+      <VendorUrl>@DISTRO_HOME_URL@</VendorUrl>
     </ProductSection>
     <AnnotationSection>
       <Info>A human-readable annotation</Info>
-      <Annotation>LibreELEC is &#x2018;Just enough OS&#x2019; for Kodi, a Linux distribution built to run Kodi on current and popular mediacentre hardware. After importing the OVA image adjust CPU, RAM, and HDD storage to the required configuration before first boot.</Annotation>
+      <Annotation>After importing the OVA image, adjust CPU, RAM, and HDD storage to the required configuration before first boot.</Annotation>
     </AnnotationSection>
     <OperatingSystemSection ovf:id="94" vmw:osType="Ubuntu 64-bit">
       <Info>The kind of installed guest operating system</Info>
@@ -35,7 +35,7 @@ xmlns:vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemS
       <System>
         <vssd:ElementName>Virtual Hardware Family</vssd:ElementName>
         <vssd:InstanceID>0</vssd:InstanceID>
-        <vssd:VirtualSystemIdentifier>LibreELEC</vssd:VirtualSystemIdentifier>
+        <vssd:VirtualSystemIdentifier>@DISTRO@</vssd:VirtualSystemIdentifier>
         <vssd:VirtualSystemType>vmx-12</vssd:VirtualSystemType>
       </System>
       <Item>

@@ -14,14 +14,14 @@ mkimage_uboot(){
 
 mkimage_extlinux(){
   echo "image: copying exlinux.conf"
-  mkdir -p "${LE_TMP}/extlinux"
-  cat << EOF > "${LE_TMP}/extlinux/extlinux.conf"
+  mkdir -p "${IMG_TMP}/extlinux"
+  cat << EOF > "${IMG_TMP}/extlinux/extlinux.conf"
 LABEL ${DISTRO}
   LINUX /${KERNEL_NAME}
   FDT /${DTB}
   APPEND boot=LABEL=${DISTRO_BOOTLABEL} disk=LABEL=${DISTRO_DISKLABEL} ${EXTRA_CMDLINE}
 EOF
-  mcopy -s -o "${LE_TMP}/extlinux" ::
+  mcopy -s -o "${IMG_TMP}/extlinux" ::
 }
 
 mkimage_dtb(){

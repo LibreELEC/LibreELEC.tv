@@ -1,0 +1,23 @@
+[Unit]
+Description=Docker Application Container Engine
+Documentation=https://docs.docker.com
+After=network.target
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/docker.conf
+ExecStart=/usr/bin/dockerd --exec-opt native.cgroupdriver=systemd \
+                           --log-driver=journald \
+                           --group=root \
+                           $DOCKER_DAEMON_OPTS \
+                           $DOCKER_STORAGE_OPTS
+ExecReload=/bin/kill -s HUP $MAINPID
+TasksMax=8192
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=infinity
+TimeoutStartSec=0
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

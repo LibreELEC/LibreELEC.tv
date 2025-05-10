@@ -52,14 +52,6 @@
   # KODI Player implementation to use (default / bcm2835-driver / libfslvpuwrap)
     KODIPLAYER_DRIVER="mesa"
 
-  # build and install driver addons (yes / no)
-    DRIVER_ADDONS_SUPPORT="no"
-
-  # driver addons to install:
-  # for a list of additional drivers see packages/linux-driver-addons
-  # Space separated list is supported,
-    DRIVER_ADDONS="crazycat dvb-latest"
-
   # additional Firmware to use (dvb-firmware, misc-firmware, wlan-firmware)
   # Space separated list is supported,
   # e.g. FIRMWARE="dvb-firmware misc-firmware wlan-firmware"

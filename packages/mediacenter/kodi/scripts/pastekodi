@@ -54,7 +54,7 @@ while getopts ":hc" opt; do
 done
 
 source /etc/os-release
-SYSTEM_ARCH="${LIBREELEC_ARCH#*.}"
+SYSTEM_ARCH="${DISTRO_ARCH#*.}"
 
 # If running in SAFE mode, send FAILED logs
 if [ "$(cat "/storage/.config/boot.status" 2>/dev/null)" = "SAFE" ]; then
@@ -81,7 +81,7 @@ fi
       echo "Firmware Boot Mode: BIOS"
     fi
   fi
-  if [ "${LIBREELEC_PROJECT}" = "RPi" ]; then
+  if [ "${DISTRO_PROJECT}" = "RPi" ]; then
     echo "RPi Hardware Revision: $(vcgencmd otp_dump | grep 30: | cut -d: -f2)"
     echo "RPi $(vcgencmd get_throttled)"
   fi
@@ -92,7 +92,7 @@ fi
 
   kmsprint | cat_data "kmsprint"
 
-  if [ "${LIBREELEC_PROJECT}" = "RPi" ]; then
+  if [ "${DISTRO_PROJECT}" = "RPi" ]; then
     vcgencmd bootloader_version | cat_data "Bootloader version"
   fi
 

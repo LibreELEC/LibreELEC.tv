@@ -55,5 +55,8 @@ post_makeinstall_target() {
 }
 
 post_install() {
+  if [ "${SSH_ENABLED_DEFAULT}" = "yes" ]; then
+    sed -e "\|^Condition.*|d" -i ${INSTALL}/usr/lib/systemd/system/sshd.service
+  fi
   enable_service sshd.service
 }

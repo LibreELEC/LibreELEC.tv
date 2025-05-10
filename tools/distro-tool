@@ -9,7 +9,7 @@ export NOONEXIT=yes
 
 [ -z "${DEBUG_LOG}" ] && DEBUG_LOG=/tmp/distro-tool.log
 
-LIBREELEC_DIR=$HOME/LibreELEC.tv
+DISTRO_DIR=$HOME/LibreELEC.tv
 TARGET_DIR=$HOME/sources
 DOWNLOAD_DIR=$HOME/download
 REVISION=
@@ -737,15 +737,15 @@ Options:
 EOF
 }
 
-get_libreelec_branch() {
-  cd $LIBREELEC_DIR
+get_distro_branch() {
+  cd $DISTRO_DIR
   git rev-parse --abbrev-ref HEAD
 }
 
-# 1: LibreELEC variable, eg. LIBREELEC_VERSION
-get_libreelec_option() {
+# 1: LibreELEC variable, eg. DISTRO_VERSION
+get_distro_option() {
   local variable="$1"
-  cd $LIBREELEC_DIR
+  cd $DISTRO_DIR
   source config/options ""
   echo "${!variable}"
 }
@@ -827,7 +827,7 @@ generate_work_worker() {
       :
     }
 
-    cd $LIBREELEC_DIR
+    cd $DISTRO_DIR
 
     source config/options ""
 
@@ -845,8 +845,8 @@ generate_work_worker() {
       fi
 
       PKG_IS_ADDON=No
-      [[ ${PKG_DIR/${LIBREELEC_DIR}/} =~ ^/packages/addons/.* ]] && PKG_IS_ADDON=Yes
-      [[ ${PKG_DIR/${LIBREELEC_DIR}/} =~ ^/packages/mediacenter/kodi-binary-addons/.* ]] && PKG_IS_ADDON=Yes
+      [[ ${PKG_DIR/${DISTRO_DIR}/} =~ ^/packages/addons/.* ]] && PKG_IS_ADDON=Yes
+      [[ ${PKG_DIR/${DISTRO_DIR}/} =~ ^/packages/mediacenter/kodi-binary-addons/.* ]] && PKG_IS_ADDON=Yes
 
       echo "  {" >>${workfile_o}
       for var in ${wanted_vars}; do
@@ -883,7 +883,7 @@ get_packages() {
   local anchor="@?+?@"
 
   (
-    cd $LIBREELEC_DIR
+    cd $DISTRO_DIR
 
     # Generate package caches...
     source config/options ""
@@ -945,7 +945,7 @@ while [ : ]; do
       ;;
     -l | --libreelec)
       shift
-      LIBREELEC_DIR=$1
+      DISTRO_DIR=$1
       ;;
     -t | --target)
       shift
@@ -1031,33 +1031,33 @@ done
 
 if [ ${DOGIT} = yes ]; then
   (
-    if [ -d ${LIBREELEC_DIR}/.git ]; then
-      cd ${LIBREELEC_DIR}
+    if [ -d ${DISTRO_DIR}/.git ]; then
+      cd ${DISTRO_DIR}
       git pull
     else
-      mkdir -p $(dirname "${LIBREELEC_DIR}") 2>/dev/null
-      cd $(dirname "${LIBREELEC_DIR}")
-      git clone https://github.com/LibreELEC/LibreELEC.tv.git $(basename "${LIBREELEC_DIR}")
+      mkdir -p $(dirname "${DISTRO_DIR}") 2>/dev/null
+      cd $(dirname "${DISTRO_DIR}")
+      git clone https://github.com/LibreELEC/LibreELEC.tv.git $(basename "${DISTRO_DIR}")
     fi
   )
 fi
 
-check_exists LIBREELEC_DIR || exit
-LIBREELEC_DIR="$(get_abs_path "${LIBREELEC_DIR}")"
+check_exists DISTRO_DIR || exit
+DISTRO_DIR="$(get_abs_path "${DISTRO_DIR}")"
 
-DISTRO_SOURCE="$(get_libreelec_option DISTRO_SRC)"
-DISTRO_MIRROR="$(get_libreelec_option DISTRO_MIRROR)"
-LIBREELEC_VER="$(get_libreelec_option LIBREELEC_VERSION)"
+DISTRO_SOURCE="$(get_distro_option DISTRO_SRC)"
+DISTRO_MIRROR="$(get_distro_option DISTRO_MIRROR)"
+DISTRO_VER="$(get_distro_option DISTRO_VERSION)"
 
 if [ ${IS_MIRROR} = no ]; then
-  TARGET_DIR="$(get_abs_path "${TARGET_DIR}/${LIBREELEC_VER}")"
+  TARGET_DIR="$(get_abs_path "${TARGET_DIR}/${DISTRO_VER}")"
 else
   TARGET_DIR="$(get_abs_path "${TARGET_DIR}/mirror")"
 fi
 check_exists TARGET_DIR || exit
 
 if [ ${IS_MIRROR} = no ]; then
-  DOWNLOAD_DIR="$(get_abs_path "${DOWNLOAD_DIR}/${LIBREELEC_VER}")"
+  DOWNLOAD_DIR="$(get_abs_path "${DOWNLOAD_DIR}/${DISTRO_VER}")"
 else
   DOWNLOAD_DIR="$(get_abs_path "${DOWNLOAD_DIR}/mirror")"
 fi
@@ -1070,9 +1070,9 @@ fi
 
 echo
 if [ ${IS_MIRROR} = yes ]; then
-  echo "Synchronising LibreELEC.tv (branch: $(get_libreelec_branch), version: ${LIBREELEC_VER}) with MIRROR server ${TARGET_DIR}"
+  echo "Synchronising (branch: $(get_distro_branch), version: ${DISTRO_VER}) with MIRROR server ${TARGET_DIR}"
 else
-  echo "Synchronising LibreELEC.tv (branch: $(get_libreelec_branch), version: ${LIBREELEC_VER}) with SOURCE server ${TARGET_DIR}"
+  echo "Synchronising (branch: $(get_distro_branch), version: ${DISTRO_VER}) with SOURCE server ${TARGET_DIR}"
 fi
 echo
 echo "Distro Source is: ${DISTRO_SOURCE}"

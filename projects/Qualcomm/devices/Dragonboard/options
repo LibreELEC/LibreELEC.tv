@@ -85,14 +85,6 @@
   # e.g. FIRMWARE="dvb-firmware misc-firmware wlan-firmware"
     FIRMWARE="misc-firmware wlan-firmware dvb-firmware firmware-dragonboard"
 
-  # build and install driver addons (yes / no)
-    DRIVER_ADDONS_SUPPORT="no"
-
-  # driver addons to install:
-  # for a list of additional drivers see packages/linux-driver-addons
-  # Space separated list is supported,
-    DRIVER_ADDONS="crazycat dvb-latest"
-
   # build with installer (yes / no)
     INSTALLER_SUPPORT="no"
 

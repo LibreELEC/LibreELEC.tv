@@ -35,7 +35,7 @@ create_multi_keymap() {
 post_makeinstall_target() {
   local f keymap
 
-  if [ ! "${LIBREELEC_VERSION}" == "devel" ]; then
+  if [ ! "${DISTRO_VERSION}" == "devel" ]; then
     rm ${INSTALL}/usr/bin/v4l2-compliance
   fi
 

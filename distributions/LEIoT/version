@@ -3,6 +3,3 @@
 
 # OS_VERSION: OS Version
   OS_VERSION="13.0"
-
-# ADDON_VERSION: Addon version
-  ADDON_VERSION="12.80.2"
