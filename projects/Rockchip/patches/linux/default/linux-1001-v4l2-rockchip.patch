@@ -289,7 +289,7 @@ index eaf2f133a264..f55abb7c377f 100644
  	}
  
 +
-+	rkvdec->rstc = devm_reset_control_array_get(&pdev->dev, false, true);
++	rkvdec->rstc = devm_reset_control_array_get(&pdev->dev, RESET_CONTROL_OPTIONAL_EXCLUSIVE);
 +	if (IS_ERR(rkvdec->rstc)) {
 +		dev_err(&pdev->dev,
 +			"get resets failed %ld\n", PTR_ERR(rkvdec->rstc));
