@@ -911,12 +911,16 @@ check_update() {
 
   # all ok, update
   if [ -b "/$IMAGE_KERNEL" ]; then
-    update_partition "Kernel" "$UPDATE_KERNEL" "/$IMAGE_KERNEL"
+    update_partition "Kernel    " "${UPDATE_KERNEL}"     "/${IMAGE_KERNEL}"
+    update_partition "Kernel md5" "${UPDATE_KERNEL}.md5" "/${IMAGE_KERNEL}.md5"
   else
-    update_file "Kernel" "$UPDATE_KERNEL" "/flash/$IMAGE_KERNEL"
+    update_file "Kernel    " "${UPDATE_KERNEL}"     "/flash/${IMAGE_KERNEL}"
+    update_file "Kernel md5" "${UPDATE_KERNEL}.md5" "/flash/${IMAGE_KERNEL}.md5"
   fi
+
   umount /sysroot
-  update_file "System" "$UPDATE_SYSTEM" "/flash/$IMAGE_SYSTEM"
+  update_file "System    " "${UPDATE_SYSTEM}"     "/flash/${IMAGE_SYSTEM}"
+  update_file "System md5" "${UPDATE_KERNEL}.md5" "/flash/${IMAGE_SYSTEM}.md5"
   update_bootloader
   do_cleanup
   do_reboot
