@@ -64,7 +64,30 @@ if listcontains "${GRAPHIC_DRIVERS}" "etnaviv"; then
 fi
 
 if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
-  PKG_DEPENDS_TARGET+=" mesa:host"
+  if [[ "${USE_REUSABLE}" = @(auto|force) ]]; then
+    # obtain the reusable mesa:host tools
+    file=/tmp/mesa.check
+    if [[ ! -f ${file} || $(($(date +%s) - $(stat -c %Y "$file"))) -gt 60 ]]; then
+      ${SCRIPTS}/get mesa-reusable 2> /dev/null
+      echo $? > ${file}
+      [[ "$(cat ${file})" = 1 ]] && build_msg "CLR_WARNING" "WARNING" "Reusable mesa:host tools were not able to be downloaded."
+    fi
+    if [[ "$(cat ${file})" = 0 ]]; then
+      # if the reusable tools are available
+      PKG_DEPENDS_UNPACK+=" mesa-reusable"
+    else
+      if [ "${USE_REUSABLE}" = "force" ]; then
+        # Fail
+        build_msg "CLR_WARNING" "WARNING" "USE_REUSABLE is set to force. exiting."
+        exit 1
+      elif [ "${USE_REUSABLE}" = "auto" ]; then
+        # Proceed with build of mesa:host
+        PKG_DEPENDS_TARGET+=" mesa:host"
+      fi
+    fi
+  else
+    PKG_DEPENDS_TARGET+=" mesa:host"
+  fi
   PKG_MESON_OPTS_TARGET+=" -Dmesa-clc=system -Dprecomp-compiler=system"
 fi
 
@@ -120,6 +143,29 @@ fi
 
 makeinstall_host() {
   host_files="src/compiler/clc/mesa_clc src/compiler/spirv/vtn_bindgen2 src/panfrost/clc/panfrost_compile"
+
+  if listcontains "${BUILD_REUSABLE}" "(all|mesa:host)"; then
+    # Build the reusable mesa:host for both local and to be added to a GitHub release
+    strip ${host_files}
+    upx --lzma ${host_files}
+
+    REUSABLE_SOURCES="${SOURCES}/mesa-reusable"
+    MESA_HOST="mesa-reusable-${OS_VERSION}-${PKG_VERSION}"
+    REUSABLE_SOURCE_NAME=${MESA_HOST}-${MACHINE_HARDWARE_NAME}.tar
+
+    mkdir -p "${TARGET_IMG}"
+
+    tar cf ${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.tar --transform='s|.*/||' ${host_files}
+    sha256sum ${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.tar | \
+      cut -d" " -f1 >${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.tar.sha256
+
+    if listcontains "${BUILD_REUSABLE}" "save-local"; then
+      mkdir -p "${REUSABLE_SOURCES}"
+      cp -p ${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.tar ${REUSABLE_SOURCES}
+      cp -p ${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.tar.sha256 ${REUSABLE_SOURCES}
+      echo "save-local" >${REUSABLE_SOURCES}/${REUSABLE_SOURCE_NAME}.tar.url
+    fi
+  fi
 
   mkdir -p "${TOOLCHAIN}/bin"
     cp -a ${host_files} "${TOOLCHAIN}/bin"
