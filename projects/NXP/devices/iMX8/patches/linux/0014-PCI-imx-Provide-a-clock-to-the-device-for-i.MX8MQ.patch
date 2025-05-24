@@ -18,9 +18,9 @@ index 841af6f55c7d..ac36c7035460 100644
 --- a/drivers/pci/controller/dwc/pci-imx6.c
 +++ b/drivers/pci/controller/dwc/pci-imx6.c
 @@ -43,6 +43,11 @@ struct imx6_pcie {
+ #define IMX8MQ_GPR_PCIE_CLK_REQ_OVERRIDE	BIT(11)
  #define IMX8MQ_GPR_PCIE_VREG_BYPASS		BIT(12)
  #define IMX8MQ_GPR12_PCIE2_CTRL_DEVICE_TYPE	GENMASK(11, 8)
- #define IMX8MQ_PCIE2_BASE_ADDR			0x33c00000
 +#define IMX8MQ_ANA_PLLOUT_MONITOR_CFG_REG	0x74
 +#define IMX8MQ_ANA_PLLOUT_MONITOR_CLK_SEL_MASK	GENMASK(3, 0)
 +#define IMX8MQ_ANA_PLLOUT_MONITOR_CKE		BIT(4)
