@@ -270,3 +270,14 @@
 # for a list of additional drivers see packages/linux-driver-addons
 # Space separated list is supported,
   DRIVER_ADDONS="crazycat digital_devices dvb-latest"
+
+# should reusable host tools be built:
+# Space separated list is supported,
+# list of options are:
+#   - all (for all host tools to be built)
+#   - mesa:host
+#   - save-local (saves a copy in sources/reusable/<package>
+  BUILD_REUSABLE=""
+
+# should reusable host tools be used (yes / no)
+  USE_REUSABLE="no"

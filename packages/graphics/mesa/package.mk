@@ -64,7 +64,11 @@ if listcontains "${GRAPHIC_DRIVERS}" "etnaviv"; then
 fi
 
 if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
-  PKG_DEPENDS_TARGET+=" mesa:host"
+  if [ "${USE_REUSABLE}" = "yes" ]; then
+    PKG_DEPENDS_TARGET+=" mesa-reusable"
+  else
+    PKG_DEPENDS_TARGET+=" mesa:host"
+  fi
   PKG_MESON_OPTS_TARGET+=" -Dmesa-clc=system -Dprecomp-compiler=system"
 fi
 
@@ -119,6 +123,29 @@ fi
 
 makeinstall_host() {
   host_files="src/compiler/clc/mesa_clc src/compiler/spirv/vtn_bindgen2 src/panfrost/clc/panfrost_compile"
+
+  if listcontains "${BUILD_REUSABLE}" "(all|mesa:host)"; then
+    # Build the reusable mesa:host for both local and to be added to a GitHub release
+    strip ${host_files}
+    upx --lzma ${host_files}
+
+    REUSABLE_SOURCES="${SOURCES}/mesa-reusable"
+    MESA_HOST="mesa-reusable-${OS_VERSION}-${PKG_VERSION}"
+    REUSABLE_SOURCE_NAME=${MESA_HOST}-${MACHINE_HARDWARE_NAME}.tar
+
+    mkdir -p "${TARGET_IMG}"
+
+    tar cf ${TARGET_IMG}/${REUSABLE_SOURCE_NAME} --transform='s|.*/||' ${host_files}
+    sha256sum ${TARGET_IMG}/${REUSABLE_SOURCE_NAME} | \
+      cut -d" " -f1 >${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.sha256
+
+    if listcontains "${BUILD_REUSABLE}" "save-local"; then
+      mkdir -p "${REUSABLE_SOURCES}"
+      cp -p ${TARGET_IMG}/${REUSABLE_SOURCE_NAME} ${REUSABLE_SOURCES}
+      cp -p ${TARGET_IMG}/${REUSABLE_SOURCE_NAME}.sha256 ${REUSABLE_SOURCES}
+      echo "save-local" >${REUSABLE_SOURCES}/${REUSABLE_SOURCE_NAME}.url
+    fi
+  fi
 
   mkdir -p "${TOOLCHAIN}/bin"
     cp -a ${host_files} "${TOOLCHAIN}/bin"
