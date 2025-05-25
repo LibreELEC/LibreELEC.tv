@@ -168,6 +168,10 @@ pre_make_target() {
 
     ${PKG_BUILD}/scripts/config --set-str CONFIG_EXTRA_FIRMWARE "${FW_LIST}"
     ${PKG_BUILD}/scripts/config --set-str CONFIG_EXTRA_FIRMWARE_DIR "external-firmware"
+  elif [ "${TARGET_ARCH}" = "aarch64" -a "${DEVICE}" = "H6" ]; then
+    mkdir -p ${INSTALL}/$(get_full_firmware_dir)
+    cp ${PKG_BUILD}/drivers/net/wireless/uwe5622/firmware/wcnmodem.bin ${INSTALL}/$(get_full_firmware_dir)/
+    cp ${PKG_BUILD}/drivers/net/wireless/uwe5622/firmware/wifi_2355b001_1ant.ini ${INSTALL}/$(get_full_firmware_dir)/
   fi
 
   kernel_make listnewconfig

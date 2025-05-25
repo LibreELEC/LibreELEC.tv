@@ -259,6 +259,7 @@ post_makeinstall_target() {
   ln -sf /storage/.config/hwdb.d ${INSTALL}/etc/udev/hwdb.d
   safe_remove ${INSTALL}/etc/udev/rules.d
   ln -sf /storage/.config/udev.rules.d ${INSTALL}/etc/udev/rules.d
+  cp ${PKG_DIR}/infloop.sh ${INSTALL}/usr/bin/
 
   # journald
   ln -sf /storage/.cache/journald.conf.d ${INSTALL}/usr/lib/systemd/journald.conf.d
@@ -303,4 +304,5 @@ post_install() {
   enable_service network-base.service
   enable_service systemd-timesyncd.service
   enable_service systemd-timesyncd-setup.service
+  enable_service wifi-driver-load.service
 }

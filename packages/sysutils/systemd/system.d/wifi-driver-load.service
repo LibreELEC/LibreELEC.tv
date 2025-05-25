@@ -1,0 +1,15 @@
+[Unit]
+Description=Load uwe5622 kernel module
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+ExecStartPre=modprobe sprdwl_ng
+ExecStart=/usr/bin/sh -c /usr/bin/infloop.sh
+RestartSec=5s
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

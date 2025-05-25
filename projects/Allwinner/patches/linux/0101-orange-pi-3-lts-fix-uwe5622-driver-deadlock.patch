@@ -1,0 +1,28 @@
+commit 0de36d3a21bd3775f11d2e20450746b19efa510f
+Author: Sergey Nikiforov <void234@gmail.com>
+Date:   Sun May 25 21:33:51 2025 +0200
+
+    uwe5622: fix a deadlock
+
+diff --git a/drivers/net/wireless/uwe5622/unisocwifi/main.c b/drivers/net/wireless/uwe5622/unisocwifi/main.c
+index f1d6d7285..0b8c29506 100755
+--- a/drivers/net/wireless/uwe5622/unisocwifi/main.c
++++ b/drivers/net/wireless/uwe5622/unisocwifi/main.c
+@@ -1456,7 +1456,7 @@ static struct sprdwl_vif *sprdwl_register_netdev(struct sprdwl_priv *priv,
+ #endif
+ 
+ 	/* register new Ethernet interface */
+-	ret = register_netdevice(ndev);
++	ret = cfg80211_register_netdevice(ndev);
+ 	if (ret) {
+ 		wl_ndev_log(L_ERR, ndev, "failed to regitster netdev(%d)!\n", ret);
+ 		goto err;
+@@ -1478,7 +1478,7 @@ static void sprdwl_unregister_netdev(struct sprdwl_vif *vif)
+ 	if (vif->priv->fw_capa & SPRDWL_CAPA_MC_FILTER)
+ 		kfree(vif->mc_filter);
+ 	sprdwl_deinit_vif(vif);
+-	unregister_netdevice(vif->ndev);
++	cfg80211_unregister_netdevice(vif->ndev);
+ }
+ 
+ struct wireless_dev *sprdwl_add_iface(struct sprdwl_priv *priv,

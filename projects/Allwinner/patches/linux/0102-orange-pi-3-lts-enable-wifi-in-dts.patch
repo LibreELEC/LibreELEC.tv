@@ -1,0 +1,71 @@
+commit da15b43acb46ec5c9f15c9c2e86eb062fba7f0f5
+Author: Sergey Nikiforov <void234@gmail.com>
+Date:   Sun May 25 21:41:20 2025 +0200
+
+    orange pi 3 lts: enable wi-fi in .dts
+
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi-3-lts.dts b/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi-3-lts.dts
+index a2d2c8529..33564300b 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi-3-lts.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi-3-lts.dts
+@@ -76,6 +76,34 @@ reg_vcc5v: vcc5v {
+ 		regulator-max-microvolt = <5000000>;
+ 		regulator-always-on;
+ 	};
++
++	reg_vcc33_wifi: vcc33-wifi {
++		/* Always on 3.3V regulator for WiFi and BT */
++ 		compatible = "regulator-fixed";
++		regulator-name = "vcc33-wifi";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		enable-active-high;
++		gpio = <&pio 7 7 GPIO_ACTIVE_HIGH>; /* PH7 */
++	};
++
++	reg_vcc_wifi_io: vcc-wifi-io {
++		/* Always on 1.8V/300mA regulator for WiFi and BT IO */
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-wifi-io";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++ 		regulator-always-on;
++		vin-supply = <&reg_vcc33_wifi>;
++	};
++
++	wifi_pwrseq: wifi-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		clocks = <&rtc 1>;
++		clock-names = "ext_clock";
++		reset-gpios = <&r_pio 1 3 GPIO_ACTIVE_LOW>; /* PM3 */
++		post-power-on-delay-ms = <200>;
++	};
+ };
+ 
+ &cpu0 {
+@@ -145,6 +173,25 @@ &mmc0 {
+ 	status = "okay";
+ };
+ 
++&mmc1 {
++	vmmc-supply = <&reg_vcc33_wifi>;
++	vqmmc-supply = <&reg_vcc_wifi_io>;
++	mmc-pwrseq = <&wifi_pwrseq>;
++	bus-width = <4>;
++	non-removable;
++	status = "okay";
++
++	uwe-bsp {
++		compatible = "unisoc,uwe_bsp";
++		keep-power-on;
++		data-irq;
++		//adma-tx;
++		adma-rx;
++		//blksz-512;
++		status = "okay";
++	};
++};
++
+ &mmc2 {
+ 	vmmc-supply = <&reg_cldo1>;
+ 	vqmmc-supply = <&reg_bldo2>;

@@ -1,0 +1,77 @@
+commit 13892f7ec8e1eef63049e2b7c6a7477d1a82e47d
+Author: Sergey Nikiforov <void234@gmail.com>
+Date:   Sun May 25 21:43:30 2025 +0200
+
+    a set of HACKS to build and use the uwe5622 driver
+    
+    Do NOT merge this "as is". This is just a set of quick HACKS
+    to build the image and test internal Wi-Fi on Orange Pi 3 LTS.
+
+diff --git a/drivers/net/wireless/uwe5622/Kconfig b/drivers/net/wireless/uwe5622/Kconfig
+index fe6c8d115..8bd062507 100644
+--- a/drivers/net/wireless/uwe5622/Kconfig
++++ b/drivers/net/wireless/uwe5622/Kconfig
+@@ -1,7 +1,8 @@
+ config SPARD_WLAN_SUPPORT
+ 	bool "Unisoc wireless Support"
+-	select RK_WIFI_DEVICE_UWE5622  if SPARD_WLAN_SUPPORT
+-	default n
++	select AW_WIFI_DEVICE_UWE5622  if SPARD_WLAN_SUPPORT
++	select AW_BIND_VERIFY  if SPARD_WLAN_SUPPORT
++	default y
+ 	help
+ 	  This is support for spreadtrum wireless chip.
+ 
+diff --git a/drivers/net/wireless/uwe5622/Makefile b/drivers/net/wireless/uwe5622/Makefile
+index d2210439f..a5767f50d 100644
+--- a/drivers/net/wireless/uwe5622/Makefile
++++ b/drivers/net/wireless/uwe5622/Makefile
+@@ -1,4 +1,4 @@
+-obj-$(CONFIG_RK_WIFI_DEVICE_UWE5622) += unisocwcn/
++obj-$(CONFIG_AW_WIFI_DEVICE_UWE5622) += unisocwcn/
+ obj-$(CONFIG_WLAN_UWE5622)    += unisocwifi/
+ obj-$(CONFIG_TTY_OVERY_SDIO)  += tty-sdio/
+ 
+diff --git a/drivers/net/wireless/uwe5622/unisocwcn/Kconfig b/drivers/net/wireless/uwe5622/unisocwcn/Kconfig
+index f5fe8170a..afbc514d8 100644
+--- a/drivers/net/wireless/uwe5622/unisocwcn/Kconfig
++++ b/drivers/net/wireless/uwe5622/unisocwcn/Kconfig
+@@ -55,7 +55,7 @@ config SC2366
+ 
+ config WCN_BSP_DRIVER_BUILDIN
+ 	bool "buildin bsp driver for unisoc chip"
+-	default n
++	default y
+ 	help
+ 	  This is support wcn chip for incard board.
+ 	  if you want to buildin bsp driver.
+@@ -82,7 +82,7 @@ config RK_WIFI_DEVICE_UWE5622
+ 
+ config AW_WIFI_DEVICE_UWE5622
+ 	bool "allwinner board Support for uwe5622"
+-	default n
++	default y
+ 	help
+ 	  This is support wcn chip for allwinner board.
+ 	  if you want to support allwinner board.
+@@ -92,7 +92,7 @@ config AW_WIFI_DEVICE_UWE5622
+ config AW_BIND_VERIFY
+ 	bool "allwinner wcn bind verify"
+ 	depends on AW_WIFI_DEVICE_UWE5622
+-	default n
++	default y
+ 	help
+ 	  This is support wcn bind verify for allwinner board.
+ 	  if you want to do wcn chip bind verify.
+diff --git a/drivers/net/wireless/uwe5622/unisocwifi/Kconfig b/drivers/net/wireless/uwe5622/unisocwifi/Kconfig
+index fce21d35d..d3ebc7a4e 100644
+--- a/drivers/net/wireless/uwe5622/unisocwifi/Kconfig
++++ b/drivers/net/wireless/uwe5622/unisocwifi/Kconfig
+@@ -5,6 +5,7 @@ config WLAN_UWE5621
+ 
+ config WLAN_UWE5622
+ 	tristate "UWE5622 Wi-Fi Driver"
++	default y
+ 	help
+ 	  Spard UWE5622 Wi-Fi Driver.
+ 
