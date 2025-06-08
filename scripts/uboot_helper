@@ -431,6 +431,16 @@ devices = \
         'soc': 'RK3566'
       },
     },
+    'RK3576': {
+      'roc-pc': {
+        'config': 'roc-pc-rk3576_defconfig',
+        'dtb': ''
+      },
+      'rock-4d': {
+        'config': 'roc-pc-rk3576_defconfig',
+        'dtb': ''
+      },
+    },
     'RK3588': {
       'armsom-sige7': {
         'config': 'sige7-rk3588_defconfig',
