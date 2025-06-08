@@ -1,0 +1,46 @@
+From 54b148f1c3082be0dc7506cd503befc3b01c6363 Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Mon, 23 Jun 2025 12:07:21 -0400
+Subject: [PATCH 11/61] FROMGIT(6.17): media: rkvdec: Remove TODO file
+
+2 items are present in the TODO file:
+ - HEVC support
+ - Evaluate adding helper for rkvdec_request_validate
+
+Missing HEVC support is not a reason for a driver to be in staging,
+support for different features of the hardware can be added in drivers
+in the main tree.
+
+The rkvdec_request_validate function was simplified in
+commit 54676d5f5630 ("media: rkvdec: Do not require all controls to be present in every request")
+by not setting controls that have not changed.
+As it now basically just calls vb2_request_validate(), there is no need
+for a helper.
+
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+Reviewed-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+---
+ drivers/staging/media/rkvdec/TODO | 11 -----------
+ 1 file changed, 11 deletions(-)
+ delete mode 100644 drivers/staging/media/rkvdec/TODO
+
+diff --git a/drivers/staging/media/rkvdec/TODO b/drivers/staging/media/rkvdec/TODO
+deleted file mode 100644
+index 2c0779383276..000000000000
+--- a/drivers/staging/media/rkvdec/TODO
++++ /dev/null
+@@ -1,11 +0,0 @@
+-* Support for HEVC is planned for this driver.
+-
+-  Given the V4L controls for that CODEC will be part of
+-  the uABI, it will be required to have the driver in staging.
+-
+-  For this reason, we are keeping this driver in staging for now.
+-
+-* Evaluate introducing a helper to consolidate duplicated
+-  code in rkvdec_request_validate and cedrus_request_validate.
+-  The helper needs to the driver private data associated with
+-  the videobuf2 queue, from a media request.
+-- 
+2.34.1
+

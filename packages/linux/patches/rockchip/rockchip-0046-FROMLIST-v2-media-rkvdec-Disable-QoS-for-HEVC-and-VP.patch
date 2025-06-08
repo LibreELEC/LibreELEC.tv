@@ -1,0 +1,145 @@
+From 6eceda01c4338baf8009399a8876bbcc9adb37a8 Mon Sep 17 00:00:00 2001
+From: Alex Bee <knaerzche@gmail.com>
+Date: Sun, 10 Aug 2025 21:24:35 +0000
+Subject: [PATCH 46/61] FROMLIST(v2): media: rkvdec: Disable QoS for HEVC and
+ VP9 on RK3328
+
+The RK3328 VDEC has a HW quirk that require QoS to be disabled when HEVC
+or VP9 is decoded, otherwise the decoded picture may become corrupted.
+
+Add a RK3328 variant with a quirk flag to disable QoS when before
+decoding is started.
+
+Signed-off-by: Alex Bee <knaerzche@gmail.com>
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c |  9 +++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h |  2 ++
+ drivers/media/platform/rockchip/rkvdec/rkvdec-vp9.c  | 10 ++++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c      | 12 ++++++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.h      |  4 ++++
+ 5 files changed, 37 insertions(+)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
+index 1994ea24f0be..f8bb8c4264f7 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
+@@ -789,6 +789,15 @@ static int rkvdec_hevc_run(struct rkvdec_ctx *ctx)
+ 	writel(1, rkvdec->regs + RKVDEC_REG_PREF_LUMA_CACHE_COMMAND);
+ 	writel(1, rkvdec->regs + RKVDEC_REG_PREF_CHR_CACHE_COMMAND);
+ 
++	if (rkvdec->quirks & RKVDEC_QUIRK_DISABLE_QOS) {
++		u32 reg;
++
++		reg = readl(rkvdec->regs + RKVDEC_REG_QOS_CTRL);
++		reg |= 0xFFFF;
++		reg &= ~BIT(12);
++		writel(reg, rkvdec->regs + RKVDEC_REG_QOS_CTRL);
++	}
++
+ 	/* Start decoding! */
+ 	reg = (run.pps->flags & V4L2_HEVC_PPS_FLAG_TILES_ENABLED) ?
+ 		0 : RKVDEC_WR_DDR_ALIGN_EN;
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
+index 540c8bdf24e4..c627b6b6f53a 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
+@@ -219,6 +219,8 @@
+ #define RKVDEC_REG_H264_ERR_E				0x134
+ #define RKVDEC_H264_ERR_EN_HIGHBITS(x)			((x) & 0x3fffffff)
+ 
++#define RKVDEC_REG_QOS_CTRL				0x18C
++
+ #define RKVDEC_REG_PREF_LUMA_CACHE_COMMAND		0x410
+ #define RKVDEC_REG_PREF_CHR_CACHE_COMMAND		0x450
+ 
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-vp9.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-vp9.c
+index 0e7e16f20eeb..cadb9d592308 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-vp9.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-vp9.c
+@@ -824,6 +824,16 @@ static int rkvdec_vp9_run(struct rkvdec_ctx *ctx)
+ 	writel(1, rkvdec->regs + RKVDEC_REG_PREF_CHR_CACHE_COMMAND);
+ 
+ 	writel(0xe, rkvdec->regs + RKVDEC_REG_STRMD_ERR_EN);
++
++	if (rkvdec->quirks & RKVDEC_QUIRK_DISABLE_QOS) {
++		u32 reg;
++
++		reg = readl(rkvdec->regs + RKVDEC_REG_QOS_CTRL);
++		reg |= 0xFFFF;
++		reg &= ~BIT(12);
++		writel(reg, rkvdec->regs + RKVDEC_REG_QOS_CTRL);
++	}
++
+ 	/* Start decoding! */
+ 	writel(RKVDEC_INTERRUPT_DEC_E | RKVDEC_CONFIG_DEC_CLK_GATE_E |
+ 	       RKVDEC_TIMEOUT_E | RKVDEC_BUF_EMPTY_E,
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index c20e046205fe..d61d4c419992 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -1226,6 +1226,13 @@ static const struct rkvdec_variant rk3288_rkvdec_variant = {
+ 	.capabilities = RKVDEC_CAPABILITY_HEVC,
+ };
+ 
++static const struct rkvdec_variant rk3328_rkvdec_variant = {
++	.capabilities = RKVDEC_CAPABILITY_HEVC |
++			RKVDEC_CAPABILITY_H264 |
++			RKVDEC_CAPABILITY_VP9,
++	.quirks = RKVDEC_QUIRK_DISABLE_QOS,
++};
++
+ static const struct rkvdec_variant rk3399_rkvdec_variant = {
+ 	.capabilities = RKVDEC_CAPABILITY_HEVC |
+ 			RKVDEC_CAPABILITY_H264 |
+@@ -1237,6 +1244,10 @@ static const struct of_device_id of_rkvdec_match[] = {
+ 		.compatible = "rockchip,rk3288-vdec",
+ 		.data = &rk3288_rkvdec_variant,
+ 	},
++	{
++		.compatible = "rockchip,rk3328-vdec",
++		.data = &rk3328_rkvdec_variant,
++	},
+ 	{
+ 		.compatible = "rockchip,rk3399-vdec",
+ 		.data = &rk3399_rkvdec_variant,
+@@ -1267,6 +1278,7 @@ static int rkvdec_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, rkvdec);
+ 	rkvdec->dev = &pdev->dev;
+ 	rkvdec->capabilities = variant->capabilities;
++	rkvdec->quirks = variant->quirks;
+ 	mutex_init(&rkvdec->vdev_lock);
+ 	INIT_DELAYED_WORK(&rkvdec->watchdog_work, rkvdec_watchdog_func);
+ 
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+index 8e1f8548eae4..e633a879e9bf 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+@@ -26,6 +26,8 @@
+ #define RKVDEC_CAPABILITY_H264		BIT(1)
+ #define RKVDEC_CAPABILITY_VP9		BIT(2)
+ 
++#define RKVDEC_QUIRK_DISABLE_QOS	BIT(0)
++
+ struct rkvdec_ctx;
+ 
+ struct rkvdec_ctrl_desc {
+@@ -69,6 +71,7 @@ vb2_to_rkvdec_decoded_buf(struct vb2_buffer *buf)
+ 
+ struct rkvdec_variant {
+ 	unsigned int capabilities;
++	unsigned int quirks;
+ };
+ 
+ struct rkvdec_coded_fmt_ops {
+@@ -121,6 +124,7 @@ struct rkvdec_dev {
+ 	struct delayed_work watchdog_work;
+ 	struct iommu_domain *empty_domain;
+ 	unsigned int capabilities;
++	unsigned int quirks;
+ };
+ 
+ struct rkvdec_ctx {
+-- 
+2.34.1
+

@@ -1,0 +1,142 @@
+From 1a3c8b81d8059ecb35643b28465ad54afad041a1 Mon Sep 17 00:00:00 2001
+From: Alex Bee <knaerzche@gmail.com>
+Date: Sun, 10 Aug 2025 21:24:32 +0000
+Subject: [PATCH 43/61] FROMLIST(v2): media: rkvdec: Add variants support
+
+Different versions of the Rockchip VDEC IP exists and one way they can
+differ is what decoding formats are supported.
+
+Add a variant implementation in order to support flagging different
+capabilities.
+
+Signed-off-by: Alex Bee <knaerzche@gmail.com>
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+Reviewed-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+---
+ .../media/platform/rockchip/rkvdec/rkvdec.c   | 21 ++++++++++++++++++-
+ .../media/platform/rockchip/rkvdec/rkvdec.h   | 10 +++++++++
+ 2 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index cfb326600a2d..e7b9dfc2d1ab 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -14,6 +14,7 @@
+ #include <linux/iommu.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm.h>
+ #include <linux/pm_runtime.h>
+@@ -327,6 +328,7 @@ static const struct rkvdec_coded_fmt_desc rkvdec_coded_fmts[] = {
+ 		.ops = &rkvdec_hevc_fmt_ops,
+ 		.num_decoded_fmts = ARRAY_SIZE(rkvdec_hevc_decoded_fmts),
+ 		.decoded_fmts = rkvdec_hevc_decoded_fmts,
++		.capability = RKVDEC_CAPABILITY_HEVC,
+ 	},
+ 	{
+ 		.fourcc = V4L2_PIX_FMT_H264_SLICE,
+@@ -343,6 +345,7 @@ static const struct rkvdec_coded_fmt_desc rkvdec_coded_fmts[] = {
+ 		.num_decoded_fmts = ARRAY_SIZE(rkvdec_h264_decoded_fmts),
+ 		.decoded_fmts = rkvdec_h264_decoded_fmts,
+ 		.subsystem_flags = VB2_V4L2_FL_SUPPORTS_M2M_HOLD_CAPTURE_BUF,
++		.capability = RKVDEC_CAPABILITY_H264,
+ 	},
+ 	{
+ 		.fourcc = V4L2_PIX_FMT_VP9_FRAME,
+@@ -358,6 +361,7 @@ static const struct rkvdec_coded_fmt_desc rkvdec_coded_fmts[] = {
+ 		.ops = &rkvdec_vp9_fmt_ops,
+ 		.num_decoded_fmts = ARRAY_SIZE(rkvdec_vp9_decoded_fmts),
+ 		.decoded_fmts = rkvdec_vp9_decoded_fmts,
++		.capability = RKVDEC_CAPABILITY_VP9,
+ 	}
+ };
+ 
+@@ -1187,8 +1191,17 @@ static void rkvdec_watchdog_func(struct work_struct *work)
+ 	}
+ }
+ 
++static const struct rkvdec_variant rk3399_rkvdec_variant = {
++	.capabilities = RKVDEC_CAPABILITY_HEVC |
++			RKVDEC_CAPABILITY_H264 |
++			RKVDEC_CAPABILITY_VP9,
++};
++
+ static const struct of_device_id of_rkvdec_match[] = {
+-	{ .compatible = "rockchip,rk3399-vdec" },
++	{
++		.compatible = "rockchip,rk3399-vdec",
++		.data = &rk3399_rkvdec_variant,
++	},
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, of_rkvdec_match);
+@@ -1199,16 +1212,22 @@ static const char * const rkvdec_clk_names[] = {
+ 
+ static int rkvdec_probe(struct platform_device *pdev)
+ {
++	const struct rkvdec_variant *variant;
+ 	struct rkvdec_dev *rkvdec;
+ 	unsigned int i;
+ 	int ret, irq;
+ 
++	variant = of_device_get_match_data(&pdev->dev);
++	if (!variant)
++		return -EINVAL;
++
+ 	rkvdec = devm_kzalloc(&pdev->dev, sizeof(*rkvdec), GFP_KERNEL);
+ 	if (!rkvdec)
+ 		return -ENOMEM;
+ 
+ 	platform_set_drvdata(pdev, rkvdec);
+ 	rkvdec->dev = &pdev->dev;
++	rkvdec->capabilities = variant->capabilities;
+ 	mutex_init(&rkvdec->vdev_lock);
+ 	INIT_DELAYED_WORK(&rkvdec->watchdog_work, rkvdec_watchdog_func);
+ 
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+index c062c5c5bbb2..8e1f8548eae4 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+@@ -22,6 +22,10 @@
+ #include <media/videobuf2-core.h>
+ #include <media/videobuf2-dma-contig.h>
+ 
++#define RKVDEC_CAPABILITY_HEVC		BIT(0)
++#define RKVDEC_CAPABILITY_H264		BIT(1)
++#define RKVDEC_CAPABILITY_VP9		BIT(2)
++
+ struct rkvdec_ctx;
+ 
+ struct rkvdec_ctrl_desc {
+@@ -63,6 +67,10 @@ vb2_to_rkvdec_decoded_buf(struct vb2_buffer *buf)
+ 			    base.vb.vb2_buf);
+ }
+ 
++struct rkvdec_variant {
++	unsigned int capabilities;
++};
++
+ struct rkvdec_coded_fmt_ops {
+ 	int (*adjust_fmt)(struct rkvdec_ctx *ctx,
+ 			  struct v4l2_format *f);
+@@ -98,6 +106,7 @@ struct rkvdec_coded_fmt_desc {
+ 	unsigned int num_decoded_fmts;
+ 	const struct rkvdec_decoded_fmt_desc *decoded_fmts;
+ 	u32 subsystem_flags;
++	unsigned int capability;
+ };
+ 
+ struct rkvdec_dev {
+@@ -111,6 +120,7 @@ struct rkvdec_dev {
+ 	struct mutex vdev_lock; /* serializes ioctls */
+ 	struct delayed_work watchdog_work;
+ 	struct iommu_domain *empty_domain;
++	unsigned int capabilities;
+ };
+ 
+ struct rkvdec_ctx {
+-- 
+2.34.1
+

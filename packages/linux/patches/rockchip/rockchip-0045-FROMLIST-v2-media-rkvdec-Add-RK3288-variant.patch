@@ -1,0 +1,44 @@
+From 90bc233f243d1fc910d750f0727d21a50e069fb7 Mon Sep 17 00:00:00 2001
+From: Alex Bee <knaerzche@gmail.com>
+Date: Sun, 10 Aug 2025 21:24:34 +0000
+Subject: [PATCH 45/61] FROMLIST(v2): media: rkvdec: Add RK3288 variant
+
+Add a RK3288 variant, a version of the Rockchip VDEC IP that only
+support HEVC decoding.
+
+Signed-off-by: Alex Bee <knaerzche@gmail.com>
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+Reviewed-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+---
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 56807122720e..c20e046205fe 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -1222,6 +1222,10 @@ static void rkvdec_watchdog_func(struct work_struct *work)
+ 	}
+ }
+ 
++static const struct rkvdec_variant rk3288_rkvdec_variant = {
++	.capabilities = RKVDEC_CAPABILITY_HEVC,
++};
++
+ static const struct rkvdec_variant rk3399_rkvdec_variant = {
+ 	.capabilities = RKVDEC_CAPABILITY_HEVC |
+ 			RKVDEC_CAPABILITY_H264 |
+@@ -1229,6 +1233,10 @@ static const struct rkvdec_variant rk3399_rkvdec_variant = {
+ };
+ 
+ static const struct of_device_id of_rkvdec_match[] = {
++	{
++		.compatible = "rockchip,rk3288-vdec",
++		.data = &rk3288_rkvdec_variant,
++	},
+ 	{
+ 		.compatible = "rockchip,rk3399-vdec",
+ 		.data = &rk3399_rkvdec_variant,
+-- 
+2.34.1
+

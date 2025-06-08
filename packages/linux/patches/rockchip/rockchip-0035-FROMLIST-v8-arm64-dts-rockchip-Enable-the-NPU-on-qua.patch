@@ -1,0 +1,66 @@
+From bfcf58988ef691792122a7eeb36539508089fc02 Mon Sep 17 00:00:00 2001
+From: Tomeu Vizoso <tomeu@tomeuvizoso.net>
+Date: Sun, 13 Jul 2025 10:38:59 +0200
+Subject: [PATCH 35/61] FROMLIST(v8): arm64: dts: rockchip: Enable the NPU on
+ quartzpro64
+
+Enable the nodes added in a previous commit to the rk3588s device tree.
+
+v2:
+- Split nodes (Sebastian Reichel)
+- Sort nodes (Sebastian Reichel)
+- Add board regulators (Sebastian Reichel)
+
+v8:
+- Remove notion of top core (Robin Murphy)
+
+Tested-by: Heiko Stuebner <heiko@sntech.de>
+Signed-off-by: Tomeu Vizoso <tomeu@tomeuvizoso.net>
+---
+ .../boot/dts/rockchip/rk3588-quartzpro64.dts  | 30 +++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-quartzpro64.dts b/arch/arm64/boot/dts/rockchip/rk3588-quartzpro64.dts
+index 78aaa6635b5d..f8a0c95be58d 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-quartzpro64.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3588-quartzpro64.dts
+@@ -415,6 +415,36 @@ &pcie3x4 {
+ 	status = "okay";
+ };
+ 
++&rknn_core_0 {
++	npu-supply = <&vdd_npu_s0>;
++	sram-supply = <&vdd_npu_mem_s0>;
++	status = "okay";
++};
++
++&rknn_core_1 {
++	npu-supply = <&vdd_npu_s0>;
++	sram-supply = <&vdd_npu_mem_s0>;
++	status = "okay";
++};
++
++&rknn_core_2 {
++	npu-supply = <&vdd_npu_s0>;
++	sram-supply = <&vdd_npu_mem_s0>;
++	status = "okay";
++};
++
++&rknn_mmu_top {
++	status = "okay";
++};
++
++&rknn_mmu_1 {
++	status = "okay";
++};
++
++&rknn_mmu_2 {
++	status = "okay";
++};
++
+ &saradc {
+ 	vref-supply = <&vcc_1v8_s0>;
+ 	status = "okay";
+-- 
+2.34.1
+

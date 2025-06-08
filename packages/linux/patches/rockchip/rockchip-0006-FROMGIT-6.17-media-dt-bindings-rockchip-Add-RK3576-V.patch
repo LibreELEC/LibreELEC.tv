@@ -1,0 +1,42 @@
+From b67b864e4eaad8b73e4b31405e0df3e3f5b66124 Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Mon, 23 Jun 2025 12:07:16 -0400
+Subject: [PATCH 06/61] FROMGIT(6.17): media: dt-bindings: rockchip: Add RK3576
+ Video Decoder bindings
+
+The video decoder in RK3576 (vdpu383) is described the same way as the
+one in RK3588 (vdpu381). A new compatible is added as the driver
+implementation will be different.
+
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+Acked-by: Rob Herring (Arm) <robh@kernel.org>
+---
+ Documentation/devicetree/bindings/media/rockchip,vdec.yaml | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/media/rockchip,vdec.yaml b/Documentation/devicetree/bindings/media/rockchip,vdec.yaml
+index e9b82dc05fd1..96b6c8938768 100644
+--- a/Documentation/devicetree/bindings/media/rockchip,vdec.yaml
++++ b/Documentation/devicetree/bindings/media/rockchip,vdec.yaml
+@@ -17,6 +17,7 @@ properties:
+   compatible:
+     oneOf:
+       - const: rockchip,rk3399-vdec
++      - const: rockchip,rk3576-vdec
+       - const: rockchip,rk3588-vdec
+       - items:
+           - enum:
+@@ -104,7 +105,9 @@ allOf:
+       properties:
+         compatible:
+           contains:
+-            const: rockchip,rk3588-vdec
++            enum:
++              - rockchip,rk3576-vdec
++              - rockchip,rk3588-vdec
+     then:
+       properties:
+         reg:
+-- 
+2.34.1
+
