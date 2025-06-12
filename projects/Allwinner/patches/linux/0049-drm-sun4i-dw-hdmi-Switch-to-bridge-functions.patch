@@ -32,7 +32,7 @@ diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i
 index 8f8d3bdba5ce..93831cdf1917 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
-@@ -8,14 +8,90 @@
+@@ -8,14 +8,91 @@
  #include <linux/of.h>
  #include <linux/platform_device.h>
  
@@ -53,11 +53,12 @@ index 8f8d3bdba5ce..93831cdf1917 100644
 +	container_of(x, struct sun8i_dw_hdmi, enc_bridge)
 +
 +static int sun8i_hdmi_enc_attach(struct drm_bridge *bridge,
++				 struct drm_encoder *encoder,
 +				 enum drm_bridge_attach_flags flags)
 +{
 +	struct sun8i_dw_hdmi *hdmi = bridge_to_sun8i_dw_hdmi(bridge);
 +
-+	return drm_bridge_attach(&hdmi->encoder, hdmi->hdmi_bridge,
++	return drm_bridge_attach(encoder, hdmi->hdmi_bridge,
 +				 &hdmi->enc_bridge, flags);
 +}
 +
