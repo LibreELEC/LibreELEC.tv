@@ -31,7 +31,7 @@ new file mode 100644
 index 000000000000..7a375a23eaf1
 --- /dev/null
 +++ b/drivers/staging/media/rkvdec/rkvdec-hevc.c
-@@ -0,0 +1,2572 @@
+@@ -0,0 +1,2571 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Rockchip Video Decoder HEVC backend
@@ -2602,7 +2602,6 @@ index 000000000000..7a375a23eaf1
 +	.stop = rkvdec_hevc_stop,
 +	.run = rkvdec_hevc_run,
 +	.try_ctrl = rkvdec_hevc_try_ctrl,
-+	.valid_fmt = rkvdec_hevc_valid_fmt,
 +};
 diff --git a/drivers/staging/media/rkvdec/rkvdec-regs.h b/drivers/staging/media/rkvdec/rkvdec-regs.h
 index 265f5234f4eb..4319ee3ccbbc 100644
