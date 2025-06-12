@@ -3528,7 +3528,7 @@ new file mode 100644
 index 0000000000000..157b4d44b9e2b
 --- /dev/null
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-dp.c
-@@ -0,0 +1,693 @@
+@@ -0,0 +1,694 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Cadence MHDP8501 DisplayPort(DP) bridge driver
@@ -4082,6 +4082,7 @@ index 0000000000000..157b4d44b9e2b
 +}
 +
 +static int cdns_dp_bridge_attach(struct drm_bridge *bridge,
++				 struct drm_encoder *encoder,
 +				 enum drm_bridge_attach_flags flags)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
@@ -4227,7 +4228,7 @@ new file mode 100644
 index 0000000000000..9556d0929e21d
 --- /dev/null
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-hdmi.c
-@@ -0,0 +1,744 @@
+@@ -0,0 +1,745 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Cadence MHDP8501 HDMI bridge driver
@@ -4576,6 +4577,7 @@ index 0000000000000..9556d0929e21d
 +}
 +
 +static int cdns_hdmi_bridge_attach(struct drm_bridge *bridge,
++				   struct drm_encoder *encoder,
 +				   enum drm_bridge_attach_flags flags)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
