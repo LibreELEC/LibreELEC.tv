@@ -7,7 +7,7 @@ PKG_SHA256="4709f05395ccbad6c0a5b40a4619d60aafe3473b1a79bafb3aa700b1f756fd63"
 PKG_LICENSE="LGPL"
 PKG_SITE="https://vgough.github.io/encfs/"
 PKG_URL="https://github.com/vgough/encfs/releases/download/v${PKG_VERSION}/encfs-${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain fuse openssl"
+PKG_DEPENDS_TARGET="toolchain fuse openssl tinyxml2"
 PKG_LONGDESC="A Encrypted Filesystem for FUSE."
 PKG_BUILD_FLAGS="-sysroot"
 
