@@ -3,8 +3,8 @@
 
 PKG_NAME="Python3"
 # When changing PKG_VERSION remember to sync PKG_PYTHON_VERSION!
-PKG_VERSION="3.12.11"
-PKG_SHA256="c30bb24b7f1e9a19b11b55a546434f74e739bb4c271a3e3a80ff4380d49f7adb"
+PKG_VERSION="3.13.5"
+PKG_SHA256="93e583f243454e6e9e4588ca2c2662206ad961659863277afcdb96801647d640"
 PKG_LICENSE="OSS"
 PKG_SITE="https://www.python.org/"
 PKG_URL="https://www.python.org/ftp/python/${PKG_VERSION}/${PKG_NAME::-1}-${PKG_VERSION}.tar.xz"
@@ -14,7 +14,7 @@ PKG_LONGDESC="Python3 is an interpreted object-oriented programming language."
 PKG_BUILD_FLAGS="-cfg-libs -cfg-libs:host"
 PKG_TOOLCHAIN="autotools"
 
-PKG_PYTHON_VERSION="python3.12"
+PKG_PYTHON_VERSION="python3.13"
 
 PKG_CONFIGURE_OPTS_HOST="ac_cv_prog_HAS_HG=/bin/false
                          ac_cv_prog_SVNVERSION=/bin/false
@@ -39,7 +39,6 @@ PKG_CONFIGURE_OPTS_HOST="ac_cv_prog_HAS_HG=/bin/false
                          --disable-curses
                          --disable-pydoc
                          --disable-test-modules
-                         --disable-lib2to3
                          --disable-idle3
                          --with-expat=builtin
                          --with-doc-strings
@@ -78,7 +77,6 @@ PKG_CONFIGURE_OPTS_TARGET="ac_cv_prog_HAS_HG=/bin/false
                            --enable-curses
                            --disable-pydoc
                            --disable-test-modules
-                           --disable-lib2to3
                            --disable-idle3
                            --with-expat=system
                            --with-doc-strings
@@ -128,7 +126,7 @@ post_makeinstall_target() {
 
   PKG_INSTALL_PATH_LIB=${INSTALL}/usr/lib/${PKG_PYTHON_VERSION}
 
-  for dir in config compiler sysconfigdata lib-dynload/sysconfigdata lib2to3/tests test; do
+  for dir in config compiler sysconfigdata lib-dynload/sysconfigdata test; do
     rm -rf ${PKG_INSTALL_PATH_LIB}/${dir}
   done
 
