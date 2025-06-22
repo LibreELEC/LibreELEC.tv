@@ -2,8 +2,8 @@
 # Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="nextpvr"
-PKG_VERSION="7.0.1~Omega"
-PKG_ADDON_VERSION="7.0.1~2"
+PKG_VERSION="7.0.2~Omega"
+PKG_ADDON_VERSION="7.0.2~3"
 PKG_REV="0"
 PKG_ARCH="any"
 PKG_LICENSE="NextPVR"
