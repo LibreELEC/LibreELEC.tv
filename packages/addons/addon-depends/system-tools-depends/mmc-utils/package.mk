@@ -2,8 +2,8 @@
 # Copyright (C) 2022-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="mmc-utils"
-PKG_VERSION="123fd8b2ac3933be1319486fb1f32236a4a86a7c"
-PKG_SHA256="d718338740cc75c8b0b54647a0522baff1824a31d4f9ee7d0d022405d07284f6"
+PKG_VERSION="1.0"
+PKG_SHA256="39e6a89e06b53f99816f110af6743d1adc82220b26c51b0c3fd0a11ccf4206c2"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.kernel.org/doc/html/latest/driver-api/mmc/mmc-tools.html"
 PKG_URL="https://git.kernel.org/pub/scm/utils/mmc/mmc-utils.git/snapshot/mmc-utils-${PKG_VERSION}.tar.gz"
