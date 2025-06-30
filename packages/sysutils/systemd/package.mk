@@ -155,6 +155,10 @@ post_makeinstall_target() {
   # adjust systemd-hwdb-update (we have read-only /etc).
   sed '/^ConditionNeedsUpdate=.*$/d' -i ${INSTALL}/usr/lib/systemd/system/systemd-hwdb-update.service
 
+  # remove systemd-creds
+  safe_remove ${INSTALL}/usr/bin/systemd-creds
+  safe_remove ${INSTALL}/usr/lib/tmpfiles.d/credstore.conf
+
   # remove nspawn
   safe_remove ${INSTALL}/usr/bin/systemd-nspawn
   safe_remove ${INSTALL}/usr/lib/systemd/system/systemd-nspawn@.service
