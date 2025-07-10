@@ -2461,119 +2461,6 @@ index 3b6ec9c3a8d8b..1e68530e72229 100644
  	HDCP_CONTENT_TYPE_0,
  	HDCP_CONTENT_TYPE_1,
 
-From patchwork Tue Dec 17 06:51:45 2024
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Subject: [v20,3/9] phy: Add HDMI configuration options
-From: Sandor Yu <Sandor.yu@nxp.com>
-X-Patchwork-Id: 629290
-Message-Id: 
- <d1cff6c03ec3732d2244022029245ab2d954d997.1734340233.git.Sandor.yu@nxp.com>
-To: dmitry.baryshkov@linaro.org, andrzej.hajda@intel.com,
- neil.armstrong@linaro.org, Laurent.pinchart@ideasonboard.com,
- jonas@kwiboo.se, jernej.skrabec@gmail.com, airlied@gmail.com,
- daniel@ffwll.ch, robh+dt@kernel.org, krzysztof.kozlowski+dt@linaro.org,
- shawnguo@kernel.org, s.hauer@pengutronix.de, festevam@gmail.com,
- vkoul@kernel.org, dri-devel@lists.freedesktop.org,
- devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
- linux-kernel@vger.kernel.org, linux-phy@lists.infradead.org,
- mripard@kernel.org
-Cc: kernel@pengutronix.de, linux-imx@nxp.com, Sandor.yu@nxp.com,
- oliver.brown@nxp.com, alexander.stein@ew.tq-group.com, sam@ravnborg.org
-Date: Tue, 17 Dec 2024 14:51:45 +0800
-
-Allow HDMI PHYs to be configured through the generic
-functions through a custom structure added to the generic union.
-
-The parameters added here are based on HDMI PHY
-implementation practices.  The current set of parameters
-should cover the potential users.
-
-Signed-off-by: Sandor Yu <Sandor.yu@nxp.com>
-Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@linaro.org>
-Reviewed-by: Maxime Ripard <mripard@kernel.org>
-Acked-by: Vinod Koul <vkoul@kernel.org>
----
-v19->v20:
-- Add a-b tag.
-
-v17->v19:
- *No change.
-
-v16->v17:
-- remove headfile hdmi.h
-- add 2024 year to copyright
-- Add r-b tag.
-
- include/linux/phy/phy-hdmi.h | 19 +++++++++++++++++++
- include/linux/phy/phy.h      |  7 ++++++-
- 2 files changed, 25 insertions(+), 1 deletion(-)
- create mode 100644 include/linux/phy/phy-hdmi.h
-
-diff --git a/include/linux/phy/phy-hdmi.h b/include/linux/phy/phy-hdmi.h
-new file mode 100644
-index 0000000000000..6a696922bc7f2
---- /dev/null
-+++ b/include/linux/phy/phy-hdmi.h
-@@ -0,0 +1,19 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+/*
-+ * Copyright 2022,2024 NXP
-+ */
-+
-+#ifndef __PHY_HDMI_H_
-+#define __PHY_HDMI_H_
-+
-+/**
-+ * struct phy_configure_opts_hdmi - HDMI configuration set
-+ * @tmds_char_rate: HDMI TMDS Character Rate in Hertz.
-+ *
-+ * This structure is used to represent the configuration state of a HDMI phy.
-+ */
-+struct phy_configure_opts_hdmi {
-+	unsigned long long tmds_char_rate;
-+};
-+
-+#endif /* __PHY_HDMI_H_ */
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 03cd5bae92d3f..4ac486b101fe4 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -17,6 +17,7 @@
- #include <linux/regulator/consumer.h>
- 
- #include <linux/phy/phy-dp.h>
-+#include <linux/phy/phy-hdmi.h>
- #include <linux/phy/phy-lvds.h>
- #include <linux/phy/phy-mipi-dphy.h>
- 
-@@ -42,7 +43,8 @@ enum phy_mode {
- 	PHY_MODE_MIPI_DPHY,
- 	PHY_MODE_SATA,
- 	PHY_MODE_LVDS,
--	PHY_MODE_DP
-+	PHY_MODE_DP,
-+	PHY_MODE_HDMI,
- };
- 
- enum phy_media {
-@@ -60,11 +62,14 @@ enum phy_media {
-  *		the DisplayPort protocol.
-  * @lvds:	Configuration set applicable for phys supporting
-  *		the LVDS phy mode.
-+ * @hdmi:	Configuration set applicable for phys supporting
-+ *		the HDMI phy mode.
-  */
- union phy_configure_opts {
- 	struct phy_configure_opts_mipi_dphy	mipi_dphy;
- 	struct phy_configure_opts_dp		dp;
- 	struct phy_configure_opts_lvds		lvds;
-+	struct phy_configure_opts_hdmi		hdmi;
- };
- 
- /**
-
 From patchwork Tue Dec 17 06:51:46 2024
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
@@ -3641,7 +3528,7 @@ new file mode 100644
 index 0000000000000..157b4d44b9e2b
 --- /dev/null
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-dp.c
-@@ -0,0 +1,693 @@
+@@ -0,0 +1,694 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Cadence MHDP8501 DisplayPort(DP) bridge driver
@@ -4195,6 +4082,7 @@ index 0000000000000..157b4d44b9e2b
 +}
 +
 +static int cdns_dp_bridge_attach(struct drm_bridge *bridge,
++				 struct drm_encoder *encoder,
 +				 enum drm_bridge_attach_flags flags)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
@@ -4340,7 +4228,7 @@ new file mode 100644
 index 0000000000000..9556d0929e21d
 --- /dev/null
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-hdmi.c
-@@ -0,0 +1,744 @@
+@@ -0,0 +1,745 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Cadence MHDP8501 HDMI bridge driver
@@ -4689,6 +4577,7 @@ index 0000000000000..9556d0929e21d
 +}
 +
 +static int cdns_hdmi_bridge_attach(struct drm_bridge *bridge,
++				   struct drm_encoder *encoder,
 +				   enum drm_bridge_attach_flags flags)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
