@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="iftop"
-PKG_VERSION="77901c8c53e01359d83b8090aacfe62214658183"
-PKG_SHA256="f2728741f1bd2099d325271b4b2564a696dbce7c23401360ac6c9841cbda1108"
+PKG_VERSION="75d1818129cbb8ff1bb7ca4915b95046f3ed0666"
+PKG_SHA256="a4b507ba5ad1ec3e41263bee38f202267644adc05d150322f0d8f85c3e2d3f43"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.ex-parrot.com/pdw/iftop/"
 PKG_URL="https://code.blinkace.com/pdw/iftop/-/archive/${PKG_VERSION}.tar.gz"
