@@ -27,19 +27,9 @@ do_detect() {
 }
 
 do_info() {
-  BOOTINFO=$(dd if="${BOOT}" count=2048 2>/dev/null | strings | grep -e '^U-Boot ' | awk '{print $2}')
-  EMMCINFO=$(dd if="${EMMC}" count=2048 2>/dev/null | strings | grep -e '^U-Boot ' | awk '{print $2}')
   echo ""
-  if [ -n "${BOOTINFO}" ]; then
-    echo "info: boot device is $BOOT, U-boot version is ${BOOTINFO}"
-  else
-    echo "info: boot device is $BOOT"
-  fi
-  if [ -n "${EMMCINFO}" ]; then
-    echo "info: emmc device is $EMMC, U-boot version is ${EMMCINFO}"
-  else
-    echo "info: emmc device is $EMMC"
-  fi
+  echo "info: Boot device is $BOOT"
+  echo "info: eMMC device is $EMMC"
   echo ""
   parted -s "${EMMC}" print
   echo ""
