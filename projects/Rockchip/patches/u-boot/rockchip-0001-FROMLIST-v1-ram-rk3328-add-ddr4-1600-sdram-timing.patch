@@ -1,7 +1,7 @@
-From 825863d08ce323ebcefc03af20fb1e37cdac0eaa Mon Sep 17 00:00:00 2001
+From 3fcd2d8d48200f8e9d8d2ecad9ec40a94e5e4f4d Mon Sep 17 00:00:00 2001
 From: Da Xue <da@libre.computer>
-Date: Mon, 19 Sep 2022 13:40:01 -0400
-Subject: [PATCH] ram: rk3328: add ddr4-1600 sdram timing
+Date: Tue, 10 Jun 2025 19:08:19 +0000
+Subject: [PATCH 01/25] FROMLIST(v1): ram: rk3328: add ddr4-1600 sdram timing
 
 Add DDR4 1600MHz SDRAM timing data from LibreComputer u-boot sources
 for the ROC-3328-CC board.
@@ -15,7 +15,7 @@ Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
 
 diff --git a/arch/arm/dts/rk3328-sdram-ddr4-1600.dtsi b/arch/arm/dts/rk3328-sdram-ddr4-1600.dtsi
 new file mode 100644
-index 000000000000..9594bb428399
+index 00000000000..9594bb42839
 --- /dev/null
 +++ b/arch/arm/dts/rk3328-sdram-ddr4-1600.dtsi
 @@ -0,0 +1,226 @@
@@ -245,3 +245,6 @@ index 000000000000..9594bb428399
 +		0x9
 +	>;
 +};
+-- 
+2.34.1
+

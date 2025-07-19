@@ -1,0 +1,25 @@
+From 710f046a1d908818a608f5c56816ec178f493496 Mon Sep 17 00:00:00 2001
+From: Andri Yngvason <andri@yngvason.is>
+Date: Thu, 10 Jul 2025 17:31:54 +0000
+Subject: [PATCH 05/25] FROMLIST(v1): usb: dwc: generic: Add rk3576 to id list
+
+Signed-off-by: Andri Yngvason <andri@yngvason.is>
+---
+ drivers/usb/dwc3/dwc3-generic.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/dwc3/dwc3-generic.c b/drivers/usb/dwc3/dwc3-generic.c
+index 21452ad1569..15a9acec593 100644
+--- a/drivers/usb/dwc3/dwc3-generic.c
++++ b/drivers/usb/dwc3/dwc3-generic.c
+@@ -699,6 +699,7 @@ static const struct udevice_id dwc3_glue_ids[] = {
+ 	{ .compatible = "rockchip,rk3328-dwc3", .data = (ulong)&rk_ops },
+ 	{ .compatible = "rockchip,rk3399-dwc3" },
+ 	{ .compatible = "rockchip,rk3568-dwc3", .data = (ulong)&rk_ops },
++	{ .compatible = "rockchip,rk3576-dwc3", .data = (ulong)&rk_ops },
+ 	{ .compatible = "rockchip,rk3588-dwc3", .data = (ulong)&rk_ops },
+ 	{ .compatible = "qcom,dwc3", .data = (ulong)&qcom_ops },
+ 	{ .compatible = "fsl,imx8mp-dwc3", .data = (ulong)&imx8mp_ops },
+-- 
+2.34.1
+

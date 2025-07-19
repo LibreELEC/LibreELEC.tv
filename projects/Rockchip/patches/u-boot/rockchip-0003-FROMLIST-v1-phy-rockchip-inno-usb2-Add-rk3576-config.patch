@@ -1,0 +1,58 @@
+From 413c1eff651912f8e3386fbd13de2c4b0d64cd28 Mon Sep 17 00:00:00 2001
+From: Andri Yngvason <andri@yngvason.is>
+Date: Thu, 10 Jul 2025 17:31:52 +0000
+Subject: [PATCH 03/25] FROMLIST(v1): phy: rockchip: inno-usb2: Add rk3576
+ config
+
+Signed-off-by: Andri Yngvason <andri@yngvason.is>
+---
+ drivers/phy/rockchip/phy-rockchip-inno-usb2.c | 26 +++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/drivers/phy/rockchip/phy-rockchip-inno-usb2.c b/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
+index 88b33de1b2a..c38b48d0c71 100644
+--- a/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
++++ b/drivers/phy/rockchip/phy-rockchip-inno-usb2.c
+@@ -456,6 +456,28 @@ static const struct rockchip_usb2phy_cfg rk3568_phy_cfgs[] = {
+ 	{ /* sentinel */ }
+ };
+ 
++static const struct rockchip_usb2phy_cfg rk3576_phy_cfgs[] = {
++	{
++		.reg		= 0x0000,
++		.clkout_ctl	= { 0x0008, 0, 0, 1, 0 },
++		.port_cfgs	= {
++			[USB2PHY_PORT_OTG] = {
++				.phy_sus	= { 0x0000, 8, 0, 0, 0x1d1 },
++			}
++		},
++	},
++	{
++		.reg		= 0x2000,
++		.clkout_ctl	= { 0x2008, 0, 0, 1, 0 },
++		.port_cfgs	= {
++			[USB2PHY_PORT_OTG] = {
++				.phy_sus	= { 0x2000, 8, 0, 0, 0x1d1 },
++			}
++		},
++	},
++	{ /* sentinel */ }
++};
++
+ static const struct rockchip_usb2phy_cfg rk3588_phy_cfgs[] = {
+ 	{
+ 		.reg		= 0x0000,
+@@ -517,6 +539,10 @@ static const struct udevice_id rockchip_usb2phy_ids[] = {
+ 		.compatible = "rockchip,rk3568-usb2phy",
+ 		.data = (ulong)&rk3568_phy_cfgs,
+ 	},
++	{
++		.compatible = "rockchip,rk3576-usb2phy",
++		.data = (ulong)&rk3576_phy_cfgs,
++	},
+ 	{
+ 		.compatible = "rockchip,rk3588-usb2phy",
+ 		.data = (ulong)&rk3588_phy_cfgs,
+-- 
+2.34.1
+

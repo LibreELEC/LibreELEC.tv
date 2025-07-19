@@ -1,10 +1,11 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From aa4fba0f80ff20595a4271c12355836ab73e94dd Mon Sep 17 00:00:00 2001
 From: Alex Bee <knaerzche@gmail.com>
 Date: Mon, 31 Oct 2022 17:13:47 +0100
-Subject: [PATCH 5/6] rockchip: rk3288: Pick SD card as first boot device
+Subject: [PATCH 25/25] KNAERZCHE: rockchip: rk3288: Pick SD card as first boot
+ device
 
-In order to be able to boot from SD card at SPL level, always check this first
-and any other mmc device later.
+In order to be able to boot from SD card at SPL level, always check
+this first and any other mmc device later.
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
@@ -12,10 +13,10 @@ Signed-off-by: Alex Bee <knaerzche@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/dts/rk3288-u-boot.dtsi b/arch/arm/dts/rk3288-u-boot.dtsi
-index e411445ed6..17f2dd4d12 100644
+index bb0078588fe..3ec97f07c37 100644
 --- a/arch/arm/dts/rk3288-u-boot.dtsi
 +++ b/arch/arm/dts/rk3288-u-boot.dtsi
-@@ -25,7 +25,7 @@
+@@ -15,7 +15,7 @@
  
  	chosen {
  		u-boot,spl-boot-order = \
@@ -24,3 +25,6 @@ index e411445ed6..17f2dd4d12 100644
  	};
  
  	dmc: dmc@ff610000 {
+-- 
+2.34.1
+
