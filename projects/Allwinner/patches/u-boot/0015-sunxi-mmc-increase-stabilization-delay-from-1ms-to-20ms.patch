@@ -38,12 +38,12 @@ diff --git a/drivers/mmc/sunxi_mmc.c b/drivers/mmc/sunxi_mmc.c
 index 1bb7b6d0e9..f7942b69ce 100644
 --- a/drivers/mmc/sunxi_mmc.c
 +++ b/drivers/mmc/sunxi_mmc.c
-@@ -297,7 +297,7 @@ static int sunxi_mmc_core_init(struct mmc *mmc)
- 
+@@ -453,7 +453,7 @@
+ {
  	/* Reset controller */
- 	writel(SUNXI_MMC_GCTRL_RESET, &priv->reg->gctrl);
+ 	writel(SUNXI_MMC_GCTRL_RESET, regs + SUNXI_MMC_GCTRL);
 -	udelay(1000);
 +	udelay(20000);
  
- 	return 0;
- }
+ 	if (IS_ENABLED(CONFIG_SUN50I_GEN_H6) || IS_ENABLED(CONFIG_SUNXI_GEN_NCAT2)) {
+ 		/* Reset card */
