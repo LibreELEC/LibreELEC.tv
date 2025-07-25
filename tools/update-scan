@@ -19,7 +19,7 @@ github_api_token=""
 github_api="no"
 
 test_github_api() {
-# check for github user and token present at ~/.libreelec/options to activate github api checks
+  # check for github user and token present at ~/.libreelec/options to activate github api checks
   if [[ -n "${github_token}" || -n "${github_user}" ]]; then
     github_api_token="-u ${github_user}:${github_token}"
     # check if token works
@@ -27,9 +27,11 @@ test_github_api() {
       echo "Github api usage activated"
       github_api="yes"
     else
+      msg=$(curl -m 5 -sL -I "${github_api_token}" https://api.github.com/user || true)
       message="\n your Github token is not working\n"
       message+=" github_token=${github_token}\n"
       message+=" github_user=${github_user}\n"
+      message+=" ${msg}\n"
       die "${message}"
     fi
   else
@@ -48,13 +50,25 @@ check_for_update() {
 
   # source variables from package.mk
   PKG_NAME="$(grep -oP -m 1 '(?<=PKG_NAME=\").*(?=\")' ${1} || true)"
-  PKG_VERSION="$(grep -oP -m 1 '(?<=PKG_VERSION=\").*(?=\")' ${1} || true)"
   eval PKG_URL="$(grep -oP -m 1 '(?<=PKG_URL=\").*(?=\")' ${1} || true)"
+  case ${PKG_NAME} in
+    jellyfin)
+      PKG_VERSION="$(grep -oP -m 1 '(?<=PKG_VERSION_NUMBER=\").*(?=\")' ${1} || true)"
+      ;;
+    *)
+      PKG_VERSION="$(grep -oP -m 1 '(?<=PKG_VERSION=\").*(?=\")' ${1} || true)"
+      ;;
+  esac
 
-  # check if version and url are empty or self hosted by us and ignore those packages
-  if [ -z "${PKG_VERSION}" ] || [[ ${PKG_VERSION} == '$(get_pkg_version '* ]] || [ -z "${PKG_URL}" ] || [[ "${PKG_URL}" == "$DISTRO_SRC"* ]]; then
-    PACKAGES_IGNORED+="${PKG_NAME} "
-    return
+  # check the version of some packages even if they do not have a PKG_URL
+  # the PKG_WITHOUT_URLS is space separated
+  PKGS_WITHOUT_URLS="jellyfin"
+  if [[ ! " ${PKG_NAME} " == *" ${PKGS_WITHOUT_URLS} "* ]]; then
+    # check if version and url are empty or self hosted by us and ignore those packages
+    if [ -z "${PKG_VERSION}" ] || [[ ${PKG_VERSION} == '$(get_pkg_version '* ]] || [ -z "${PKG_URL}" ] || [[ "${PKG_URL}" == "$DISTRO_SRC"* ]]; then
+      PACKAGES_IGNORED+="${PKG_NAME} "
+      return
+    fi
   fi
 
   upstream_version=""
@@ -91,8 +105,8 @@ check_for_update() {
     github_repos=$(echo "${PKG_URL}" | grep -oP '(?<=https:\/\/github.com\/)?[0-9A-Za-z._-]+\/[0-9A-Za-z._-]+(?=/archive|/tags|/releases)')
     le_master_version_date="Commit date: $(curl -m 5 -sL ${github_api_token} https://api.github.com/repos/${github_repos}/git/commits/${PKG_VERSION} | jq -r '.committer.date')"
     upstream_default_branch=$(curl -m 5 -sL "${github_api_token}" "https://api.github.com/repos/${github_repos}" | jq -r '.default_branch')
-    upstream_latest_commit=$(curl -m 5 -sL "${github_api_token}" "https://api.github.com/repos/${github_repos}/git/refs/heads/${upstream_default_branch}" | jq -r '.object.url')
-    upstream_latest_commit_date=$(curl -m 5 -sL "${github_api_token}" "${upstream_latest_commit}" | jq -r '.committer.date')
+    upstream_latest_commit=$(curl -m 5 -sL "${github_api_token}" "https://api.github.com/repos/${github_repos}/git/refs/heads/${upstream_default_branch}" | jq -r '.object.url' || true)
+    upstream_latest_commit_date=$(curl -m 5 -sL "${github_api_token}" "${upstream_latest_commit}" | jq -r '.committer.date' || true)
     GH_API_TAG=$(curl -m 5 -sL "${github_api_token}" "https://api.github.com/repos/${github_repos}/tags")
     upstream_latest_tag=$(echo "${GH_API_TAG}" | jq -r '.[0].name')
     upstream_latest_tag_url=$(echo "${GH_API_TAG}" | jq -r '.[0].commit.url')
@@ -125,14 +139,15 @@ check_for_update() {
 
   # print version output line
   if [ ! -z "${API}" ]; then
-    printf "%s %s %s" "${PKG_NAME}" "${PKG_VERSION}" "${upstream_version}"; printf '\n'
+    printf "%s %s %s" "${PKG_NAME}" "${PKG_VERSION}" "${upstream_version}"
+    printf '\n'
   elif [ "${PKG_VERSION}" != "${upstream_version}" ]; then
-    printf "%-35s | %-40s | %-20s" "${PKG_NAME}" "${PKG_VERSION}" "${upstream_version}"; printf '\n'
+    printf "%-35s | %-40s | %-20s" "${PKG_NAME}" "${PKG_VERSION}" "${upstream_version}"
+    printf '\n'
   else
     PACKAGES_CURRENT+="${PKG_NAME} "
   fi
 }
-
 
 # create list of packages
 if [ -n "${1}" ]; then
@@ -141,13 +156,14 @@ if [ -n "${1}" ]; then
     die "Package not found: ${1}"
   fi
 else
-  PACKAGE_LIST="$(find packages/ -type f -name package.mk \
-    ! -path "packages/addons/addon-depends/adafruit-libraries-depends/*" \
-    ! -path "packages/emulation/*" \
-    ! -path "packages/linux/*" \
-    ! -path "packages/mediacenter/*" \
-    | awk '{FS="/" ; $0=$0 ; print $(NF-1)"|"$0}' | sort | cut -d"|" -f2 \
-    )"
+  PACKAGE_LIST="$(
+    find packages/ -type f -name package.mk \
+      ! -path "packages/addons/addon-depends/adafruit-libraries-depends/*" \
+      ! -path "packages/emulation/*" \
+      ! -path "packages/linux/*" \
+      ! -path "packages/mediacenter/*" |
+      awk '{FS="/" ; $0=$0 ; print $(NF-1)"|"$0}' | sort | cut -d"|" -f2
+  )"
 fi
 
 if [ -z "${API}" ]; then
@@ -156,7 +172,8 @@ if [ -z "${API}" ]; then
 
   # output
   echo -e "\nUpdates found:\n"
-  printf "%-35s | %-40s | %-20s" "Package" "LE git master" "upstream location"; printf '\n'
+  printf "%-35s | %-40s | %-20s" "Package" "LE git master" "upstream location"
+  printf '\n'
   echo -e ''$_{1..140}'\b-'
 
   for check_version in ${PACKAGE_LIST}; do
