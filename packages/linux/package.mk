@@ -236,6 +236,14 @@ make_target() {
       NO_LIBTRACEEVENT=1 \
       NO_LZMA=1 \
       NO_SDT=1 \
+      NO_LIBDEBUGINFOD=1 \
+      NO_JVMTI=1 \
+      NO_LIBLLVM=1 \
+      NO_LIBPFM4=1 \
+      NO_LIBBABELTRACE=1 \
+      NO_CAPSTONE=1 \
+      NO_LIBPFM4=1 \
+      BUILD_BPF_SKEL=0 \
       CROSS_COMPILE="${TARGET_PREFIX}" \
       JOBS="${CONCURRENCY_MAKE_LEVEL}" \
         make ${PERF_BUILD_ARGS}
