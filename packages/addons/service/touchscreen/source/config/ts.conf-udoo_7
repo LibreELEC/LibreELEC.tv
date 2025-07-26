@@ -1,3 +1,0 @@
-# Udoo with 7" 800x480 display with ST1232 touch controler
-# only st1232 raw input module is used
-module_raw st1232 grab_events=1 invert_y=480

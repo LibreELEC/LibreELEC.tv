@@ -1,14 +1,14 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -498,7 +498,7 @@ add_library (${csoscam} STATIC ${csoscam
- 
- set (exe_name "oscam")
+@@ -621,7 +621,7 @@
+ 	set (exe_name "oscam-upx")
+ endif (NOT USE_COMPRESS EQUAL 1)
  add_executable (${exe_name} ${exe_srcs} ${exe_hdrs})
 -target_link_libraries (${exe_name} ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt minilzo)
 +target_link_libraries (${exe_name} ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt minilzo udev)
- if(HAVE_LIBRT AND HAVE_LIBUSB)
- 	if (LIBUSBDIR)
- 		set (libusb_link "imp_libusb")
+ if (WITH_SIGNING EQUAL 1)
+ 	SIGN_COMMAND_OSCAM()
+ endif (WITH_SIGNING EQUAL 1)
 --- a/utils/CMakeLists.txt
 +++ b/utils/CMakeLists.txt
 @@ -12,7 +12,7 @@ file (GLOB all_srcs ${exe_srcs})

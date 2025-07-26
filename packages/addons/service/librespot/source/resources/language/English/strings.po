@@ -16,11 +16,11 @@ msgid "Do not disturb Kodi"
 msgstr ""
 
 msgctxt "#30103"
-msgid "User options"
+msgid "Backend"
 msgstr ""
 
 msgctxt "#30104"
-msgid "Backend"
+msgid "Player"
 msgstr ""
 
 msgctxt "#30105"

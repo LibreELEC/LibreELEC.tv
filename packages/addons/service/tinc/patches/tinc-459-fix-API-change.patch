@@ -1,0 +1,31 @@
+From 8331467f15c948a251261a333d2a79022fa2b71e Mon Sep 17 00:00:00 2001
+From: Yixun Lan <dlan@gentoo.org>
+Date: Mon, 8 Jul 2024 18:27:46 +0000
+Subject: [PATCH] upnp: fix API change issue
+
+adjust once update to miniupnpc-2.2.8
+
+Closes: https://github.com/gsliepen/tinc/issues/458
+Signed-off-by: Yixun Lan <dlan@gentoo.org>
+---
+ src/upnp.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/upnp.c b/src/upnp.c
+index 8223b2df2..e67a544fa 100644
+--- a/src/upnp.c
++++ b/src/upnp.c
+@@ -122,8 +122,12 @@ static void upnp_refresh(void) {
+ 	struct IGDdatas data;
+ 
+ 	char myaddr[64];
+-
++#if (MINIUPNPC_API_VERSION >= 18)
++	char wnaddr[64];
++	int result = UPNP_GetValidIGD(devices, &urls, &data, myaddr, sizeof(myaddr), wnaddr, sizeof(wnaddr));
++#else
+ 	int result = UPNP_GetValidIGD(devices, &urls, &data, myaddr, sizeof(myaddr));
++#endif
+ 
+ 	if(result <= 0) {
+ 		logger(DEBUG_PROTOCOL, LOG_WARNING, "[upnp] No IGD found");

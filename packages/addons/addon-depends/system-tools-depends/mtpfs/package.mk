@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="mtpfs"
-PKG_VERSION="2bd9b5a33ad70a2238e086ffb07907f20a1e0101"
-PKG_SHA256="732d5d450cfefd9df0e53ed6b188e1428298d8f81aaa8b5bf24ad31b9fddbe8f"
+PKG_VERSION="1177d6cfd8916915f5db7d9b5c6fc9e6eafae6e6"
+PKG_SHA256="ed8101e05d668ba7fa13517ab5d6e4cee1097cf68206ff1c84d13433ca4192a5"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.adebenham.com/mtpfs/"
 PKG_URL="https://github.com/cjd/mtpfs/archive/${PKG_VERSION}.tar.gz"

@@ -1,8 +1,0 @@
-module_raw input grab_events=1
-module pthres pmin=1
-module variance delta=30
-module dejitter delta=100
-
-module linear
-# or use swap_xy parameter to swap axes
-#module linear swap_xy=1

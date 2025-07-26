@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="usb-modeswitch"
-PKG_VERSION="2.6.1"
-PKG_SHA256="5195d9e136e52f658f19e9f93e4f982b1b67bffac197d0a455cd8c2cd245fa34"
+PKG_VERSION="2.6.2"
+PKG_SHA256="f7abd337784a9d1bd39cb8a587518aff6f2a43d916145eafd80b1b8b7146db66"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.draisberghof.de/usb_modeswitch/"
 PKG_URL="http://www.draisberghof.de/usb_modeswitch/${PKG_NAME}-${PKG_VERSION}.tar.bz2"

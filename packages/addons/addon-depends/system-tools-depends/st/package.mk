@@ -12,8 +12,8 @@ PKG_DEPENDS_TARGET="toolchain libX11 libXft libXrender fontconfig freetype ncurs
 PKG_LONGDESC="A simple terminal implementation for X"
 PKG_BUILD_FLAGS="-sysroot"
 
-PKG_MAKE_OPTS_TARGET="X11INC=$(get_build_dir libXft)/include \
-                      X11LIB=$(get_build_dir libXft)/.${TARGET_NAME}/src/.libs"
+PKG_MAKE_OPTS_TARGET="X11INC=$(get_install_dir libXft)/usr/include \
+                      X11LIB=$(get_install_dir libXft)/usr/lib"
 
 pre_configure_target() {
   LDFLAGS="-lXrender ${LDFLAGS}"

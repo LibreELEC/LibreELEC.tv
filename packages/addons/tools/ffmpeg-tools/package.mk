@@ -26,7 +26,7 @@ addon() {
 
   # libs
   if [ "${TARGET_ARCH}" = "x86_64" ]; then
-    cp -PL $(get_install_dir x265)/usr/lib/libx265.so.212 \
+    cp -PL $(get_install_dir x265)/usr/lib/libx265.so.215 \
            ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private
   fi
 }

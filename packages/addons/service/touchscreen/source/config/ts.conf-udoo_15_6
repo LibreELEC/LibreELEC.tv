@@ -1,6 +1,0 @@
-# Udoo with 15.6" 1366x768 display with 3M USB Touchscreen - EX II
-module_raw input grab_events=1
-module pthres pmin=1
-module variance delta=30
-module dejitter delta=100
-module linear

@@ -1,17 +1,17 @@
 --- a/Makefile	2017-09-30 21:31:48.000000000 +0200
 +++ b/Makefile	2021-01-12 23:26:57.857536391 +0100
-@@ -71,12 +71,14 @@ all: client server
+@@ -70,12 +70,14 @@ all: client server
  client:
- 	$(MAKE) -C ./tools
- 	$(MAKE) -C ./client
-+	$(MAKE) -C ./client install-i18n
+ 	$(Q)$(MAKE) --no-print-directory -C ./tools
+ 	$(Q)$(MAKE) --no-print-directory -C ./client
++	$(Q)$(MAKE) --no-print-directory -C ./client install-i18n
  
  server:
- 	$(MAKE) -C ./tools
- 	$(MAKE) -C ./libdvbmpeg
- 	$(MAKE) -C ./remux
- 	$(MAKE) -C ./server
-+	$(MAKE) -C ./server install-i18n
+ 	$(Q)$(MAKE) --no-print-directory -C ./tools
+ 	$(Q)$(MAKE) --no-print-directory -C ./libdvbmpeg
+ 	$(Q)$(MAKE) --no-print-directory -C ./remux
+ 	$(Q)$(MAKE) --no-print-directory -C ./server
++	$(Q)$(MAKE) --no-print-directory -C ./server install-i18n
  
  install-client: client
- 	$(MAKE) -C ./client install
+ 	$(Q)$(MAKE) --no-print-directory -C ./client install

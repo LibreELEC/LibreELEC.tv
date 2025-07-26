@@ -1,0 +1,72 @@
+diff -Naur a/Makefile.am b/Makefile.am
+--- a/Makefile.am	2015-10-07 00:43:15.000000000 -0700
++++ b/Makefile.am	2016-04-22 14:16:07.656866841 -0700
+@@ -1,4 +1,4 @@
+-SUBDIRS=src examples util doc
++SUBDIRS=src util
+ ACLOCAL_AMFLAGS=-I m4
+ 
+ pkgconfigdir=$(libdir)/pkgconfig
+diff -Naur a/Makefile.in b/Makefile.in
+--- a/Makefile.in	2016-02-10 12:17:34.000000000 -0800
++++ b/Makefile.in	2016-04-22 14:14:22.638794537 -0700
+@@ -161,7 +161,7 @@
+   }
+ am__installdirs = "$(DESTDIR)$(hwdbdir)" "$(DESTDIR)$(pkgconfigdir)" \
+ 	"$(DESTDIR)$(udevrulesdir)"
+-DATA = $(hwdb_DATA) $(noinst_DATA) $(pkgconfig_DATA) $(udevrules_DATA)
++DATA = $(pkgconfig_DATA)
+ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+   distclean-recursive maintainer-clean-recursive
+ am__recursive_targets = \
+@@ -371,7 +371,7 @@
+ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+-SUBDIRS = src examples util doc
++SUBDIRS = src util
+ ACLOCAL_AMFLAGS = -I m4
+ pkgconfigdir = $(libdir)/pkgconfig
+ pkgconfig_DATA = libmtp.pc
+@@ -452,21 +452,8 @@
+ 
+ distclean-libtool:
+ 	-rm -f libtool config.lt
+-install-hwdbDATA: $(hwdb_DATA)
+-	@$(NORMAL_INSTALL)
+-	@list='$(hwdb_DATA)'; test -n "$(hwdbdir)" || list=; \
+-	if test -n "$$list"; then \
+-	  echo " $(MKDIR_P) '$(DESTDIR)$(hwdbdir)'"; \
+-	  $(MKDIR_P) "$(DESTDIR)$(hwdbdir)" || exit 1; \
+-	fi; \
+-	for p in $$list; do \
+-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+-	  echo "$$d$$p"; \
+-	done | $(am__base_list) | \
+-	while read files; do \
+-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(hwdbdir)'"; \
+-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(hwdbdir)" || exit $$?; \
+-	done
++install-hwdbDATA:
++	echo nope
+ 
+ uninstall-hwdbDATA:
+ 	@$(NORMAL_UNINSTALL)
+@@ -871,7 +858,7 @@
+ 
+ info-am:
+ 
+-install-data-am: install-hwdbDATA install-pkgconfigDATA \
++install-data-am: install-pkgconfigDATA \
+ 	install-udevrulesDATA
+ 
+ install-dvi: install-dvi-recursive
+@@ -932,7 +919,7 @@
+ 	dvi-am html html-am info info-am install install-am \
+ 	install-data install-data-am install-dvi install-dvi-am \
+ 	install-exec install-exec-am install-html install-html-am \
+-	install-hwdbDATA install-info install-info-am install-man \
++	install-info install-info-am install-man \
+ 	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
+ 	install-ps-am install-strip install-udevrulesDATA installcheck \
+ 	installcheck-am installdirs installdirs-am maintainer-clean \

@@ -22,7 +22,7 @@ addon() {
     cp -P $(get_install_dir conmon)/usr/lib/podman/conmon ${ADDON_BUILD}/${PKG_ADDON_ID}/bin
 
     # gpgme
-    cp -L $(get_install_dir gpgme)/usr/lib/libgpgme.so.11 ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private
+    cp -L $(get_install_dir gpgme)/usr/lib/libgpgme.so.45 ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private
 
     # libseccomp
     cp -L $(get_install_dir libseccomp)/usr/lib/libseccomp.so.2 ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private

@@ -141,7 +141,7 @@ index 0000000..56f9219
 +	p->gFlags = 0;
 +	p->gDisplayMode = VFD_MODE_NONE;
 +	
-+	if ((p->framebuf = (char *) calloc(1, p->height)) == NULL)
++	if ((p->framebuf = (char **) calloc(1, p->height)) == NULL)
 +	{
 +	  report(RPT_CRIT, "Allocating memory for framebuffer Failed\n");
 +	  return -1;
@@ -362,7 +362,7 @@ new file mode 100644
 index 0000000..0bb565c
 --- /dev/null
 +++ b/server/drivers/led.c
-@@ -0,0 +1,1065 @@
+@@ -0,0 +1,1066 @@
 +/* File modified by Henrik Larsson 2007 to interface with LCDproc API
 + */
 +
@@ -394,6 +394,7 @@ index 0000000..0bb565c
 +#include "libvfd.h"
 +#include "shared/report.h"
 +#include "dm140.h"
++#include "led.h"
 +
 +
 +//**************************************************************
