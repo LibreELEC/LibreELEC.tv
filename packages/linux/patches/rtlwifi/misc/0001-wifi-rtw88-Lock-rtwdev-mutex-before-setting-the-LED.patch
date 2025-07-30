@@ -1,0 +1,58 @@
+From c54b96c545978fe74bc45bb8ac155455f7f63da5 Mon Sep 17 00:00:00 2001
+From: Bitterblue Smith <rtl8821cerfe2@gmail.com>
+Date: Tue, 29 Jul 2025 18:35:37 +0300
+Subject: [PATCH] wifi: rtw88: Lock rtwdev->mutex before setting the LED
+
+Some users report that the LED blinking breaks AP mode somehow. Most
+likely the LED code and the dynamic mechanism are trying to access the
+hardware registers at the same time. Lock rtwdev->mutex before setting
+the LED and unlock it after to prevent this.
+
+Link: https://github.com/lwfinger/rtw88/issues/305
+Signed-off-by: Bitterblue Smith <rtl8821cerfe2@gmail.com>
+---
+ drivers/net/wireless/realtek/rtw88/led.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/realtek/rtw88/led.c b/drivers/net/wireless/realtek/rtw88/led.c
+index 25aa6cbaa728..7f9ace351a5b 100644
+--- a/drivers/net/wireless/realtek/rtw88/led.c
++++ b/drivers/net/wireless/realtek/rtw88/led.c
+@@ -6,13 +6,23 @@
+ #include "debug.h"
+ #include "led.h"
+ 
+-static int rtw_led_set_blocking(struct led_classdev *led,
+-				enum led_brightness brightness)
++static void rtw_led_set(struct led_classdev *led,
++			enum led_brightness brightness)
+ {
+ 	struct rtw_dev *rtwdev = container_of(led, struct rtw_dev, led_cdev);
+ 
++	mutex_lock(&rtwdev->mutex);
++
+ 	rtwdev->chip->ops->led_set(led, brightness);
+ 
++	mutex_unlock(&rtwdev->mutex);
++}
++
++static int rtw_led_set_blocking(struct led_classdev *led,
++				enum led_brightness brightness)
++{
++	rtw_led_set(led, brightness);
++
+ 	return 0;
+ }
+ 
+@@ -37,7 +47,7 @@ void rtw_led_init(struct rtw_dev *rtwdev)
+ 		return;
+ 
+ 	if (rtw_hci_type(rtwdev) == RTW_HCI_TYPE_PCIE)
+-		led->brightness_set = rtwdev->chip->ops->led_set;
++		led->brightness_set = rtw_led_set;
+ 	else
+ 		led->brightness_set_blocking = rtw_led_set_blocking;
+ 
+-- 
+2.34.1
+
