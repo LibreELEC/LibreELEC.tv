@@ -3,8 +3,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="mesa"
-PKG_VERSION="25.1.7"
-PKG_SHA256="4afd26a3cc93c3dd27183d4c4845f1ca7d683f6343900b54995809b3271ebed6"
+PKG_VERSION="25.2.0-rc3"
+PKG_SHA256="822fd601eeed76c964f57fea828d4fd94c5c2ba548528aa1f584d4c8bc67c1cc"
 PKG_LICENSE="OSS"
 PKG_SITE="http://www.mesa3d.org/"
 PKG_URL="https://mesa.freedesktop.org/archive/mesa-${PKG_VERSION}.tar.xz"
@@ -96,12 +96,6 @@ if [ "${VAAPI_SUPPORT}" = "yes" ] && listcontains "${GRAPHIC_DRIVERS}" "(r600|ra
                            -Dvideo-codecs=vc1dec,h264dec,h264enc,h265dec,h265enc,av1dec,av1enc,vp9dec"
 else
   PKG_MESON_OPTS_TARGET+=" -Dgallium-va=disabled"
-fi
-
-if listcontains "${GRAPHIC_DRIVERS}" "vmware"; then
-  PKG_MESON_OPTS_TARGET+=" -Dgallium-xa=enabled"
-else
-  PKG_MESON_OPTS_TARGET+=" -Dgallium-xa=disabled"
 fi
 
 if [ "${OPENGLES_SUPPORT}" = "yes" ]; then
