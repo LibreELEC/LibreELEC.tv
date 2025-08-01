@@ -3,11 +3,11 @@
 # Copyright (C) 2020-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="rtmpdump"
-PKG_VERSION="6f6bb1353fc84f4cc37138baa99f586750028a01"
-PKG_SHA256="be2d9a4e0979509341a267d3bd44b303081f7916f2681bbc3f1b62cb44550218"
+PKG_VERSION="6f6bb1353fc84f4cc37138baa99f586750028a01" # v2.6
+PKG_SHA256="5d68d69710be21e86e766753d2bd25cb2ad1c853b0bc80ebe6b49a6cc507bfc0"
 PKG_LICENSE="GPL"
 PKG_SITE="http://rtmpdump.mplayerhq.hu/"
-PKG_URL="http://repo.or.cz/rtmpdump.git/snapshot/${PKG_VERSION}.tar.gz"
+PKG_URL="https://github.com/mirror/rtmpdump/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain zlib openssl"
 PKG_LONGDESC="rtmpdump is a toolkit for RTMP streams."
 PKG_BUILD_FLAGS="+pic"
