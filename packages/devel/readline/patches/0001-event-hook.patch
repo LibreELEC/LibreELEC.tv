@@ -1,0 +1,52 @@
+From 15970c431517a046099d8294c91d778b1da9b29d Mon Sep 17 00:00:00 2001
+From: Chet Ramey <chet.ramey@case.edu>
+Date: Fri, 11 Jul 2025 11:51:15 -0400
+Subject: Readline-8.3 patch 1: fix for readline event hook
+
+---
+ input.c    | 6 +++++-
+ patchlevel | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/input.c b/input.c
+index e6a39e2..3383edb 100644
+--- a/input.c
++++ b/input.c
+@@ -261,13 +261,16 @@ rl_gather_tyi (void)
+   input = 0;
+   tty = fileno (rl_instream);
+ 
+-  /* Move this up here to give it first shot, but it can't set chars_avail */
++  /* Move this up here to give it first shot, but it can't set chars_avail,
++     so we assume a single character is available. */
+   /* XXX - need rl_chars_available_hook? */
+   if (rl_input_available_hook)
+     {
+       result = (*rl_input_available_hook) ();
+       if (result == 0)
+         result = -1;
++      else
++        chars_avail = 1;
+     }
+ 
+ #if defined (HAVE_PSELECT) || defined (HAVE_SELECT)
+@@ -285,6 +288,7 @@ rl_gather_tyi (void)
+ #endif
+       if (result <= 0)
+ 	return 0;	/* Nothing to read. */
++      result = -1;	/* there is something, so check how many chars below */
+     }
+ #endif
+ 
+diff --git a/patchlevel b/patchlevel
+index d8c9df7..fdf4740 100644
+--- a/patchlevel
++++ b/patchlevel
+@@ -1,3 +1,3 @@
+ # Do not edit -- exists only for use by patch
+ 
+-0
++1
+-- 
+cgit v1.2.3
+
