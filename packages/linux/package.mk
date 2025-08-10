@@ -46,6 +46,9 @@ case "${LINUX}" in
         PKG_PATCH_DIRS+=" rockchip-old"
         ;;
     esac
+    PKG_VERSION="6.17-rc5"
+    PKG_SHA256=""
+    PKG_URL="https://git.kernel.org/torvalds/t/${PKG_NAME}-${PKG_VERSION}.tar.gz"
     ;;
 esac
 
