@@ -9,28 +9,28 @@ TODO: fix lowdelay flag and rework the scaling list part
 Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- drivers/staging/media/rkvdec/Makefile      |    2 +-
- drivers/staging/media/rkvdec/rkvdec-hevc.c | 2572 ++++++++++++++++++++
- drivers/staging/media/rkvdec/rkvdec-regs.h |    1 +
- drivers/staging/media/rkvdec/rkvdec.c      |   73 +-
- drivers/staging/media/rkvdec/rkvdec.h      |    1 +
+ drivers/media/platform/rockchip/rkvdec/Makefile      |    2 +-
+ drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c | 2572 ++++++++++++++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h |    1 +
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c      |   73 +-
+ drivers/media/platform/rockchip/rkvdec/rkvdec.h      |    1 +
  5 files changed, 2647 insertions(+), 2 deletions(-)
- create mode 100644 drivers/staging/media/rkvdec/rkvdec-hevc.c
+ create mode 100644 drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 
-diff --git a/drivers/staging/media/rkvdec/Makefile b/drivers/staging/media/rkvdec/Makefile
+diff --git a/drivers/media/platform/rockchip/rkvdec/Makefile b/drivers/media/platform/rockchip/rkvdec/Makefile
 index cb86b429cfaa..a77122641d14 100644
---- a/drivers/staging/media/rkvdec/Makefile
-+++ b/drivers/staging/media/rkvdec/Makefile
+--- a/drivers/media/platform/rockchip/rkvdec/Makefile
++++ b/drivers/media/platform/rockchip/rkvdec/Makefile
 @@ -1,3 +1,3 @@
  obj-$(CONFIG_VIDEO_ROCKCHIP_VDEC) += rockchip-vdec.o
  
 -rockchip-vdec-y += rkvdec.o rkvdec-h264.o rkvdec-vp9.o
 +rockchip-vdec-y += rkvdec.o rkvdec-h264.o rkvdec-hevc.o rkvdec-vp9.o
-diff --git a/drivers/staging/media/rkvdec/rkvdec-hevc.c b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 new file mode 100644
 index 000000000000..7a375a23eaf1
 --- /dev/null
-+++ b/drivers/staging/media/rkvdec/rkvdec-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 @@ -0,0 +1,2571 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -2603,10 +2603,10 @@ index 000000000000..7a375a23eaf1
 +	.run = rkvdec_hevc_run,
 +	.try_ctrl = rkvdec_hevc_try_ctrl,
 +};
-diff --git a/drivers/staging/media/rkvdec/rkvdec-regs.h b/drivers/staging/media/rkvdec/rkvdec-regs.h
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
 index 265f5234f4eb..4319ee3ccbbc 100644
---- a/drivers/staging/media/rkvdec/rkvdec-regs.h
-+++ b/drivers/staging/media/rkvdec/rkvdec-regs.h
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
 @@ -48,6 +48,7 @@
  #define RKVDEC_RLC_MODE					BIT(11)
  #define RKVDEC_STRM_START_BIT(x)			(((x) & 0x7f) << 12)
@@ -2615,10 +2615,10 @@ index 265f5234f4eb..4319ee3ccbbc 100644
  #define RKVDEC_MODE_H264				1
  #define RKVDEC_MODE_VP9					2
  #define RKVDEC_RPS_MODE					BIT(24)
-diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 index f55abb7c377f..00a9bf583596 100644
---- a/drivers/staging/media/rkvdec/rkvdec.c
-+++ b/drivers/staging/media/rkvdec/rkvdec.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 @@ -134,6 +134,68 @@ static const struct rkvdec_ctrl_desc rkvdec_h264_ctrl_descs[] = {
  	},
  };
@@ -2710,10 +2710,10 @@ index f55abb7c377f..00a9bf583596 100644
  	{
  		.fourcc = V4L2_PIX_FMT_VP9_FRAME,
  		.frmsize = {
-diff --git a/drivers/staging/media/rkvdec/rkvdec.h b/drivers/staging/media/rkvdec/rkvdec.h
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 index f02f79c405f0..d6222a2588be 100644
---- a/drivers/staging/media/rkvdec/rkvdec.h
-+++ b/drivers/staging/media/rkvdec/rkvdec.h
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 @@ -133,6 +133,7 @@ void rkvdec_run_preamble(struct rkvdec_ctx *ctx, struct rkvdec_run *run);
  void rkvdec_run_postamble(struct rkvdec_ctx *ctx, struct rkvdec_run *run);
  
@@ -2740,14 +2740,14 @@ the better soultion than duplicatiing code for every newly added IP.
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- drivers/staging/media/rkvdec/rkvdec.c | 105 ++++++++++++++++++--------
- drivers/staging/media/rkvdec/rkvdec.h |  10 +++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 105 ++++++++++++++++++--------
+ drivers/media/platform/rockchip/rkvdec/rkvdec.h |  10 +++
  2 files changed, 85 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 index 00a9bf583596..955c53afe20f 100644
---- a/drivers/staging/media/rkvdec/rkvdec.c
-+++ b/drivers/staging/media/rkvdec/rkvdec.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 @@ -14,6 +14,7 @@
  #include <linux/interrupt.h>
  #include <linux/module.h>
@@ -2961,10 +2961,10 @@ index 00a9bf583596..955c53afe20f 100644
  	rkvdec->regs = devm_platform_ioremap_resource(pdev, 0);
  	if (IS_ERR(rkvdec->regs))
  		return PTR_ERR(rkvdec->regs);
-diff --git a/drivers/staging/media/rkvdec/rkvdec.h b/drivers/staging/media/rkvdec/rkvdec.h
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 index d6222a2588be..ad8e83884121 100644
---- a/drivers/staging/media/rkvdec/rkvdec.h
-+++ b/drivers/staging/media/rkvdec/rkvdec.h
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 @@ -29,6 +29,10 @@
  
  #define RKVDEC_RESET_DELAY	5
@@ -3014,13 +3014,13 @@ of the IP only HEVC decoding is supported.
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- drivers/staging/media/rkvdec/rkvdec.c | 8 ++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 8 ++++++++
  1 file changed, 8 insertions(+)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 index 955c53afe20f..4e228cd82f21 100644
---- a/drivers/staging/media/rkvdec/rkvdec.c
-+++ b/drivers/staging/media/rkvdec/rkvdec.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 @@ -1189,11 +1189,19 @@ static const struct rkvdec_variant rk3399_rkvdec_variant = {
  			   RKVDEC_CAPABILITY_VP9
  };
@@ -3110,13 +3110,13 @@ Fixed by this change:
 
 Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
 ---
- drivers/staging/media/rkvdec/rkvdec-hevc.c | 26 +++++++++++++++++++---
+ drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c | 26 +++++++++++++++++++---
  1 file changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec-hevc.c b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 index 7a375a23eaf1..580073d49b6a 100644
---- a/drivers/staging/media/rkvdec/rkvdec-hevc.c
-+++ b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 @@ -10,6 +10,7 @@
   */
  
@@ -3186,13 +3186,13 @@ L0 reference, and B frames have both.
 
 Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
 ---
- drivers/staging/media/rkvdec/rkvdec-hevc.c | 6 ++++--
+ drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c | 6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec-hevc.c b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 index 580073d49b6a..ce15028918b2 100644
---- a/drivers/staging/media/rkvdec/rkvdec-hevc.c
-+++ b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 @@ -2199,6 +2199,8 @@ static void assemble_hw_rps(struct rkvdec_ctx *ctx,
  
  	for (j = 0; j < run->num_slices; j++) {
