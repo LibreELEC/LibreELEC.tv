@@ -1,0 +1,10 @@
+--- a/drivers/gpu/drm/rockchip/Kconfig	2025-08-10 16:41:16.000000000 +0000
++++ b/drivers/gpu/drm/rockchip/Kconfig	2025-08-11 13:34:23.179698818 +0000
+@@ -53,6 +53,7 @@
+ 	bool "Rockchip cdn DP"
+ 	depends on EXTCON=y || (EXTCON=m && DRM_ROCKCHIP=m)
+ 	select DRM_DISPLAY_HELPER
++	select DRM_BRIDGE_CONNECTOR
+ 	select DRM_DISPLAY_DP_HELPER
+ 	help
+ 	  This selects support for Rockchip SoC specific extensions
