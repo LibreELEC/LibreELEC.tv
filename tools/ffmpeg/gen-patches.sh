@@ -2,7 +2,7 @@
 
 # base ffmpeg version
 FFMPEG_REPO="git://source.ffmpeg.org/ffmpeg.git"
-FFMPEG_VERSION="n7.1.1"
+FFMPEG_VERSION="8.0"
 
 ALL_FEATURE_SETS="v4l2-drmprime v4l2-request libreelec rpi vf-deinterlace-v4l2m2m"
 
@@ -23,18 +23,18 @@ create_patch() {
   REFTYPE="branch"
 
   BASE_REPO="${FFMPEG_REPO}"
-  BASE_VERSION="${FFMPEG_VERSION}"
+  BASE_VERSION="n${FFMPEG_VERSION}"
 
   PATCH_CREATE_DIFF="no"
 
   case "${FEATURE_SET}" in
     v4l2-drmprime | v4l2-request | vf-deinterlace-v4l2m2m)
       REPO="https://github.com/jernejsk/FFmpeg"
-      REFSPEC="${FEATURE_SET}-${FFMPEG_VERSION}"
+      REFSPEC="${FEATURE_SET}-n${FFMPEG_VERSION}"
       ;;
     libreelec)
       REPO="https://github.com/LibreELEC/FFmpeg"
-      REFSPEC="libreelec-misc-${FFMPEG_VERSION}"
+      REFSPEC="libreelec-misc-n${FFMPEG_VERSION}"
       ;;
     rpi)
       REPO="https://github.com/jc-kynesim/rpi-ffmpeg"
