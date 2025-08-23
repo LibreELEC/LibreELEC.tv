@@ -21,13 +21,13 @@ case "${PROJECT}" in
     ;;
   RPi)
     PKG_FFMPEG_RPI="--disable-mmal --enable-sand"
-    PKG_PATCH_DIRS+=" rpi"
+    #PKG_PATCH_DIRS+=" rpi"
     ;;
   *)
-    PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
+    #PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
     case "${PROJECT}" in
       Allwinner | Rockchip)
-        PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
+        #PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
         ;;
     esac
     ;;
