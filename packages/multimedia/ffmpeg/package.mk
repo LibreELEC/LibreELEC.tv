@@ -3,8 +3,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="ffmpeg"
-PKG_VERSION="7.1.1"
-PKG_SHA256="733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1"
+PKG_VERSION="8.0.1"
+PKG_SHA256="05ee0b03119b45c0bdb4df654b96802e909e0a752f72e4fe3794f487229e5a41"
 PKG_LICENSE="GPL-3.0-only"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="http://ffmpeg.org/releases/ffmpeg-${PKG_VERSION}.tar.xz"
@@ -14,9 +14,9 @@ PKG_PATCH_DIRS="libreelec"
 
 case "${PROJECT}" in
   Amlogic)
-    PKG_VERSION="6dbf87aefd7f491210abe1e043a1c228fa1439a0"
-    PKG_FFMPEG_BRANCH="test/7.1.1/main"
-    PKG_SHA256="66aead94c3884c9bc1ff2866f44d87f2f61d106bf203e1c723f83170b7e84297"
+    PKG_VERSION="3abbcb6a1f8a70921543ceb6b4d573df97223cd9"
+    PKG_FFMPEG_BRANCH="test/8.0.1/main"
+    PKG_SHA256="91b9fa499919ff2b8db8046202279188ad0f7798638798ddbbb6d279ff2db820"
     PKG_URL="https://github.com/jc-kynesim/rpi-ffmpeg/archive/${PKG_VERSION}.tar.gz"
     ;;
   Rockchip)
@@ -172,7 +172,6 @@ configure_target() {
               --enable-avcodec \
               --enable-avformat \
               --enable-swscale \
-              --enable-postproc \
               --enable-avfilter \
               --disable-devices \
               --enable-pthreads \
