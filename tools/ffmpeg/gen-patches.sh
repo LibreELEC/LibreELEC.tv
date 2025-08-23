@@ -4,7 +4,7 @@
 FFMPEG_REPO="git://source.ffmpeg.org/ffmpeg.git"
 FFMPEG_VERSION="8.0.1"
 
-ALL_FEATURE_SETS="v4l2-drmprime v4l2-request libreelec rpi vf-deinterlace-v4l2m2m"
+ALL_FEATURE_SETS="v4l2-drmprime v4l2-request libreelec rpi vf-deinterlace-v4l2m2m postproc"
 
 if [ $# -eq 0 ]; then
   echo "usage: $0 all|featureset [githash]"
@@ -39,6 +39,11 @@ create_patch() {
     rpi)
       REPO="https://github.com/jc-kynesim/rpi-ffmpeg"
       REFSPEC="test/8.0.1/main"
+      PATCH_CREATE_DIFF="yes"
+      ;;
+    postproc)
+      REPO="https://github.com/michaelni/FFmpeg.git"
+      REFSPEC="sourceplugin-libpostproc-8.0"
       PATCH_CREATE_DIFF="yes"
       ;;
     *)
