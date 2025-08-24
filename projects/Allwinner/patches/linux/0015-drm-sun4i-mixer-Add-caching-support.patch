@@ -12,8 +12,8 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@siol.net>
 
 --- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
-@@ -346,11 +346,23 @@ static const struct sunxi_engine_ops sun
- 	.layers_init	= sun8i_layers_init,
+@@ -406,12 +406,24 @@ static const struct sunxi_engine_ops sun
+ 	.mode_set	= sun8i_mixer_mode_set,
  };
  
 +static bool sun8i_mixer_volatile_reg(struct device *dev, unsigned int reg)
@@ -28,6 +28,7 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@siol.net>
 +
  static const struct regmap_config sun8i_mixer_regmap_config = {
 +	.cache_type	= REGCACHE_FLAT,
+ 	.name		= "layers",
  	.reg_bits	= 32,
  	.val_bits	= 32,
  	.reg_stride	= 4,
@@ -35,4 +36,4 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@siol.net>
 +	.volatile_reg	= sun8i_mixer_volatile_reg,
  };
  
- static int sun8i_mixer_of_get_id(struct device_node *node)
+ static const struct regmap_config sun8i_top_regmap_config = {
