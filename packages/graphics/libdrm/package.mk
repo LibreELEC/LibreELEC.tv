@@ -14,8 +14,7 @@ PKG_LONGDESC="The userspace interface library to kernel DRM services."
 
 get_graphicdrivers
 
-PKG_MESON_OPTS_COMMON="-Dnouveau=disabled \
-                       -Domap=disabled \
+PKG_MESON_OPTS_COMMON="-Domap=disabled \
                        -Dexynos=disabled \
                        -Dtegra=disabled \
                        -Dcairo-tests=disabled \
@@ -23,6 +22,9 @@ PKG_MESON_OPTS_COMMON="-Dnouveau=disabled \
                        -Dvalgrind=disabled \
                        -Dfreedreno-kgsl=false \
                        -Dudev=false"
+
+listcontains "${GRAPHIC_DRIVERS}" "nouveau" &&
+  PKG_MESON_OPTS_COMMON+=" -Dnouveau=enabled" || PKG_MESON_OPTS_COMMON+=" -Dnouveau=disabled"
 
 PKG_MESON_OPTS_HOST="${PKG_MESON_OPTS_COMMON} \
                      -Damdgpu=disabled \
