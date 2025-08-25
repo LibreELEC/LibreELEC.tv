@@ -1,0 +1,43 @@
+From 338473261348415d71560d1a90479c058ad30de5 Mon Sep 17 00:00:00 2001
+From: Nicolas Frattaroli <nicolas.frattaroli@collabora.com>
+Date: Fri, 11 Jul 2025 22:21:16 +0000
+Subject: [PATCH 09/25] FROMLIST(v2): arm64: dts: rockchip: add RK3576 RNG node
+
+The RK3576 has a hardware random number generator IP built into the SoC.
+
+Add it to the SoC's .dtsi, now that there's a binding and driver for it.
+
+Signed-off-by: Nicolas Frattaroli <nicolas.frattaroli@collabora.com>
+Link: https://lore.kernel.org/r/20250430-rk3576-hwrng-v1-3-480c15b5843e@collabora.com
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+
+[ upstream commit: 5268f3b5d29887480011b44567bcbf0d422cda94 ]
+
+(cherry picked from commit 25cfcb091747900639f2b5df297d26b3a6ca3989)
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ dts/upstream/src/arm64/rockchip/rk3576.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/dts/upstream/src/arm64/rockchip/rk3576.dtsi b/dts/upstream/src/arm64/rockchip/rk3576.dtsi
+index 29b47799849..f9787455f06 100644
+--- a/dts/upstream/src/arm64/rockchip/rk3576.dtsi
++++ b/dts/upstream/src/arm64/rockchip/rk3576.dtsi
+@@ -1260,6 +1260,14 @@
+ 			status = "disabled";
+ 		};
+ 
++		rng: rng@2a410000 {
++			compatible = "rockchip,rk3576-rng";
++			reg = <0x0 0x2a410000 0x0 0x200>;
++			clocks = <&cru HCLK_TRNG_NS>;
++			interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_HIGH>;
++			resets = <&cru SRST_H_TRNG_NS>;
++		};
++
+ 		otp: otp@2a580000 {
+ 			compatible = "rockchip,rk3576-otp";
+ 			reg = <0x0 0x2a580000 0x0 0x400>;
+-- 
+2.34.1
+
