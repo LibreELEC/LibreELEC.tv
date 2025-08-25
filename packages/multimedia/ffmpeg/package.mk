@@ -3,14 +3,14 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="ffmpeg"
-PKG_VERSION="7.1.1"
-PKG_SHA256="733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1"
+PKG_VERSION="8.0"
+PKG_SHA256="b2751fccb6cc4c77708113cd78b561059b6fa904b24162fa0be2d60273d27b8e"
 PKG_LICENSE="GPL-3.0-only"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="http://ffmpeg.org/releases/ffmpeg-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex libxml2"
 PKG_LONGDESC="FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video."
-PKG_PATCH_DIRS="libreelec"
+PKG_PATCH_DIRS="postproc libreelec"
 
 case "${PROJECT}" in
   Amlogic)
@@ -20,14 +20,15 @@ case "${PROJECT}" in
     PKG_URL="https://github.com/jc-kynesim/rpi-ffmpeg/archive/${PKG_VERSION}.tar.gz"
     ;;
   RPi)
-    PKG_FFMPEG_RPI="--disable-mmal --enable-sand"
-    PKG_PATCH_DIRS+=" rpi"
+    #PKG_FFMPEG_RPI="--disable-mmal --enable-sand"
+    PKG_FFMPEG_RPI="--disable-mmal"
+    #PKG_PATCH_DIRS+=" rpi"
     ;;
   *)
-    PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
+    #PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
     case "${PROJECT}" in
       Allwinner | Rockchip)
-        PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
+        #PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
         ;;
     esac
     ;;
@@ -61,12 +62,14 @@ if [ "${V4L2_SUPPORT}" = "yes" ]; then
   if [ "${PKG_V4L2_REQUEST}" = "yes" ]; then
     PKG_DEPENDS_TARGET+=" systemd"
     PKG_NEED_UNPACK+=" $(get_pkg_directory systemd)"
-    PKG_FFMPEG_V4L2+=" --enable-libudev --enable-v4l2-request"
+    #PKG_FFMPEG_V4L2+=" --enable-libudev --enable-v4l2-request"
   else
-    PKG_FFMPEG_V4L2+=" --disable-libudev --disable-v4l2-request"
+    #PKG_FFMPEG_V4L2+=" --disable-libudev --disable-v4l2-request"
+    :
   fi
 else
-  PKG_FFMPEG_V4L2="--disable-v4l2_m2m --disable-libudev --disable-v4l2-request"
+  #PKG_FFMPEG_V4L2="--disable-v4l2_m2m --disable-libudev --disable-v4l2-request"
+  PKG_FFMPEG_V4L2="--disable-v4l2_m2m"
 fi
 
 if [ "${VAAPI_SUPPORT}" = "yes" ]; then
@@ -166,7 +169,6 @@ configure_target() {
               --enable-avcodec \
               --enable-avformat \
               --enable-swscale \
-              --enable-postproc \
               --enable-avfilter \
               --disable-devices \
               --enable-pthreads \
