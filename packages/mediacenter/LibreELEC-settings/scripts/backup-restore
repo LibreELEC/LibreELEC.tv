@@ -1,56 +1,94 @@
-#!/bin/sh
+#!/usr/bin/env python3
 
-# SPDX-License-Identifier: GPL-2.0-or-later
-# Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
-# Copyright (C) 2020-present Team LibreELEC (https://libreelec.tv)
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2025-present Team LibreELEC (https://libreelec.tv)
 
-. /usr/lib/libreelec/functions
+import os
+import shutil
+import subprocess
+import tarfile
+import time
 
-hidecursor
-
-BACKUP_EXTENSION_LIST=".tar .tar.gz .tar.bz2 .tar.xz"
-for EXTENSION in $BACKUP_EXTENSION_LIST; do
-  BACKUP_FILE=$(find /storage/.restore/ -name "*${EXTENSION}" -print -quit 2>/dev/null)
-  [ -n "${BACKUP_FILE}" ] && break
-done
+from concurrent.futures import ThreadPoolExecutor
 
 
-if [ -f "${BACKUP_FILE}" ]; then
-  echo -e "RESTORE IN PROGRESS\n"
-  echo -e "Please do not reboot or turn off your @DISTRONAME@ device!\n"
+BACKUP_DIR = "/storage/.restore"
+PURGE_DIRS = ["/storage/.kodi", "/storage/.cache", "/storage/.config"]
+SLEEP_SUCCESS = 5
+SLEEP_FAILURE = 30
 
-  StartProgress spinner "Checking backup file... "
-    tar tf "${BACKUP_FILE}" &>/dev/null
 
-  if [ $? -eq 0 ]; then
-    StopProgress "OK"
+def remove_dir(path):
+    if os.path.exists(path):
+        try:
+            shutil.rmtree(path)
+            return True
+        except OSError as err:
+            print(f"Error: Unable to delete directory: {path}")
+            return False
+    else:
+        return True
 
-    echo -e "\nThis may take some time to complete, please be patient.\n"
 
-    StartProgress spinner "Restoring... "
-      rm -rf /storage/.kodi \
-             /storage/.cache \
-             /storage/.config &>/dev/null
-      tar xf "${BACKUP_FILE}" -C / &>/dev/null
-      rm -f "${BACKUP_FILE}" &>/dev/null
-      sync
-      StopProgress "done!"
+def find_backup_file():
+    try:
+        # This search should match what the target generator is checking
+        for file in os.listdir(BACKUP_DIR):
+            if file.endswith((".tar", ".tar.gz", ".tar.bz2", ".tar.xz")):
+                return f"{BACKUP_DIR}/{file}"
+    except OSError as err:
+        print(f"Error: Unable to access backup directory: {err}")
+    return None
 
-    echo
-    StartProgress countdown "Rebooting in 5s... " 5 "NOW"
-  else
-    StopProgress "FAILED"
 
-    echo -e "\nBackup file is not valid, or corrupt.\n"
+def extract_backup(file_path):
+    try:
+        print(f"Extracting file: {file_path}")
+        with tarfile.open(file_path, "r:*") as tarball:
+            tarball.extractall(filter="fully_trusted")
+        print("Extraction successful.")
+        return True
+    except tarfile.ReadError:
+        print("Error: Unable to extract file.")
+        return False
 
-    StartProgress spinner "Removing file to allow normal restart... "
-      rm -f "${BACKUP_FILE}" &>/dev/null
-      sync
-      StopProgress "done"
 
-    echo
-    StartProgress countdown "Rebooting in 30s... " 30 "NOW"
-  fi
-fi
+def countdown_and_reboot(seconds):
+    for i in range(seconds, 0, -1):
+        print(f"\rRebooting in {i} seconds...", end="", flush=True)
+        time.sleep(1)
+    subprocess.run(["reboot", "-f"])
 
-reboot -f
+
+def restore_backup():
+    backup_file_path = find_backup_file()
+    # validate restore tarball
+    if backup_file_path and tarfile.is_tarfile(backup_file_path):
+        print("RESTORE IN PROGRESS")
+        print("Please do not reboot or turn off this device!")
+        # delete where the tarball will be extracted so only restore file contents will be present
+        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+            delete_results = list(executor.map(remove_dir, PURGE_DIRS))
+        # if PURGE_DIRS deleted successfully, proceed with extraction
+        backup_restored = extract_backup(backup_file_path) if False not in delete_results else False
+        if backup_restored:
+            print("RESTORE COMPLETE")
+            sleep_timer = SLEEP_SUCCESS
+        else:
+            print("RESTORE ABORTED")
+            sleep_timer = SLEEP_FAILURE
+    else:
+        print("Error: Invalid or corrupt backup file.")
+        print("RESTORE ABORTED")
+        sleep_timer = SLEEP_FAILURE
+
+    print("Removing backup file to allow normal startup...")
+    if backup_file_path and os.path.exists(backup_file_path):
+        os.remove(backup_file_path)
+        os.sync()
+
+    countdown_and_reboot(sleep_timer)
+
+
+if __name__ == "__main__":
+    restore_backup()
