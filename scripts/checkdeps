@@ -97,7 +97,7 @@ perl_map=(
 ### PROJECT SPECIFIC REQUIREMENTS ###
 # Extend build scripts to look for distro/project/device checkdep scripts before adding further checks here
 # Native aarch64 on debian host needs to support rkbin (Rockchip) and aml_encrypt_* (Amlogic)
-if [ "$(uname -m)" = "aarch64" ] && [ "${PROJECT}" = "Rockchip" -o "${PROJECT}" = "Amlogic" ]; then
+if [ "$(uname -m)" = "aarch64" ] && { [ "${PROJECT}" = "Rockchip" ] || [ "${PROJECT}" = "Amlogic" ]; }; then
   dep_map[qemu-x86_64]=qemu-user-binfmt
   file_map[/usr/x86_64-linux-gnu/lib/ld-linux-x86-64.so.2]="libc6-amd64-cross"
   file_map[/usr/x86_64-linux-gnu/lib/libc.so.6]="libc6-amd64-cross"

@@ -10,7 +10,7 @@ if [ -z "${2}" ]; then
   die "usage: ${0} package_name target_dir"
 fi
 
-[ -z "${PKG_URL}" -o -z "${PKG_SOURCE_NAME}" ] && die "${PKG_NAME}: PKG_URL or PKG_SOURCE_NAME undefined"
+{ [ -z "${PKG_URL}" ] || [ -z "${PKG_SOURCE_NAME}" ]; } && die "${PKG_NAME}: PKG_URL or PKG_SOURCE_NAME undefined"
 [ ! -d "${SOURCES}/${1}" ] && die "${PKG_NAME}: ${SOURCES}/${1} not found"
 [ ! -d "${2}" ] && die "${PKG_NAME}: target ${2} not found"
 
@@ -20,7 +20,7 @@ else
   FULL_SOURCE_PATH="${SOURCES}/${1}/${PKG_SOURCE_NAME}"
 fi
 
-if [ ! -f "${FULL_SOURCE_PATH}" -a ! -d "${FULL_SOURCE_PATH}" ]; then
+if [ ! -f "${FULL_SOURCE_PATH}" ] && [ ! -d "${FULL_SOURCE_PATH}" ]; then
   echo "error: File ${PKG_SOURCE_NAME} doesn't exist for package ${1}"
   echo "Have you called scripts/extract before scripts/get?"
   die
