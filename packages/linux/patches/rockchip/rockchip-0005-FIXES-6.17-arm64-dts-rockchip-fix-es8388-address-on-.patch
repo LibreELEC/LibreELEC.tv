@@ -1,0 +1,32 @@
+From 8ecfe35b78d071449d55935624af854f5de17ea6 Mon Sep 17 00:00:00 2001
+From: Kaison Deng <dkx@t-chip.com.cn>
+Date: Thu, 14 Aug 2025 12:32:30 +0800
+Subject: [PATCH 005/106] FIXES(6.17): arm64: dts: rockchip: fix es8388 address
+ on rk3588s-roc-pc
+
+Use the correct es8388 address for rk3588s-roc-ps
+
+Signed-off-by: Kaison Deng <dkx@t-chip.com.cn>
+---
+ arch/arm64/boot/dts/rockchip/rk3588s-roc-pc.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588s-roc-pc.dts b/arch/arm64/boot/dts/rockchip/rk3588s-roc-pc.dts
+index 7434ac39246f..7e179862da6e 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588s-roc-pc.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3588s-roc-pc.dts
+@@ -320,9 +320,9 @@ hym8563: rtc@51 {
+ &i2c3 {
+ 	status = "okay";
+ 
+-	es8388: audio-codec@10 {
++	es8388: audio-codec@11 {
+ 		compatible = "everest,es8388", "everest,es8328";
+-		reg = <0x10>;
++		reg = <0x11>;
+ 		clocks = <&cru I2S1_8CH_MCLKOUT>;
+ 		AVDD-supply = <&vcc_3v3_s0>;
+ 		DVDD-supply = <&vcc_1v8_s0>;
+-- 
+2.34.1
+

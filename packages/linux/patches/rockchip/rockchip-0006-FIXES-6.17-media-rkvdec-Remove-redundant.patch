@@ -1,0 +1,32 @@
+From eafa76b922ab1a73c667f27ee4eb2ca6dc2a955e Mon Sep 17 00:00:00 2001
+From: Sakari Ailus <sakari.ailus@linux.intel.com>
+Date: Mon, 11 Aug 2025 10:03:45 -0400
+Subject: [PATCH 006/106] FIXES(6.17): media: rkvdec: Remove redundant
+
+pm_runtime_put_autosuspend(), pm_runtime_put_sync_autosuspend(),
+pm_runtime_autosuspend() and pm_request_autosuspend() now include a call
+to pm_runtime_mark_last_busy(). Remove the now-reduntant explicit call to
+pm_runtime_mark_last_busy().
+
+Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Reviewed-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+---
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index d707088ec0dc..445f7c92eee3 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -765,7 +765,6 @@ static void rkvdec_job_finish(struct rkvdec_ctx *ctx,
+ {
+ 	struct rkvdec_dev *rkvdec = ctx->dev;
+ 
+-	pm_runtime_mark_last_busy(rkvdec->dev);
+ 	pm_runtime_put_autosuspend(rkvdec->dev);
+ 	rkvdec_job_finish_no_pm(ctx, result);
+ }
+-- 
+2.34.1
+

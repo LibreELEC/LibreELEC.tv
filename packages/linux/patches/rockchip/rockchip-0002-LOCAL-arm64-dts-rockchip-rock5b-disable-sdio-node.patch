@@ -1,7 +1,8 @@
-From d742e06c0e8f6877afaaf6228eac2905b91435c7 Mon Sep 17 00:00:00 2001
+From 3e1924cb6cdc20d69a72297c1e98843ace084e90 Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Wed, 16 Jul 2025 11:03:09 +0000
-Subject: [PATCH 02/61] LOCAL: arm64: dts: rockchip: rock5b: disable sdio node
+Subject: [PATCH 002/106] LOCAL: arm64: dts: rockchip: rock5b: disable sdio
+ node
 
 Radxa ships an M2 compatible WiFi module with PCIe wired RTL8852BE
 chip, so leave the SDIO node described in device-tree, but disable

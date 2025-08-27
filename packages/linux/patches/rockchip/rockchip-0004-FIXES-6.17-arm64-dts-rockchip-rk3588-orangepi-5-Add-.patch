@@ -1,0 +1,33 @@
+From ae943c087f2e6e6d0498c2db48aef2816a6069d4 Mon Sep 17 00:00:00 2001
+From: Chen-Yu Tsai <wens@csie.org>
+Date: Thu, 21 Aug 2025 13:29:39 +0800
+Subject: [PATCH 004/106] FIXES(6.17): arm64: dts: rockchip: rk3588-orangepi-5:
+ Add supplies for eMMC
+
+The eMMC description is missing both vmmc and vqmmc supplies.
+
+Add them to complete the description.
+
+Fixes: 236d225e1ee7 ("arm64: dts: rockchip: Add board device tree for rk3588-orangepi-5-plus")
+Fixes: ea63f4666e48 ("arm64: dts: rockchip: refactor common rk3588-orangepi-5.dtsi")
+Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-orangepi-5.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5.dtsi
+index 91d56c34a1e4..8a8f3b26754d 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5.dtsi
+@@ -365,6 +365,8 @@ &sdhci {
+ 	max-frequency = <200000000>;
+ 	mmc-hs400-1_8v;
+ 	mmc-hs400-enhanced-strobe;
++	vmmc-supply = <&vcc_3v3_s3>;
++	vqmmc-supply = <&vcc_1v8_s3>;
+ 	status = "okay";
+ };
+ 
+-- 
+2.34.1
+
