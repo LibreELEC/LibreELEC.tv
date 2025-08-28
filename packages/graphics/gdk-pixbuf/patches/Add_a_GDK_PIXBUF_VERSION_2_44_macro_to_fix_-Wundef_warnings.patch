@@ -1,0 +1,27 @@
+commit 101805761797283449bc3d02df1efc43c8be3b8a
+Author: correctmost <136447-correctmost@users.noreply.gitlab.gnome.org>
+Date:   Mon Jun 16 01:21:00 2025 -0400
+
+    Add a GDK_PIXBUF_VERSION_2_44 macro to fix -Wundef warnings
+
+diff --git a/gdk-pixbuf/gdk-pixbuf-macros.h b/gdk-pixbuf/gdk-pixbuf-macros.h
+index 335285f5c..f831a308a 100644
+--- a/gdk-pixbuf/gdk-pixbuf-macros.h
++++ b/gdk-pixbuf/gdk-pixbuf-macros.h
+@@ -258,6 +258,16 @@
+  */
+ #define GDK_PIXBUF_VERSION_2_40 (G_ENCODE_VERSION (2, 40))
+ 
++/**
++ * GDK_PIXBUF_VERSION_2_44:
++ *
++ * A macro that evaluates to the 2.44 version of GdkPixbuf,
++ * in a format that can be used by the C pre-processor.
++ *
++ * Since: 2.44
++ */
++#define GDK_PIXBUF_VERSION_2_44 (G_ENCODE_VERSION (2, 44))
++
+ #ifndef __GTK_DOC_IGNORE__
+ #if (GDK_PIXBUF_MINOR % 2)
+ #define GDK_PIXBUF_VERSION_CUR_STABLE (G_ENCODE_VERSION (GDK_PIXBUF_MAJOR, GDK_PIXBUF_MINOR + 1))
