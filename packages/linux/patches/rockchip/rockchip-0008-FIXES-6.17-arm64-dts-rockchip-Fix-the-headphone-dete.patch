@@ -1,0 +1,37 @@
+From f568b6f2a18dbb784a4d6cb92e29f7cf683a7d6a Mon Sep 17 00:00:00 2001
+From: Maud Spierings <maud_spierings@hotmail.com>
+Date: Sat, 23 Aug 2025 14:43:50 +0200
+Subject: [PATCH 008/106] FIXES(6.17): arm64: dts: rockchip: Fix the headphone
+ detection on the orangepi 5 plus
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The logic of the headphone detect pin seems to be inverted, with this
+change headphones actually output sound when plugged in.
+
+Verified by checking /sys/kernel/debug/gpio and by listening.
+
+Fixes: 236d225e1ee7 ("arm64: dts: rockchip: Add board device tree for rk3588-orangepi-5-plus")
+Signed-off-by: Maud Spierings <maud_spierings@hotmail.com>
+Reviewed-by: Ondřej Jirman <megi@xff.cz>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts b/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts
+index 121e4d1c3fa5..8222f1fae8fa 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3588-orangepi-5-plus.dts
+@@ -77,7 +77,7 @@ &analog_sound {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&hp_detect>;
+ 	simple-audio-card,aux-devs = <&speaker_amp>, <&headphone_amp>;
+-	simple-audio-card,hp-det-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_LOW>;
++	simple-audio-card,hp-det-gpios = <&gpio1 RK_PD3 GPIO_ACTIVE_HIGH>;
+ 	simple-audio-card,widgets =
+ 		"Microphone", "Onboard Microphone",
+ 		"Microphone", "Microphone Jack",
+-- 
+2.34.1
+

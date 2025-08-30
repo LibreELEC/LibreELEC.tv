@@ -29,11 +29,23 @@ case "${LINUX}" in
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="raspberrypi rtlwifi/6.13 rtlwifi/6.14 rtlwifi/6.15 rtlwifi/6.17"
     ;;
+  rockchip)
+    PKG_VERSION="1b237f190eb3d36f52dffe07a40b5eb210280e00" # 6.17-rc3
+    PKG_SHA256="b620f8142d41936a9b196fc7cc52901df3159e861b4ad06711323d8662b23089"
+    PKG_URL="https://github.com/chewitt/linux/archive/${PKG_VERSION}.tar.gz"
+    PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
+    PKG_PATCH_DIRS="default rockchip rtlwifi/6.17"
+    ;;
   *)
     PKG_VERSION="6.16.4"
     PKG_SHA256="d6a5e3c71a10b533a756251387cc8bf48bbd5c76d842ba5e957d8b1c316ab622"
     PKG_URL="https://www.kernel.org/pub/linux/kernel/v${PKG_VERSION/.*/}.x/${PKG_NAME}-${PKG_VERSION}.tar.xz"
     PKG_PATCH_DIRS="default rtlwifi/6.17"
+    case ${DEVICE} in
+      RK3288|RK3328|RK3399)
+        PKG_PATCH_DIRS+=" rockchip-old"
+        ;;
+    esac
     ;;
 esac
 

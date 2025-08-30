@@ -1,0 +1,47 @@
+From bf681a189e09b2876823b74ff58bbc6aa5fd442d Mon Sep 17 00:00:00 2001
+From: Sebastian Reichel <sebastian.reichel@collabora.com>
+Date: Mon, 18 Aug 2025 19:12:23 +0200
+Subject: [PATCH 029/106] FROMGIT(6.18): arm64: dts: rockchip: correct network
+ description on Sige5
+
+Both network PHYs have dedicated crystals for the 25 MHz clock
+and do not source it from the RK3576.
+
+Signed-off-by: Sebastian Reichel <sebastian.reichel@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3576-armsom-sige5.dts | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3576-armsom-sige5.dts b/arch/arm64/boot/dts/rockchip/rk3576-armsom-sige5.dts
+index 101e2ee9766d..3386084f6318 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3576-armsom-sige5.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3576-armsom-sige5.dts
+@@ -302,8 +302,7 @@ &gmac1 {
+ 		     &eth1m0_tx_bus2
+ 		     &eth1m0_rx_bus2
+ 		     &eth1m0_rgmii_clk
+-		     &eth1m0_rgmii_bus
+-		     &ethm0_clk1_25m_out>;
++		     &eth1m0_rgmii_bus>;
+ 	status = "okay";
+ };
+ 
+@@ -784,7 +783,6 @@ &mdio0 {
+ 	rgmii_phy0: phy@1 {
+ 		compatible = "ethernet-phy-ieee802.3-c22";
+ 		reg = <0x1>;
+-		clocks = <&cru REFCLKO25M_GMAC0_OUT>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&gmac0_rst>;
+ 		reset-assert-us = <20000>;
+@@ -797,7 +795,6 @@ &mdio1 {
+ 	rgmii_phy1: phy@1 {
+ 		compatible = "ethernet-phy-ieee802.3-c22";
+ 		reg = <0x1>;
+-		clocks = <&cru REFCLKO25M_GMAC1_OUT>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&gmac1_rst>;
+ 		reset-assert-us = <20000>;
+-- 
+2.34.1
+

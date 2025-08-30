@@ -1,0 +1,37 @@
+From b814b7f394fb2b5b85f903f89e49b4004d358e33 Mon Sep 17 00:00:00 2001
+From: Dan Carpenter <dan.carpenter@linaro.org>
+Date: Mon, 11 Aug 2025 10:18:07 -0400
+Subject: [PATCH 007/106] FIXES(6.17): media: rkvdec: Fix a NULL vs IS_ERR()
+ bug in probe()
+
+The iommu_paging_domain_alloc() function doesn't return NULL on error it
+returns error pointers.  Update the check and then set ->empty_domain to
+NULL because the rest of the driver assumes it can be NULL.
+
+Fixes: ff8c5622f9f7 ("media: rkvdec: Restore iommu addresses on errors")
+Signed-off-by: Dan Carpenter <dan.carpenter@linaro.org>
+Tested-by: Detlev Casanova <detlev.casanova@collabora.com>
+Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+---
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 445f7c92eee3..0875c2e3102c 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -1161,8 +1161,10 @@ static int rkvdec_probe(struct platform_device *pdev)
+ 	if (iommu_get_domain_for_dev(&pdev->dev)) {
+ 		rkvdec->empty_domain = iommu_paging_domain_alloc(rkvdec->dev);
+ 
+-		if (!rkvdec->empty_domain)
++		if (IS_ERR(rkvdec->empty_domain)) {
++			rkvdec->empty_domain = NULL;
+ 			dev_warn(rkvdec->dev, "cannot alloc new empty domain\n");
++		}
+ 	}
+ 
+ 	vb2_dma_contig_set_max_seg_size(&pdev->dev, DMA_BIT_MASK(32));
+-- 
+2.34.1
+

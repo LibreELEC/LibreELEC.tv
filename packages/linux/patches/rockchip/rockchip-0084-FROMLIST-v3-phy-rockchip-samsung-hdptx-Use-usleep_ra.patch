@@ -1,0 +1,30 @@
+From a9bd4fdf453f6f08d040c013d385a22d8d5ab254 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Mon, 18 Aug 2025 21:59:05 +0300
+Subject: [PATCH 084/106] FROMLIST(v3): phy: rockchip: samsung-hdptx: Use
+ usleep_range() instead of udelay()
+
+rk_hdptx_dp_reset() is allowed to sleep, hence replace the busy waiting
+with usleep_range(), to allow other threads to run.
+
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c b/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c
+index 5605610465bc..83ec892bd676 100644
+--- a/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c
++++ b/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c
+@@ -1075,7 +1075,7 @@ static void rk_hdptx_dp_reset(struct rk_hdptx_phy *hdptx)
+ 	reset_control_assert(hdptx->rsts[RST_INIT].rstc);
+ 
+ 	reset_control_assert(hdptx->rsts[RST_APB].rstc);
+-	udelay(10);
++	usleep_range(10, 15);
+ 	reset_control_deassert(hdptx->rsts[RST_APB].rstc);
+ 
+ 	regmap_update_bits(hdptx->regmap, LANE_REG(0301),
+-- 
+2.34.1
+
