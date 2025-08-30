@@ -11,7 +11,7 @@ PKG_URL="https://busybox.net/downloads/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
 PKG_DEPENDS_TARGET="toolchain hdparm dosfstools e2fsprogs zip usbutils parted procps-ng libtirpc"
 PKG_DEPENDS_INIT="toolchain libtirpc"
 PKG_LONGDESC="BusyBox combines tiny versions of many common UNIX utilities into a single small executable."
-PKG_BUILD_FLAGS="-parallel"
+PKG_BUILD_FLAGS="-parallel +lto"
 
 # nano text editor
 if [ "${NANO_EDITOR}" = "yes" ]; then

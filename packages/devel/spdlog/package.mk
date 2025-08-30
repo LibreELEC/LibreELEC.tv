@@ -9,6 +9,7 @@ PKG_SITE="https://github.com/gabime/spdlog"
 PKG_URL="https://github.com/gabime/spdlog/archive/v${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain libfmt"
 PKG_LONGDESC="Very fast, header only, C++ logging library."
+PKG_BUILD_FLAGS="+lto"
 
 PKG_CMAKE_OPTS_TARGET="-DCMAKE_CXX_STANDARD=14 \
                        -DCMAKE_CXX_EXTENSIONS:BOOL=OFF \

@@ -11,7 +11,7 @@ PKG_DEPENDS_HOST="cmake:host make:host"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="fmt is an open-source formatting library for C++. It can be used as a safe alternative to printf or as a fast alternative to IOStreams."
 PKG_TOOLCHAIN="cmake-make"
-PKG_BUILD_FLAGS="+local-cc"
+PKG_BUILD_FLAGS="+local-cc +lto"
 
 PKG_CMAKE_OPTS_COMMON="-DCMAKE_CXX_STANDARD=14 \
                        -DCMAKE_CXX_EXTENSIONS:BOOL=OFF \

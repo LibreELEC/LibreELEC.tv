@@ -80,6 +80,7 @@ PKG_CONFIGURE_OPTS_TARGET="ac_cv_prog_HAS_HG=/bin/false
                            --disable-idle3
                            --with-expat=system
                            --with-doc-strings
+                           --with-lto
                            --without-pymalloc
                            --without-ensurepip
                            --enable-ipv6
