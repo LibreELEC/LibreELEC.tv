@@ -2821,7 +2821,7 @@ index 0000000000000..98116ef012fa3
 +	return status;
 +}
 +
-+enum drm_connector_status cdns_mhdp8501_detect(struct drm_bridge *bridge)
++enum drm_connector_status cdns_mhdp8501_detect(struct drm_bridge *bridge, struct drm_connector *connector)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
 +
@@ -2863,7 +2863,7 @@ index 0000000000000..98116ef012fa3
 +	struct cdns_mhdp8501_device *mhdp = container_of(work,
 +						     struct cdns_mhdp8501_device,
 +						     hotplug_work.work);
-+	enum drm_connector_status status = cdns_mhdp8501_detect(&mhdp->bridge);
++	enum drm_connector_status status = cdns_mhdp8501_detect(&mhdp->bridge, mhdp->curr_conn);
 +
 +	drm_bridge_hpd_notify(&mhdp->bridge, status);
 +
@@ -3510,7 +3510,7 @@ index 0000000000000..8fc463098ab84
 +extern const struct drm_bridge_funcs cdns_hdmi_bridge_funcs;
 +
 +enum drm_connector_status
-+cdns_mhdp8501_detect(struct drm_bridge *bridge);
++cdns_mhdp8501_detect(struct drm_bridge *bridge, struct drm_connector *connector);
 +enum drm_mode_status
 +cdns_mhdp8501_mode_valid(struct drm_bridge *bridge,
 +			 const struct drm_display_info *info,
