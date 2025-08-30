@@ -128,7 +128,7 @@ class Generator:
             tokens = ""
             tokens += "[v]" if self.sections[pkg_name] == "virtual" else ""
             tokens += "[r]" if pkg_name in self.removedPackages else ""
-            yield("%s:%d%s" % (pkg_name, self.refcount[pkg_name], tokens))
+            yield(f"{pkg_name}:{self.refcount[pkg_name]}{tokens}")
 
     def getFirstFailedJob(self, job):
         for dep in job["wants"]:
@@ -301,16 +301,16 @@ class BuildProcess(threading.Thread):
         if job["failedjobs"]:
             flist = []
             for fjob in job["failedjobs"]:
-                failedinfo = "%s,%s" % (fjob["task"], fjob["name"])
+                failedinfo = f"{fjob['task']},{fjob['name']}"
                 if fjob["logfile"]:
-                    failedinfo = "%s,%s" % (failedinfo, fjob["seq"])
+                    failedinfo = f"{failedinfo},{fjob['seq']}"
                 flist.append(failedinfo)
             failedinfo = ";".join(flist)
         else:
             failedinfo = ""
 
-        job["args"] = ["%s/%s/pkgbuild" % (ROOT, SCRIPTS),
-                       "%d" % self.slot, "%d" % job["seq"], "%d" % self.jobtotal, "%d" % self.maxslot,
+        job["args"] = [f"{ROOT}/{SCRIPTS}/pkgbuild",
+                       f"{self.slot}", f"{job['seq']}", f"{self.jobtotal}", f"{self.maxslot}",
                        job["task"], job["name"], failedinfo]
 
         job["start"] = time.time()
@@ -332,9 +332,9 @@ class BuildProcess(threading.Thread):
                     returncode = cmd.returncode
                     job["cmdproc"] = cmd
                 except UnicodeDecodeError:
-                    print('\nPKGBUILDER ERROR: UnicodeDecodeError while reading cmd.stdout from "%s %s"\n' % (job["task"], job["name"]), file=sys.stderr, flush=True)
+                    print(f'\nPKGBUILDER ERROR: UnicodeDecodeError while reading cmd.stdout from "{job["task"]} {job["name"]}"\n', file=sys.stderr, flush=True)
         except Exception as e:
-            print("\nPKGBUILDER ERROR: %s exception while executing: %s\n" % (str(e), job["args"]), file=sys.stderr, flush=True)
+            print(f"\nPKGBUILDER ERROR: {str(e)} exception while executing: {job['args']}\n", file=sys.stderr, flush=True)
 
         job["end"] = time.time()
         job["elapsed"] = job["end"] - job["start"]
@@ -365,7 +365,7 @@ class Builder:
         self.generator = Generator(plan)
 
         self.jobtotal = self.generator.totalJobCount()
-        self.twidth = len("%d" % self.jobtotal)
+        self.twidth = len(f"{self.jobtotal}")
 
         # parse threadcount
         if maxthreadcount.endswith("%"):
@@ -380,7 +380,7 @@ class Builder:
         self.threadcount = max(1, self.threadcount)
 
         if args.debug:
-            DEBUG("THREADCOUNT#: input arg: %s, computed: %d" % (maxthreadcount, self.threadcount))
+            DEBUG(f"THREADCOUNT#: input arg: {maxthreadcount}, computed: {self.threadcount}")
 
         self.joblog = jobglog
         self.loadstats = loadstats
@@ -474,7 +474,7 @@ class Builder:
                 if failed != []:
                     self.oprint("\nThe following log(s) for this failure are available:")
                     for job in failed:
-                        self.oprint("  %s => %s" % (job["name"], job["logfile"]))
+                        self.oprint(f"  {job['name']} => {job['logfile']}")
                     self.oprint("", flush=True)
             return False
 
@@ -492,7 +492,7 @@ class Builder:
             if not self.failimmediately and self.generator.activeJobCount() != 0:
                 freeslots = self.threadcount - self.generator.activeJobCount()
                 self.show_status("WAIT", "waiting", ", ".join(self.generator.activeJobNames()))
-                DEBUG("Waiting for : %d active, %d idle [%s]" % (self.generator.activeJobCount(), freeslots, ", ".join(self.generator.activeJobNames())))
+                DEBUG(f"Waiting for : {self.generator.activeJobCount()} active, {freeslots} idle [{', '}.join.self.generator.activeJobNames()]")
                 return True
             else:
                 return False
@@ -505,12 +505,12 @@ class Builder:
                     self.show_status("INIT", "submit", job["name"])
 
                 if self.debug:
-                    DEBUG("Queueing Job: %s %s" % (job["task"], job["name"]))
+                    DEBUG(f"Queueing Job: {job['task']} {job['name']}")
 
                 self.wseq += 1
                 job["seq"] = self.wseq
                 if self.log_burst:
-                    job["logfile"] = "%s/logs/%d.log" % (THREAD_CONTROL, job["seq"])
+                    job["logfile"] = f"{THREAD_CONTROL}/logs/{job['seq']}.log"
 
                 self.work.put(job)
 
@@ -519,26 +519,26 @@ class Builder:
 
             if self.debug:
                 freeslots = self.threadcount - self.generator.activeJobCount()
-                DEBUG("Building Now: %d active, %d idle [%s]" % (self.generator.activeJobCount(), freeslots, ", ".join(self.generator.activeJobNames())))
+                DEBUG(f"Building Now: {self.generator.activeJobCount()} active, {freeslots} idle [{', '.join(self.generator.activeJobNames())}]")
 
         except GeneratorStalled:
             if self.verbose:
                 freeslots = self.threadcount - self.generator.activeJobCount()
                 pending = []
                 for (i, (package, wants)) in enumerate(self.generator.getStallInfo()):
-                    pending.append("%s (wants: %s)" % (package, ", ".join(wants)))
+                    pending.append(f"{package} (wants: {', '.join(wants)})")
                 self.show_status("ACTV", "active", ", ".join(self.generator.activeJobNames()))
                 self.show_status("IDLE", "stalled", "; ".join(pending), p1=len(pending))
 
             if self.debug:
                 freeslots = self.threadcount - self.generator.activeJobCount()
-                DEBUG("Building Now: %d active, %d idle [%s]" % (self.generator.activeJobCount(), freeslots, ", ".join(self.generator.activeJobNames())))
+                DEBUG(f"Building Now: {self.generator.activeJobCount()} active, {freeslots} idle [{', '.join(self.generator.activeJobNames())}]")
                 for (i, (package, wants)) in enumerate(self.generator.getStallInfo()):
-                    item = "%-25s wants: %s" % (package, ", ".join(wants))
+                    item = f"{package:<25} wants: {', '.join(wants)}"
                     if i == 0:
-                        DEBUG("Stalled Jobs: %s" % item)
+                        DEBUG(f"Stalled Jobs: {item}")
                     else:
-                        DEBUG("              %s" % item)
+                        DEBUG(f"              {item}")
 
         except GeneratorEmpty:
             if self.generator.activeJobCount() == 0:
@@ -548,7 +548,7 @@ class Builder:
             else:
                 if self.debug:
                     n = self.generator.activeJobCount()
-                    DEBUG("NO MORE JOBS: Waiting on %d job%s to complete..." % (n, ["s",""][n == 1]))
+                    DEBUG(f"NO MORE JOBS: Waiting on {n} job{['s',''][n == 1]} to complete...")
 
         return True
 
@@ -560,7 +560,7 @@ class Builder:
                 self.generator.completed(job)
 
                 if self.debug:
-                    DEBUG("Finished Job: %s %s [%s] after %0.3f seconds" % (job["task"], job["name"], job["status"], job["elapsed"]))
+                    DEBUG(f"Finished Job: {job['task']} {job['name']} [{job['status']}] after {job['elapsed']:0.3f} seconds")
 
                 return job
 
@@ -588,10 +588,12 @@ class Builder:
             procs = loadavg[3].split("/")
             meminfo = self.getMemory()
 
-            print("%d %06d %5s %5s %5s %3s %4s %9d %2d %s" % (now, now - self.build_start, \
-                  loadavg[0], loadavg[1], loadavg[2], procs[0], procs[1], meminfo["MemAvailable"], \
-                  self.generator.activeJobCount(), ",".join(self.generator.activeJobNames())), \
-                  file=self.loadstatsfile, flush=True)
+            print(
+                (
+                f"{now} {now - self.build_start:06} {loadavg[0]:5} {loadavg[1]:5} {loadavg[2]:5}"
+                f" {procs[0]:3} {procs[1]:4} {meminfo['MemAvailable']:9}"
+                f" {self.generator.activeJobCount():2} {','.join(self.generator.activeJobNames())}"
+                ), file=self.loadstatsfile, flush=True)
 
         if self.progress:
             return min((self.nextstats - now), int(now + 1) - now)
@@ -602,7 +604,7 @@ class Builder:
         if self.progress:
             freeslots = self.threadcount - self.generator.activeJobCount()
             if self.jobtotal != self.generator.completedJobCount():
-                percent = "%0.2f" % (100 / self.jobtotal * self.generator.completedJobCount())
+                percent = f"{100 / self.jobtotal * self.generator.completedJobCount():0.2f}"
             else:
                 percent = "100"
             loadavg = self.getLoad()
@@ -610,25 +612,24 @@ class Builder:
             available = int(meminfo["MemAvailable"]) / 1024
 
             lines = [ "",
-                      "%s: %5s%% | load: %s mem: %d MB | failed: %d idle: %d active: %d" % \
-                          (self.secs2hms(time.time() - self.build_start), percent, \
-                           loadavg[0], available, \
-                           self.generator.failedJobCount(), freeslots, self.generator.activeJobCount()),
-                      "Building: %s" % ", ".join(self.generator.activeJobNames())
+                      (f"{self.secs2hms(time.time() - self.build_start)}: {percent:5}% | load: {loadavg[0]} "
+                       f"mem: {available:.0f} MB | failed: {self.generator.failedJobCount()} idle: {freeslots} "
+                       f"active: {self.generator.activeJobCount()}"),
+                      f"Building: {', '.join(self.generator.activeJobNames())}"
                     ]
 
             columns = self.columns # in theory could change mid-loop
             output = []
             for line in lines:
-                output.append(line if len(line) < columns else "%s+" % line[0:columns - 2])
+                output.append(line if len(line) < columns else f"{line[0:columns - 2]}+")
 
             if not self.progress_glitch_fix:
-                self.progress_glitch_fix = "%s\033[%dA" % ("\n" * len(output), len(output))
+                self.progress_glitch_fix = f"{chr(10) * len(output)}\033[{len(output)}A"
 
             # \033[?7l: disable linewrap
             # \033[0K: clear cursor to end of line (every line but last)
             # \033[0J: clear cursor to end of screen (last line)
-            # \033%dA: move cursor up %d lines (move back to "home" position)
+            # \033{len(...)}A: move cursor up len(...) lines (move back to "home" position)
             # \033[?7h: re-enable linewrap
             #
             # When the console is resized to a narrower width, lines wider than the
@@ -651,7 +652,7 @@ class Builder:
 
         if job["failed"]:
             if job["logfile"]:
-                self.eprint("\nThe following log for this failure is available:\n  %s\n" % job["logfile"])
+                self.eprint(f"\nThe following log for this failure is available:\n  {job['logfile']}\n")
 
             if job["failedjobs"] and job["failedjobs"][0]["logfile"]:
                 if len(job["failedjobs"]) == 1:
@@ -659,7 +660,7 @@ class Builder:
                 else:
                     self.eprint("The following logs from the failed dependencies may be relevant:")
                 for fjob in job["failedjobs"]:
-                    self.eprint("  %-7s %s => %s" % (fjob["task"], fjob["name"], fjob["logfile"]))
+                    self.eprint(f"  {fjob['task']:<7} {fjob['name']} => {fjob['logfile']}")
                 self.eprint("")
 
     # If configured, send output for a job (either a logfile, or captured stdout) to stdout
@@ -671,7 +672,7 @@ class Builder:
         if job["logfile"]:
             if self.log_combine == "always" or (job["failed"] and self.log_combine == "fail"):
                 if self.bookends:
-                    self.oprint("<<< %s seq %s <<<" % (job["name"], job["seq"]))
+                    self.oprint(f"<<< {job['name']} seq {job['seq']} <<<")
 
                 try:
                     with open(job["logfile"], "r", encoding="utf-8", errors="replace") as logfile:
@@ -679,20 +680,20 @@ class Builder:
                             self.oprint(line, end="")
                             log_size += len(line)
                 except UnicodeDecodeError:
-                    self.eprint("\nPKGBUILDER ERROR: UnicodeDecodeError while reading log file %s\n" % job["logfile"])
+                    self.eprint(f"\nPKGBUILDER ERROR: UnicodeDecodeError while reading log file {job['logfile']}\n")
 
                 if job["failed"]:
-                    self.oprint("\nThe following log for this failure is available:\n  %s\n" % job["logfile"])
+                    self.oprint(f"\nThe following log for this failure is available:\n  {job['logfile']}\n")
 
                 if self.bookends:
-                    self.oprint(">>> %s seq %s >>>" % (job["name"], job["seq"]))
+                    self.oprint(f">>> {job['name']} seq {job['seq']} >>>")
 
                 log_processed = True
 
         elif job["cmdproc"]:
             if self.log_combine == "always" or (job["failed"] and self.log_combine == "fail"):
                 if self.bookends:
-                    self.oprint("<<< %s" % job["name"])
+                    self.oprint(f"<<< {job['name']}")
 
                 for line in job["cmdproc"].stdout:
                     self.oprint(line, end="")
@@ -705,7 +706,7 @@ class Builder:
                     job["autoremove"] = None
 
                 if self.bookends:
-                    self.oprint(">>> %s" % job["name"])
+                    self.oprint(f">>> {job['name']}")
 
                 log_processed = True
 
@@ -715,7 +716,7 @@ class Builder:
             if self.debug:
                 log_elapsed = time.time() - log_start
                 log_rate = int(log_size / log_elapsed) if log_elapsed != 0 else 0
-                log_data = ", %s" % "/".join(job["logfile"].split("/")[-2:]) if job["logfile"] else ""
+                log_data = ", {'/'.join(job['logfile'].split('/')[-2:])}" if job["logfile"] else ""
                 DEBUG("WRITING LOG : {0:,} bytes in {1:0.3f} seconds ({2:,d} bytes/sec{3:})".format(log_size, log_elapsed, log_rate, log_data))
 
     # Log completion stats for job
@@ -734,11 +735,11 @@ class Builder:
     def autoRemovePackages(self, job):
         if self.autoremove:
             if self.debug:
-                DEBUG("Cleaning Pkg: %s (%s)" % (job["name"], ", ".join(self.generator.getPackageReferenceCounts(job))))
+                DEBUG(f"Cleaning Pkg: {job['name']} ({', '.join(self.generator.getPackageReferenceCounts(job))})")
 
             for pkg_name in self.generator.getPackagesToRemove(job):
-                DEBUG("Removing Pkg: %s" % pkg_name)
-                args = ["%s/%s/autoremove" % (ROOT, SCRIPTS), pkg_name]
+                DEBUG(f"Removing Pkg: {pkg_name}")
+                args = [f"{ROOT}/{SCRIPTS}/autoremove", pkg_name]
                 if job["logfile"]:
                     with open(job["logfile"], "a") as logfile:
                         cmd = subprocess.run(args, cwd=ROOT,
@@ -755,7 +756,7 @@ class Builder:
         p1 = (self.threadcount - self.generator.activeJobCount()) if p1 == None else p1
         p2 = self.generator.activeJobCount() if p2 == None else p2
 
-        colored_status = "%s%-4s\033[0m" % (self.color_code[status], status) if self.colors else "%-4s" % status
+        colored_status = f"{self.color_code[status]}{status:<4}\033[0m" if self.colors else f"{status:<4}"
 
         self.eprint("%s[%0*d/%0*d] [%s] %-7s %s" % \
             (self.progress_glitch_fix, self.twidth, p1, self.twidth, p2, colored_status, task, data))
@@ -820,11 +821,11 @@ class Builder:
     def secs2hms(self, seconds):
         min, sec = divmod(seconds, 60)
         hour, min = divmod(min, 60)
-        return "%02d:%02d:%02d" % (hour, min, sec)
+        return f"{hour:02.0f}:{min:02.0f}:{sec:02.0f}"
 
 def DEBUG(msg):
     if DEBUG_LOG:
-        print("%s: %s" % (datetime.datetime.now(), msg), file=DEBUG_LOG, flush=True)
+        print(f"{datetime.datetime.now()}: {msg}", file=DEBUG_LOG, flush=True)
 
 parser = argparse.ArgumentParser(description="Run processes to build the specified JSON plan", \
                                  formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=25,width=90))
@@ -899,14 +900,14 @@ SCRIPTS = os.environ.get("SCRIPTS", "scripts")
 THREAD_CONTROL = os.environ["THREAD_CONTROL"]
 
 if args.debug:
-    debug_log = "%s/debug.log" % THREAD_CONTROL
+    debug_log = f"{THREAD_CONTROL}/debug.log"
     DEBUG_LOG = open(debug_log, "w")
-    print("Debug information is being written to: %s\n" % debug_log, file=sys.stderr, flush=True)
+    print(f"Debug information is being written to: {debug_log}\n", file=sys.stderr, flush=True)
 else:
     DEBUG_LOG = None
 
-with open("%s/parallel.pid" % THREAD_CONTROL, "w") as pid:
-    print("%d" % os.getpid(), file=pid)
+with open(f"{THREAD_CONTROL}/parallel.pid", "w") as pid:
+    print(f"{os.getpid()}", file=pid)
 
 try:
     builder = Builder(args.max_procs, args.plan, args.joblog, args.loadstats, args.stats_interval, \
