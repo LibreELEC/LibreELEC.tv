@@ -8,8 +8,7 @@
 
 RECONF_DIR="${3}"
 
-if [ ! -f "${RECONF_DIR}/configure.in" \
-  -a ! -f "${RECONF_DIR}/configure.ac" ]; then
+if [ ! -f "${RECONF_DIR}/configure.in" ] && [ ! -f "${RECONF_DIR}/configure.ac" ]; then
   die "configure.in or configure.ac not found"
 fi
 
