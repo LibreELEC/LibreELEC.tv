@@ -6,8 +6,8 @@ PKG_NAME="spirv-tools"
 # The SPIRV-Tools pkg_version needs to match the compatible (known_good) glslang pkg_version.
 # https://raw.githubusercontent.com/KhronosGroup/glslang/${PKG_VERSION}/known_good.json
 # When updating glslang pkg_version please update to the known_good spirv-tools pkg_version.
-PKG_VERSION="33e02568181e3312f49a3cf33df470bf96ef293a"
-PKG_SHA256="44d1005880c583fc00a0fb41c839214c68214b000ea8dcb54d352732fee600ff"
+PKG_VERSION="925b0bd1eeb3ea1ceb18e2bb5929575b0cfb3f67"
+PKG_SHA256="708a0036a5d64112554503616b868d740fea25f0fc8abf90a202a310e42df517"
 PKG_LICENSE="Apache-2.0"
 PKG_SITE="https://github.com/KhronosGroup/SPIRV-Tools"
 PKG_URL="https://github.com/KhronosGroup/SPIRV-Tools/archive/${PKG_VERSION}.tar.gz"
