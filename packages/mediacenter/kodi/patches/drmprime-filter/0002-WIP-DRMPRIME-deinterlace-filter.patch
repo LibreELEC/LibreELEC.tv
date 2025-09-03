@@ -1,7 +1,7 @@
-From f30b085a6977bdd1e18c5e3be08d6ee94b2e6a81 Mon Sep 17 00:00:00 2001
+From 1e10edc3f9355d748cd2b89000cd28e1d7141ab8 Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@siol.net>
 Date: Thu, 26 Dec 2019 11:01:51 +0100
-Subject: [PATCH 2/7] WIP: DRMPRIME deinterlace filter
+Subject: [PATCH 02/21] WIP: DRMPRIME deinterlace filter
 
 ---
  .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 378 +++++++++++++++---
@@ -9,10 +9,10 @@ Subject: [PATCH 2/7] WIP: DRMPRIME deinterlace filter
  2 files changed, 327 insertions(+), 60 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 8b7b6e2655ba..2a7e24caf2d3 100644
+index eee7af7718bd..3b5158959530 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -92,12 +93,15 @@ CDVDVideoCodecDRMPRIME::CDVDVideoCodecDRMPRIME(CProcessInfo& processInfo)
+@@ -92,12 +92,15 @@ CDVDVideoCodecDRMPRIME::CDVDVideoCodecDRMPRIME(CProcessInfo& processInfo)
    : CDVDVideoCodec(processInfo)
  {
    m_pFrame = av_frame_alloc();
@@ -28,7 +28,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
    avcodec_free_context(&m_pCodecContext);
  }
  
-@@ -379,8 +383,19 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
+@@ -383,8 +386,19 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
    }
  
    UpdateProcessInfo(m_pCodecContext, m_pCodecContext->pix_fmt);
@@ -49,7 +49,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
  
    return true;
  }
-@@ -456,6 +471,8 @@ void CDVDVideoCodecDRMPRIME::Reset()
+@@ -460,6 +474,8 @@ void CDVDVideoCodecDRMPRIME::Reset()
      return;
  
    Drain();
@@ -58,7 +58,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
  
    do
    {
-@@ -503,7 +520,7 @@ void CDVDVideoCodecDRMPRIME::Drain()
+@@ -507,7 +523,7 @@ void CDVDVideoCodecDRMPRIME::Drain()
    av_packet_free(&avpkt);
  }
  
@@ -67,7 +67,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
  {
    pVideoPicture->iWidth = m_pFrame->width;
    pVideoPicture->iHeight = m_pFrame->height;
-@@ -599,13 +616,238 @@ void CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+@@ -603,13 +619,238 @@ void CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
                             ? DVD_NOPTS_VALUE
                             : static_cast<double>(pts) * DVD_TIME_BASE / AV_TIME_BASE;
    pVideoPicture->dts = DVD_NOPTS_VALUE;
@@ -111,9 +111,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
  
 -CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
 +void CDVDVideoCodecDRMPRIME::FilterTest()
- {
--  if (!m_pFilterIn)
--    return VC_PICTURE;
++{
 +  const AVFilter* filter;
 +  void* opaque{};
 +
@@ -128,7 +126,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
 +      if (FilterOpen(name, true))
 +      {
 +        m_deintFilterName = name;
- 
++
 +        CLog::Log(LOGDEBUG, "CDVDVideoCodecDRMPRIME::{} - found deinterlacing filter {}",
 +                  __FUNCTION__, name);
 +
@@ -292,7 +290,9 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
 +}
 +
 +void CDVDVideoCodecDRMPRIME::FilterClose()
-+{
+ {
+-  if (!m_pFilterIn)
+-    return VC_PICTURE;
 +  if (m_pFilterGraph)
 +  {
 +    CLog::Log(LOGDEBUG, LOGVIDEO, "CDVDVideoCodecDRMPRIME::FilterClose - Freeing filter graph");
@@ -303,13 +303,13 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
 +    m_pFilterOut = nullptr;
 +  }
 +}
-+
+ 
 +CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
 +{
    int ret = av_buffersrc_add_frame(m_pFilterIn, m_pFrame);
    if (ret < 0)
    {
-@@ -621,21 +863,14 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
+@@ -625,21 +866,14 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
  
  CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterOut()
  {
@@ -335,7 +335,7 @@ index 8b7b6e2655ba..2a7e24caf2d3 100644
    }
    else if (ret)
    {
-@@ -646,71 +881,97 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterOut()
+@@ -650,71 +884,97 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterOut()
      return VC_ERROR;
    }
  
@@ -509,5 +509,5 @@ index b5cacf1a3c99..fab3431d40d9 100644
    AVFilterContext* m_pFilterIn = nullptr;
    AVFilterContext* m_pFilterOut = nullptr;
 -- 
-2.39.5
+2.47.2
 

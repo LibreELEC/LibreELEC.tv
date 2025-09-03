@@ -1,17 +1,17 @@
-From bc08f759972d779d685790f7cd57c6753a85ef4e Mon Sep 17 00:00:00 2001
+From 2a2027885bec27ea43d230a6008592f8669e9bb1 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Mon, 15 May 2023 12:50:16 +0100
-Subject: [PATCH 7/7] DVDVideoCodecDRMPRIME: Fix missing flush after eof
+Subject: [PATCH 07/21] DVDVideoCodecDRMPRIME: Fix missing flush after eof
 
 ---
  .../VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 8 ++++++++
  1 file changed, 8 insertions(+)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 633df0740466..3a5154dca4b4 100644
+index 6c3170e2f8d1..4f69d235a9a9 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -931,7 +931,15 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+@@ -934,7 +934,15 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
    if (ret == AVERROR(EAGAIN))
      return VC_BUFFER;
    else if (ret == AVERROR_EOF)
@@ -28,5 +28,5 @@ index 633df0740466..3a5154dca4b4 100644
    {
      char err[AV_ERROR_MAX_STRING_SIZE] = {};
 -- 
-2.39.5
+2.47.2
 
