@@ -10,7 +10,7 @@ set -e
 BUILD_ROOT=$(PROJECT= DEVICE= ARCH= . config/options "" && echo "${BUILD_ROOT}")
 BUILD_BASE=$(PROJECT= DEVICE= ARCH= . config/options "" && echo "${BUILD_BASE}")
 
-if [ -z "${BUILD_BASE}" -o -z "${BUILD_ROOT}" ]; then
+if [ -z "${BUILD_BASE}" ] || [ -z "${BUILD_ROOT}" ]; then
   # make sure variables are set before running an rm
   echo "error: ${0}: both BUILD_BASE and BUILD_ROOT must be set when running \"[clean|distclean]\"; aborting"
   exit 1
