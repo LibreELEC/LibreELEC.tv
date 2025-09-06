@@ -1,0 +1,31 @@
+From efb11d2b75da04c2e5ddc257989881248adb9f65 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 16 Feb 2025 19:17:20 +0000
+Subject: [PATCH 42/84] usb: dwc3-generic: Use combined glue and ctrl node for
+ RK3576
+
+Like Rockchip RK3328, RK3568 and RK3588, the RK3576 also have a single
+node to represent the glue and ctrl for USB 3.0.
+
+Use rk_ops as driver data to select correct ctrl node for RK3576 DWC3.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/usb/dwc3/dwc3-generic.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/dwc3/dwc3-generic.c b/drivers/usb/dwc3/dwc3-generic.c
+index 6b2016c0cd3..c09014aec60 100644
+--- a/drivers/usb/dwc3/dwc3-generic.c
++++ b/drivers/usb/dwc3/dwc3-generic.c
+@@ -700,6 +700,7 @@ static const struct udevice_id dwc3_glue_ids[] = {
+ 	{ .compatible = "rockchip,rk3399-dwc3" },
+ 	{ .compatible = "rockchip,rk3528-dwc3", .data = (ulong)&rk_ops },
+ 	{ .compatible = "rockchip,rk3568-dwc3", .data = (ulong)&rk_ops },
++	{ .compatible = "rockchip,rk3576-dwc3", .data = (ulong)&rk_ops },
+ 	{ .compatible = "rockchip,rk3588-dwc3", .data = (ulong)&rk_ops },
+ 	{ .compatible = "qcom,dwc3", .data = (ulong)&qcom_ops },
+ 	{ .compatible = "fsl,imx8mp-dwc3", .data = (ulong)&imx8mp_ops },
+-- 
+2.34.1
+

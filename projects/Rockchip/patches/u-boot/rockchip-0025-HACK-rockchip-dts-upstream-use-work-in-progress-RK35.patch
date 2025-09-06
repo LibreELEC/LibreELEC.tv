@@ -1,0 +1,2246 @@
+From ea6c170437917c10bfae93ea2e1b58edc8b6eab8 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Wed, 12 Mar 2025 00:32:03 +0000
+Subject: [PATCH 25/84] HACK: rockchip: dts/upstream: use work-in-progress
+ RK3528 DTs
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ .../arm64/rockchip/rk3528-armsom-sige1.dts    | 488 ++++++++++++++
+ .../arm64/rockchip/rk3528-nanopi-zero2.dts    | 369 +++++++++++
+ .../src/arm64/rockchip/rk3528-radxa-e20c.dts  |  47 ++
+ .../src/arm64/rockchip/rk3528-radxa-e24c.dts  | 614 ++++++++++++++++++
+ .../src/arm64/rockchip/rk3528-rock-2.dtsi     | 306 +++++++++
+ .../src/arm64/rockchip/rk3528-rock-2a.dts     | 100 +++
+ .../src/arm64/rockchip/rk3528-rock-2f.dts     |  22 +
+ dts/upstream/src/arm64/rockchip/rk3528.dtsi   | 161 ++++-
+ 8 files changed, 2106 insertions(+), 1 deletion(-)
+ create mode 100644 dts/upstream/src/arm64/rockchip/rk3528-armsom-sige1.dts
+ create mode 100644 dts/upstream/src/arm64/rockchip/rk3528-nanopi-zero2.dts
+ create mode 100644 dts/upstream/src/arm64/rockchip/rk3528-radxa-e24c.dts
+ create mode 100644 dts/upstream/src/arm64/rockchip/rk3528-rock-2.dtsi
+ create mode 100644 dts/upstream/src/arm64/rockchip/rk3528-rock-2a.dts
+ create mode 100644 dts/upstream/src/arm64/rockchip/rk3528-rock-2f.dts
+
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-armsom-sige1.dts b/dts/upstream/src/arm64/rockchip/rk3528-armsom-sige1.dts
+new file mode 100644
+index 00000000000..d981c07a0a7
+--- /dev/null
++++ b/dts/upstream/src/arm64/rockchip/rk3528-armsom-sige1.dts
+@@ -0,0 +1,488 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
++#include <dt-bindings/pwm/pwm.h>
++#include "rk3528.dtsi"
++
++/ {
++	model = "ArmSoM Sige1";
++	compatible = "armsom,sige1", "rockchip,rk3528";
++
++	aliases {
++		ethernet0 = &gmac1;
++		i2c0 = &i2c0;
++		mmc0 = &sdhci;
++		mmc1 = &sdmmc;
++		mmc2 = &sdio0;
++		serial0 = &uart0;
++		serial2 = &uart2;
++	};
++
++	chosen {
++		stdout-path = "serial0:1500000n8";
++	};
++
++	adc-keys {
++		compatible = "adc-keys";
++		io-channels = <&saradc 0>;
++		io-channel-names = "buttons";
++		keyup-threshold-microvolt = <1800000>;
++		poll-interval = <100>;
++
++		button-maskrom {
++			label = "MASKROM";
++			linux,code = <KEY_SETUP>;
++			press-threshold-microvolt = <0>;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&g_led>, <&r_led>;
++
++		led-0 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "on";
++			function = LED_FUNCTION_HEARTBEAT;
++			gpios = <&gpio3 RK_PB3 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++
++		led-1 {
++			color = <LED_COLOR_ID_RED>;
++			default-state = "on";
++			function = LED_FUNCTION_STATUS;
++			gpios = <&gpio3 RK_PB2 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "default-on";
++		};
++	};
++
++	vcc0v6_ddr: regulator-0v6-vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc0v6_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <600000>;
++		regulator-max-microvolt = <600000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vdd_0v9: regulator-0v9-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd_0v9";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <900000>;
++		regulator-max-microvolt = <900000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_ddr: regulator-1v1-vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1100000>;
++		regulator-max-microvolt = <1100000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_1v8: regulator-1v8-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_1v8";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&vcc_3v3>;
++	};
++
++	vcc1v8_ddr: regulator-1v8-vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc1v8_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_3v3: regulator-3v3-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_3v3";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc_dcin>;
++	};
++
++	vcc3v3_sd: regulator-3v3-vcc-sd {
++		compatible = "regulator-fixed";
++		gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc_pwren_l>;
++		regulator-name = "vcc3v3_sd";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc_3v3>;
++	};
++
++	vcc5v0_sys: regulator-5v0-vcc-sys {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0_sys";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc_dcin>;
++	};
++
++	vcc5v0_usb1_host: regulator-5v0-vcc-usb1-host {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb20_host1_drv_h>;
++		regulator-name = "vcc5v0_usb1_host";
++		regulator-always-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc5v0_usb2_host: regulator-5v0-vcc-usb2-host {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb20_host2_drv_h>;
++		regulator-name = "vcc5v0_usb2_host";
++		regulator-always-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc5v0_usb_otg: regulator-5v0-vcc-usb-otg {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio1 RK_PB4 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb20_otg0_drv_h>;
++		regulator-name = "vcc5v0_usb_otg";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_dcin: regulator-vcc-dcin {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_dcin";
++		regulator-always-on;
++		regulator-boot-on;
++	};
++
++	vccio_sd: regulator-vccio-sd {
++		compatible = "regulator-gpio";
++		gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc_vol_ctrl_h>;
++		regulator-name = "vccio_sd";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++		states = <1800000 0x0>, <3300000 0x1>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vdd_arm: regulator-vdd-arm {
++		compatible = "pwm-regulator";
++		pwms = <&pwm3 0 5000 PWM_POLARITY_INVERTED>;
++		pwm-supply = <&vcc5v0_sys>;
++		regulator-name = "vdd_arm";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <746000>;
++		regulator-max-microvolt = <1201000>;
++		regulator-settling-time-up-us = <250>;
++	};
++
++	vdd_logic: regulator-vdd-logic {
++		compatible = "pwm-regulator";
++		pwms = <&pwm2 0 5000 PWM_POLARITY_INVERTED>;
++		pwm-supply = <&vcc5v0_sys>;
++		regulator-name = "vdd_logic";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <705000>;
++		regulator-max-microvolt = <1006000>;
++		regulator-settling-time-up-us = <250>;
++	};
++
++	sdio_pwrseq: sdio-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_reg_on_h>, <&clkm1_32k_out>;
++		post-power-on-delay-ms = <200>;
++		reset-gpios = <&gpio1 RK_PA6 GPIO_ACTIVE_LOW>;
++	};
++};
++
++&cpu0 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu1 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu2 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu3 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&gmac1 {
++	clock_in_out = "output";
++	phy-handle = <&rgmii_phy>;
++	phy-mode = "rgmii-id";
++	phy-supply = <&vcc_3v3>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&rgmii_miim>, <&rgmii_tx_bus2>, <&rgmii_rx_bus2>,
++		    <&rgmii_rgmii_clk>, <&rgmii_rgmii_bus>;
++	status = "okay";
++};
++
++&gpu {
++	mali-supply = <&vdd_logic>;
++	status = "okay";
++};
++
++&i2c0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c0m0_xfer>;
++	status = "okay";
++
++	hym8563: rtc@51 {
++		compatible = "haoyu,hym8563";
++		reg = <0x51>;
++		#clock-cells = <0>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <RK_PA0 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&rtc_int_l>;
++		wakeup-source;
++	};
++};
++
++&mdio1 {
++	rgmii_phy: ethernet-phy@1 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <0x1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&gmac1_rstn_l>;
++		reset-assert-us = <20000>;
++		reset-deassert-us = <100000>;
++		reset-gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_LOW>;
++	};
++};
++
++&pinctrl {
++	bluetooth {
++		bt_reg_on_h: bt-reg-on-h {
++			rockchip,pins = <1 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		bt_wake_host_h: bt-wake-host-h {
++			rockchip,pins = <1 RK_PC2 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++
++		host_wake_bt_h: host-wake-bt-h {
++			rockchip,pins = <3 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	ethernet {
++		gmac1_rstn_l: gmac1-rstn-l {
++			rockchip,pins = <4 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	leds {
++		g_led: g-led {
++			rockchip,pins = <3 RK_PB3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		r_led: r-led {
++			rockchip,pins = <3 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	rtc {
++		rtc_int_l: rtc-int-l {
++			rockchip,pins = <4 RK_PA0 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	sdmmc {
++		sdmmc_vol_ctrl_h: sdmmc-vol-ctrl-h {
++			rockchip,pins = <4 RK_PC2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		sdmmc_pwren_l: sdmmc-pwren-l {
++			rockchip,pins = <4 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	usb {
++		usb20_host1_drv_h: usb20-host1-drv-h {
++			rockchip,pins = <4 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		usb20_host2_drv_h: usb20-host2-drv-h {
++			rockchip,pins = <4 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		usb20_otg0_drv_h: usb20-otg0-drv-h {
++			rockchip,pins = <1 RK_PB4 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	wifi {
++		wifi_reg_on_h: wifi-reg-on-h {
++			rockchip,pins = <1 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		wifi_wake_host_h: wifi-wake-host-h {
++			rockchip,pins = <1 RK_PA7 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++	};
++};
++
++&pwm2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm2m0_pins>;
++	status = "okay";
++};
++
++&pwm3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm3m0_pins>;
++	status = "okay";
++};
++
++&saradc {
++	vref-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdhci {
++	bus-width = <8>;
++	cap-mmc-highspeed;
++	mmc-hs200-1_8v;
++	no-sd;
++	no-sdio;
++	non-removable;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdio0 {
++	bus-width = <4>;
++	cap-sd-highspeed;
++	cap-sdio-irq;
++	keep-power-in-suspend;
++	mmc-pwrseq = <&sdio_pwrseq>;
++	no-mmc;
++	no-sd;
++	non-removable;
++	sd-uhs-sdr104;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vcc_1v8>;
++	#address-cells = <1>;
++	#size-cells = <0>;
++	status = "okay";
++
++	wifi@1 {
++		compatible = "brcm,bcm4329-fmac";
++		reg = <1>;
++		clocks = <&cru CLK_DEEPSLOW>;
++		clock-names = "lpo";
++		interrupt-parent = <&gpio1>;
++		interrupts = <RK_PA7 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "host-wake";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_wake_host_h>;
++	};
++};
++
++&sdmmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	cap-sd-highspeed;
++	disable-wp;
++	sd-uhs-sdr104;
++	vmmc-supply = <&vcc3v3_sd>;
++	vqmmc-supply = <&vccio_sd>;
++	status = "okay";
++};
++
++&u2phy {
++	status = "okay";
++};
++
++&u2phy_host {
++	status = "okay";
++};
++
++&u2phy_otg {
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0m0_xfer>;
++	status = "okay";
++};
++
++&uart2 {
++	dma-names = "tx", "rx";
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart2m1_xfer>, <&uart2m1_ctsn>, <&uart2m1_rtsn>;
++	uart-has-rtscts;
++	status = "okay";
++
++	bluetooth {
++		compatible = "brcm,bcm43438-bt";
++		clocks = <&cru CLK_DEEPSLOW>;
++		clock-names = "lpo";
++		device-wakeup-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>;
++		interrupt-parent = <&gpio1>;
++		interrupts = <RK_PC2 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-names = "host-wakeup";
++		pinctrl-names = "default";
++		pinctrl-0 = <&bt_reg_on_h>, <&bt_wake_host_h>, <&host_wake_bt_h>;
++		shutdown-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
++		vbat-supply = <&vcc_3v3>;
++		vddio-supply = <&vcc_1v8>;
++	};
++};
++
++&usb_host0_ehci {
++	status = "okay";
++};
++
++&usb_host0_xhci {
++	extcon = <&u2phy>;
++	maximum-speed = "high-speed";
++	phys = <&u2phy_otg>;
++	phy-names = "usb2-phy";
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-nanopi-zero2.dts b/dts/upstream/src/arm64/rockchip/rk3528-nanopi-zero2.dts
+new file mode 100644
+index 00000000000..38a73ff05b7
+--- /dev/null
++++ b/dts/upstream/src/arm64/rockchip/rk3528-nanopi-zero2.dts
+@@ -0,0 +1,369 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
++#include <dt-bindings/pwm/pwm.h>
++#include "rk3528.dtsi"
++
++/ {
++	model = "FriendlyElec NanoPi Zero2";
++	compatible = "friendlyarm,nanopi-zero2", "rockchip,rk3528";
++
++	aliases {
++		ethernet0 = &gmac1;
++		i2c1 = &i2c1;
++		mmc0 = &sdhci;
++		mmc1 = &sdmmc;
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:1500000n8";
++	};
++
++	adc-keys-0 {
++		compatible = "adc-keys";
++		io-channels = <&saradc 0>;
++		io-channel-names = "buttons";
++		keyup-threshold-microvolt = <1800000>;
++		poll-interval = <100>;
++
++		button-maskrom {
++			label = "MASK";
++			linux,code = <KEY_SETUP>;
++			press-threshold-microvolt = <0>;
++		};
++	};
++
++	adc-keys-1 {
++		compatible = "adc-keys";
++		io-channels = <&saradc 1>;
++		io-channel-names = "buttons";
++		keyup-threshold-microvolt = <1800000>;
++		poll-interval = <100>;
++
++		button-recovery {
++			label = "RECOVERY";
++			linux,code = <KEY_VENDOR>;
++			press-threshold-microvolt = <0>;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&led1>, <&led_sys>;
++
++		led-0 {
++			color = <LED_COLOR_ID_RED>;
++			default-state = "on";
++			function = LED_FUNCTION_HEARTBEAT;
++			gpios = <&gpio4 RK_PB0 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++
++		led-1 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "on";
++			function = LED_FUNCTION_STATUS;
++			gpios = <&gpio4 RK_PB1 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "default-on";
++		};
++	};
++
++	vcc0v6_ddr: regulator-0v6-vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc0v6_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <600000>;
++		regulator-max-microvolt = <600000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vdd_0v9: regulator-0v9-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd_0v9";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <900000>;
++		regulator-max-microvolt = <900000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_ddr: regulator-1v1-vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1100000>;
++		regulator-max-microvolt = <1100000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_1v8: regulator-1v8-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_1v8";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&vcc_3v3>;
++	};
++
++	vcc_3v3: regulator-3v3-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_3v3";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc3v3_sd: regulator-3v3-vcc-sd {
++		compatible = "regulator-fixed";
++		gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc_pwren_l>;
++		regulator-name = "vcc3v3_sd";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc_3v3>;
++	};
++
++	vcc5v0_sys: regulator-5v0-vcc-sys {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0_sys";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++	};
++
++	usb2_host_5v: regulator-5v0-usb2-host {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio4 RK_PB5 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb20_host1_pwren>;
++		regulator-name = "usb2_host_5v";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vccio_sd: regulator-vccio-sd {
++		compatible = "regulator-gpio";
++		gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc_vol_ctrl_h>;
++		regulator-name = "vccio_sd";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++		states = <1800000 0x0>, <3300000 0x1>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vdd_arm: regulator-vdd-arm {
++		compatible = "pwm-regulator";
++		pwms = <&pwm1 0 5000 PWM_POLARITY_INVERTED>;
++		pwm-supply = <&vcc5v0_sys>;
++		regulator-name = "vdd_arm";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <746000>;
++		regulator-max-microvolt = <1201000>;
++		regulator-settling-time-up-us = <250>;
++	};
++
++	vdd_logic: regulator-vdd-logic {
++		compatible = "pwm-regulator";
++		pwms = <&pwm2 0 5000 PWM_POLARITY_INVERTED>;
++		pwm-supply = <&vcc5v0_sys>;
++		regulator-name = "vdd_logic";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <705000>;
++		regulator-max-microvolt = <1006000>;
++		regulator-settling-time-up-us = <250>;
++	};
++};
++
++&cpu0 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu1 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu2 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu3 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&gmac1 {
++	clock_in_out = "output";
++	phy-handle = <&rgmii_phy>;
++	phy-mode = "rgmii-id";
++	phy-supply = <&vcc_3v3>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&rgmii_miim>, <&rgmii_tx_bus2>, <&rgmii_rx_bus2>,
++		    <&rgmii_rgmii_clk>, <&rgmii_rgmii_bus>;
++	status = "okay";
++};
++
++&gpu {
++	mali-supply = <&vdd_logic>;
++	status = "okay";
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1m0_xfer>;
++	status = "okay";
++
++	hym8563: rtc@51 {
++		compatible = "haoyu,hym8563";
++		reg = <0x51>;
++		#clock-cells = <0>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <RK_PC1 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&rtc_int_l>;
++		wakeup-source;
++	};
++};
++
++&mdio1 {
++	rgmii_phy: ethernet-phy@1 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <0x1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&gmac1_rstn_l>;
++		reset-assert-us = <20000>;
++		reset-deassert-us = <100000>;
++		reset-gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
++	};
++};
++
++&pinctrl {
++	ethernet {
++		gmac1_rstn_l: gmac1-rstn-l {
++			rockchip,pins = <4 RK_PC2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	leds {
++		led1: led1 {
++			rockchip,pins = <4 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		led_sys: led-sys {
++			rockchip,pins = <4 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	rtc {
++		rtc_int_l: rtc-int-l {
++			rockchip,pins = <4 RK_PC1 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	sdmmc {
++		sdmmc_vol_ctrl_h: sdmmc-vol-ctrl-h {
++			rockchip,pins = <4 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		sdmmc_pwren_l: sdmmc-pwren-l {
++			rockchip,pins = <4 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	usb {
++		usb20_host1_pwren: usb20-host1-pwren {
++			rockchip,pins = <4 RK_PB5 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++};
++
++&pwm1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm1m0_pins>;
++	status = "okay";
++};
++
++&pwm2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm2m0_pins>;
++	status = "okay";
++};
++
++&saradc {
++	vref-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdhci {
++	bus-width = <8>;
++	cap-mmc-highspeed;
++	mmc-hs200-1_8v;
++	no-sd;
++	no-sdio;
++	non-removable;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdmmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	cap-sd-highspeed;
++	disable-wp;
++	sd-uhs-sdr104;
++	vmmc-supply = <&vcc3v3_sd>;
++	vqmmc-supply = <&vccio_sd>;
++	status = "okay";
++};
++
++&u2phy {
++	status = "okay";
++};
++
++&u2phy_host {
++	phy-supply = <&usb2_host_5v>;
++	status = "okay";
++};
++
++&u2phy_otg {
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0m0_xfer>;
++	status = "okay";
++};
++
++&usb_host0_ehci {
++	status = "okay";
++};
++
++&usb_host0_ohci {
++	status = "okay";
++};
++
++&usb_host0_xhci {
++	extcon = <&u2phy>;
++	maximum-speed = "high-speed";
++	phys = <&u2phy_otg>;
++	phy-names = "usb2-phy";
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-radxa-e20c.dts b/dts/upstream/src/arm64/rockchip/rk3528-radxa-e20c.dts
+index 12eec2c1db2..363f08c1e24 100644
+--- a/dts/upstream/src/arm64/rockchip/rk3528-radxa-e20c.dts
++++ b/dts/upstream/src/arm64/rockchip/rk3528-radxa-e20c.dts
+@@ -134,6 +134,18 @@
+ 		regulator-max-microvolt = <5000000>;
+ 	};
+ 
++	vcc5v0_usb20: regulator-5v0-vcc-usb20 {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio0 RK_PA1 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb_host_en>;
++		regulator-name = "vcc5v0_usb20";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
+ 	vccio_sd: regulator-vccio-sd {
+ 		compatible = "regulator-gpio";
+ 		gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
+@@ -261,6 +273,12 @@
+ 			rockchip,pins = <4 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
+ 		};
+ 	};
++
++	usb {
++		usb_host_en: usb-host-en {
++			rockchip,pins = <0 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
+ };
+ 
+ &pwm1 {
+@@ -303,8 +321,37 @@
+ 	status = "okay";
+ };
+ 
++&u2phy {
++	status = "okay";
++};
++
++&u2phy_host {
++	phy-supply = <&vcc5v0_usb20>;
++	status = "okay";
++};
++
++&u2phy_otg {
++	status = "okay";
++};
++
+ &uart0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&uart0m0_xfer>;
+ 	status = "okay";
+ };
++
++&usb_host0_ehci {
++	status = "okay";
++};
++
++&usb_host0_ohci {
++	status = "okay";
++};
++
++&usb_host0_xhci {
++	extcon = <&u2phy>;
++	maximum-speed = "high-speed";
++	phys = <&u2phy_otg>;
++	phy-names = "usb2-phy";
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-radxa-e24c.dts b/dts/upstream/src/arm64/rockchip/rk3528-radxa-e24c.dts
+new file mode 100644
+index 00000000000..76a98bf4f1d
+--- /dev/null
++++ b/dts/upstream/src/arm64/rockchip/rk3528-radxa-e24c.dts
+@@ -0,0 +1,614 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
++#include "rk3528.dtsi"
++
++/ {
++	model = "Radxa E24C";
++	compatible = "radxa,e24c", "rockchip,rk3528";
++
++	aliases {
++		ethernet0 = &gmac1;
++		i2c0 = &i2c0;
++		i2c1 = &i2c1;
++		i2c5 = &i2c5;
++		mmc0 = &sdhci;
++		mmc1 = &sdmmc;
++		rtc0 = &hym8563;
++		rtc1 = &rk805;
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:1500000n8";
++	};
++
++	adc-keys {
++		compatible = "adc-keys";
++		io-channels = <&saradc 0>;
++		io-channel-names = "buttons";
++		keyup-threshold-microvolt = <1800000>;
++		poll-interval = <100>;
++
++		button-maskrom {
++			label = "MASKROM";
++			linux,code = <KEY_SETUP>;
++			press-threshold-microvolt = <0>;
++		};
++	};
++
++	gpio-keys {
++		compatible = "gpio-keys";
++		pinctrl-names = "default";
++		pinctrl-0 = <&gpio0_a0_user>;
++
++		button-user {
++			gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_LOW>;
++			label = "USER";
++			linux,code = <BTN_1>;
++			wakeup-source;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led-0 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "on";
++			function = LED_FUNCTION_HEARTBEAT;
++			gpios = <&gpio4 RK_PA1 GPIO_ACTIVE_LOW>;
++			label = "SYS";
++			linux,default-trigger = "heartbeat";
++			pinctrl-names = "default";
++			pinctrl-0 = <&sys_led_g>;
++		};
++
++		led-1 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "off";
++			function = LED_FUNCTION_WAN;
++			gpios = <&gpio4 RK_PA0 GPIO_ACTIVE_HIGH>;
++			label = "WAN";
++			linux,default-trigger = "netdev";
++			pinctrl-names = "default";
++			pinctrl-0 = <&wan_led_g>;
++		};
++
++		led-2 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "off";
++			function = LED_FUNCTION_LAN;
++			gpios = <&gpio1 RK_PB0 GPIO_ACTIVE_HIGH>;
++			label = "LAN1";
++			linux,default-trigger = "netdev";
++			pinctrl-names = "default";
++			pinctrl-0 = <&lan1_led_g>;
++		};
++
++		led-3 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "off";
++			function = LED_FUNCTION_LAN;
++			gpios = <&gpio1 RK_PB1 GPIO_ACTIVE_HIGH>;
++			label = "LAN2";
++			linux,default-trigger = "netdev";
++			pinctrl-names = "default";
++			pinctrl-0 = <&lan2_led_g>;
++		};
++
++		led-4 {
++			color = <LED_COLOR_ID_GREEN>;
++			default-state = "off";
++			function = LED_FUNCTION_LAN;
++			gpios = <&gpio1 RK_PB4 GPIO_ACTIVE_HIGH>;
++			label = "LAN3";
++			linux,default-trigger = "netdev";
++			pinctrl-names = "default";
++			pinctrl-0 = <&lan3_led_g>;
++		};
++	};
++
++	vcc3v3_mkey: regulator-3v3-vcc-mkey {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&mkey_pwr_en>;
++		regulator-name = "vcc3v3_mkey";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc5v0_sys: regulator-5v0-vcc-sys {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0_sys";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc_12v>;
++	};
++
++	vcc5v0_usb20: regulator-5v0-vcc-usb20 {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb_host_en>;
++		regulator-name = "vcc5v0_usb20";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_12v: regulator-12v0-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_12v";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++	};
++
++	vccio_sd: regulator-vccio-sd {
++		compatible = "regulator-gpio";
++		gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc_vol_ctrl_h>;
++		regulator-name = "vccio_sd";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++		states = <1800000 0x0>, <3300000 0x1>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	/* Common enable line for the avdd rails mentioned in the labels */
++	vdd_switch: avddl_1v1: avddh_3v3: regulator-vdd-switch {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio1 RK_PC3 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&gpio_8367_en>;
++		regulator-name = "vdd_switch";
++		startup-delay-us = <10000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++};
++
++&combphy {
++	status = "okay";
++};
++
++&cpu0 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu1 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu2 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu3 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&gmac1 {
++	/delete-property/ snps,tso;
++	clock_in_out = "output";
++	phy-mode = "rgmii-id";
++	phy-supply = <&vdd_switch>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&rgmii_miim>, <&rgmii_tx_bus2>, <&rgmii_rx_bus2>,
++		    <&rgmii_rgmii_clk>, <&rgmii_rgmii_bus>;
++	status = "okay";
++
++	fixed-link {
++		full-duplex;
++		pause;
++		speed = <1000>;
++	};
++};
++
++&gpu {
++	mali-supply = <&vdd_logic>;
++	status = "okay";
++};
++
++&i2c0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c0m0_xfer>;
++	status = "okay";
++
++	rk805: pmic@18 {
++		compatible = "rockchip,rk805";
++		reg = <0x18>;
++		#clock-cells = <0>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <RK_PB2 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pmic_int>;
++		system-power-controller;
++		wakeup-source;
++
++		vcc1-supply = <&vcc5v0_sys>;
++		vcc2-supply = <&vcc5v0_sys>;
++		vcc3-supply = <&vcc5v0_sys>;
++		vcc4-supply = <&vcc5v0_sys>;
++		vcc5-supply = <&vcc5v0_sys>;
++		vcc6-supply = <&vcc5v0_sys>;
++
++		regulators {
++			vdd_arm: DCDC_REG1 {
++				regulator-name = "vdd_arm";
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <712500>;
++				regulator-max-microvolt = <1450000>;
++				regulator-ramp-delay = <12500>;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++				};
++			};
++
++			vdd_logic: DCDC_REG2 {
++				regulator-name = "vdd_logic";
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <712500>;
++				regulator-max-microvolt = <1450000>;
++				regulator-ramp-delay = <12500>;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++				};
++			};
++
++			vcc_ddr: DCDC_REG3 {
++				regulator-name = "vcc_ddr";
++				regulator-always-on;
++				regulator-boot-on;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++				};
++			};
++
++			vcc_3v3: DCDC_REG4 {
++				regulator-name = "vcc_3v3";
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <3300000>;
++				regulator-max-microvolt = <3300000>;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++					regulator-suspend-microvolt = <3300000>;
++				};
++			};
++
++			vcc_1v8: LDO_REG1 {
++				regulator-name = "vcc_1v8";
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++					regulator-suspend-microvolt = <1800000>;
++				};
++			};
++
++			vcc1v8_emmc: LDO_REG2 {
++				regulator-name = "vcc1v8_emmc";
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++					regulator-suspend-microvolt = <1800000>;
++				};
++			};
++
++			vdd_0v9_p: LDO_REG3 {
++				regulator-name = "vdd_0v9_p";
++				regulator-always-on;
++				regulator-boot-on;
++				regulator-min-microvolt = <900000>;
++				regulator-max-microvolt = <900000>;
++
++				regulator-state-mem {
++					regulator-on-in-suspend;
++					regulator-suspend-microvolt = <900000>;
++				};
++			};
++		};
++	};
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1m0_xfer>;
++	status = "okay";
++
++	eeprom@50 {
++		compatible = "belling,bl24c16a", "atmel,24c16";
++		reg = <0x50>;
++		pagesize = <16>;
++		read-only;
++		vcc-supply = <&vcc_3v3>;
++	};
++};
++
++&i2c5 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c5m0_xfer>;
++	status = "okay";
++
++	hym8563: rtc@51 {
++		compatible = "haoyu,hym8563";
++		reg = <0x51>;
++		#clock-cells = <0>;
++		interrupt-parent = <&gpio4>;
++		interrupts = <RK_PB0 IRQ_TYPE_LEVEL_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&rtc_int_l>;
++		wakeup-source;
++	};
++};
++
++&mdio1 {
++	ethernet-switch@1d {
++		compatible = "realtek,rtl8365mb";
++		reg = <0x1d>;
++		interrupt-parent = <&switch_intc>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&gmac1_rstn_l>, <&rtl8367rb_eint>;
++		reset-gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
++
++		ethernet-ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			ethernet-port@0 {
++				reg = <0>;
++				label = "wan";
++				phy-handle = <&switchphy0>;
++			};
++
++			ethernet-port@1 {
++				reg = <1>;
++				label = "lan1";
++				phy-handle = <&switchphy1>;
++			};
++
++			ethernet-port@2 {
++				reg = <2>;
++				label = "lan2";
++				phy-handle = <&switchphy2>;
++			};
++
++			ethernet-port@3 {
++				reg = <3>;
++				label = "lan3";
++				phy-handle = <&switchphy3>;
++			};
++
++			ethernet-port@6 {
++				reg = <6>;
++				ethernet = <&gmac1>;
++				phy-mode = "rgmii";
++				rx-internal-delay-ps = <2100>;
++				tx-internal-delay-ps = <2000>;
++
++				fixed-link {
++					full-duplex;
++					pause;
++					speed = <1000>;
++				};
++			};
++		};
++
++		switch_intc: interrupt-controller {
++			interrupt-parent = <&gpio1>;
++			interrupts = <RK_PC2 IRQ_TYPE_LEVEL_LOW>;
++			interrupt-controller;
++			#address-cells = <0>;
++			#interrupt-cells = <1>;
++		};
++
++		mdio {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			switchphy0: ethernet-phy@0 {
++				reg = <0>;
++				interrupts = <0>;
++			};
++
++			switchphy1: ethernet-phy@1 {
++				reg = <1>;
++				interrupts = <1>;
++			};
++
++			switchphy2: ethernet-phy@2 {
++				reg = <2>;
++				interrupts = <2>;
++			};
++
++			switchphy3: ethernet-phy@3 {
++				reg = <3>;
++				interrupts = <3>;
++			};
++		};
++	};
++};
++
++&pcie2x1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pciem1_pins>;
++	reset-gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_HIGH>;
++	vpcie3v3-supply = <&vcc3v3_mkey>;
++	status = "okay";
++};
++
++&pinctrl {
++	ethernet {
++		gmac1_rstn_l: gmac1-rstn-l {
++			rockchip,pins = <4 RK_PC2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		gpio_8367_en: gpio-8367-en {
++			rockchip,pins = <1 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		rtl8367rb_eint: rtl8367rb-eint {
++			rockchip,pins = <1 RK_PC2 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	gpio-keys {
++		gpio0_a0_user: gpio0-a0-user {
++			rockchip,pins = <0 RK_PA0 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	leds {
++		lan1_led_g: lan1-led-g {
++			rockchip,pins = <1 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		lan2_led_g: lan2-led-g {
++			rockchip,pins = <1 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		lan3_led_g: lan3-led-g {
++			rockchip,pins = <1 RK_PB4 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		sys_led_g: sys-led-g {
++			rockchip,pins = <4 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		wan_led_g: wan-led-g {
++			rockchip,pins = <4 RK_PA0 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	pcie {
++		mkey_pwr_en: mkey-pwr-en {
++			rockchip,pins = <4 RK_PC6 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	pmic {
++		pmic_int: pmic-int {
++			rockchip,pins = <4 RK_PB2 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	rtc {
++		rtc_int_l: rtc-int-l {
++			rockchip,pins = <4 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
++		};
++	};
++
++	sdmmc {
++		sdmmc_vol_ctrl_h: sdmmc-vol-ctrl-h {
++			rockchip,pins = <4 RK_PB6 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	usb {
++		usb_host_en: usb-host-en {
++			rockchip,pins = <1 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++};
++
++&saradc {
++	vref-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdhci {
++	bus-width = <8>;
++	cap-mmc-highspeed;
++	mmc-hs200-1_8v;
++	no-sd;
++	no-sdio;
++	non-removable;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vcc1v8_emmc>;
++	status = "fail";
++};
++
++&sdmmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	cap-sd-highspeed;
++	disable-wp;
++	sd-uhs-sdr104;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vccio_sd>;
++	status = "okay";
++};
++
++&sfc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&fspi_csn0>, <&fspi_pins>;
++	status = "okay";
++
++	flash@0 {
++		compatible = "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <50000000>;
++		spi-rx-bus-width = <4>;
++		spi-tx-bus-width = <1>;
++		vcc-supply = <&vcc1v8_emmc>;
++	};
++};
++
++&u2phy {
++	status = "okay";
++};
++
++&u2phy_host {
++	phy-supply = <&vcc5v0_usb20>;
++	status = "okay";
++};
++
++&u2phy_otg {
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0m0_xfer>;
++	status = "okay";
++};
++
++&usb_host0_ehci {
++	status = "okay";
++};
++
++&usb_host0_xhci {
++	extcon = <&u2phy>;
++	maximum-speed = "high-speed";
++	phys = <&u2phy_otg>;
++	phy-names = "usb2-phy";
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-rock-2.dtsi b/dts/upstream/src/arm64/rockchip/rk3528-rock-2.dtsi
+new file mode 100644
+index 00000000000..aeced80f1ef
+--- /dev/null
++++ b/dts/upstream/src/arm64/rockchip/rk3528-rock-2.dtsi
+@@ -0,0 +1,306 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++
++/dts-v1/;
++
++#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
++#include <dt-bindings/pwm/pwm.h>
++#include "rk3528.dtsi"
++
++/ {
++	aliases {
++		i2c1 = &i2c1;
++		mmc0 = &sdhci;
++		mmc1 = &sdmmc;
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:1500000n8";
++	};
++
++	adc-keys {
++		compatible = "adc-keys";
++		io-channels = <&saradc 0>;
++		io-channel-names = "buttons";
++		keyup-threshold-microvolt = <1800000>;
++		poll-interval = <100>;
++
++		button-maskrom {
++			label = "MASKROM";
++			linux,code = <KEY_SETUP>;
++			press-threshold-microvolt = <0>;
++		};
++	};
++
++	leds: leds {
++		compatible = "gpio-leds";
++		pinctrl-names = "default";
++		pinctrl-0 = <&state_led_b>;
++
++		led-0 {
++			color = <LED_COLOR_ID_BLUE>;
++			default-state = "on";
++			function = LED_FUNCTION_HEARTBEAT;
++			gpios = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "heartbeat";
++		};
++	};
++
++	vdd_0v9: regulator-0v9-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "vdd_0v9";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <900000>;
++		regulator-max-microvolt = <900000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_ddr: regulator-1v1-vcc-ddr {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_ddr";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1100000>;
++		regulator-max-microvolt = <1100000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_1v8: regulator-1v8-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_1v8";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		vin-supply = <&vcc_3v3>;
++	};
++
++	vcc_3v3: regulator-3v3-vcc {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc_3v3";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vcc_wifi: regulator-3v3-vcc-wifi {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio4 RK_PA4 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb_wifi_pwr>;
++		regulator-name = "vcc_wifi";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		vin-supply = <&vcc_3v3>;
++	};
++
++	vcc5v0_sys: regulator-5v0-vcc-sys {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0_sys";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++	};
++
++	vcc5v0_usb20: regulator-5v0-vcc-usb20 {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio0 RK_PA1 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb_host_en>;
++		regulator-name = "vcc5v0_usb20";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vccio_sd: regulator-vccio-sd {
++		compatible = "regulator-gpio";
++		gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&sdmmc_vol_ctrl_h>;
++		regulator-name = "vccio_sd";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <3300000>;
++		states = <1800000 0x0>, <3300000 0x1>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++
++	vdd_arm: regulator-vdd-arm {
++		compatible = "pwm-regulator";
++		pwms = <&pwm1 0 5000 PWM_POLARITY_INVERTED>;
++		pwm-supply = <&vcc5v0_sys>;
++		regulator-name = "vdd_arm";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <746000>;
++		regulator-max-microvolt = <1201000>;
++		regulator-settling-time-up-us = <250>;
++	};
++
++	vdd_logic: regulator-vdd-logic {
++		compatible = "pwm-regulator";
++		pwms = <&pwm2 0 5000 PWM_POLARITY_INVERTED>;
++		pwm-supply = <&vcc5v0_sys>;
++		regulator-name = "vdd_logic";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <705000>;
++		regulator-max-microvolt = <1006000>;
++		regulator-settling-time-up-us = <250>;
++	};
++
++	rfkill {
++		compatible = "rfkill-gpio";
++		label = "rfkill-wlan";
++		pinctrl-names = "default";
++		pinctrl-0 = <&wifi_reg_on_h>;
++		radio-type = "wlan";
++		shutdown-gpios = <&gpio1 RK_PA6 GPIO_ACTIVE_HIGH>;
++	};
++};
++
++&cpu0 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu1 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu2 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&cpu3 {
++	cpu-supply = <&vdd_arm>;
++};
++
++&gpu {
++	mali-supply = <&vdd_logic>;
++	status = "okay";
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1m0_xfer>;
++	status = "okay";
++
++	eeprom@50 {
++		compatible = "belling,bl24c16a", "atmel,24c16";
++		reg = <0x50>;
++		pagesize = <16>;
++		read-only;
++		vcc-supply = <&vcc_3v3>;
++	};
++};
++
++&pinctrl {
++	bluetooth {
++		bt_wake_host_h: bt-wake-host-h {
++			rockchip,pins = <1 RK_PC2 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++
++		host_wake_bt_h: host-wake-bt-h {
++			rockchip,pins = <1 RK_PA5 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	leds {
++		state_led_b: state-led-b {
++			rockchip,pins = <1 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	sdmmc {
++		sdmmc_vol_ctrl_h: sdmmc-vol-ctrl-h {
++			rockchip,pins = <1 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	usb {
++		usb_host_en: usb-host-en {
++			rockchip,pins = <0 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	wifi {
++		usb_wifi_pwr: usb-wifi-pwr {
++			rockchip,pins = <4 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		wifi_reg_on_h: wifi-reg-on-h {
++			rockchip,pins = <1 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++
++		wifi_wake_host_h: wifi-wake-host-h {
++			rockchip,pins = <1 RK_PA7 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++	};
++};
++
++&pwm1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm1m0_pins>;
++	status = "okay";
++};
++
++&pwm2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pwm2m0_pins>;
++	status = "okay";
++};
++
++&saradc {
++	vref-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdhci {
++	bus-width = <8>;
++	cap-mmc-highspeed;
++	mmc-hs200-1_8v;
++	no-sd;
++	no-sdio;
++	non-removable;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vcc_1v8>;
++	status = "okay";
++};
++
++&sdmmc {
++	bus-width = <4>;
++	cap-mmc-highspeed;
++	cap-sd-highspeed;
++	disable-wp;
++	max-frequency = <100000000>;
++	sd-uhs-sdr104;
++	vmmc-supply = <&vcc_3v3>;
++	vqmmc-supply = <&vccio_sd>;
++	status = "okay";
++};
++
++&u2phy {
++	status = "okay";
++};
++
++&u2phy_host {
++	phy-supply = <&vcc5v0_usb20>;
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0m0_xfer>;
++	status = "okay";
++};
++
++&usb_host0_ehci {
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-rock-2a.dts b/dts/upstream/src/arm64/rockchip/rk3528-rock-2a.dts
+new file mode 100644
+index 00000000000..1edffe2aa37
+--- /dev/null
++++ b/dts/upstream/src/arm64/rockchip/rk3528-rock-2a.dts
+@@ -0,0 +1,100 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++
++/dts-v1/;
++
++#include <dt-bindings/phy/phy.h>
++#include "rk3528-rock-2.dtsi"
++
++/ {
++	model = "Radxa ROCK 2A";
++	compatible = "radxa,rock-2a", "rockchip,rk3528";
++
++	aliases {
++		ethernet0 = &gmac1;
++	};
++
++	vcc5v0_usb30_otg: regulator-5v0-vcc-usb30-otg {
++		compatible = "regulator-fixed";
++		enable-active-high;
++		gpios = <&gpio1 RK_PC3 GPIO_ACTIVE_HIGH>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb_otg_en>;
++		regulator-name = "vcc5v0_usb30_otg";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc5v0_sys>;
++	};
++};
++
++&combphy {
++	status = "okay";
++};
++
++&gmac1 {
++	clock_in_out = "output";
++	phy-handle = <&rgmii_phy>;
++	phy-mode = "rgmii-id";
++	phy-supply = <&vcc_3v3>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&rgmii_miim>, <&rgmii_tx_bus2>, <&rgmii_rx_bus2>,
++		    <&rgmii_rgmii_clk>, <&rgmii_rgmii_bus>;
++	status = "okay";
++};
++
++&leds {
++	pinctrl-names = "default";
++	pinctrl-0 = <&state_led_b>, <&sys_led_g>;
++
++	led-1 {
++		color = <LED_COLOR_ID_GREEN>;
++		default-state = "on";
++		function = LED_FUNCTION_STATUS;
++		gpios = <&gpio3 RK_PC1 GPIO_ACTIVE_LOW>;
++		linux,default-trigger = "default-on";
++	};
++};
++
++&mdio1 {
++	rgmii_phy: ethernet-phy@1 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <0x1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&gmac1_rstn_l>;
++		reset-assert-us = <20000>;
++		reset-deassert-us = <100000>;
++		reset-gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_LOW>;
++	};
++};
++
++&pinctrl {
++	ethernet {
++		gmac1_rstn_l: gmac1-rstn-l {
++			rockchip,pins = <4 RK_PC2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	leds {
++		sys_led_g: sys-led-g {
++			rockchip,pins = <3 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	usb {
++		usb_otg_en: usb-otg-en {
++			rockchip,pins = <1 RK_PC3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++};
++
++&u2phy_otg {
++	phy-supply = <&vcc5v0_usb30_otg>;
++	status = "okay";
++};
++
++&usb_host0_xhci {
++	dr_mode = "host";
++	extcon = <&u2phy>;
++	phys = <&u2phy_otg>, <&combphy PHY_TYPE_USB3>;
++	phy-names = "usb2-phy", "usb3-phy";
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528-rock-2f.dts b/dts/upstream/src/arm64/rockchip/rk3528-rock-2f.dts
+new file mode 100644
+index 00000000000..a517dfe9930
+--- /dev/null
++++ b/dts/upstream/src/arm64/rockchip/rk3528-rock-2f.dts
+@@ -0,0 +1,22 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++
++/dts-v1/;
++
++#include "rk3528-rock-2.dtsi"
++
++/ {
++	model = "Radxa ROCK 2F";
++	compatible = "radxa,rock-2f", "rockchip,rk3528";
++};
++
++&u2phy_otg {
++	status = "okay";
++};
++
++&usb_host0_xhci {
++	extcon = <&u2phy>;
++	maximum-speed = "high-speed";
++	phys = <&u2phy_otg>;
++	phy-names = "usb2-phy";
++	status = "okay";
++};
+diff --git a/dts/upstream/src/arm64/rockchip/rk3528.dtsi b/dts/upstream/src/arm64/rockchip/rk3528.dtsi
+index 001a555c83b..b45ae2d9625 100644
+--- a/dts/upstream/src/arm64/rockchip/rk3528.dtsi
++++ b/dts/upstream/src/arm64/rockchip/rk3528.dtsi
+@@ -7,6 +7,7 @@
+ #include <dt-bindings/gpio/gpio.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/phy/phy.h>
+ #include <dt-bindings/pinctrl/rockchip.h>
+ #include <dt-bindings/clock/rockchip,rk3528-cru.h>
+ #include <dt-bindings/reset/rockchip,rk3528-cru.h>
+@@ -234,10 +235,84 @@
+ 
+ 	soc {
+ 		compatible = "simple-bus";
+-		ranges = <0x0 0xfe000000 0x0 0xfe000000 0x0 0x2000000>;
++		ranges = <0x0 0xfc000000 0x0 0xfc000000 0x0 0x4000000>;
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+ 
++		pcie2x1: pcie@fe000000 {
++			compatible = "rockchip,rk3528-pcie", "rockchip,rk3568-pcie";
++			reg = <0x0 0xfe000000 0x0 0x400000>,
++			      <0x0 0xfe4f0000 0x0 0x10000>,
++			      <0x0 0xfc000000 0x0 0x100000>;
++			reg-names = "dbi", "apb", "config";
++			bus-range = <0x0 0xff>;
++			clocks = <&cru ACLK_PCIE>, <&cru HCLK_PCIE_SLV>,
++				 <&cru HCLK_PCIE_DBI>, <&cru PCLK_PCIE>,
++				 <&cru CLK_PCIE_AUX>;
++			clock-names = "aclk_mst", "aclk_slv",
++				      "aclk_dbi", "pclk", "aux";
++			device_type = "pci";
++			interrupts = <GIC_SPI 156 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 157 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 154 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 158 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-names = "sys", "pmc", "msg", "legacy", "err", "msi";
++			#interrupt-cells = <1>;
++			interrupt-map-mask = <0 0 0 7>;
++			interrupt-map = <0 0 0 1 &pcie2x1_intc 0>,
++					<0 0 0 2 &pcie2x1_intc 1>,
++					<0 0 0 3 &pcie2x1_intc 2>,
++					<0 0 0 4 &pcie2x1_intc 3>;
++			linux,pci-domain = <0>;
++			max-link-speed = <2>;
++			num-ib-windows = <8>;
++			num-viewport = <8>;
++			num-ob-windows = <2>;
++			num-lanes = <1>;
++			phys = <&combphy PHY_TYPE_PCIE>;
++			phy-names = "pcie-phy";
++			ranges = <0x01000000 0x0 0xfc100000 0x0 0xfc100000 0x0 0x100000
++				  0x02000000 0x0 0xfc200000 0x0 0xfc200000 0x0 0x1e00000
++				  0x03000000 0x1 0x00000000 0x1 0x00000000 0x0 0x40000000>;
++			resets = <&cru SRST_PCIE_POWER_UP>, <&cru SRST_P_PCIE>;
++			reset-names = "pwr", "pipe";
++			#address-cells = <3>;
++			#size-cells = <2>;
++			status = "disabled";
++
++			pcie2x1_intc: legacy-interrupt-controller {
++				interrupt-controller;
++				#address-cells = <0>;
++				#interrupt-cells = <1>;
++				interrupt-parent = <&gic>;
++				interrupts = <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>;
++			};
++		};
++
++		usb_host0_xhci: usb@fe500000 {
++			compatible = "rockchip,rk3528-dwc3", "snps,dwc3";
++			reg = <0x0 0xfe500000 0x0 0x400000>;
++			clocks = <&cru CLK_REF_USB3OTG>,
++				 <&cru CLK_SUSPEND_USB3OTG>,
++				 <&cru ACLK_USB3OTG>;
++			clock-names = "ref_clk", "suspend_clk", "bus_clk";
++			interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_HIGH>;
++			resets = <&cru SRST_A_USB3OTG>;
++			dr_mode = "otg";
++			phy_type = "utmi_wide";
++			snps,dis_enblslpm_quirk;
++			snps,dis-del-phy-power-chg-quirk;
++			snps,dis-tx-ipgap-linecheck-quirk;
++			snps,dis-u1-entry-quirk;
++			snps,dis-u2-entry-quirk;
++			snps,dis-u2-freeclk-exists-quirk;
++			snps,parkmode-disable-hs-quirk;
++			snps,parkmode-disable-ss-quirk;
++			status = "disabled";
++		};
++
+ 		gic: interrupt-controller@fed01000 {
+ 			compatible = "arm,gic-400";
+ 			reg = <0x0 0xfed01000 0 0x1000>,
+@@ -251,6 +326,28 @@
+ 			#interrupt-cells = <3>;
+ 		};
+ 
++		usb_host0_ehci: usb@ff100000 {
++			compatible = "generic-ehci";
++			reg = <0x0 0xff100000 0x0 0x40000>;
++			clocks = <&cru HCLK_USBHOST>, <&cru HCLK_USBHOST_ARB>,
++				 <&u2phy>;
++			interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_HIGH>;
++			phys = <&u2phy_host>;
++			phy-names = "usb";
++			status = "disabled";
++		};
++
++		usb_host0_ohci: usb@ff140000 {
++			compatible = "generic-ohci";
++			reg = <0x0 0xff140000 0x0 0x40000>;
++			clocks = <&cru HCLK_USBHOST>, <&cru HCLK_USBHOST_ARB>,
++				 <&u2phy>;
++			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_HIGH>;
++			phys = <&u2phy_host>;
++			phy-names = "usb";
++			status = "disabled";
++		};
++
+ 		qos_crypto_a: qos@ff200000 {
+ 			compatible = "rockchip,rk3528-qos", "syscon";
+ 			reg = <0x0 0xff200000 0x0 0x20>;
+@@ -416,6 +513,11 @@
+ 			reg = <0x0 0xff340000 0x0 0x8000>;
+ 		};
+ 
++		pipe_phy_grf: syscon@ff348000 {
++			compatible = "rockchip,rk3528-pipe-phy-grf", "syscon";
++			reg = <0x0 0xff348000 0x0 0x8000>;
++		};
++
+ 		vo_grf: syscon@ff360000 {
+ 			compatible = "rockchip,rk3528-vo-grf", "syscon";
+ 			reg = <0x0 0xff360000 0x0 0x10000>;
+@@ -1008,6 +1110,17 @@
+ 			status = "disabled";
+ 		};
+ 
++		sfc: spi@ffc00000 {
++			compatible = "rockchip,sfc";
++			reg = <0x0 0xffc00000 0x0 0x4000>;
++			clocks = <&cru SCLK_SFC>, <&cru HCLK_SFC>;
++			clock-names = "clk_sfc", "hclk_sfc";
++			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_HIGH>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "disabled";
++		};
++
+ 		sdio0: mmc@ffc10000 {
+ 			compatible = "rockchip,rk3528-dw-mshc",
+ 				     "rockchip,rk3288-dw-mshc";
+@@ -1084,6 +1197,52 @@
+ 			#dma-cells = <1>;
+ 			arm,pl330-periph-burst;
+ 		};
++
++		combphy: phy@ffdc0000 {
++			compatible = "rockchip,rk3528-naneng-combphy";
++			reg = <0x0 0xffdc0000 0x0 0x10000>;
++			assigned-clocks = <&cru CLK_REF_PCIE_INNER_PHY>;
++			assigned-clock-rates = <100000000>;
++			clocks = <&cru CLK_REF_PCIE_INNER_PHY>,
++				 <&cru PCLK_PCIE_PHY>,
++				 <&cru PCLK_PIPE_GRF>;
++			clock-names = "ref", "apb", "pipe";
++			resets = <&cru SRST_PCIE_PIPE_PHY>,
++				 <&cru SRST_P_PCIE_PHY>;
++			reset-names = "phy", "apb";
++			#phy-cells = <1>;
++			rockchip,pipe-grf = <&vpu_grf>;
++			rockchip,pipe-phy-grf = <&pipe_phy_grf>;
++			status = "disabled";
++		};
++
++		u2phy: usb2phy@ffdf0000 {
++			compatible = "rockchip,rk3528-usb2phy";
++			reg = <0x0 0xffdf0000 0x0 0x10000>;
++			clocks = <&cru CLK_REF_USBPHY>, <&cru PCLK_USBPHY>;
++			clock-names = "phyclk", "pclk";
++			#clock-cells = <0>;
++			clock-output-names = "clk_usbphy_480m";
++			rockchip,usbgrf = <&vo_grf>;
++			status = "disabled";
++
++			u2phy_otg: otg-port {
++				interrupts = <GIC_SPI 146 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "otg-bvalid", "otg-id",
++						  "linestate";
++				#phy-cells = <0>;
++				status = "disabled";
++			};
++
++			u2phy_host: host-port {
++				interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "linestate";
++				#phy-cells = <0>;
++				status = "disabled";
++			};
++		};
+ 	};
+ };
+ 
+-- 
+2.34.1
+

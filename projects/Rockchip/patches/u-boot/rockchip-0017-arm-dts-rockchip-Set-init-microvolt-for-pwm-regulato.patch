@@ -1,0 +1,35 @@
+From 021508b653ce85a4528a63834457d5754724e4a1 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Wed, 30 Jul 2025 23:52:44 +0000
+Subject: [PATCH 17/84] arm: dts: rockchip: Set init-microvolt for
+ pwm-regulators on Radxa E20C
+
+Radxa E20C has two main pwm-regulators, vdd_arm and vdd_logic.
+
+Add init-microvolt props to ensure the regulators are initialized at
+the recommended power-on sequence voltage instead of at max voltage.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi b/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
+index 05a58c136bc..16c47e6b9a9 100644
+--- a/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
++++ b/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
+@@ -5,3 +5,11 @@
+ &sdhci {
+ 	mmc-hs200-1_8v;
+ };
++
++&vdd_arm {
++	regulator-init-microvolt = <953000>;
++};
++
++&vdd_logic {
++	regulator-init-microvolt = <900000>;
++};
+-- 
+2.34.1
+

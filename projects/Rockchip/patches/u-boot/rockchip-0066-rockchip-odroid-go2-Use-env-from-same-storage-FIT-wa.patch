@@ -1,0 +1,107 @@
+From d7124db56d3addd0a7ef6aa5741003a24ec55f7a Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:34:00 +0000
+Subject: [PATCH 66/84] rockchip: odroid-go2: Use env from same storage FIT was
+ loaded from
+
+Change to dynamically select what storage media to use for the U-Boot
+environment depending on from what storage media the FIT images was
+loaded from, fall back to use env from nowhere.
+
+  U-Boot SPL 2025.07 (Jul 13 2025 - 10:07:16 +0000)
+  Trying to boot from MMC1
+  ...
+  Loading Environment from MMC... Reading from MMC(0)...
+
+or
+
+  U-Boot SPL 2025.07 (Jul 13 2025 - 10:07:16 +0000)
+  Trying to boot from SPI
+  ...
+  Loading Environment from SPIFlash...
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ board/hardkernel/odroid_go2/Kconfig |  1 +
+ board/hardkernel/odroid_go2/go2.c   | 34 +++++++++++++++++++++++++++++
+ configs/odroid-go2_defconfig        |  2 ++
+ 3 files changed, 37 insertions(+)
+
+diff --git a/board/hardkernel/odroid_go2/Kconfig b/board/hardkernel/odroid_go2/Kconfig
+index dd6e366282e..6487335972b 100644
+--- a/board/hardkernel/odroid_go2/Kconfig
++++ b/board/hardkernel/odroid_go2/Kconfig
+@@ -13,6 +13,7 @@ config BOARD_SPECIFIC_OPTIONS # dummy
+ 	def_bool y
+ 	select ADC
+ 	select BOARD_TYPES
++	select ENV_IS_NOWHERE
+ 	select SPL_ADC
+ 
+ endif
+diff --git a/board/hardkernel/odroid_go2/go2.c b/board/hardkernel/odroid_go2/go2.c
+index 9d9f3cee36a..ae32ea87af8 100644
+--- a/board/hardkernel/odroid_go2/go2.c
++++ b/board/hardkernel/odroid_go2/go2.c
+@@ -7,7 +7,9 @@
+ #include <adc.h>
+ #include <asm/io.h>
+ #include <dm.h>
++#include <dm/uclass-internal.h>
+ #include <env.h>
++#include <env_internal.h>
+ #include <stdlib.h>
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+@@ -129,3 +131,35 @@ int board_fit_config_name_match(const char *name)
+ 
+ 	return -EINVAL;
+ }
++
++enum env_location env_get_location(enum env_operation op, int prio)
++{
++	const char *boot_device;
++	struct udevice *dev;
++	ofnode node;
++
++	if (prio)
++		return ENVL_UNKNOWN;
++
++	boot_device = ofnode_read_chosen_string("u-boot,spl-boot-device");
++	if (!boot_device) {
++		debug("%s: /chosen/u-boot,spl-boot-device not set\n", __func__);
++		return ENVL_NOWHERE;
++	}
++
++	debug("%s: booted from %s\n", __func__, boot_device);
++
++	node = ofnode_path(boot_device);
++	if (!ofnode_valid(node))
++		return ENVL_NOWHERE;
++
++	if (IS_ENABLED(CONFIG_ENV_IS_IN_SPI_FLASH) &&
++	    !uclass_find_device_by_ofnode(UCLASS_SPI_FLASH, node, &dev))
++		return ENVL_SPI_FLASH;
++
++	if (IS_ENABLED(CONFIG_ENV_IS_IN_MMC) &&
++	    !uclass_find_device_by_ofnode(UCLASS_MMC, node, &dev))
++		return ENVL_MMC;
++
++	return ENVL_NOWHERE;
++}
+diff --git a/configs/odroid-go2_defconfig b/configs/odroid-go2_defconfig
+index 05d9f9c09de..185d0f1d7c5 100644
+--- a/configs/odroid-go2_defconfig
++++ b/configs/odroid-go2_defconfig
+@@ -65,6 +65,8 @@ CONFIG_OF_LIVE=y
+ CONFIG_OF_LIST="rockchip/rk3326-odroid-go2 rockchip/rk3326-odroid-go2-v11 rockchip/rk3326-odroid-go3"
+ CONFIG_OF_SPL_REMOVE_PROPS="interrupt-parent assigned-clocks assigned-clock-rates assigned-clock-parents"
+ CONFIG_ENV_IS_IN_MMC=y
++CONFIG_ENV_IS_IN_SPI_FLASH=y
++CONFIG_ENV_RELOC_GD_ENV_ADDR=y
+ CONFIG_SPL_DM_SEQ_ALIAS=y
+ CONFIG_REGMAP=y
+ CONFIG_SPL_REGMAP=y
+-- 
+2.34.1
+

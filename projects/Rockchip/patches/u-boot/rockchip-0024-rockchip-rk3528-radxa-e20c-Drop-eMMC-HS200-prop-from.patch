@@ -1,0 +1,35 @@
+From f46aba244531135b5349418c5a1d386a5af54ee9 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 20 Jul 2025 15:23:27 +0000
+Subject: [PATCH 24/84] rockchip: rk3528-radxa-e20c: Drop eMMC HS200 prop from
+ board u-boot.dtsi
+
+The commit f8cb3fde935e ("arm: dts: rockchip: Fix eMMC write on RK3528")
+added a missing mmc-hs200-1_8v prop to boart u-boot.dtsi.
+
+Remove the mmc-hs200-1_8v proper now that the board dt from dts/upstream
+have been fixed.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi b/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
+index 16c47e6b9a9..3e2fbd81da1 100644
+--- a/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
++++ b/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
+@@ -2,10 +2,6 @@
+ 
+ #include "rk3528-u-boot.dtsi"
+ 
+-&sdhci {
+-	mmc-hs200-1_8v;
+-};
+-
+ &vdd_arm {
+ 	regulator-init-microvolt = <953000>;
+ };
+-- 
+2.34.1
+

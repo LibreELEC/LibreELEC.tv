@@ -1,0 +1,52 @@
+From 48faf6188d73d0f83937c6e36946c2fc6b722958 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:34:03 +0000
+Subject: [PATCH 69/84] rockchip: odroid-go2: Enable more commands
+
+Enable the default commands and some more useful commands that can be
+useful to determin the state of the board from U-Boot CLI.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ configs/odroid-go2_defconfig | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/configs/odroid-go2_defconfig b/configs/odroid-go2_defconfig
+index 70d74c65a2f..512ffefc70f 100644
+--- a/configs/odroid-go2_defconfig
++++ b/configs/odroid-go2_defconfig
+@@ -42,22 +42,21 @@ CONFIG_SYS_SPI_U_BOOT_OFFS=0x100000
+ CONFIG_SPL_ATF=y
+ # CONFIG_TPL_FRAMEWORK is not set
+ # CONFIG_TPL_BANNER_PRINT is not set
+-# CONFIG_CMD_BOOTD is not set
+-# CONFIG_CMD_ELF is not set
+-# CONFIG_CMD_IMI is not set
+-# CONFIG_CMD_XIMG is not set
+-# CONFIG_CMD_LZMADEC is not set
+-# CONFIG_CMD_UNZIP is not set
++CONFIG_CMD_MEMINFO=y
++CONFIG_CMD_MEMINFO_MAP=y
++CONFIG_CMD_ADC=y
++CONFIG_CMD_GPIO=y
++CONFIG_CMD_PWM=y
+ CONFIG_CMD_GPT=y
+-# CONFIG_CMD_LOADB is not set
+-# CONFIG_CMD_LOADS is not set
++CONFIG_CMD_I2C=y
++CONFIG_CMD_MISC=y
+ CONFIG_CMD_MMC=y
+ CONFIG_CMD_POWEROFF=y
+ CONFIG_CMD_USB=y
+ CONFIG_CMD_ROCKUSB=y
+ CONFIG_CMD_USB_MASS_STORAGE=y
+-# CONFIG_CMD_ITEST is not set
+-# CONFIG_CMD_SLEEP is not set
++CONFIG_CMD_RNG=y
++CONFIG_CMD_REGULATOR=y
+ # CONFIG_SPL_DOS_PARTITION is not set
+ # CONFIG_ISO_PARTITION is not set
+ CONFIG_EFI_PARTITION_ENTRIES_NUMBERS=64
+-- 
+2.34.1
+

@@ -1,0 +1,30 @@
+From 13151018751bf8ded0ed0148526106853a1a60ba Mon Sep 17 00:00:00 2001
+From: Da Xue <da@libre.computer>
+Date: Tue, 10 Jun 2025 19:08:20 +0000
+Subject: [PATCH 83/84] FROMLIST(v1): arm64: dts: rockchip: roc-3328-cc: use
+ 1600 ddr4 timing
+
+Swap the ROC-3328-CC from DDR4 666 to 1600 timing to boost performance.
+
+Signed-off-by: Da Xue <da@libre.computer>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm/dts/rk3328-roc-cc-u-boot.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/rk3328-roc-cc-u-boot.dtsi b/arch/arm/dts/rk3328-roc-cc-u-boot.dtsi
+index 582d6ba49b4..c47d29c59de 100644
+--- a/arch/arm/dts/rk3328-roc-cc-u-boot.dtsi
++++ b/arch/arm/dts/rk3328-roc-cc-u-boot.dtsi
+@@ -4,7 +4,7 @@
+  */
+ 
+ #include "rk3328-u-boot.dtsi"
+-#include "rk3328-sdram-ddr4-666.dtsi"
++#include "rk3328-sdram-ddr4-1600.dtsi"
+ 
+ / {
+ 	smbios {
+-- 
+2.34.1
+

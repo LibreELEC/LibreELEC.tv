@@ -19,6 +19,20 @@ case "${PROJECT}" in
     PKG_SHA256="66aead94c3884c9bc1ff2866f44d87f2f61d106bf203e1c723f83170b7e84297"
     PKG_URL="https://github.com/jc-kynesim/rpi-ffmpeg/archive/${PKG_VERSION}.tar.gz"
     ;;
+  Rockchip)
+    case "${DEVICE}" in
+      RK3288|RK3328|RK3399)
+        PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime vf-deinterlace-v4l2m2m"
+        ;;
+      RK356X|RK3576|RK3588)
+        PKG_VERSION="22a798e9733c38dab6f76e717fa3c5fd2773f27a"
+        PKG_FFMPEG_BRANCH="detlev-7.1"
+        PKG_SHA256="cc0e7edc3b2eec274f9152ae832ef0b2e0a127067dc61feee075c27220a7879d"
+        PKG_URL="https://gitlab.collabora.com/detlev/ffmpeg/-/archive/${PKG_VERSION}/ffmpeg-${PKG_VERSION}.tar.bz2"
+        PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
+        ;;
+    esac
+    ;;
   RPi)
     PKG_FFMPEG_RPI="--disable-mmal --enable-sand"
     PKG_PATCH_DIRS+=" rpi"
@@ -35,7 +49,7 @@ esac
 
 post_unpack() {
   # Fix FFmpeg version
-  if [ "${PROJECT}" = "Amlogic" ]; then
+  if [ "${PROJECT}" = "Amlogic" ] || [ "${PROJECT}" = "Rockchip" ]; then
     echo "${PKG_FFMPEG_BRANCH}-${PKG_VERSION:0:7}" >${PKG_BUILD}/VERSION
   else
     echo "${PKG_VERSION}" >${PKG_BUILD}/RELEASE

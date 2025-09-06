@@ -1,0 +1,121 @@
+From 3e100c18fe037bde5f4c08d9ff06ba68caee85d5 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Wed, 30 Jul 2025 23:52:43 +0000
+Subject: [PATCH 16/84] arm: dts: rockchip: Use sdmmc node from dts/upstream on
+ RK3528
+
+Drop the sdmmc node from soc u-boot.dtsi and instead use the sdmmc node
+from rk3528.dtsi with v6.16-dts now merged to dts/upstream.
+
+This cleanup has no intended functional change.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3528-generic-u-boot.dtsi    |  9 ---------
+ arch/arm/dts/rk3528-generic.dts            | 12 +++++++++++-
+ arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi |  9 ---------
+ arch/arm/dts/rk3528-u-boot.dtsi            | 18 ------------------
+ 4 files changed, 11 insertions(+), 37 deletions(-)
+
+diff --git a/arch/arm/dts/rk3528-generic-u-boot.dtsi b/arch/arm/dts/rk3528-generic-u-boot.dtsi
+index cc830b51456..9e1fb2a7eef 100644
+--- a/arch/arm/dts/rk3528-generic-u-boot.dtsi
++++ b/arch/arm/dts/rk3528-generic-u-boot.dtsi
+@@ -1,12 +1,3 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+ 
+ #include "rk3528-u-boot.dtsi"
+-
+-&sdmmc {
+-	bus-width = <4>;
+-	cap-sd-highspeed;
+-	disable-wp;
+-	no-mmc;
+-	no-sdio;
+-	status = "okay";
+-};
+diff --git a/arch/arm/dts/rk3528-generic.dts b/arch/arm/dts/rk3528-generic.dts
+index fe9e72c41cd..637ca03325e 100644
+--- a/arch/arm/dts/rk3528-generic.dts
++++ b/arch/arm/dts/rk3528-generic.dts
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+ /*
+- * Minimal generic DT for RK3528 with eMMC enabled
++ * Minimal generic DT for RK3528 with eMMC and SD-card enabled
+  */
+ 
+ /dts-v1/;
+@@ -12,6 +12,7 @@
+ 
+ 	aliases {
+ 		mmc0 = &sdhci;
++		mmc1 = &sdmmc;
+ 		serial0 = &uart0;
+ 	};
+ 
+@@ -30,6 +31,15 @@
+ 	status = "okay";
+ };
+ 
++&sdmmc {
++	bus-width = <4>;
++	cap-sd-highspeed;
++	disable-wp;
++	no-mmc;
++	no-sdio;
++	status = "okay";
++};
++
+ &uart0 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&uart0m0_xfer>;
+diff --git a/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi b/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
+index 1372d8f1e38..05a58c136bc 100644
+--- a/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
++++ b/arch/arm/dts/rk3528-radxa-e20c-u-boot.dtsi
+@@ -5,12 +5,3 @@
+ &sdhci {
+ 	mmc-hs200-1_8v;
+ };
+-
+-&sdmmc {
+-	bus-width = <4>;
+-	cap-mmc-highspeed;
+-	cap-sd-highspeed;
+-	disable-wp;
+-	vmmc-supply = <&vcc_3v3>;
+-	status = "okay";
+-};
+diff --git a/arch/arm/dts/rk3528-u-boot.dtsi b/arch/arm/dts/rk3528-u-boot.dtsi
+index eb6a55cd5c9..a18d33b3d36 100644
+--- a/arch/arm/dts/rk3528-u-boot.dtsi
++++ b/arch/arm/dts/rk3528-u-boot.dtsi
+@@ -27,24 +27,6 @@
+ 			compatible = "rockchip,rk3528-otp";
+ 			reg = <0x0 0xffce0000 0x0 0x4000>;
+ 		};
+-
+-		sdmmc: mmc@ffc30000 {
+-			compatible = "rockchip,rk3528-dw-mshc",
+-				     "rockchip,rk3288-dw-mshc";
+-			reg = <0x0 0xffc30000 0x0 0x4000>;
+-			clocks = <&cru HCLK_SDMMC0>, <&cru CCLK_SRC_SDMMC0>;
+-			clock-names = "biu", "ciu";
+-			fifo-depth = <0x100>;
+-			interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>;
+-			max-frequency = <150000000>;
+-			pinctrl-names = "default";
+-			pinctrl-0 = <&sdmmc_bus4>, <&sdmmc_clk>, <&sdmmc_cmd>,
+-				    <&sdmmc_det>;
+-			resets = <&cru SRST_H_SDMMC0>;
+-			reset-names = "reset";
+-			rockchip,default-sample-phase = <90>;
+-			status = "disabled";
+-		};
+ 	};
+ };
+ 
+-- 
+2.34.1
+

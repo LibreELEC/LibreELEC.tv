@@ -1,0 +1,204 @@
+From fe2785fc50dd69aefa6efb9acae0b8f51878f43d Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:33:53 +0000
+Subject: [PATCH 59/84] rockchip: odroid-go2: Move SoC common overrides into a
+ SoC u-boot.dtsi
+
+Add a new common rk3326-u-boot.dtsi and move the SoC common overrides
+into it.
+
+This should not contain any changes other than a possible reorder of
+nodes and props.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi | 78 ++--------------------
+ arch/arm/dts/rk3326-u-boot.dtsi            | 76 +++++++++++++++++++++
+ 2 files changed, 81 insertions(+), 73 deletions(-)
+ create mode 100644 arch/arm/dts/rk3326-u-boot.dtsi
+
+diff --git a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+index a27994e450c..06e2c190b1f 100644
+--- a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+@@ -3,56 +3,7 @@
+  * Copyright (c) 2020 Theobroma Systems Design und Consulting GmbH
+  */
+ 
+-#include "rockchip-u-boot.dtsi"
+-
+-/ {
+-	chosen {
+-		u-boot,spl-boot-order = &sdmmc;
+-	};
+-
+-	dmc {
+-		bootph-all;
+-		compatible = "rockchip,px30-dmc", "syscon";
+-		reg = <0x0 0xff2a0000 0x0 0x1000>;
+-	};
+-
+-	rng: rng@ff0b0000 {
+-		compatible = "rockchip,cryptov2-rng";
+-		reg = <0x0 0xff0b0000 0x0 0x4000>;
+-	};
+-};
+-
+-&cru {
+-	bootph-all;
+-};
+-
+-&gpio0 {
+-	gpio-ranges = <&pinctrl 0 0 32>;
+-};
+-
+-&gpio1 {
+-	gpio-ranges = <&pinctrl 0 32 32>;
+-};
+-
+-&gpio2 {
+-	gpio-ranges = <&pinctrl 0 64 32>;
+-};
+-
+-&gpio3 {
+-	gpio-ranges = <&pinctrl 0 96 32>;
+-};
+-
+-&grf {
+-	bootph-all;
+-};
+-
+-&pmucru {
+-	bootph-all;
+-};
+-
+-&pmugrf {
+-	bootph-all;
+-};
++#include "rk3326-u-boot.dtsi"
+ 
+ &rk817 {
+ 	regulators {
+@@ -73,33 +24,14 @@
+ 	bootph-all;
+ };
+ 
+-&sdmmc {
+-	bootph-pre-ram;
+-	bootph-some-ram;
+-
+-	/* mmc to sram can't do dma, prevent aborts transferring TF-A parts */
+-	u-boot,spl-fifo-mode;
+-};
+-
+ &sfc {
+-	bootph-some-ram;
+-};
+-
+-&{/spi@ff3a0000/flash@0} {
+-	bootph-pre-ram;
+-	bootph-some-ram;
++	flash@0 {
++		bootph-pre-ram;
++		bootph-some-ram;
++	};
+ };
+ 
+ &uart1 {
+ 	bootph-all;
+ 	clock-frequency = <24000000>;
+ };
+-
+-&uart2 {
+-	bootph-all;
+-	clock-frequency = <24000000>;
+-};
+-
+-&xin24m {
+-	bootph-all;
+-};
+diff --git a/arch/arm/dts/rk3326-u-boot.dtsi b/arch/arm/dts/rk3326-u-boot.dtsi
+new file mode 100644
+index 00000000000..2894133cfe6
+--- /dev/null
++++ b/arch/arm/dts/rk3326-u-boot.dtsi
+@@ -0,0 +1,76 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (c) 2020 Theobroma Systems Design und Consulting GmbH
++ */
++
++#include "rockchip-u-boot.dtsi"
++
++/ {
++	chosen {
++		u-boot,spl-boot-order = &sdmmc;
++	};
++
++	dmc {
++		compatible = "rockchip,px30-dmc", "syscon";
++		reg = <0x0 0xff2a0000 0x0 0x1000>;
++		bootph-all;
++	};
++
++	rng: rng@ff0b0000 {
++		compatible = "rockchip,cryptov2-rng";
++		reg = <0x0 0xff0b0000 0x0 0x4000>;
++	};
++};
++
++&cru {
++	bootph-all;
++};
++
++&gpio0 {
++	gpio-ranges = <&pinctrl 0 0 32>;
++};
++
++&gpio1 {
++	gpio-ranges = <&pinctrl 0 32 32>;
++};
++
++&gpio2 {
++	gpio-ranges = <&pinctrl 0 64 32>;
++};
++
++&gpio3 {
++	gpio-ranges = <&pinctrl 0 96 32>;
++};
++
++&grf {
++	bootph-all;
++};
++
++&pmucru {
++	bootph-all;
++};
++
++&pmugrf {
++	bootph-all;
++};
++
++&sdmmc {
++	bootph-pre-ram;
++	bootph-some-ram;
++
++	/* mmc to sram can't do dma, prevent aborts transferring TF-A parts */
++	u-boot,spl-fifo-mode;
++};
++
++&sfc {
++	bootph-some-ram;
++};
++
++&uart2 {
++	bootph-all;
++	clock-frequency = <24000000>;
++};
++
++&xin24m {
++	bootph-all;
++};
+-- 
+2.34.1
+

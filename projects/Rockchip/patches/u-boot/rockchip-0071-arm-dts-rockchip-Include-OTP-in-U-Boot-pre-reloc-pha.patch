@@ -1,0 +1,39 @@
+From 2408339af2bb95cca72c43a51709e59a9d75cae2 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:34:05 +0000
+Subject: [PATCH 71/84] arm: dts: rockchip: Include OTP in U-Boot pre-reloc
+ phase for RK3326
+
+Update rk3326-u-boot.dtsi to include OTP in U-Boot pre-reloc phase for
+checkboard() to be able to read information about the running SoC model
+and variant from OTP and print it during boot:
+
+  U-Boot 2025.07 (Jul 13 2025 - 10:07:16 +0000)
+
+  Model: ODROID-GO Super
+  SoC:   RK3326
+  DRAM:  1 GiB (total 1022 MiB)
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3326-u-boot.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/dts/rk3326-u-boot.dtsi b/arch/arm/dts/rk3326-u-boot.dtsi
+index be1dd4f91c1..6503a9382b9 100644
+--- a/arch/arm/dts/rk3326-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-u-boot.dtsi
+@@ -61,6 +61,10 @@
+ 	bootph-all;
+ };
+ 
++&otp {
++	bootph-some-ram;
++};
++
+ &pcfg_pull_none {
+ 	bootph-all;
+ };
+-- 
+2.34.1
+

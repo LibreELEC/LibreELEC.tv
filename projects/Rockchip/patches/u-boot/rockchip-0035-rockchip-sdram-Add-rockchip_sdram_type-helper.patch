@@ -1,0 +1,57 @@
+From df76b4ebfb1fa9d600d5e28dba5c4a9a1f3b30fd Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 20 Jul 2025 13:07:25 +0000
+Subject: [PATCH 35/84] rockchip: sdram: Add rockchip_sdram_type() helper
+
+Add a helper function based on rockchip_sdram_size() that return what
+DRAM type is used on current running board.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/include/asm/arch-rockchip/sdram.h |  3 +++
+ arch/arm/mach-rockchip/sdram.c             | 15 +++++++++++++++
+ 2 files changed, 18 insertions(+)
+
+diff --git a/arch/arm/include/asm/arch-rockchip/sdram.h b/arch/arm/include/asm/arch-rockchip/sdram.h
+index 4fb45ac5c76..476fc1c4ee3 100644
+--- a/arch/arm/include/asm/arch-rockchip/sdram.h
++++ b/arch/arm/include/asm/arch-rockchip/sdram.h
+@@ -87,6 +87,9 @@ enum {
+ #define SYS_REG_CS1_COL_SHIFT(ch)		(0 + (ch) * 2)
+ #define SYS_REG_CS1_COL_MASK			3
+ 
++/* Get sdram type decode from reg */
++u8 rockchip_sdram_type(phys_addr_t reg);
++
+ /* Get sdram size decode from reg */
+ size_t rockchip_sdram_size(phys_addr_t reg);
+ 
+diff --git a/arch/arm/mach-rockchip/sdram.c b/arch/arm/mach-rockchip/sdram.c
+index 3bc482331c7..d560f90e873 100644
+--- a/arch/arm/mach-rockchip/sdram.c
++++ b/arch/arm/mach-rockchip/sdram.c
+@@ -345,6 +345,21 @@ int dram_init_banksize(void)
+ 	return 0;
+ }
+ 
++u8 rockchip_sdram_type(phys_addr_t reg)
++{
++	u32 dram_type, version;
++	u32 sys_reg2 = readl(reg);
++	u32 sys_reg3 = readl(reg + 4);
++
++	dram_type = (sys_reg2 >> SYS_REG_DDRTYPE_SHIFT) & SYS_REG_DDRTYPE_MASK;
++	version = (sys_reg3 >> SYS_REG_VERSION_SHIFT) & SYS_REG_VERSION_MASK;
++	if (version >= 3)
++		dram_type |= ((sys_reg3 >> SYS_REG_EXTEND_DDRTYPE_SHIFT) &
++			      SYS_REG_EXTEND_DDRTYPE_MASK) << 3;
++
++	return dram_type;
++}
++
+ size_t rockchip_sdram_size(phys_addr_t reg)
+ {
+ 	u32 rank, cs0_col, bk, cs0_row, cs1_row, bw, row_3_4;
+-- 
+2.34.1
+

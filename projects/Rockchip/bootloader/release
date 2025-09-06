@@ -20,4 +20,5 @@ if [ -n "${UBOOT_SYSTEM}" ]; then
   fi
 fi
 
-cp -av "${SRCDIR}"/"${DEVICE,,}"*.dtb "${DSTDIR}"
+DTB_PREFIX="${DEVICE//X/}"
+cp -av "${SRCDIR}"/"${DTB_PREFIX,,}"*.dtb "${DSTDIR}"

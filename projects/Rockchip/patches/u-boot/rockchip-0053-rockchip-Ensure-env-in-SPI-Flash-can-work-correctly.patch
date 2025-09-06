@@ -1,0 +1,60 @@
+From eb0eb85a065095685056da32409bbcbbe2fb5dd4 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 12 Jul 2025 21:27:07 +0000
+Subject: [PATCH 53/84] rockchip: Ensure env in SPI Flash can work correctly
+
+Ensure that the spi/sfc node for SPI flash is aviliable during pre-reloc
+phase so that env can successfully be loaded from SPI Flash.
+
+No boards with these SoCs seem to be affected as there is no default use
+of ENV_IS_IN_SPI_FLASH=y.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3328-u-boot.dtsi  | 4 ++++
+ arch/arm/dts/rk356x-u-boot.dtsi  | 1 +
+ arch/arm/dts/rk3588s-u-boot.dtsi | 1 +
+ 3 files changed, 6 insertions(+)
+
+diff --git a/arch/arm/dts/rk3328-u-boot.dtsi b/arch/arm/dts/rk3328-u-boot.dtsi
+index b0e50a973a8..8ffc9ed3d57 100644
+--- a/arch/arm/dts/rk3328-u-boot.dtsi
++++ b/arch/arm/dts/rk3328-u-boot.dtsi
+@@ -132,6 +132,10 @@
+ 	bootph-pre-ram;
+ };
+ 
++&spi0 {
++	bootph-some-ram;
++};
++
+ &uart2 {
+ 	bootph-all;
+ 	clock-frequency = <24000000>;
+diff --git a/arch/arm/dts/rk356x-u-boot.dtsi b/arch/arm/dts/rk356x-u-boot.dtsi
+index 87186973953..738b9673d35 100644
+--- a/arch/arm/dts/rk356x-u-boot.dtsi
++++ b/arch/arm/dts/rk356x-u-boot.dtsi
+@@ -157,6 +157,7 @@
+ };
+ 
+ &sfc {
++	bootph-some-ram;
+ 	u-boot,spl-sfc-no-dma;
+ };
+ 
+diff --git a/arch/arm/dts/rk3588s-u-boot.dtsi b/arch/arm/dts/rk3588s-u-boot.dtsi
+index 5eeb138f351..71fd352f640 100644
+--- a/arch/arm/dts/rk3588s-u-boot.dtsi
++++ b/arch/arm/dts/rk3588s-u-boot.dtsi
+@@ -140,6 +140,7 @@
+ };
+ 
+ &sfc {
++	bootph-some-ram;
+ 	u-boot,spl-sfc-no-dma;
+ };
+ 
+-- 
+2.34.1
+

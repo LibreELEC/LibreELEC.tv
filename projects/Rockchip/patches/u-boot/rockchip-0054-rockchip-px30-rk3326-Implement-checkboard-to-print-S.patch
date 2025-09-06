@@ -1,0 +1,167 @@
+From 24fc7c42d539648a107ab7096d45cfdab0647707 Mon Sep 17 00:00:00 2001
+From: Quentin Schulz <quentin.schulz@cherry.de>
+Date: Tue, 10 Jun 2025 11:42:50 +0200
+Subject: [PATCH 54/84] rockchip: px30/rk3326: Implement checkboard() to print
+ SoC variant
+
+This implements checkboard() to print the current SoC model used by a
+board, e.g. one of:
+
+SoC:   PX30
+SoC:   PX30S
+SoC:   PX30K
+SoC:   RK3326
+SoC:   RK3326S
+
+when U-Boot proper is running.
+
+The information is read from the OTP and also the DDR_GRF. There's no
+public information as far as I know about the layout and stored
+information on OTP but this was provided by Rockchip themselves through
+their support channel.
+
+The OTP stores the information of whether the SoC is PX30K or something
+else. To differentiate between PX30/RK3326 and PX30S/RK3326S, one needs
+to read some undocumented bitfield in a DDR_GRF register as done in
+vendor kernel,
+c.f. https://github.com/armbian/linux-rockchip/blob/rk-6.1-rkr5.1/drivers/soc/rockchip/rockchip-cpuinfo.c#L118-L133.
+
+I do not own a PX30S, nor RK3326/RK3326S so cannot test it works
+properly.
+
+Also add the OTP node to the pre-relocation phase of U-Boot proper so
+that the SoC variant can be printed when DISPLAY_BOARDINFO is enabled.
+This is not required if DISPLAY_BOARDINFO_LATE is enabled because this
+happens after relocation. If both are enabled, then the SoC variant will
+be printed twice in the boot log, e.g.:
+
+U-Boot 2025.07-rc3-00014-g7cb731574ae6-dirty (May 28 2025 - 13:52:47 +0200)
+
+Model: Theobroma Systems PX30-uQ7 SoM on Haikou devkit
+SoC:   PX30  <---- due to DISPLAY_BOARDINFO
+DRAM:  2 GiB
+PMIC:  RK809 (on=0x40, off=0x00)
+Core:  293 devices, 27 uclasses, devicetree: separate
+MMC:   mmc@ff370000: 1, mmc@ff390000: 0
+Loading Environment from MMC... Reading from MMC(1)... OK
+
+In:    serial@ff030000
+Out:   serial@ff030000
+Err:   serial@ff030000
+Model: Theobroma Systems PX30-uQ7 SoM on Haikou devkit
+SoC:   PX30  <----- due to DISPLAY_BOARDINFO_LATE
+Net:   eth0: ethernet@ff360000
+
+Signed-off-by: Quentin Schulz <quentin.schulz@cherry.de>
+Reviewed-by: Jonas Karlman <jonas@kwiboo.se>
+Reviewed-by: Kever Yang <kever.yang@rock-chips.com>
+---
+ arch/arm/dts/px30-u-boot.dtsi      |  4 ++
+ arch/arm/mach-rockchip/px30/px30.c | 61 ++++++++++++++++++++++++++++++
+ 2 files changed, 65 insertions(+)
+
+diff --git a/arch/arm/dts/px30-u-boot.dtsi b/arch/arm/dts/px30-u-boot.dtsi
+index 157d0ea6930..2f726b0aaba 100644
+--- a/arch/arm/dts/px30-u-boot.dtsi
++++ b/arch/arm/dts/px30-u-boot.dtsi
+@@ -27,6 +27,10 @@
+ 	};
+ };
+ 
++&otp {
++	bootph-some-ram;
++};
++
+ &uart2 {
+ 	clock-frequency = <24000000>;
+ 	bootph-all;
+diff --git a/arch/arm/mach-rockchip/px30/px30.c b/arch/arm/mach-rockchip/px30/px30.c
+index 8ce9ac561f0..5a5c119328f 100644
+--- a/arch/arm/mach-rockchip/px30/px30.c
++++ b/arch/arm/mach-rockchip/px30/px30.c
+@@ -2,10 +2,14 @@
+ /*
+  * Copyright (c) 2017 Rockchip Electronics Co., Ltd
+  */
++
++#define LOG_CATEGORY LOGC_ARCH
++
+ #include <clk.h>
+ #include <dm.h>
+ #include <fdt_support.h>
+ #include <init.h>
++#include <misc.h>
+ #include <spl.h>
+ #include <asm/armv8/mmu.h>
+ #include <asm/arch-rockchip/bootrom.h>
+@@ -15,6 +19,7 @@
+ #include <asm/arch-rockchip/clock.h>
+ #include <asm/arch-rockchip/cru_px30.h>
+ #include <dt-bindings/clock/px30-cru.h>
++#include <linux/bitfield.h>
+ 
+ const char * const boot_devices[BROM_LAST_BOOTSOURCE + 1] = {
+ 	[BROM_BOOTSOURCE_EMMC] = "/mmc@ff390000",
+@@ -442,3 +447,59 @@ void board_debug_uart_init(void)
+ #endif /* CONFIG_DEBUG_UART_BASE && CONFIG_DEBUG_UART_BASE == ... */
+ }
+ #endif /* CONFIG_DEBUG_UART_BOARD_INIT */
++
++#define PX30_OTP_SPECIFICATION_OFFSET		0x06
++
++#define DDR_GRF_BASE_ADDR               0xff630000
++#define DDR_GRF_CON(n)                  (0 + (n) * 4)
++
++int checkboard(void)
++{
++	struct udevice *dev;
++	u8 specification;
++	u32 base_soc;
++	int ret;
++
++	if (!IS_ENABLED(CONFIG_ROCKCHIP_OTP) || !CONFIG_IS_ENABLED(MISC))
++		return 0;
++
++	ret = uclass_get_device_by_driver(UCLASS_MISC,
++					  DM_DRIVER_GET(rockchip_otp), &dev);
++	if (ret) {
++		log_debug("Could not find otp device, ret=%d\n", ret);
++		return 0;
++	}
++
++	/* base SoC: 0x26334b52 for RK3326; 0x30335850 for PX30 */
++	ret = misc_read(dev, 0, &base_soc, 4);
++	if (ret < 0) {
++		log_debug("Could not read specification, ret=%d\n", ret);
++		return 0;
++	}
++
++	if (base_soc != 0x26334b52 && base_soc != 0x30335850) {
++		log_debug("Could not identify SoC, got 0x%04x in OTP\n", base_soc);
++		return 0;
++	}
++
++	/* SoC variant: 0x21 for PX30/PX30S/RK3326/RK3326S; 0x2b for PX30K */
++	ret = misc_read(dev, PX30_OTP_SPECIFICATION_OFFSET, &specification, 1);
++	if (ret < 0) {
++		log_debug("Could not read specification, ret=%d\n", ret);
++		return 0;
++	}
++
++	if (specification == 0x2b) {
++		printf("SoC:   PX30K\n");
++		return 0;
++	}
++
++	/* From vendor kernel: drivers/soc/rockchip/rockchip-cpuinfo.c */
++	specification = FIELD_GET(GENMASK(15, 14),
++				  readl(DDR_GRF_BASE_ADDR + DDR_GRF_CON(1)));
++	log_debug("DDR specification is %d\n", specification);
++	printf("SoC:   %s%s\n", base_soc == 0x26334b52 ? "RK3326" : "PX30",
++	       specification == 0x3 ? "S" : "");
++
++	return 0;
++}
+-- 
+2.34.1
+

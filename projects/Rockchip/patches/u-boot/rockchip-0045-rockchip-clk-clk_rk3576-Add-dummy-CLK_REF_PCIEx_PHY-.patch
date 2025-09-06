@@ -1,0 +1,30 @@
+From 59e0942f5cb2c61521bf740e6fcd1270072cf65a Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Fri, 11 Jul 2025 22:44:34 +0000
+Subject: [PATCH 45/84] rockchip: clk: clk_rk3576: Add dummy CLK_REF_PCIEx_PHY
+ support
+
+Add dummy support for the CLK_REF_PCIEx_PHY clocks to allow probe of the
+phy-rockchip-naneng-combphy driver on RK3576.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/clk/rockchip/clk_rk3576.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/clk/rockchip/clk_rk3576.c b/drivers/clk/rockchip/clk_rk3576.c
+index e84a0943a94..125b08ee832 100644
+--- a/drivers/clk/rockchip/clk_rk3576.c
++++ b/drivers/clk/rockchip/clk_rk3576.c
+@@ -2168,6 +2168,8 @@ static ulong rk3576_clk_set_rate(struct clk *clk, ulong rate)
+ 	case CLK_CPLL_DIV10:
+ 	case FCLK_DDR_CM0_CORE:
+ 	case ACLK_PHP_ROOT:
++	case CLK_REF_PCIE0_PHY:
++	case CLK_REF_PCIE1_PHY:
+ 		ret = 0;
+ 		break;
+ #ifndef CONFIG_SPL_BUILD
+-- 
+2.34.1
+

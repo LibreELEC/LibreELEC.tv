@@ -1,0 +1,44 @@
+From f2102f6d2743b6db7a35a0082326bf39b5fd16e5 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 12 Jul 2025 21:12:29 +0000
+Subject: [PATCH 52/84] rockchip: spl-boot-order: Defer probe of boot device
+
+Boot devices are being probed when SPL boot order is determined. This
+may delay boot slightly and can prevent booting from SPI Flash on boards
+that use same pins for SPI Flash and eMMC due to pinctrl being applied
+prior to booting.
+
+Instead defer probe of the boot device until SPL try to load image from
+the boot device by using uclass_find_device_by_of_offset() instead of
+the get variant.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/mach-rockchip/spl-boot-order.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mach-rockchip/spl-boot-order.c b/arch/arm/mach-rockchip/spl-boot-order.c
+index 3dce9b30898..6b1b84dc86d 100644
+--- a/arch/arm/mach-rockchip/spl-boot-order.c
++++ b/arch/arm/mach-rockchip/spl-boot-order.c
+@@ -40,7 +40,7 @@ static int spl_node_to_boot_device(int node)
+ 	 * aware of the block-device layer.  Until then (and to avoid unneeded
+ 	 * delays in getting this feature out), it lives at the board-level.
+ 	 */
+-	if (!uclass_get_device_by_of_offset(UCLASS_MMC, node, &parent)) {
++	if (!uclass_find_device_by_of_offset(UCLASS_MMC, node, &parent)) {
+ 		struct udevice *dev;
+ 		struct blk_desc *desc = NULL;
+ 
+@@ -72,7 +72,7 @@ static int spl_node_to_boot_device(int node)
+ 	 * extended with awareness of the BLK layer (and matching OF_CONTROL)
+ 	 * soon.
+ 	 */
+-	if (!uclass_get_device_by_of_offset(UCLASS_SPI_FLASH, node, &parent))
++	if (!uclass_find_device_by_of_offset(UCLASS_SPI_FLASH, node, &parent))
+ 		return BOOT_DEVICE_SPI;
+ 
+ 	return -1;
+-- 
+2.34.1
+

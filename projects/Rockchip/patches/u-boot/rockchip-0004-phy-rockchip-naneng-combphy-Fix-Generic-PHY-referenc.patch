@@ -1,0 +1,37 @@
+From 5338a239b47d28a04da856bd9fbc18d4fefa96ba Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Mon, 21 Jul 2025 22:07:12 +0000
+Subject: [PATCH 04/84] phy: rockchip: naneng-combphy: Fix Generic PHY
+ reference counting
+
+Generic PHY reference counting helps ensure driver ops for init/exit and
+power on/off are called at correct state. For this to work the PHY
+driver must initialize PHY-id to a persistent value in of_xlate ops.
+
+The Rockchip COMBPHY driver does not initialize the PHY-id field, this
+typically lead to use of unshared reference counting among different
+struct phy instances.
+
+Initialize the PHY-id in of_xlate ops to ensure use of shared reference
+counting among all struct phy instances.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/phy/rockchip/phy-rockchip-naneng-combphy.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/phy/rockchip/phy-rockchip-naneng-combphy.c b/drivers/phy/rockchip/phy-rockchip-naneng-combphy.c
+index 5145b517aa4..a3038d067d3 100644
+--- a/drivers/phy/rockchip/phy-rockchip-naneng-combphy.c
++++ b/drivers/phy/rockchip/phy-rockchip-naneng-combphy.c
+@@ -223,6 +223,7 @@ static int rockchip_combphy_xlate(struct phy *phy, struct ofnode_phandle_args *a
+ 		return -EINVAL;
+ 	}
+ 
++	phy->id = priv->id;
+ 	priv->mode = args->args[0];
+ 
+ 	return 0;
+-- 
+2.34.1
+

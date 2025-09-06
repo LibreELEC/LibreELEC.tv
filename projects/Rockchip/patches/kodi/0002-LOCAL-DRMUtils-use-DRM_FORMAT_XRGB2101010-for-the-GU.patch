@@ -1,0 +1,32 @@
+From c1847dba81f46631bdacb66e03b95216588a5180 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sat, 19 Jul 2025 11:24:30 +0000
+Subject: [PATCH 2/2] LOCAL: DRMUtils: use DRM_FORMAT_XRGB2101010 for the GUI
+ plane
+
+Kodi wrongly assumes that if DRM_FORMAT_XRGB2101010 is supported
+that DRM_FORMAT_ARGB2101010 is also supported, which is not true
+for RK3588.
+
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ xbmc/windowing/gbm/drm/DRMUtils.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/xbmc/windowing/gbm/drm/DRMUtils.cpp b/xbmc/windowing/gbm/drm/DRMUtils.cpp
+index be8e586ed2..4f42434827 100644
+--- a/xbmc/windowing/gbm/drm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/drm/DRMUtils.cpp
+@@ -225,7 +225,8 @@ bool CDRMUtils::FindPlanes()
+     CLog::Log(LOGDEBUG, "CDRMUtils::{} - using video plane {}", __FUNCTION__,
+               m_video_plane->GetPlaneId());
+ 
+-  if (m_gui_plane->SupportsFormat(DRM_FORMAT_XRGB2101010))
++  if (m_gui_plane->SupportsFormat(DRM_FORMAT_XRGB2101010) &&
++      (!m_video_plane || m_gui_plane->SupportsFormat(FourCCWithAlpha(DRM_FORMAT_XRGB2101010))))
+   {
+     m_gui_plane->SetFormat(DRM_FORMAT_XRGB2101010);
+     CLog::Log(LOGDEBUG, "CDRMUtils::{} - using 10bit gui plane {}", __FUNCTION__,
+-- 
+2.34.1
+

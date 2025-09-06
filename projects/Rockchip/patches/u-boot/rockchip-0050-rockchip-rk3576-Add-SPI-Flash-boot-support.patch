@@ -1,0 +1,137 @@
+From de7ac8d5909a3153ae9513eaba23266bd4771a3b Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Fri, 11 Jul 2025 23:06:05 +0000
+Subject: [PATCH 50/84] rockchip: rk3576: Add SPI Flash boot support
+
+The bootsource ids reported by BootROM of RK3576 for SPI NOR and USB
+differs slightly compared to prior SoCs:
+
+- Booting from sfc0 (ROCK 4D) report the normal bootsource id 0x3.
+- Booting from sfc1 M1 (NanoPi M5) report a new bootsource id 0x23.
+- Booting from sfc1 M0 has not been tested (no board using this config).
+- Booting from USB report a new bootsource id 0x81.
+
+Add a RK3576 specific read_brom_bootsource_id() function to help decode
+the new bootsource id values and the required boot_devices mapping of
+sfc0 and sfc1 to help support booting from SPI flash on RK3576.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3576-u-boot.dtsi        | 36 ++++++++++++++++++++++++++
+ arch/arm/mach-rockchip/rk3576/rk3576.c | 23 ++++++++++++++++
+ 2 files changed, 59 insertions(+)
+
+diff --git a/arch/arm/dts/rk3576-u-boot.dtsi b/arch/arm/dts/rk3576-u-boot.dtsi
+index fb5a107f47d..c7ed09e03ee 100644
+--- a/arch/arm/dts/rk3576-u-boot.dtsi
++++ b/arch/arm/dts/rk3576-u-boot.dtsi
+@@ -6,6 +6,11 @@
+ #include "rockchip-u-boot.dtsi"
+ 
+ / {
++	aliases {
++		spi5 = &sfc0;
++		spi6 = &sfc1;
++	};
++
+ 	chosen {
+ 		u-boot,spl-boot-order = "same-as-spl", &sdmmc, &sdhci;
+ 	};
+@@ -16,6 +21,17 @@
+ 	};
+ };
+ 
++#ifdef CONFIG_ROCKCHIP_SPI_IMAGE
++&binman {
++	simple-bin-spi {
++		mkimage {
++			args = "-n", CONFIG_SYS_SOC, "-T", "rksd";
++			offset = <0x8000>;
++		};
++	};
++};
++#endif
++
+ &cru {
+ 	bootph-all;
+ };
+@@ -45,6 +61,16 @@
+ 	bootph-some-ram;
+ };
+ 
++&fspi0_csn0 {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&fspi0_pins {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
+ &ioc_grf {
+ 	bootph-all;
+ };
+@@ -116,6 +142,16 @@
+ 	bootph-some-ram;
+ };
+ 
++&sfc0 {
++	bootph-some-ram;
++	u-boot,spl-sfc-no-dma;
++};
++
++&sfc1 {
++	bootph-some-ram;
++	u-boot,spl-sfc-no-dma;
++};
++
+ &sys_grf {
+ 	bootph-all;
+ };
+diff --git a/arch/arm/mach-rockchip/rk3576/rk3576.c b/arch/arm/mach-rockchip/rk3576/rk3576.c
+index a6c2fbdc484..3d5bdeeeb84 100644
+--- a/arch/arm/mach-rockchip/rk3576/rk3576.c
++++ b/arch/arm/mach-rockchip/rk3576/rk3576.c
+@@ -36,8 +36,17 @@
+ #define USB_GRF_BASE		0x2601E000
+ #define USB3OTG0_CON1		0x0030
+ 
++enum {
++	BROM_BOOTSOURCE_FSPI0 = 3,
++	BROM_BOOTSOURCE_FSPI1_M0 = 4,
++	BROM_BOOTSOURCE_FSPI1_M1 = 6,
++};
++
+ const char * const boot_devices[BROM_LAST_BOOTSOURCE + 1] = {
+ 	[BROM_BOOTSOURCE_EMMC] = "/soc/mmc@2a330000",
++	[BROM_BOOTSOURCE_FSPI0] = "/soc/spi@2a340000/flash@0",
++	[BROM_BOOTSOURCE_FSPI1_M0] = "/soc/spi@2a300000/flash@0",
++	[BROM_BOOTSOURCE_FSPI1_M1] = "/soc/spi@2a300000/flash@0",
+ 	[BROM_BOOTSOURCE_SD] = "/soc/mmc@2a310000",
+ };
+ 
+@@ -85,6 +94,20 @@ void board_debug_uart_init(void)
+ {
+ }
+ 
++u32 read_brom_bootsource_id(void)
++{
++	u32 bootsource_id = readl(BROM_BOOTSOURCE_ID_ADDR);
++
++	if (bootsource_id == 0x23)
++		return BROM_BOOTSOURCE_FSPI1_M1;
++	else if (bootsource_id == 0x81)
++		return BROM_BOOTSOURCE_USB;
++	else if (bootsource_id > BROM_LAST_BOOTSOURCE)
++		log_debug("Unknown bootsource %x\n", bootsource_id);
++
++	return bootsource_id;
++}
++
+ #define HP_TIMER_BASE			CONFIG_ROCKCHIP_STIMER_BASE
+ #define HP_CTRL_REG			0x04
+ #define TIMER_EN			BIT(0)
+-- 
+2.34.1
+

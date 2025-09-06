@@ -1,0 +1,83 @@
+From 1f53e8b192440fc37144acc6469fae4f839ff2f0 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:33:57 +0000
+Subject: [PATCH 63/84] rockchip: odroid-go2: Use power off at power plug-in
+ event
+
+Include the RK817 PMIC in SPL and enable Kconfig options to power off
+the handheld gaming device when it was powered on due to a power cable
+plug-in event:
+
+  DDR3, 333MHz
+  BW=32 Col=10 Bk=8 CS0 Row=15 CS=1 Die BW=16 Size=1024MB
+  out
+  Power Off due to plug-in event
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi | 18 ++++++++++++++++++
+ configs/odroid-go2_defconfig               |  3 +++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+index 6f40654d5e8..6c6efa964d8 100644
+--- a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+@@ -5,8 +5,26 @@
+ 
+ #include "rk3326-u-boot.dtsi"
+ 
++&i2c0_xfer {
++	bootph-pre-ram;
++};
++
++&i2s1_2ch_mclk {
++	bootph-pre-ram;
++};
++
++&pcfg_pull_none_smt {
++	bootph-pre-ram;
++};
++
++&pmic_int {
++	bootph-pre-ram;
++};
++
+ &rk817 {
+ 	regulators {
++		bootph-pre-ram;
++
+ 		vcc_cam: LDO_REG9 {
+ 			regulator-name = "vcc_cam";
+ 			regulator-min-microvolt = <3000000>;
+diff --git a/configs/odroid-go2_defconfig b/configs/odroid-go2_defconfig
+index b0947fe2c8b..a6d02baa520 100644
+--- a/configs/odroid-go2_defconfig
++++ b/configs/odroid-go2_defconfig
+@@ -8,6 +8,7 @@ CONFIG_ENV_OFFSET=0x4000
+ CONFIG_DEFAULT_DEVICE_TREE="rockchip/rk3326-odroid-go2"
+ CONFIG_DM_RESET=y
+ CONFIG_ROCKCHIP_PX30=y
++CONFIG_ROCKCHIP_RK8XX_DISABLE_BOOT_ON_POWERON=y
+ CONFIG_TARGET_ODROID_GO2=y
+ CONFIG_DEBUG_UART_CHANNEL=1
+ CONFIG_SYS_LOAD_ADDR=0x800800
+@@ -42,6 +43,7 @@ CONFIG_CMD_GPT=y
+ # CONFIG_CMD_LOADB is not set
+ # CONFIG_CMD_LOADS is not set
+ CONFIG_CMD_MMC=y
++CONFIG_CMD_POWEROFF=y
+ CONFIG_CMD_USB=y
+ CONFIG_CMD_USB_MASS_STORAGE=y
+ # CONFIG_CMD_ITEST is not set
+@@ -73,6 +75,7 @@ CONFIG_SPL_PINCTRL=y
+ CONFIG_DM_PMIC=y
+ CONFIG_PMIC_RK8XX=y
+ CONFIG_SPL_PMIC_RK8XX=y
++CONFIG_SPL_DM_REGULATOR=y
+ CONFIG_DM_REGULATOR_FIXED=y
+ CONFIG_REGULATOR_RK8XX=y
+ CONFIG_PWM_ROCKCHIP=y
+-- 
+2.34.1
+

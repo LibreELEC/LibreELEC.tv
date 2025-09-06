@@ -1,0 +1,37 @@
+################################################################################
+# setup device defaults
+################################################################################
+
+  # The TARGET_CPU variable controls which processor should be targeted for
+  # generated code.
+    case $TARGET_ARCH in
+      aarch64)
+        TARGET_CPU="cortex-a76.cortex-a55"
+        TARGET_CPU_FLAGS="+crc+crypto"
+        ;;
+      arm)
+        TARGET_KERNEL_ARCH="arm64"
+        TARGET_FLOAT="hard"
+        TARGET_CPU="cortex-a76.cortex-a55"
+        TARGET_CPU_FLAGS="+crc"
+        TARGET_FPU="crypto-neon-fp-armv8"
+        ;;
+    esac
+
+  # Kernel to use
+    LINUX="rockchip"
+
+  # Kernel target
+    KERNEL_TARGET="Image"
+
+  # Graphic drivers to use
+    GRAPHIC_DRIVERS="panfrost"
+
+  # kernel serial console
+    EXTRA_CMDLINE="earlycon console=uart8250,mmio32,0xfeb50000 console=tty0 coherent_pool=2M cec.debounce_ms=5000 mem=3838M systemd.debug_shell=ttyS2"
+
+  # set the addon project
+    ADDON_PROJECT="ARMv8"
+
+  # additional packages
+    ADDITIONAL_PACKAGES+=" pciutils"

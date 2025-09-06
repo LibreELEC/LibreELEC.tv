@@ -1,0 +1,29 @@
+From bb596d4d3071aef91c84098b033fe9839e69842b Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:34:04 +0000
+Subject: [PATCH 70/84] rockchip: odroid-go2: Add myself as a reviewer
+
+I have the ORDOID-GO Super variant of this board. Add myself as a
+reviewer to help review future patches targeting this device.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ board/hardkernel/odroid_go2/MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/board/hardkernel/odroid_go2/MAINTAINERS b/board/hardkernel/odroid_go2/MAINTAINERS
+index 9e83bc9452c..ee06c2fa651 100644
+--- a/board/hardkernel/odroid_go2/MAINTAINERS
++++ b/board/hardkernel/odroid_go2/MAINTAINERS
+@@ -1,6 +1,8 @@
+ GO2
+ M:      Heiko Stuebner <heiko.stuebner@cherry.de>
++R:      Jonas Karlman <jonas@kwiboo.se>
+ S:      Maintained
+ F:      board/hardkernel/odroid_go2/
+ F:      include/configs/odroid_go2.h
++F:      arch/arm/dts/rk3326-odroid-go*
+ F:      configs/odroid-go2_defconfig
+-- 
+2.34.1
+

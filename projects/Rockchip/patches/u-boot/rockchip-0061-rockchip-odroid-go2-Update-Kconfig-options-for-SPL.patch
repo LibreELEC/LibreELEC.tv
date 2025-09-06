@@ -1,0 +1,68 @@
+From e7e406bdfc634127304dbc1f70d051f46e3f683e Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:33:55 +0000
+Subject: [PATCH 61/84] rockchip: odroid-go2: Update Kconfig options for SPL
+
+Drop SPL_DRIVERS_MISC, it is not needed/used on these devices.
+
+Enable SPL_FIT_SIGNATURE to ensure the integrity of the FIT images
+that are loaded into memory.
+
+Change SPL_MAX_SIZE to 256 KiB, similar to other SoCs where TF-A is
+loaded at 0x40000 offset from start of DRAM.
+
+Enable SPL_DM_SEQ_ALIAS to ensure device aliases are applied in SPL.
+
+Drop use of SPL_TINY_MEMSET, there is plenty room for the normal memset.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ configs/odroid-go2_defconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/configs/odroid-go2_defconfig b/configs/odroid-go2_defconfig
+index d6a63bd3a4c..6bc0d12440c 100644
+--- a/configs/odroid-go2_defconfig
++++ b/configs/odroid-go2_defconfig
+@@ -10,7 +10,6 @@ CONFIG_DM_RESET=y
+ CONFIG_ROCKCHIP_PX30=y
+ CONFIG_TARGET_ODROID_GO2=y
+ CONFIG_DEBUG_UART_CHANNEL=1
+-CONFIG_SPL_DRIVERS_MISC=y
+ CONFIG_SYS_LOAD_ADDR=0x800800
+ CONFIG_DEBUG_UART_BASE=0xFF160000
+ CONFIG_DEBUG_UART_CLOCK=24000000
+@@ -19,12 +18,13 @@ CONFIG_DEBUG_UART=y
+ CONFIG_FIT=y
+ CONFIG_FIT_VERBOSE=y
+ CONFIG_FIT_BEST_MATCH=y
++CONFIG_SPL_FIT_SIGNATURE=y
+ CONFIG_SPL_LOAD_FIT=y
+ CONFIG_DEFAULT_FDT_FILE="rockchip/rk3326-odroid-go2.dtb"
+ # CONFIG_DISPLAY_CPUINFO is not set
+ CONFIG_BOARD_LATE_INIT=y
+ CONFIG_MISC_INIT_R=y
+-CONFIG_SPL_MAX_SIZE=0x20000
++CONFIG_SPL_MAX_SIZE=0x40000
+ CONFIG_SPL_BOOTROM_SUPPORT=y
+ # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
+ CONFIG_SPL_I2C=y
+@@ -53,6 +53,7 @@ CONFIG_SPL_OF_CONTROL=y
+ CONFIG_OF_LIVE=y
+ CONFIG_OF_SPL_REMOVE_PROPS="pinctrl-0 pinctrl-names interrupt-parent assigned-clocks assigned-clock-rates assigned-clock-parents"
+ CONFIG_ENV_IS_IN_MMC=y
++CONFIG_SPL_DM_SEQ_ALIAS=y
+ CONFIG_REGMAP=y
+ CONFIG_SPL_REGMAP=y
+ CONFIG_SYSCON=y
+@@ -90,7 +91,6 @@ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_GENERIC=y
+ CONFIG_USB_GADGET=y
+ CONFIG_USB_GADGET_DWC2_OTG=y
+-CONFIG_SPL_TINY_MEMSET=y
+ CONFIG_TPL_TINY_MEMSET=y
+ CONFIG_LZO=y
+ CONFIG_ERRNO_STR=y
+-- 
+2.34.1
+

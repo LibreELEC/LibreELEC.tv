@@ -1,0 +1,55 @@
+From 82df30c64326c27218bbefc4f4b3ce24e07efc28 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:33:51 +0000
+Subject: [PATCH 57/84] rockchip: odroid-go2: Remove u-boot.dtsi props already
+ defined
+
+DTs from dts/upstream already contain aliases for i2c, mmc and serial.
+
+Remove the aliases and status=okay that are already defined in upstream
+board or SoC DT.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+index f37daa893c7..df21747fad7 100644
+--- a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+@@ -10,15 +10,6 @@
+ 		u-boot,spl-boot-order = &sdmmc;
+ 	};
+ 
+-	aliases {
+-		i2c0 = &i2c0;
+-		i2c1 = &i2c1;
+-		mmc0 = &sdmmc;
+-		serial1 = &uart1;
+-		serial2 = &uart2;
+-		spi0 = &sfc;
+-	};
+-
+ 	dmc {
+ 		bootph-all;
+ 		compatible = "rockchip,px30-dmc", "syscon";
+@@ -28,7 +19,6 @@
+ 	rng: rng@ff0b0000 {
+ 		compatible = "rockchip,cryptov2-rng";
+ 		reg = <0x0 0xff0b0000 0x0 0x4000>;
+-		status = "okay";
+ 	};
+ };
+ 
+@@ -85,7 +75,6 @@
+ 
+ &saradc {
+ 	bootph-all;
+-	status = "okay";
+ };
+ 
+ &sdmmc {
+-- 
+2.34.1
+

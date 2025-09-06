@@ -1,0 +1,41 @@
+From 1d9809d479e99125850b2eadbbca633435ea273f Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:33:49 +0000
+Subject: [PATCH 55/84] clk: px30: Allow use of GPU and WIFI_PMU in
+ assigned-clocks
+
+Add dummy implementation of set_rate for SCLK_GPU and SCLK_WIFI_PMU to
+allow use of dts/upstream assigned-clocks in cru and pmucru nodes.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/clk/rockchip/clk_px30.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/clk/rockchip/clk_px30.c b/drivers/clk/rockchip/clk_px30.c
+index ad7e1c0f246..b5054e84c32 100644
+--- a/drivers/clk/rockchip/clk_px30.c
++++ b/drivers/clk/rockchip/clk_px30.c
+@@ -1360,6 +1360,9 @@ static ulong px30_clk_set_rate(struct clk *clk, ulong rate)
+ 	case SCLK_GMAC_RMII:
+ 		ret = px30_mac_set_speed_clk(priv, rate);
+ 		break;
++	/* Might occur in cru assigned-clocks, can be ignored here */
++	case SCLK_GPU:
++		break;
+ #endif
+ 	default:
+ 		return -ENOENT;
+@@ -1726,6 +1729,9 @@ static ulong px30_pmuclk_set_rate(struct clk *clk, ulong rate)
+ 	case SCLK_UART0_PMU:
+ 		ret = px30_pmu_uart0_set_clk(priv, rate);
+ 		break;
++	/* Might occur in pmucru assigned-clocks, can be ignored here */
++	case SCLK_WIFI_PMU:
++		break;
+ 	default:
+ 		return -ENOENT;
+ 	}
+-- 
+2.34.1
+

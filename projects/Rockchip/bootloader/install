@@ -16,42 +16,35 @@ if [ "${ROCKCHIP_LEGACY_BOOT}" = "1" ]; then
     exit 1
   fi
 
-  PKG_BOOT_INI="${PKG_RKBIN}"/RKBOOT/"${DEVICE}"MINIALL.ini
+  PKG_BOOT_INI="${PKG_RKBIN}/RKBOOT/${DEVICE}MINIALL.ini"
   if [ ! -f "${PKG_BOOT_INI}" ]; then
     echo "install: ${PKG_BOOT_INI} does not exist"
     exit 1
   fi
 
-  PKG_DDR_BIN="${PKG_RKBIN}"/$(sed -n "/FlashData/s/FlashData=//p" "${PKG_BOOT_INI}")
   PKG_MINILOADER="${PKG_RKBIN}"/$(sed -n "/FlashBoot/s/FlashBoot=//p" "${PKG_BOOT_INI}")
   PKG_LOAD_ADDR=$(sed -n "/CONFIG_TEXT_BASE/s/#define CONFIG_TEXT_BASE //p" u-boot.cfg)
 
-  # Override sdram frequency
-  if [ "${DEVICE}" = "RK3328" ]; then
-    sed -s 's/\x4d\x1\x4d\x1\x4d\x1\x4d\x1\x4d\x1\x4d\x1/\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3/g' -i "${PKG_DDR_BIN}"
-    sed -s 's/\x90\x1\x90\x1\x90\x1\x90\x1\x90\x1\x90\x1/\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3\x20\x3/g' -i "${PKG_DDR_BIN}"
-  fi
-
-  ${QEMU} ${PKG_RKBIN}/tools/mkimage -n "${PKG_SOC}" -T rksd -d "${PKG_DDR_BIN}":"${PKG_MINILOADER}" idbloader.img.rk || exit 1
+  tools/mkimage -n "${PKG_SOC}" -T rksd -d "${ROCKCHIP_TPL}:${PKG_MINILOADER}" idbloader.img.rk || exit 1
   ${QEMU} ${PKG_RKBIN}/tools/loaderimage --pack --uboot u-boot-dtb.bin uboot.img.rk "${PKG_LOAD_ADDR}" || exit 1
 
   dd if=idbloader.img.rk of="${UBOOT_FIT_IMAGE}" seek=0 conv=fsync,notrunc > /dev/null 2>&1 || exit 1
   dd if=uboot.img.rk of="${UBOOT_FIT_IMAGE}" seek=16320 conv=fsync,notrunc > /dev/null 2>&1 || exit 1
 
   if [ "${TARGET_ARCH}" = "aarch64" -o "${TARGET_KERNEL_ARCH}" = "arm64" ]; then
-    PKG_ATF_INI="${PKG_RKBIN}"/RKTRUST/"${DEVICE}"TRUST.ini
+    PKG_ATF_INI="${PKG_RKBIN}/RKTRUST/${DEVICE}TRUST.ini"
     if [ ! -f "${PKG_ATF_INI}" ]; then
       echo "install: ${PKG_ATF_INI} does not exist"
       exit 1
     fi
 
-    ${QEMU} "${PKG_RKBIN}"/tools/trust_merger --ignore-bl32 --prepath "${PKG_RKBIN}"/ "${PKG_ATF_INI}" || exit 1
+    ${QEMU} "${PKG_RKBIN}/tools/trust_merger" --ignore-bl32 --prepath "${PKG_RKBIN}/" "${PKG_ATF_INI}" || exit 1
     dd if=trust.img of="${UBOOT_FIT_IMAGE}" seek=24512 conv=fsync,notrunc > /dev/null 2>&1 || exit 1
   fi
 fi
 
 if [ -f "${UBOOT_FIT_IMAGE}" ]; then
-  cp -av "${UBOOT_FIT_IMAGE}" "${INSTALL}"/usr/share/bootloader
+  cp -av "${UBOOT_FIT_IMAGE}" "${INSTALL}/usr/share/bootloader"
 else
   echo "install: bootloader ${UBOOT_FIT_IMAGE} was not built."
   exit 1

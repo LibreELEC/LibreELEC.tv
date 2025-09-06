@@ -1,0 +1,32 @@
+From 5153c47f925ee11d1407df82b2787a909a6be8e9 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:34:02 +0000
+Subject: [PATCH 68/84] rockchip: odroid-go2: Turn on the blue LED at boot
+
+Use default-state prop to ensure that the blue heartbeat LED turns on
+at boot to inticate that U-Boot proper has been reached.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+index 393710246e1..170e0f7d847 100644
+--- a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+@@ -5,6 +5,11 @@
+ 
+ #include "rk3326-u-boot.dtsi"
+ 
++&blue_led {
++	default-state = "on";
++	u-boot,default-brightness = <127>;
++};
++
+ &i2c0_xfer {
+ 	bootph-pre-ram;
+ };
+-- 
+2.34.1
+

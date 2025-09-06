@@ -1,0 +1,44 @@
+From 31932a9b2babf23c3c95b412bdb4af35176e1826 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Wed, 30 Jul 2025 23:52:42 +0000
+Subject: [PATCH 15/84] rockchip: rk3528-generic: Fix boot after dts/upstream
+ v6.16-dts merge
+
+The rk3528-generic target can no longer boot after v6.16-dts was merged
+into dts/upstream, and instead end up in a boot loop:
+
+  No serial driver found
+  resetting ...
+
+After Linux commit 34d2730fbbdd ("arm64: dts: rockchip: move rk3528
+i2c+uart aliases to board files") there is no longer an alias for
+serial0 defined for the U-Boot only rk3528-generic device tree.
+
+Add a board specific aliases node that include the missing serial0 alias
+to resolve the boot issue and ensure that stdout-path = "serial0:..."
+can be resolved by U-Boot.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3528-generic.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/dts/rk3528-generic.dts b/arch/arm/dts/rk3528-generic.dts
+index 3f6f0bed108..fe9e72c41cd 100644
+--- a/arch/arm/dts/rk3528-generic.dts
++++ b/arch/arm/dts/rk3528-generic.dts
+@@ -10,6 +10,11 @@
+ 	model = "Generic RK3528";
+ 	compatible = "rockchip,rk3528";
+ 
++	aliases {
++		mmc0 = &sdhci;
++		serial0 = &uart0;
++	};
++
+ 	chosen {
+ 		stdout-path = "serial0:1500000n8";
+ 	};
+-- 
+2.34.1
+

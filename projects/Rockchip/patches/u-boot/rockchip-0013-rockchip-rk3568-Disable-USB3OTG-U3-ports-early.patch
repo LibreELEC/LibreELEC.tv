@@ -1,0 +1,49 @@
+From 8d5f4e5a9e5e2281386e4d273e5232a8636bfff8 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 20 Jul 2025 13:10:36 +0000
+Subject: [PATCH 13/84] rockchip: rk3568: Disable USB3OTG U3 ports early
+
+The RK3568 SoC comes with USB OTG support using a DWC3 controller with
+a USB2 PHY and a USB3 PHY (COMBPHY).
+
+Some board designs may not use the COMBPHY for USB3 purpose. For these
+board to use USB OTG the input clock source must change to use UTMI clk
+instead of PIPE clk.
+
+Change to always disable the USB3OTG U3 ports early and leave it to the
+COMBPHY driver to re-enable the U3 port when a usb3-phy is described in
+the board device tree.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/mach-rockchip/rk3568/rk3568.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/mach-rockchip/rk3568/rk3568.c b/arch/arm/mach-rockchip/rk3568/rk3568.c
+index c2b96902d2d..560af336be4 100644
+--- a/arch/arm/mach-rockchip/rk3568/rk3568.c
++++ b/arch/arm/mach-rockchip/rk3568/rk3568.c
+@@ -14,6 +14,9 @@
+ #include <dt-bindings/clock/rk3568-cru.h>
+ 
+ #define PMUGRF_BASE			0xfdc20000
++#define PIPE_GRF_BASE			0xfdc50000
++#define USB3OTG0_CON1			0x104
++#define USB3OTG1_CON1			0x144
+ #define GRF_BASE			0xfdc60000
+ #define GRF_GPIO1B_DS_2			0x218
+ #define GRF_GPIO1B_DS_3			0x21c
+@@ -139,6 +142,10 @@ int arch_cpu_init(void)
+ 	/* Enable VO power domain for display */
+ 	writel((PMU_PD_VO_DWN_ENA << 16),
+ 	       PMU_BASE_ADDR + PMU_PWR_GATE_SFTCON);
++
++	/* Disable USB3OTG U3 ports, later enabled in COMBPHY driver */
++	writel(0xffff0181, PIPE_GRF_BASE + USB3OTG0_CON1);
++	writel(0xffff0181, PIPE_GRF_BASE + USB3OTG1_CON1);
+ #endif
+ 	return 0;
+ }
+-- 
+2.34.1
+

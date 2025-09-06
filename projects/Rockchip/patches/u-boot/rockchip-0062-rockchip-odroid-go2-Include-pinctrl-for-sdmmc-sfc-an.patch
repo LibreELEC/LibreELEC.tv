@@ -1,0 +1,135 @@
+From 28ee80ddeb0611760a2540168d36ff88c8cb62de Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 13 Jul 2025 23:33:56 +0000
+Subject: [PATCH 62/84] rockchip: odroid-go2: Include pinctrl for sdmmc, sfc
+ and uart in SPL
+
+Include pinctrl nodes and props for sdmmc, sfc and uart in SPL to ensure
+pins are configured according to the device tree.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi | 10 ++++
+ arch/arm/dts/rk3326-u-boot.dtsi            | 58 ++++++++++++++++++++++
+ configs/odroid-go2_defconfig               |  2 +-
+ 3 files changed, 69 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+index 06e2c190b1f..6f40654d5e8 100644
+--- a/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-odroid-go2-u-boot.dtsi
+@@ -35,3 +35,13 @@
+ 	bootph-all;
+ 	clock-frequency = <24000000>;
+ };
++
++&uart1_cts {
++	bootph-pre-sram;
++	bootph-pre-ram;
++};
++
++&uart1_xfer {
++	bootph-pre-sram;
++	bootph-pre-ram;
++};
+diff --git a/arch/arm/dts/rk3326-u-boot.dtsi b/arch/arm/dts/rk3326-u-boot.dtsi
+index 2894133cfe6..196604a9987 100644
+--- a/arch/arm/dts/rk3326-u-boot.dtsi
++++ b/arch/arm/dts/rk3326-u-boot.dtsi
+@@ -46,6 +46,24 @@
+ 	bootph-all;
+ };
+ 
++&pcfg_pull_none {
++	bootph-all;
++};
++
++&pcfg_pull_none_8ma {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&pcfg_pull_up {
++	bootph-all;
++};
++
++&pcfg_pull_up_8ma {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
+ &pmucru {
+ 	bootph-all;
+ };
+@@ -62,15 +80,55 @@
+ 	u-boot,spl-fifo-mode;
+ };
+ 
++&sdmmc_bus4 {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&sdmmc_clk {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&sdmmc_cmd {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&sdmmc_det {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
+ &sfc {
+ 	bootph-some-ram;
+ };
+ 
++&sfc_bus2 {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&sfc_clk {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
++&sfc_cs0 {
++	bootph-pre-ram;
++	bootph-some-ram;
++};
++
+ &uart2 {
+ 	bootph-all;
+ 	clock-frequency = <24000000>;
+ };
+ 
++&uart2m1_xfer {
++	bootph-pre-sram;
++	bootph-pre-ram;
++};
++
+ &xin24m {
+ 	bootph-all;
+ };
+diff --git a/configs/odroid-go2_defconfig b/configs/odroid-go2_defconfig
+index 6bc0d12440c..b0947fe2c8b 100644
+--- a/configs/odroid-go2_defconfig
++++ b/configs/odroid-go2_defconfig
+@@ -51,7 +51,7 @@ CONFIG_CMD_USB_MASS_STORAGE=y
+ CONFIG_EFI_PARTITION_ENTRIES_NUMBERS=64
+ CONFIG_SPL_OF_CONTROL=y
+ CONFIG_OF_LIVE=y
+-CONFIG_OF_SPL_REMOVE_PROPS="pinctrl-0 pinctrl-names interrupt-parent assigned-clocks assigned-clock-rates assigned-clock-parents"
++CONFIG_OF_SPL_REMOVE_PROPS="interrupt-parent assigned-clocks assigned-clock-rates assigned-clock-parents"
+ CONFIG_ENV_IS_IN_MMC=y
+ CONFIG_SPL_DM_SEQ_ALIAS=y
+ CONFIG_REGMAP=y
+-- 
+2.34.1
+
