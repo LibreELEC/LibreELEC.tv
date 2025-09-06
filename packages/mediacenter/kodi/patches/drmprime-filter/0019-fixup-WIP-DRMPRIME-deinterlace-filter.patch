@@ -1,0 +1,29 @@
+From 477e459ace58d627f88a56ba22c5a78a9e4c856b Mon Sep 17 00:00:00 2001
+From: Matthias Reichl <hias@horus.com>
+Date: Wed, 3 Sep 2025 12:55:11 +0200
+Subject: [PATCH 19/21] fixup WIP: DRMPRIME deinterlace filter
+
+---
+ .../VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp     | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index 4645066cffe7..70119b7f135b 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -1028,10 +1028,10 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+     m_checkedDeinterlace = true;
+   }
+ 
+-  if (!m_processInfo.GetVideoInterlaced() && !!(m_pFrame->flags & AV_FRAME_FLAG_INTERLACED))
++  if (!m_processInfo.GetVideoInterlaced() && (m_pFrame->flags & AV_FRAME_FLAG_INTERLACED))
+     m_processInfo.SetVideoInterlaced(true);
+ 
+-  std::string filterChain = GetFilterChain(!!(m_pFrame->flags & AV_FRAME_FLAG_INTERLACED));
++  std::string filterChain = GetFilterChain(m_pFrame->flags & AV_FRAME_FLAG_INTERLACED);
+ 
+   // we need to scale if the buffer isn't in DRM_PRIME format
+   if (!IsSupportedSwFormat(pix_fmt) && !IsSupportedHwFormat(pix_fmt))
+-- 
+2.47.2
+
