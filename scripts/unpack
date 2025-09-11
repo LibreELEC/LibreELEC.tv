@@ -39,7 +39,7 @@ mkdir -p ${BUILD}/build
 # Perform a wildcard match on the package to ensure old versions are cleaned too
 PKG_DEEPHASH=
 for i in ${BUILD}/build/${PKG_NAME}-*; do
-  if [ -d ${i} -a -f "${i}/.libreelec-unpack" ]; then
+  if [ -d ${i} ] && [ -f "${i}/.libreelec-unpack" ]; then
     . "${i}/.libreelec-unpack"
     if [ "${STAMP_PKG_NAME}" = "${PKG_NAME}" ]; then
       [ -z "${PKG_DEEPHASH}" ] && PKG_DEEPHASH=$(calculate_stamp)
@@ -50,7 +50,7 @@ for i in ${BUILD}/build/${PKG_NAME}-*; do
   fi
 done
 
-if [ -d "${PKG_BUILD}" -a ! -f "${STAMP}" ]; then
+if [ -d "${PKG_BUILD}" ] && [ ! -f "${STAMP}" ]; then
   # stale pkg build dir
   ${SCRIPTS}/clean "${PKG_NAME}"
 fi
@@ -62,7 +62,7 @@ fi
 
 pkg_lock_status "ACTIVE" "${PKG_NAME}" "unpack"
 
-if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists_opt unpack; then
+if { [ -d "${SOURCES}/${PKG_NAME}" ] || [ -d "${PKG_DIR}/sources" ]; } || pkg_call_exists_opt unpack; then
   pkg_call_finish
   build_msg "CLR_UNPACK" "UNPACK" "${PKG_NAME}" "indent"
 
@@ -205,10 +205,11 @@ if [ -d "${SOURCES}/${PKG_NAME}" -o -d "${PKG_DIR}/sources" ] || pkg_call_exists
     for config in $(find "${PKG_BUILD}" -name config.guess | sed 's/config.guess//'); do
       build_msg "CLR_FIXCONFIG" "FIXCONFIG" "${config}"
 
-      [ -f "${config}/config.guess" -a -f ${TOOLCHAIN}/configtools/config.guess ] &&
-        cp -f ${TOOLCHAIN}/configtools/config.guess ${config}
-      [ -f "${config}/config.sub" -a -f ${TOOLCHAIN}/configtools/config.sub ] &&
-        cp -f ${TOOLCHAIN}/configtools/config.sub ${config}
+      for file in config.guess config.sub; do
+        if [ -f "${config}/${file}" && [ -f "${TOOLCHAIN}/configtools/${file}" ]; then
+          cp -f "${TOOLCHAIN}/configtools/${file}" "${config}/"
+        fi
+      done
     done
   fi
 fi
@@ -220,7 +221,7 @@ if [ "${PKG_SECTION}" != "virtual" ]; then
 
   PKG_DEEPHASH=$(calculate_stamp)
   for i in PKG_NAME PKG_DEEPHASH; do
-    echo "STAMP_${i}=\"${!i}\"" >>${STAMP}
+    echo "STAMP_${i}=\"${!i}\"" >>"${STAMP}"
   done
 fi
 
