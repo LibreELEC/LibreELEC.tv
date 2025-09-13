@@ -11,8 +11,8 @@ This considerably lowers overhead.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/iommu/sun50i-iommu.c | 44 +++++++++++++++++++++---------------
- 1 file changed, 26 insertions(+), 18 deletions(-)
+ drivers/iommu/sun50i-iommu.c | 42 +++++++++++++++++++++---------------
+ 1 file changed, 25 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/iommu/sun50i-iommu.c b/drivers/iommu/sun50i-iommu.c
 index d7c5e9b1a087..9944266c4f58 100644
@@ -96,12 +96,3 @@ index d7c5e9b1a087..9944266c4f58 100644
  }
  
  static phys_addr_t sun50i_iommu_iova_to_phys(struct iommu_domain *domain,
-@@ -828,7 +836,7 @@ static int sun50i_iommu_of_xlate(struct device *dev,
- 
- static const struct iommu_ops sun50i_iommu_ops = {
- 	.identity_domain = &sun50i_iommu_identity_domain,
--	.pgsize_bitmap	= SZ_4K,
-+	.pgsize_bitmap	= 0x1ff000,
- 	.device_group	= generic_single_device_group,
- 	.domain_alloc_paging = sun50i_iommu_domain_alloc_paging,
- 	.of_xlate	= sun50i_iommu_of_xlate,

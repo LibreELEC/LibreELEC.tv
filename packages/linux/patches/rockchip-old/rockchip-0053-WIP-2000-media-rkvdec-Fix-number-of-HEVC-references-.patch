@@ -11,13 +11,13 @@ L0 reference, and B frames have both.
 
 Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
 ---
- drivers/staging/media/rkvdec/rkvdec-hevc.c | 6 ++++--
+ drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c | 6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec-hevc.c b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 index 39b656d3e101..7c74981953ea 100644
---- a/drivers/staging/media/rkvdec/rkvdec-hevc.c
-+++ b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 @@ -2199,6 +2199,8 @@ static void assemble_hw_rps(struct rkvdec_ctx *ctx,
  
  	for (j = 0; j < run->num_slices; j++) {
