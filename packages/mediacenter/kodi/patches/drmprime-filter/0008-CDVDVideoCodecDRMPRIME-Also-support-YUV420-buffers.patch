@@ -1,7 +1,7 @@
-From df99e04b9f1d2a0ab7f4ef95b21d09fecfbf1ad7 Mon Sep 17 00:00:00 2001
+From 5e4abf17d9625df8d7f202976362f77e8afc7d95 Mon Sep 17 00:00:00 2001
 From: popcornmix <popcornmix@gmail.com>
 Date: Sat, 11 Sep 2021 14:03:05 +0100
-Subject: [PATCH 02/13] CDVDVideoCodecDRMPRIME: Also support YUV420 buffers
+Subject: [PATCH 08/21] CDVDVideoCodecDRMPRIME: Also support YUV420 buffers
 
 CDVDVideoCodecDRMPRIME: Add support for deinterlace of sw decoded buffers
 
@@ -11,7 +11,7 @@ Need to call SetDimensions earlier and store the drm descriptor in expected plac
  1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 3b2a9ca91cd2..7bc37dffdc90 100644
+index 4f69d235a9a9..90998b71eb31 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -626,7 +626,7 @@ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
@@ -50,5 +50,5 @@ index 3b2a9ca91cd2..7bc37dffdc90 100644
    if (ret < 0)
    {
 -- 
-2.39.5
+2.47.2
 
