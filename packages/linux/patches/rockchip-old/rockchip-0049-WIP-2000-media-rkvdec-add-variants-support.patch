@@ -15,14 +15,14 @@ the better soultion than duplicatiing code for every newly added IP.
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- drivers/staging/media/rkvdec/rkvdec.c | 105 ++++++++++++++++++--------
- drivers/staging/media/rkvdec/rkvdec.h |  10 +++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 105 ++++++++++++++++++--------
+ drivers/media/platform/rockchip/rkvdec/rkvdec.h |  10 +++
  2 files changed, 85 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 index 1f4693cbc330..3bded553872e 100644
---- a/drivers/staging/media/rkvdec/rkvdec.c
-+++ b/drivers/staging/media/rkvdec/rkvdec.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 @@ -14,6 +14,7 @@
  #include <linux/interrupt.h>
  #include <linux/module.h>
@@ -243,10 +243,10 @@ index 1f4693cbc330..3bded553872e 100644
  	rkvdec->regs = devm_platform_ioremap_resource(pdev, 0);
  	if (IS_ERR(rkvdec->regs))
  		return PTR_ERR(rkvdec->regs);
-diff --git a/drivers/staging/media/rkvdec/rkvdec.h b/drivers/staging/media/rkvdec/rkvdec.h
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 index 6afbd40450b2..728cdc5ba729 100644
---- a/drivers/staging/media/rkvdec/rkvdec.h
-+++ b/drivers/staging/media/rkvdec/rkvdec.h
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 @@ -29,6 +29,10 @@
  
  #define RKVDEC_RESET_DELAY	5
