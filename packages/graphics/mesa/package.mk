@@ -106,6 +106,9 @@ fi
 
 if [ "${VULKAN_SUPPORT}" = "yes" ]; then
   PKG_DEPENDS_TARGET+=" ${VULKAN} vulkan-tools ply:host"
+  if listcontains "${VULKAN_DRIVERS_MESA}" "nouveau"; then
+    PKG_DEPENDS_TARGET+=" rust:host bindgen-cli:host cbindgen:host"
+  fi
   PKG_MESON_OPTS_TARGET+=" -Dvulkan-drivers=${VULKAN_DRIVERS_MESA// /,}"
 else
   PKG_MESON_OPTS_TARGET+=" -Dvulkan-drivers="

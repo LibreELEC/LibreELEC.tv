@@ -138,6 +138,13 @@ get_graphicdrivers() {
     COMPOSITE_SUPPORT="yes"
   fi
 
+  if listcontains "${GRAPHIC_DRIVERS}" "nouveau"; then
+    GALLIUM_DRIVERS+=" nouveau"
+    XORG_DRIVERS+=" nouveau"
+    VULKAN_DRIVERS_MESA+=" nouveau"
+    COMPOSITE_SUPPORT="yes"
+  fi
+
   # VDPAU Support depends on X11
   if [ ! "${DISPLAYSERVER}" = "x11" ]; then
     VDPAU_SUPPORT="no"

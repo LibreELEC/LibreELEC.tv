@@ -154,6 +154,14 @@ pre_make_target() {
   ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_ISCSI_IBFT_FIND
   ${PKG_BUILD}/scripts/config ${OPTION} CONFIG_ISCSI_IBFT
 
+  # enable nouveau driver if required
+  if listcontains "${GRAPHIC_DRIVERS}" "nouveau"; then
+    ${PKG_BUILD}/scripts/config --module CONFIG_DRM_NOUVEAU
+    ${PKG_BUILD}/scripts/config --enable CONFIG_DRM_NOUVEAU_BACKLIGHT
+    ${PKG_BUILD}/scripts/config --set-val CONFIG_NOUVEAU_DEBUG 5
+    ${PKG_BUILD}/scripts/config --set-val CONFIG_NOUVEAU_DEBUG_DEFAULT 3
+  fi
+
   # disable wireguard support if not enabled
   if [ ! "${WIREGUARD_SUPPORT}" = yes ]; then
     ${PKG_BUILD}/scripts/config --disable CONFIG_WIREGUARD
