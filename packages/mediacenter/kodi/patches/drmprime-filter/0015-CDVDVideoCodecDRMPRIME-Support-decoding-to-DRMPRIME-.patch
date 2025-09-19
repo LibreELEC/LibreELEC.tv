@@ -1,7 +1,7 @@
-From c2e865be9182adc4cc78658a507fd1415fb05efb Mon Sep 17 00:00:00 2001
+From f8fb7a958c8573814789ce35817b7ba79aeffb30 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Tue, 20 Jun 2023 15:13:09 +0100
-Subject: [PATCH 09/13] CDVDVideoCodecDRMPRIME: Support decoding to DRMPRIME
+Subject: [PATCH 15/21] CDVDVideoCodecDRMPRIME: Support decoding to DRMPRIME
  with sw deinterlace
 
 We can map a YUV style DRM_PRIME buffer back to AV_PIX_FMT_YUV420P
@@ -11,7 +11,7 @@ to allow subsquent sw deinterlace
  1 file changed, 22 insertions(+)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index a5d340525d69..c228a75f8b90 100644
+index c40d8860a677..c3d66076988f 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -704,6 +704,9 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, AVPixelForma
@@ -51,5 +51,5 @@ index a5d340525d69..c228a75f8b90 100644
    int ret = av_buffersrc_add_frame(m_pFilterIn, m_pFrame);
    if (ret < 0)
 -- 
-2.39.5
+2.47.2
 

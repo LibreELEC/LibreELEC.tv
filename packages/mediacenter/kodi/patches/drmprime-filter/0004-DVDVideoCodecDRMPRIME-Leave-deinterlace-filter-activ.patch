@@ -1,8 +1,8 @@
-From cbe5fe53328156e510804a59e3c45fae1b80cefe Mon Sep 17 00:00:00 2001
+From 1dc875d674dc8b760a6aa0ea85b9076848b51b45 Mon Sep 17 00:00:00 2001
 From: popcornmix <popcornmix@gmail.com>
 Date: Fri, 17 Sep 2021 15:23:16 +0100
-Subject: [PATCH 4/7] DVDVideoCodecDRMPRIME: Leave deinterlace filter active on
- a progressive frame
+Subject: [PATCH 04/21] DVDVideoCodecDRMPRIME: Leave deinterlace filter active
+ on a progressive frame
 
 Interlaced content often has strange mixtures of interlace and progressive frames (e.g. IIPPPPIIPPPP)
 and currently we can be creating and destroying the deinterlace filter graph almost every frame.
@@ -14,10 +14,10 @@ be just copied by deinterlace filter
  1 file changed, 4 insertions(+)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 606e8902668f..0210b72d037c 100644
+index 4e063ecf9742..1b64189eefae 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -896,6 +896,10 @@ std::string CDVDVideoCodecDRMPRIME::GetFilterChain(bool interlaced)
+@@ -899,6 +899,10 @@ std::string CDVDVideoCodecDRMPRIME::GetFilterChain(bool interlaced)
    if (!m_processInfo.Supports(mInt))
      mInt = m_processInfo.GetFallbackDeintMethod();
  
@@ -29,5 +29,5 @@ index 606e8902668f..0210b72d037c 100644
      filterChain += m_deintFilterName;
  
 -- 
-2.39.5
+2.47.2
 
