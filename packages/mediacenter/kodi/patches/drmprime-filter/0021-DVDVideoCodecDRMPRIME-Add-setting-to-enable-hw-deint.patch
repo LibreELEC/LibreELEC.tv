@@ -1,7 +1,7 @@
-From 80010a99ca9a56a4fc0c8201031a7de657a73ca6 Mon Sep 17 00:00:00 2001
+From 833300a2062178e785c6ca07e2cc11f5d58420dc Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Wed, 21 Jun 2023 13:16:01 +0100
-Subject: [PATCH 11/13] DVDVideoCodecDRMPRIME: Add setting to enable hw
+Subject: [PATCH 21/21] DVDVideoCodecDRMPRIME: Add setting to enable hw
  deinterlace
 
 HW deinterlace has lower cpu, but may have higher quality,
@@ -14,10 +14,10 @@ so allow user to choose appropriate setting.
  4 files changed, 39 insertions(+), 1 deletion(-)
 
 diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
-index 1967605a761a..d6363ca97b4b 100644
+index 7e0eec2346e3..0c5e8c58b8f2 100644
 --- a/addons/resource.language.en_gb/resources/strings.po
 +++ b/addons/resource.language.en_gb/resources/strings.po
-@@ -7536,6 +7536,11 @@ msgctxt "#13438"
+@@ -7545,6 +7545,11 @@ msgctxt "#13438"
  msgid "Allow hardware acceleration with DRM PRIME"
  msgstr ""
  
@@ -29,7 +29,7 @@ index 1967605a761a..d6363ca97b4b 100644
  #: system/settings/settings.xml
  msgctxt "#13439"
  msgid "Allow hardware acceleration - MediaCodec"
-@@ -19941,6 +19946,12 @@ msgctxt "#36172"
+@@ -20022,6 +20027,12 @@ msgctxt "#36172"
  msgid "Enable PRIME decoding of video files"
  msgstr ""
  
@@ -43,7 +43,7 @@ index 1967605a761a..d6363ca97b4b 100644
  #: system/settings/settings.xml
  msgctxt "#36173"
 diff --git a/system/settings/linux.xml b/system/settings/linux.xml
-index c99bd895275e..756448b8371a 100644
+index a76e36279f40..33da571cf982 100644
 --- a/system/settings/linux.xml
 +++ b/system/settings/linux.xml
 @@ -192,6 +192,18 @@
@@ -66,7 +66,7 @@ index c99bd895275e..756448b8371a 100644
            <requirement>HAS_GLES</requirement>
            <visible>false</visible>
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 77b22d610a2f..86d94b962713 100644
+index 9c9825ee5695..c6cd64922c39 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -40,6 +40,7 @@ namespace
@@ -107,10 +107,10 @@ index 77b22d610a2f..86d94b962713 100644
      const AVFilter* filter;
      void* opaque{};
 diff --git a/xbmc/settings/Settings.h b/xbmc/settings/Settings.h
-index c3bff84a84e2..c7b36e04e513 100644
+index f70a19900c4b..a377e8988b72 100644
 --- a/xbmc/settings/Settings.h
 +++ b/xbmc/settings/Settings.h
-@@ -124,6 +124,7 @@ public:
+@@ -122,6 +122,7 @@ public:
    static constexpr auto SETTING_VIDEOPLAYER_USEMEDIACODEC = "videoplayer.usemediacodec";
    static constexpr auto SETTING_VIDEOPLAYER_USEMEDIACODECSURFACE =
        "videoplayer.usemediacodecsurface";
@@ -119,5 +119,5 @@ index c3bff84a84e2..c7b36e04e513 100644
    static constexpr auto SETTING_VIDEOPLAYER_USEVDPAU = "videoplayer.usevdpau";
    static constexpr auto SETTING_VIDEOPLAYER_USEVDPAUMIXER = "videoplayer.usevdpaumixer";
 -- 
-2.39.5
+2.47.2
 

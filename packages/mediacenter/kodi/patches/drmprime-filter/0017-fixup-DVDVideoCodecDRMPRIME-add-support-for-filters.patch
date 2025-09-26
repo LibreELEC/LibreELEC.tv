@@ -1,17 +1,17 @@
-From 726b9cfa604ce8f89bf1b18d67332839a3f08c5d Mon Sep 17 00:00:00 2001
+From 17e67a0be4f5a5dc9313c64ca96de8c85bfbe1cf Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Tue, 17 Dec 2024 19:44:14 +0000
-Subject: [PATCH 12/13] fixup! DVDVideoCodecDRMPRIME: add support for filters
+Subject: [PATCH 17/21] fixup! DVDVideoCodecDRMPRIME: add support for filters
 
 ---
  .../cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 86d94b962713..60f9bf28bf66 100644
+index 94649afd4175..83168dcb9515 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-@@ -775,7 +775,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, AVPixelForma
+@@ -761,7 +761,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, AVPixelForma
  
    memset(par, 0, sizeof(*par));
    par->format = AV_PIX_FMT_NONE;
@@ -21,5 +21,5 @@ index 86d94b962713..60f9bf28bf66 100644
    result = av_buffersrc_parameters_set(m_pFilterIn, par);
    if (result < 0)
 -- 
-2.39.5
+2.47.2
 
