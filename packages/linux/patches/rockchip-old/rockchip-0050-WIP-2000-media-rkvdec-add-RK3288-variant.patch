@@ -8,13 +8,13 @@ of the IP only HEVC decoding is supported.
 
 Signed-off-by: Alex Bee <knaerzche@gmail.com>
 ---
- drivers/staging/media/rkvdec/rkvdec.c | 8 ++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 8 ++++++++
  1 file changed, 8 insertions(+)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 index 3bded553872e..72a5e814dd19 100644
---- a/drivers/staging/media/rkvdec/rkvdec.c
-+++ b/drivers/staging/media/rkvdec/rkvdec.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 @@ -1244,11 +1244,19 @@ static const struct rkvdec_variant rk3399_rkvdec_variant = {
  			   RKVDEC_CAPABILITY_VP9
  };

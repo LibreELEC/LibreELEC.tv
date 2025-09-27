@@ -5,22 +5,13 @@ Subject: [PATCH 04/59] WIP/1000: drm/rockchip: dw-hdmi: encoder error handling
 
 Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
 ---
- drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 11 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
 index f737e7d46e66..d65409b84888 100644
 --- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
 +++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
-@@ -582,7 +582,7 @@ static int dw_hdmi_rockchip_bind(struct device *dev, struct device *master,
- 	if (IS_ERR(hdmi->phy)) {
- 		ret = PTR_ERR(hdmi->phy);
- 		if (ret != -EPROBE_DEFER)
--			dev_err(hdmi->dev, "failed to get phy\n");
-+			dev_err(hdmi->dev, "failed to get phy: %d\n", ret);
- 		return ret;
- 	}
- 
 @@ -604,7 +604,12 @@ static int dw_hdmi_rockchip_bind(struct device *dev, struct device *master,
  	}
  

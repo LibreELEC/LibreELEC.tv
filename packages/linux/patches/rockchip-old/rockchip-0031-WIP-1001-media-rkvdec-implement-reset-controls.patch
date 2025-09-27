@@ -5,9 +5,9 @@ Subject: [PATCH 31/59] WIP/1001: media: rkvdec: implement reset controls
 
 ---
  .../bindings/media/rockchip,vdec.yaml         | 19 +++++++
- drivers/staging/media/rkvdec/rkvdec-regs.h    |  5 ++
- drivers/staging/media/rkvdec/rkvdec.c         | 53 +++++++++++++++++++
- drivers/staging/media/rkvdec/rkvdec.h         | 11 +++-
+ drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h    |  5 ++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c         | 53 +++++++++++++++++++
+ drivers/media/platform/rockchip/rkvdec/rkvdec.h         | 11 +++-
  4 files changed, 87 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/media/rockchip,vdec.yaml b/Documentation/devicetree/bindings/media/rockchip,vdec.yaml
@@ -54,10 +54,10 @@ index 08b02ec16755..828d085b0ad3 100644
      };
  
  ...
-diff --git a/drivers/staging/media/rkvdec/rkvdec-regs.h b/drivers/staging/media/rkvdec/rkvdec-regs.h
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
 index 15b9bee92016..3acc914888f6 100644
---- a/drivers/staging/media/rkvdec/rkvdec-regs.h
-+++ b/drivers/staging/media/rkvdec/rkvdec-regs.h
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
 @@ -28,6 +28,11 @@
  #define RKVDEC_SOFTRST_EN_P				BIT(20)
  #define RKVDEC_FORCE_SOFTRESET_VALID			BIT(21)
@@ -70,16 +70,17 @@ index 15b9bee92016..3acc914888f6 100644
  
  #define RKVDEC_REG_SYSCTRL				0x008
  #define RKVDEC_IN_ENDIAN				BIT(0)
-diff --git a/drivers/staging/media/rkvdec/rkvdec.c b/drivers/staging/media/rkvdec/rkvdec.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 index 7747e8396626..c9c59d090bb3 100644
---- a/drivers/staging/media/rkvdec/rkvdec.c
-+++ b/drivers/staging/media/rkvdec/rkvdec.c
-@@ -10,12 +10,15 @@
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -10,13 +10,16 @@
   */
  
  #include <linux/clk.h>
 +#include <linux/delay.h>
  #include <linux/interrupt.h>
+ #include <linux/iommu.h>
  #include <linux/module.h>
  #include <linux/of.h>
  #include <linux/platform_device.h>
@@ -136,19 +137,19 @@ index 7747e8396626..c9c59d090bb3 100644
  
  	ret = pm_runtime_resume_and_get(rkvdec->dev);
  	if (ret < 0) {
-@@ -1069,6 +1104,11 @@ static irqreturn_t rkvdec_irq_handler(int irq, void *priv)
- 	if (cancel_delayed_work(&rkvdec->watchdog_work)) {
- 		struct rkvdec_ctx *ctx;
- 
-+		if (state == VB2_BUF_STATE_ERROR) {
-+			rkvdec->reset_mask |= (status & RKVDEC_ERR_MASK) ?
-+						RESET_HARD : RESET_SOFT;
-+		}
-+
- 		ctx = v4l2_m2m_get_curr_priv(rkvdec->m2m_dev);
- 		rkvdec_job_finish(ctx, state);
+@@ -1088,6 +1123,11 @@ static irqreturn_t rkvdec_irq_handler(int irq, void *priv)
+ 			rkvdec_iommu_restore(rkvdec);
  	}
-@@ -1086,6 +1126,7 @@ static void rkvdec_watchdog_func(struct work_struct *work)
+ 
++	if (state == VB2_BUF_STATE_ERROR) {
++		rkvdec->reset_mask |= (status & RKVDEC_ERR_MASK) ?
++					RESET_HARD : RESET_SOFT;
++	}
++
+ 	if (cancel_delayed_work(&rkvdec->watchdog_work))
+ 		rkvdec_job_finish(ctx, state);
+ 
+@@ -1104,6 +1162,7 @@ static void rkvdec_watchdog_func(struct work_struct *work)
  	ctx = v4l2_m2m_get_curr_priv(rkvdec->m2m_dev);
  	if (ctx) {
  		dev_err(rkvdec->dev, "Frame processing timed out!\n");
@@ -156,7 +157,7 @@ index 7747e8396626..c9c59d090bb3 100644
  		writel(RKVDEC_IRQ_DIS, rkvdec->regs + RKVDEC_REG_INTERRUPT);
  		writel(0, rkvdec->regs + RKVDEC_REG_SYSCTRL);
  		rkvdec_job_finish(ctx, VB2_BUF_STATE_ERROR);
-@@ -1154,6 +1195,18 @@ static int rkvdec_probe(struct platform_device *pdev)
+@@ -1172,6 +1213,18 @@ static int rkvdec_probe(struct platform_device *pdev)
  		return ret;
  	}
  
@@ -175,10 +176,10 @@ index 7747e8396626..c9c59d090bb3 100644
  	pm_runtime_set_autosuspend_delay(&pdev->dev, 100);
  	pm_runtime_use_autosuspend(&pdev->dev);
  	pm_runtime_enable(&pdev->dev);
-diff --git a/drivers/staging/media/rkvdec/rkvdec.h b/drivers/staging/media/rkvdec/rkvdec.h
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 index 9a9f4fced7a1..101dfb4ec389 100644
---- a/drivers/staging/media/rkvdec/rkvdec.h
-+++ b/drivers/staging/media/rkvdec/rkvdec.h
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
 @@ -11,10 +11,11 @@
  #ifndef RKVDEC_H_
  #define RKVDEC_H_
@@ -205,10 +206,10 @@ index 9a9f4fced7a1..101dfb4ec389 100644
  struct rkvdec_ctx;
  
  struct rkvdec_ctrl_desc {
-@@ -110,6 +117,8 @@ struct rkvdec_dev {
- 	void __iomem *regs;
+@@ -111,6 +118,8 @@ struct rkvdec_dev {
  	struct mutex vdev_lock; /* serializes ioctls */
  	struct delayed_work watchdog_work;
+ 	struct iommu_domain *empty_domain;
 +	struct reset_control *rstc;
 +	u8 reset_mask;
  };

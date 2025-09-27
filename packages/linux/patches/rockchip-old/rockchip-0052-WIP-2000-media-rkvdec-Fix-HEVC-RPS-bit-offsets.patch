@@ -16,13 +16,13 @@ Fixed by this change:
 
 Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
 ---
- drivers/staging/media/rkvdec/rkvdec-hevc.c | 26 +++++++++++++++++++---
+ drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c | 26 +++++++++++++++++++---
  1 file changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/media/rkvdec/rkvdec-hevc.c b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 index 5454d2d5e147..39b656d3e101 100644
---- a/drivers/staging/media/rkvdec/rkvdec-hevc.c
-+++ b/drivers/staging/media/rkvdec/rkvdec-hevc.c
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-hevc.c
 @@ -10,6 +10,7 @@
   */
  
