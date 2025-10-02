@@ -12,4 +12,7 @@ PKG_TOOLCHAIN="manual"
 
 post_unpack() {
   rm -f ${PKG_BUILD}/src.zip
+
+  # libbluray needs arm
+  mv ${PKG_BUILD}/jre/lib/aarch64 ${PKG_BUILD}/jre/lib/arm
 }
