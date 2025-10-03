@@ -23,7 +23,7 @@ PKG_ADDON_TYPE="xbmc.service"
 addon() {
   mkdir -p ${ADDON_BUILD}/${PKG_ADDON_ID}/{bin,lib.private}
     cp -Pa $(get_install_dir pcsc-lite)/usr/sbin/pcscd ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/pcscd.bin
-    patchelf --add-rpath '$ORIGIN/../lib.private' ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/pcscd.bin
+    patchelf --add-rpath '${ORIGIN}/../lib.private' ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/pcscd.bin
     cp -L $(get_install_dir polkit)/usr/lib/libpolkit-gobject-1.so.0 ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private
 
   cp -a $(get_install_dir ccid)/storage/.kodi/addons/${PKG_ADDON_ID}/drivers ${ADDON_BUILD}/${PKG_ADDON_ID}
