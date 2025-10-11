@@ -1,7 +1,7 @@
-From 55a092fd27cf445bdc401cb0f05ea6c04561dc3d Mon Sep 17 00:00:00 2001
+From c30fd1428902cabadc1851e81369cc0cf81deda9 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Wed, 18 Jan 2023 16:41:00 +0000
-Subject: [PATCH 03/13] CDVDVideoCodecDRMPRIME: Adjust av formats to match
+Subject: [PATCH 09/21] CDVDVideoCodecDRMPRIME: Adjust av formats to match
  recent ffmpeg changes
 
 ---
@@ -9,7 +9,7 @@ Subject: [PATCH 03/13] CDVDVideoCodecDRMPRIME: Adjust av formats to match
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 7bc37dffdc90..89ad921dbe3a 100644
+index 90998b71eb31..e8b5240be12f 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -358,6 +358,7 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
@@ -45,5 +45,5 @@ index 7bc37dffdc90..89ad921dbe3a 100644
    if (ret < 0)
    {
 -- 
-2.39.5
+2.47.2
 

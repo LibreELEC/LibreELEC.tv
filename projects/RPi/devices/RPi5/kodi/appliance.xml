@@ -11,4 +11,14 @@
     </category>
   </section>
 
+  <section id="player">
+    <category id="videoplayer">
+      <group id="3">
+        <setting id="videoplayer.primeallowhwdeinterlace">
+          <default>false</default>
+        </setting>
+      </group>
+    </category>
+  </section>
+
 </settings>
