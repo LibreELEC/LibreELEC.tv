@@ -41,6 +41,9 @@ case "${LINUX}" in
     PKG_SHA256="010a12296e6fba7597ff36681be2485fd3b1780ac8fd9e6a9f3cfe193f0491db"
     PKG_URL="https://www.kernel.org/pub/linux/kernel/v${PKG_VERSION/.*/}.x/${PKG_NAME}-${PKG_VERSION}.tar.xz"
     PKG_PATCH_DIRS="default"
+    PKG_VERSION="6.18-rc2"
+    PKG_SHA256=""
+    PKG_URL="https://git.kernel.org/torvalds/t/linux-${PKG_VERSION}.tar.gz"
     case ${DEVICE} in
       RK3288|RK3328|RK3399)
         PKG_PATCH_DIRS+=" rockchip-old"
