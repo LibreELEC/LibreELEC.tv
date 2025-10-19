@@ -1,0 +1,32 @@
+From e3598f579ef60c80bab2ff55796e3f268807146e Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Wed, 3 Sep 2025 16:59:04 -0700
+Subject: [PATCH 4/4] Fix compiler error on Windows
+
+Error was:
+
+  libretro/libretro.c:469:17: error: implicit declaration of function 'rand_s'; did you mean 'rand'? [-Wimplicit-function-declaration]
+    469 |                 rand_s(&reg_id);
+        |                 ^~~~~~
+        |                 rand
+---
+ libretro/libretro.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/libretro/libretro.c b/libretro/libretro.c
+index c4f570f3b..b8b016484 100644
+--- a/libretro/libretro.c
++++ b/libretro/libretro.c
+@@ -19,6 +19,9 @@
+  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+ 
+ #include <stdio.h>
++#ifdef __MINGW32__
++#define _CRT_RAND_S
++#endif
+ #include <stdlib.h>
+ #include <string.h>
+ #include <compat/strl.h>
+-- 
+2.43.0
+
