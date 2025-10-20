@@ -940,7 +940,7 @@ index 000000000000..18bbba8f017f
 +		goto err_free;
 +	}
 +
-+	v4l2_fh_add(&ctx->fh);
++	v4l2_fh_add(&ctx->fh, file);
 +
 +	mutex_unlock(&dev->dev_mutex);
 +
@@ -961,7 +961,7 @@ index 000000000000..18bbba8f017f
 +
 +	mutex_lock(&dev->dev_mutex);
 +
-+	v4l2_fh_del(&ctx->fh);
++	v4l2_fh_del(&ctx->fh, file);
 +	v4l2_fh_exit(&ctx->fh);
 +	v4l2_m2m_ctx_release(ctx->fh.m2m_ctx);
 +
