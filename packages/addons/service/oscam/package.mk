@@ -71,7 +71,12 @@ makeinstall_target() {
 }
 
 addon() {
-  mkdir -p ${ADDON_BUILD}/${PKG_ADDON_ID}/bin
+  mkdir -p ${ADDON_BUILD}/${PKG_ADDON_ID}/{bin,lib.private}
     cp -P ${PKG_BUILD}/.${TARGET_NAME}/oscam ${ADDON_BUILD}/${PKG_ADDON_ID}/bin
     cp -P ${PKG_BUILD}/.${TARGET_NAME}/utils/list_smargo ${ADDON_BUILD}/${PKG_ADDON_ID}/bin
+    cp -L $(get_install_dir pcsc-lite)/usr/lib/libpcsclite.so.1 ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private
+    cp -L $(get_install_dir pcsc-lite)/usr/lib/libpcsclite_real.so.1 ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private
+
+    patchelf --add-rpath '${ORIGIN}/../lib.private' ${ADDON_BUILD}/${PKG_ADDON_ID}/bin/oscam
+    patchelf --add-rpath '${ORIGIN}/../lib.private' ${ADDON_BUILD}/${PKG_ADDON_ID}/lib.private/libpcsclite.so.1
 }

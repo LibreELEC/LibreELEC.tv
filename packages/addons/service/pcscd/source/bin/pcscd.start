@@ -16,4 +16,4 @@ if [ ! -f "$ADDON_HOME/config/reader.conf" ]; then
   cp $ADDON_DIR/config/reader.conf $ADDON_HOME/config/reader.conf
 fi
 
-exec pcscd.bin --foreground -c $ADDON_HOME/config/reader.conf
+exec pcscd.bin --foreground -c $ADDON_HOME/config/reader.conf --disable-polkit

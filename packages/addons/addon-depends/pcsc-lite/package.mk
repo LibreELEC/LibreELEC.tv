@@ -10,7 +10,7 @@ PKG_URL="https://pcsclite.apdu.fr/files/pcsc-lite-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain libusb polkit"
 PKG_LONGDESC="Middleware to access a smart card using SCard API (PC/SC)."
 
-PKG_MESON_OPTS_TARGET="-Ddefault_library=static \
+PKG_MESON_OPTS_TARGET="-Ddefault_library=both \
                        -Dlibudev=false \
                        -Dlibusb=true \
                        -Dpolkit=true \
