@@ -1,7 +1,7 @@
-From 4e95d57c7f67dd2a476db41b7c63f99d46e44399 Mon Sep 17 00:00:00 2001
+From 6ef2155d155ffe698c7a8239c3f0fa82ca22b2b0 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Fri, 2 Jun 2023 11:34:22 +0100
-Subject: [PATCH 07/13] DVDVideoCodecDRMPRIME: Move FilterTest from open to
+Subject: [PATCH 13/21] DVDVideoCodecDRMPRIME: Move FilterTest from open to
  first frame returned
 
 The pixel format is not accurate until the first frame is returned
@@ -12,7 +12,7 @@ and it may (later) influence the choice of deinterlacers available.
  2 files changed, 16 insertions(+), 9 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index cc75f6eeddde..ac79a80779ab 100644
+index a2824204b26a..defa01daa16e 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -390,15 +390,7 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
@@ -66,5 +66,5 @@ index bb88fde1f924..df17f89b964c 100644
    AVFrame* m_pFrame = nullptr;
    AVFrame* m_pFilterFrame = nullptr;
 -- 
-2.39.5
+2.47.2
 

@@ -1,7 +1,7 @@
-From 46831b421d7ac477b32a922c8ffe3ca5acc3ba4b Mon Sep 17 00:00:00 2001
+From 155733872246a641fa4fcbcf3423adb039dcbfb5 Mon Sep 17 00:00:00 2001
 From: Dom Cobley <popcornmix@gmail.com>
 Date: Mon, 6 Feb 2023 15:19:51 +0000
-Subject: [PATCH 04/13] DVDVideoCodecDRMPRIME: Add support for arbitrary output
+Subject: [PATCH 10/21] DVDVideoCodecDRMPRIME: Add support for arbitrary output
  pixel formats
 
 This enables any ffmpeg pixel formats to be supported by DRMPRIME decoder
@@ -20,7 +20,7 @@ And it happens automatically without requiring user video settings
  2 files changed, 77 insertions(+), 50 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 89ad921dbe3a..94c26aa29e4b 100644
+index e8b5240be12f..cdf094d096d5 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -215,7 +215,7 @@ enum AVPixelFormat CDVDVideoCodecDRMPRIME::GetFormat(struct AVCodecContext* avct
@@ -328,5 +328,5 @@ index fab3431d40d9..bb88fde1f924 100644
    void FilterTest();
    std::string GetFilterChain(bool interlaced);
 -- 
-2.39.5
+2.47.2
 
