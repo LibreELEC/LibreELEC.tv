@@ -1,7 +1,7 @@
-From d2f0e3b0b6b34d49eab56a8edc291014c142aeb3 Mon Sep 17 00:00:00 2001
+From 0b4c2639ec65651a20bfcf5aabef7c23dadd7ee1 Mon Sep 17 00:00:00 2001
 From: Jonas Karlman <jonas@kwiboo.se>
 Date: Sun, 20 Oct 2019 17:10:07 +0000
-Subject: [PATCH 1/7] WIP: DVDVideoCodecDRMPRIME: add support for filters
+Subject: [PATCH 01/21] WIP: DVDVideoCodecDRMPRIME: add support for filters
 
 ---
  .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 62 +++++++++++++++++--
@@ -9,7 +9,7 @@ Subject: [PATCH 1/7] WIP: DVDVideoCodecDRMPRIME: add support for filters
  2 files changed, 66 insertions(+), 6 deletions(-)
 
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
-index 4da0722d5c11..8b7b6e2655ba 100644
+index 07c505213691..eee7af7718bd 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 +++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
 @@ -28,6 +28,8 @@
@@ -21,7 +21,7 @@ index 4da0722d5c11..8b7b6e2655ba 100644
  #include <libavutil/error.h>
  #include <libavutil/imgutils.h>
  #include <libavutil/opt.h>
-@@ -599,12 +601,30 @@ void CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+@@ -603,12 +605,30 @@ void CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
    pVideoPicture->dts = DVD_NOPTS_VALUE;
  }
  
@@ -56,7 +56,7 @@ index 4da0722d5c11..8b7b6e2655ba 100644
    if (ret == AVERROR(EAGAIN))
      return VC_BUFFER;
    else if (ret == AVERROR_EOF)
-@@ -621,11 +641,41 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+@@ -625,11 +645,41 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
    {
      char err[AV_ERROR_MAX_STRING_SIZE] = {};
      av_strerror(ret, err, AV_ERROR_MAX_STRING_SIZE);
@@ -135,5 +135,5 @@ index db49d165e7ba..b5cacf1a3c99 100644
    std::shared_ptr<IVideoBufferPool> m_videoBufferPool;
  };
 -- 
-2.39.5
+2.47.2
 
