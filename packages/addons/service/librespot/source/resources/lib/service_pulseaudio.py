@@ -5,12 +5,12 @@ import utils
 
 class Service(service.Service):
     @utils.logged_method
-    def __init__(self):
+    def __init__(self, zeroconf_port):
         self.pulseaudio = pulseaudio.PulseAudio()
         backend = "pulseaudio"
         device = self.pulseaudio.get_device()
         file = self.pulseaudio.get_file()
-        super().__init__(backend, device, file)
+        super().__init__(backend, device, zeroconf_port, file)
 
     @utils.logged_method
     def run(self):

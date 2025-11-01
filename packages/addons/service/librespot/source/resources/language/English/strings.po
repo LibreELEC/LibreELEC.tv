@@ -26,3 +26,7 @@ msgstr ""
 msgctxt "#30105"
 msgid "ALSA device"
 msgstr ""
+
+msgctxt "#30106"
+msgid "Zeroconf Port"
+msgstr ""
