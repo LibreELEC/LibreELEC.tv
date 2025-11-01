@@ -14,8 +14,12 @@ PKG_BUILD_FLAGS="-sysroot"
 # Dependencies
 get_graphicdrivers
 
+if [ "${TARGET_ARCH}" = "aarch64" ] || [ "${TARGET_ARCH}" = "x86_64" ]; then
+  PKG_DEPENDS_TARGET+=" x265"
+fi
+
 if [ "${TARGET_ARCH}" = "x86_64" ]; then
-  PKG_DEPENDS_TARGET+=" nasm:host x265"
+  PKG_DEPENDS_TARGET+=" nasm:host"
 
   if listcontains "${GRAPHIC_DRIVERS}" "(crocus|i915|iris)"; then
     PKG_DEPENDS_TARGET+=" intel-vaapi-driver"
@@ -61,12 +65,12 @@ pre_configure_target() {
     --enable-hwaccel=vp8_vaapi \
     --enable-hwaccel=vp9_vaapi \
     --enable-hwaccel=wmv3_vaapi"
+  fi
 
-    PKG_FFMPEG_X26x_GENERIC="\
-    --enable-libx264 \
-    --enable-encoder=libx264 \
-    --enable-libx265 \
-    --enable-encoder=libx265"
+  if [ "${TARGET_ARCH}" = "aarch64" ] || [ "${TARGET_ARCH}" = "x86_64" ]; then
+    PKG_FFMPEG_X265="\
+      --enable-libx265 \
+      --enable-encoder=libx265"
   fi
 
   # Encoders
@@ -75,7 +79,9 @@ pre_configure_target() {
     --enable-libvpx \
     --enable-encoder=libvpx_vp8 \
     --enable-encoder=libvpx_vp9 \
-    ${PKG_FFMPEG_X26x_GENERIC} \
+    --enable-libx264 \
+    --enable-encoder=libx264 \
+    ${PKG_FFMPEG_X265} \
     --enable-libaom \
     --enable-encoder=libaom_av1 \
     \
