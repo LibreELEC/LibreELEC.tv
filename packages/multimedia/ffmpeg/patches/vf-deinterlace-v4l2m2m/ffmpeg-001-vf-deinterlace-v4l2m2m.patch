@@ -1,4 +1,4 @@
-From accf519d251f366afbbbffb67ebac3553a3c7cbb Mon Sep 17 00:00:00 2001
+From f64d9707c9c9d8393fda20bb0b7ebef1dc97d74e Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@siol.net>
 Date: Tue, 3 Dec 2019 21:01:18 +0100
 Subject: [PATCH] Add V4L2 m2m deinterlace filter
@@ -12,10 +12,10 @@ Signed-off-by: Alex Bee <knaerzche@gmail.com>
  create mode 100644 libavfilter/vf_deinterlace_v4l2m2m.c
 
 diff --git a/libavfilter/Makefile b/libavfilter/Makefile
-index 91487afb21..84adb9ba46 100644
+index 69d74183b2..1378c12630 100644
 --- a/libavfilter/Makefile
 +++ b/libavfilter/Makefile
-@@ -272,6 +272,7 @@ OBJS-$(CONFIG_DEFLATE_FILTER)                += vf_neighbor.o
+@@ -278,6 +278,7 @@ OBJS-$(CONFIG_DEFLATE_FILTER)                += vf_neighbor.o
  OBJS-$(CONFIG_DEFLICKER_FILTER)              += vf_deflicker.o
  OBJS-$(CONFIG_DEINTERLACE_QSV_FILTER)        += vf_vpp_qsv.o
  OBJS-$(CONFIG_DEINTERLACE_VAAPI_FILTER)      += vf_deinterlace_vaapi.o vaapi_vpp.o
@@ -24,20 +24,20 @@ index 91487afb21..84adb9ba46 100644
  OBJS-$(CONFIG_DELOGO_FILTER)                 += vf_delogo.o
  OBJS-$(CONFIG_DENOISE_VAAPI_FILTER)          += vf_misc_vaapi.o vaapi_vpp.o
 diff --git a/libavfilter/allfilters.c b/libavfilter/allfilters.c
-index 9819f0f95b..c6d93340e6 100644
+index 0a3e782fe9..ca71234d57 100644
 --- a/libavfilter/allfilters.c
 +++ b/libavfilter/allfilters.c
-@@ -248,6 +248,7 @@ extern const AVFilter ff_vf_dedot;
- extern const AVFilter ff_vf_deflate;
- extern const AVFilter ff_vf_deflicker;
- extern const AVFilter ff_vf_deinterlace_qsv;
-+extern const AVFilter ff_vf_deinterlace_v4l2m2m;
- extern const AVFilter ff_vf_deinterlace_vaapi;
- extern const AVFilter ff_vf_dejudder;
- extern const AVFilter ff_vf_delogo;
+@@ -252,6 +252,7 @@ extern const FFFilter ff_vf_dedot;
+ extern const FFFilter ff_vf_deflate;
+ extern const FFFilter ff_vf_deflicker;
+ extern const FFFilter ff_vf_deinterlace_qsv;
++extern const FFFilter ff_vf_deinterlace_v4l2m2m;
+ extern const FFFilter ff_vf_deinterlace_vaapi;
+ extern const FFFilter ff_vf_dejudder;
+ extern const FFFilter ff_vf_delogo;
 diff --git a/libavfilter/vf_deinterlace_v4l2m2m.c b/libavfilter/vf_deinterlace_v4l2m2m.c
 new file mode 100644
-index 0000000000..bf163279ce
+index 0000000000..a498397525
 --- /dev/null
 +++ b/libavfilter/vf_deinterlace_v4l2m2m.c
 @@ -0,0 +1,1011 @@
@@ -1041,14 +1041,17 @@ index 0000000000..bf163279ce
 +    },
 +};
 +
-+AVFilter ff_vf_deinterlace_v4l2m2m = {
-+    .name           = "deinterlace_v4l2m2m",
-+    .description    = NULL_IF_CONFIG_SMALL("V4L2 M2M deinterlacer"),
++const FFFilter ff_vf_deinterlace_v4l2m2m = {
++    .p.name           = "deinterlace_v4l2m2m",
++    .p.description    = NULL_IF_CONFIG_SMALL("V4L2 M2M deinterlacer"),
++    .p.priv_class     = &deinterlace_v4l2m2m_class,
 +    .priv_size      = sizeof(DeintV4L2M2MContext),
 +    .init           = &deint_v4l2m2m_init,
 +    .uninit         = &deint_v4l2m2m_uninit,
 +    FILTER_QUERY_FUNC(&deint_v4l2m2m_query_formats),
 +    FILTER_INPUTS(deint_v4l2m2m_inputs),
 +    FILTER_OUTPUTS(deint_v4l2m2m_outputs),
-+    .priv_class     = &deinterlace_v4l2m2m_class,
 +};
+-- 
+2.34.1
+
