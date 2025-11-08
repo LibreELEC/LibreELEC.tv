@@ -24,3 +24,11 @@ PKG_CONFIGURE_OPTS_TARGET="--exec-prefix=/usr/ \
                            --with-uuid \
                            --disable-mount-helper"
 
+post_makeinstall_target() {
+  mkdir -p ${INSTALL}/.noinstall
+  for i in ${INSTALL}/usr/{bin,sbin}/*; do
+    if ! listcontains "ntfs-3g.probe ntfsfix" $(basename "${i}"); then
+      mv ${i} ${INSTALL}/.noinstall
+    fi
+  done
+}
