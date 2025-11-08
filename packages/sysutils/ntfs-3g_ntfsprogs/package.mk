@@ -22,7 +22,8 @@ PKG_CONFIGURE_OPTS_TARGET="--exec-prefix=/usr/ \
                            --disable-crypto \
                            --with-fuse=external \
                            --with-uuid \
-                           --disable-mount-helper"
+                           --disable-mount-helper \
+                           --disable-ldconfig"
 
 post_makeinstall_target() {
   mkdir -p ${INSTALL}/.noinstall
