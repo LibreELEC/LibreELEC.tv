@@ -5,9 +5,10 @@ import utils
 
 class Service:
     @utils.logged_method
-    def __init__(self, backend, device, file=""):
+    def __init__(self, backend, device, zeroconf_port, file=""):
         self.backend = backend
         self.device = device
+        self.zeroconf_port = zeroconf_port
         self.file = file
 
     @utils.logged_method
@@ -19,7 +20,7 @@ class Service:
             module_player = "player"
 
         with event_handler.EventHandler(self) as self.event_handler:
-            with librespot.Librespot(self, self.backend, self.device) as self.librespot:
+            with librespot.Librespot(self, self.backend, self.device, self.zeroconf_port) as self.librespot:
                 self.player = __import__(module_player).Player(self, self.file, self.librespot)
                 try:
                     yield
