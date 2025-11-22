@@ -25,6 +25,19 @@ post_makeinstall_target() {
 
   mkdir -p ${INSTALL}/usr/lib/libreelec
     cp ${PKG_DIR}/scripts/iptables_helper ${INSTALL}/usr/lib/libreelec
+
+  safe_remove              ${INSTALL}/usr/sbin/iptables
+  safe_remove              ${INSTALL}/usr/sbin/iptables-restore
+  safe_remove              ${INSTALL}/usr/sbin/iptables-save
+  safe_remove              ${INSTALL}/usr/sbin/ip6tables
+  safe_remove              ${INSTALL}/usr/sbin/ip6tables-restore
+  safe_remove              ${INSTALL}/usr/sbin/ip6tables-save
+  ln -sf xtables-nft-multi ${INSTALL}/usr/sbin/iptables
+  ln -sf xtables-nft-multi ${INSTALL}/usr/sbin/iptables-restore
+  ln -sf xtables-nft-multi ${INSTALL}/usr/sbin/iptables-save
+  ln -sf xtables-nft-multi ${INSTALL}/usr/sbin/ip6tables
+  ln -sf xtables-nft-multi ${INSTALL}/usr/sbin/ip6tables-restore
+  ln -sf xtables-nft-multi ${INSTALL}/usr/sbin/ip6tables-save
 }
 
 post_install() {
