@@ -228,7 +228,7 @@ configure_package() {
     KODI_ARCH="-DWITH_ARCH=${TARGET_ARCH}"
   fi
 
-  if [ "${PROJECT}" = "Allwinner" -o "${PROJECT}" = "Rockchip" -o "${PROJECT}" = "RPi" ]; then
+  if [ "${PROJECT}" = "Allwinner" -o "${PROJECT}" = "Rockchip" ]; then
     PKG_PATCH_DIRS+=" drmprime-filter"
   fi
 
