@@ -12,6 +12,9 @@ PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex libxml2"
 PKG_LONGDESC="FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video."
 PKG_PATCH_DIRS="postproc libreelec"
 
+PKG_FFMPEG_ENABLE_REQUEST="--enable-libudev --enable-v4l2-request"
+PKG_FFMPEG_DISABLE_REQUEST="--disable-libudev --disable-v4l2-request"
+
 case "${PROJECT}" in
   Amlogic)
     PKG_VERSION="3abbcb6a1f8a70921543ceb6b4d573df97223cd9"
@@ -36,6 +39,10 @@ case "${PROJECT}" in
   RPi)
     PKG_FFMPEG_RPI="--disable-mmal --enable-sand"
     PKG_PATCH_DIRS+=" rpi"
+    ;;
+  Generic)
+    PKG_FFMPEG_ENABLE_REQUEST=""
+    PKG_FFMPEG_DISABLE_REQUEST=""
     ;;
   *)
     PKG_PATCH_DIRS+=" v4l2-request v4l2-drmprime"
@@ -75,12 +82,12 @@ if [ "${V4L2_SUPPORT}" = "yes" ]; then
   if [ "${PKG_V4L2_REQUEST}" = "yes" ]; then
     PKG_DEPENDS_TARGET+=" systemd"
     PKG_NEED_UNPACK+=" $(get_pkg_directory systemd)"
-    PKG_FFMPEG_V4L2+=" --enable-libudev --enable-v4l2-request"
+    PKG_FFMPEG_V4L2+=" ${PKG_FFMPEG_ENABLE_REQUEST}"
   else
-    PKG_FFMPEG_V4L2+=" --disable-libudev --disable-v4l2-request"
+    PKG_FFMPEG_V4L2+=" ${PKG_FFMPEG_DISABLE_REQUEST}"
   fi
 else
-  PKG_FFMPEG_V4L2="--disable-v4l2_m2m --disable-libudev --disable-v4l2-request"
+  PKG_FFMPEG_V4L2="--disable-v4l2_m2m ${PKG_FFMPEG_DISABLE_REQUEST}"
 fi
 
 if [ "${VAAPI_SUPPORT}" = "yes" ]; then
