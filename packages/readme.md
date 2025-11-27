@@ -133,6 +133,7 @@ Set the variable `PKG_BUILD_FLAGS` in the `package.mk` to enable/disable the sin
 | sysroot  | enabled  | target | installs the package to the sysroot folder (or not) |
 | local-cc | disabled | host | use compiler from buildhost instead of host-gcc/g++ in toolchain |
 | cfg-libs | enabled  | all | `-cfg-libs` will not append --disable-static --enable-shared to CONFIGURE_OPTS |
+| ndebug   | enabled  | target, init | add -DNDEBUG to release builds (can only disable) |
 
 ###### Example
 ```
