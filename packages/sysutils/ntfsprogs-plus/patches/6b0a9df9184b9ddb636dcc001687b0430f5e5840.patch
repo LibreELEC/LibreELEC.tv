@@ -1,0 +1,59 @@
+From 6b0a9df9184b9ddb636dcc001687b0430f5e5840 Mon Sep 17 00:00:00 2001
+From: JaeHoon Sim <jay.sim@lge.com>
+Date: Mon, 8 Dec 2025 16:51:02 +0900
+Subject: [PATCH] libntfs: Fix install-exec-hook for subdirectory builds
+
+Fixes build error: "target '...//lib': No such file or directory"
+
+The previous implementation had issues when building in subdirectories
+or cross compilation environments.
+
+Used `-ef` operator which fails with non-existent directories and
+doesn't handle paths with double slashes. (e.g., "//lib")
+
+Required absolute path normalization that could fail.
+
+Changes:
+- Replace absolute path comparison with simple string comparison
+  using `test "x$(rootlibdir)" != "x$(libdir)"`
+- Add explicit check for libntfs.so existence before moving
+- Use $(INSTALL_PROGRAM) for ldscript installation (AC_PROG_INSTALL)
+- Use subshell with explicit `rm -f` before creating symlink
+
+Signed-off-by: JaeHoon Sim <jay.sim@lge.com>
+---
+ libntfs/Makefile.am | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/libntfs/Makefile.am b/libntfs/Makefile.am
+index 74bf2d36..c22c81d8 100644
+--- a/libntfs/Makefile.am
++++ b/libntfs/Makefile.am
+@@ -61,16 +61,21 @@ endif
+ # And create ldscript or symbolic link from /usr
+ install-exec-hook: install-rootlibLTLIBRARIES
+ if INSTALL_LIBRARY
+-	if [ ! "$(DESTDIR)/$(rootlibdir)" -ef "$(DESTDIR)/$(libdir)" ]; then \
+-		$(MV) -f "$(DESTDIR)/$(libdir)"/libntfs.so* "$(DESTDIR)/$(rootlibdir)";  \
++	@if test "x$(rootlibdir)" != "x$(libdir)"; then \
++		$(MKDIR_P) "$(DESTDIR)$(rootlibdir)" || exit 1; \
++		if test -f "$(DESTDIR)$(libdir)/libntfs.so"; then \
++			mv -f "$(DESTDIR)$(libdir)/libntfs.so"* "$(DESTDIR)$(rootlibdir)/" || exit 1; \
++		else \
++			echo "WARNING: libntfs.so not found, skipping relocation"; \
++		fi; \
+ 	fi
+ if GENERATE_LDSCRIPT
+-	if [ ! "$(DESTDIR)/$(rootlibdir)" -ef "$(DESTDIR)/$(libdir)" ]; then \
+-		$(install_sh_PROGRAM) "libntfs.script.so" "$(DESTDIR)/$(libdir)/libntfs.so"; \
++	@if test "x$(rootlibdir)" != "x$(libdir)"; then \
++		$(INSTALL_PROGRAM) "$(builddir)/libntfs.script.so" "$(DESTDIR)$(libdir)/libntfs.so" || exit 1; \
+ 	fi
+ else
+-	if [ ! "$(DESTDIR)/$(rootlibdir)" -ef "$(DESTDIR)/$(libdir)" ]; then \
+-		$(LN_S) "$(rootlibdir)/libntfs.so" "$(DESTDIR)/$(libdir)/libntfs.so"; \
++	@if test "x$(rootlibdir)" != "x$(libdir)"; then \
++		(cd "$(DESTDIR)$(libdir)" && rm -f libntfs.so && $(LN_S) "$(rootlibdir)/libntfs.so" libntfs.so) || exit 1; \
+ 	fi
+ endif
+ endif
