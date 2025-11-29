@@ -2,8 +2,8 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="lvm2"
-PKG_VERSION="2.03.16"
-PKG_SHA256="e661ece15b5d88d8abe39a4c1e1db2f43e1896f019948bb98b0e15d777680786"
+PKG_VERSION="2.03.37"
+PKG_SHA256="b02656cc39a2f86a702c432dab0d0317e12111fca9d623a18f1b9c3f87b88200"
 PKG_ARCH="any"
 PKG_LICENSE="GPLv2 LGPL2.1"
 PKG_SITE="https://sourceware.org/lvm2"
