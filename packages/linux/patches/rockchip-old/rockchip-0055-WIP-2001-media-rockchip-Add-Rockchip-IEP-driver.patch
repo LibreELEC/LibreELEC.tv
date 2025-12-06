@@ -946,7 +946,7 @@ index 000000000000..2e547133c3be
 +		goto err_free;
 +	}
 +
-+	v4l2_fh_add(&ctx->fh);
++	v4l2_fh_add(&ctx->fh, file);
 +
 +	mutex_unlock(&iep->mutex);
 +
@@ -967,7 +967,7 @@ index 000000000000..2e547133c3be
 +
 +	mutex_lock(&iep->mutex);
 +
-+	v4l2_fh_del(&ctx->fh);
++	v4l2_fh_del(&ctx->fh, file);
 +	v4l2_fh_exit(&ctx->fh);
 +	v4l2_m2m_ctx_release(ctx->fh.m2m_ctx);
 +	kfree(ctx);

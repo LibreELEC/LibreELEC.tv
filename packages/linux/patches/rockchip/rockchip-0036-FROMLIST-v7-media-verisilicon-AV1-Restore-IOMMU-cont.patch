@@ -58,7 +58,7 @@ index fa972effd4a2..c31fd75902d4 100644
  
  err_fh_free:
 @@ -697,6 +704,10 @@ static int hantro_release(struct file *filp)
- 	v4l2_fh_del(&ctx->fh);
+ 	v4l2_fh_del(&ctx->fh, file);
  	v4l2_fh_exit(&ctx->fh);
  	v4l2_ctrl_handler_free(&ctx->ctrl_handler);
 +

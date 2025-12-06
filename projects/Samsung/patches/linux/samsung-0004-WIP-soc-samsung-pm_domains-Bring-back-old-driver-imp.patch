@@ -16,7 +16,7 @@ diff --git a/drivers/pmdomain/samsung/exynos-pm-domains.c b/drivers/pmdomain/sam
 index d07f3c9d6903..1022d40eb700 100644
 --- a/drivers/pmdomain/samsung/exynos-pm-domains.c
 +++ b/drivers/pmdomain/samsung/exynos-pm-domains.c
-@@ -16,7 +16,7 @@
+@@ -17,7 +17,7 @@
  #include <linux/delay.h>
  #include <linux/of.h>
  #include <linux/of_address.h>
@@ -25,7 +25,7 @@ index d07f3c9d6903..1022d40eb700 100644
  
  struct exynos_pm_domain_config {
  	/* Value for LOCAL_PWR_CFG and STATUS fields for each domain */
-@@ -72,15 +72,15 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
+@@ -73,15 +73,15 @@ static int exynos_pd_power_off(struct generic_pm_domain *domain)
  	return exynos_pd_power(domain, false);
  }
  
@@ -44,17 +44,22 @@ index d07f3c9d6903..1022d40eb700 100644
  	{
  		.compatible = "samsung,exynos4210-pd",
  		.data = &exynos4210_cfg,
-@@ -91,7 +91,7 @@ static const struct of_device_id exynos_pm_domain_of_match[] = {
+@@ -92,7 +92,7 @@ static const struct of_device_id exynos_pm_domain_of_match[] = {
  	{ },
  };
  
--static const char *exynos_get_domain_name(struct device_node *node)
-+static __init const char *exynos_get_domain_name(struct device_node *node)
+-static const char *exynos_get_domain_name(struct device *dev,
++static __init const char *exynos_get_domain_name(struct device *dev,
+ 					  struct device_node *node)
  {
  	const char *name;
+@@ -99,54 +99,66 @@ static const char *exynos_get_domain_name(struct device_node *node)
  
-@@ -100,44 +100,60 @@ static const char *exynos_get_domain_name(struct device_node *node)
- 	return kstrdup_const(name, GFP_KERNEL);
+ 	if (of_property_read_string(node, "label", &name) < 0)
+ 		name = kbasename(node->full_name);
+-	return devm_kstrdup_const(dev, name, GFP_KERNEL);
++	return kstrdup_const(name, GFP_KERNEL);
++	//return devm_kstrdup_const(dev, name, GFP_KERNEL);
  }
  
 -static int exynos_pd_probe(struct platform_device *pdev)
@@ -62,6 +67,7 @@ index d07f3c9d6903..1022d40eb700 100644
  {
 -	const struct exynos_pm_domain_config *pm_domain_cfg;
 -	struct device *dev = &pdev->dev;
++	//struct device *dev = &pdev->dev;
 -	struct device_node *np = dev->of_node;
 -	struct of_phandle_args child, parent;
 -	struct exynos_pm_domain *pd;
@@ -78,22 +84,21 @@ index d07f3c9d6903..1022d40eb700 100644
 +		struct exynos_pm_domain *pd;
 +		int on;
  
--	pd->pd.name = exynos_get_domain_name(np);
+-	pd->pd.name = exynos_get_domain_name(dev, np);
 -	if (!pd->pd.name)
 -		return -ENOMEM;
 +		pm_domain_cfg = match->data;
  
 -	pd->base = of_iomap(np, 0);
--	if (!pd->base) {
--		kfree_const(pd->pd.name);
+-	if (!pd->base)
 -		return -ENODEV;
--	}
 +		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
 +		if (!pd) {
 +			of_node_put(np);
 +			return -ENOMEM;
 +		}
-+		pd->pd.name = exynos_get_domain_name(np);
++		//pd->pd.name = exynos_get_domain_name(dev, np);
++		pd->pd.name = exynos_get_domain_name(NULL, np);
 +		if (!pd->pd.name) {
 +			kfree(pd);
 +			of_node_put(np);
@@ -103,6 +108,15 @@ index d07f3c9d6903..1022d40eb700 100644
 -	pd->pd.power_off = exynos_pd_power_off;
 -	pd->pd.power_on = exynos_pd_power_on;
 -	pd->local_pwr_cfg = pm_domain_cfg->local_pwr_cfg;
+-
+-	/*
+-	 * Some Samsung platforms with bootloaders turning on the splash-screen
+-	 * and handing it over to the kernel, requires the power-domains to be
+-	 * reset during boot.
+-	 */
+-	if (IS_ENABLED(CONFIG_ARM) &&
+-	    of_device_is_compatible(np, "samsung,exynos4210-pd"))
+-		exynos_pd_power_off(&pd->pd);
 +		pd->base = of_iomap(np, 0);
 +		if (!pd->base) {
 +			pr_warn("%s: failed to map memory\n", __func__);
@@ -141,19 +155,10 @@ index d07f3c9d6903..1022d40eb700 100644
  		if (of_genpd_add_subdomain(&parent, &child))
  			pr_warn("%pOF failed to add subdomain: %pOF\n",
  				parent.np, child.np);
-@@ -146,30 +162,6 @@ static int exynos_pd_probe(struct platform_device *pdev)
+@@ -155,21 +171,6 @@ static int exynos_pd_probe(struct platform_device *pdev)
  				parent.np, child.np);
  	}
  
--	/*
--	 * Some Samsung platforms with bootloaders turning on the splash-screen
--	 * and handing it over to the kernel, requires the power-domains to be
--	 * reset during boot. As a temporary hack to manage this, let's enforce
--	 * a sync_state.
--	 */
--	if (!ret)
--		of_genpd_sync_state(np);
--
 -	pm_runtime_enable(dev);
 -	return ret;
 -}
