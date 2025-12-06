@@ -1,0 +1,43 @@
+From 815f4a02c59e55cf377ee26ad057ba3bce1c0917 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 29 Nov 2025 09:27:21 +0000
+Subject: [PATCH] allow build in subdir
+
+when building in subdir the check code fails match
+
+    if [ ! "/var/media/DATA/home-rudi/LibreELEC.tv/build.LibreELEC-Generic.x86_64-13.0-devel/.sysroot/ntfsprogs-plus.target//lib" -ef "/var/media/DATA/home-rudi/LibreELEC.tv/build.LibreELEC-Generic.x86_64-13.0-devel/.sysroot/ntfsprogs-plus.target//usr/lib" ]; then \
+            /usr/bin/mv -f "/var/media/DATA/home-rudi/LibreELEC.tv/build.LibreELEC-Generic.x86_64-13.0-devel/.sysroot/ntfsprogs-plus.target//usr/lib"/libntfs.so* "/var/media/DATA/home-rudi/LibreELEC.tv/build.LibreELEC-Generic.x86_64-13.0-devel/.sysroot/ntfsprogs-plus.target//lib";  \
+    fi
+    /usr/bin/mv: target '/var/media/DATA/home-rudi/LibreELEC.tv/build.LibreELEC-Generic.x86_64-13.0-devel/.sysroot/ntfsprogs-plus.target//lib': No such file or directory
+
+workaround build error.
+---
+ libntfs/Makefile.am | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/libntfs/Makefile.am b/libntfs/Makefile.am
+index 74bf2d3..1844d00 100644
+--- a/libntfs/Makefile.am
++++ b/libntfs/Makefile.am
+@@ -61,18 +61,6 @@ endif
+ # And create ldscript or symbolic link from /usr
+ install-exec-hook: install-rootlibLTLIBRARIES
+ if INSTALL_LIBRARY
+-	if [ ! "$(DESTDIR)/$(rootlibdir)" -ef "$(DESTDIR)/$(libdir)" ]; then \
+-		$(MV) -f "$(DESTDIR)/$(libdir)"/libntfs.so* "$(DESTDIR)/$(rootlibdir)";  \
+-	fi
+-if GENERATE_LDSCRIPT
+-	if [ ! "$(DESTDIR)/$(rootlibdir)" -ef "$(DESTDIR)/$(libdir)" ]; then \
+-		$(install_sh_PROGRAM) "libntfs.script.so" "$(DESTDIR)/$(libdir)/libntfs.so"; \
+-	fi
+-else
+-	if [ ! "$(DESTDIR)/$(rootlibdir)" -ef "$(DESTDIR)/$(libdir)" ]; then \
+-		$(LN_S) "$(rootlibdir)/libntfs.so" "$(DESTDIR)/$(libdir)/libntfs.so"; \
+-	fi
+-endif
+ endif
+ 
+ uninstall-local:
+-- 
+2.51.0
+
