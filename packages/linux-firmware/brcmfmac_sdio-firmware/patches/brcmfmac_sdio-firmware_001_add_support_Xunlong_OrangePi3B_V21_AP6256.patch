@@ -1,0 +1,104 @@
+diff --git a/brcmfmac43456-sdio.clm_blob b/brcmfmac43456-sdio.clm_blob
+new file mode 100644
+index 0000000000000000000000000000000000000000..36b8652655e5bf1704cc3471eba91f7e836d9b05
+GIT binary patch
+literal 7163
+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
+
+literal 0
+HcmV?d00001
+
+diff --git a/brcmfmac43456-sdio.xunlong,orangepi-3b-v2.1.bin b/brcmfmac43456-sdio.xunlong,orangepi-3b-v2.1.bin
+new file mode 120000
+index 0000000..42c672d
+--- /dev/null
++++ b/brcmfmac43456-sdio.xunlong,orangepi-3b-v2.1.bin
+@@ -0,0 +1 @@
++./brcmfmac43456-sdio.bin
+\ No newline at end of file
+diff --git a/brcmfmac43456-sdio.xunlong,orangepi-3b-v2.1.txt b/brcmfmac43456-sdio.xunlong,orangepi-3b-v2.1.txt
+new file mode 120000
+index 0000000..0cbb1c5
+--- /dev/null
++++ b/brcmfmac43456-sdio.xunlong,orangepi-3b-v2.1.txt
+@@ -0,0 +1 @@
++./brcmfmac43456-sdio.txt
+\ No newline at end of file
