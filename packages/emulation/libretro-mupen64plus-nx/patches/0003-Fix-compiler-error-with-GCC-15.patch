@@ -1,0 +1,33 @@
+From dc1d9f87b89df718bd4f697cdd56b76571bff291 Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Wed, 3 Sep 2025 15:08:31 -0700
+Subject: [PATCH 3/4] Fix compiler error with GCC 15
+
+Error was:
+
+  In file included from GLideN64/src/GLideNHQ/TxHiResCache.h:31,
+                   from GLideN64/src/GLideNHQ/TxFilter.h:29,
+                   from GLideN64/src/GLideNHQ/TxFilterExport.cpp:28:
+  GLideN64/src/GLideNHQ/TxHiResLoader.h:31:9: error: 'uint32_t' does not name a type
+     31 |         uint32_t checkFileName(char* ident, char* fname, uint32_t* pChksum, uint32_t* pPalchksum, uint32_t* pFmt, uint32_t* pSiz) const;
+        |         ^~~~~~~~
+---
+ GLideN64/src/GLideNHQ/TxHiResLoader.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/GLideN64/src/GLideNHQ/TxHiResLoader.h b/GLideN64/src/GLideNHQ/TxHiResLoader.h
+index 4c1365123..9dcec1412 100644
+--- a/GLideN64/src/GLideNHQ/TxHiResLoader.h
++++ b/GLideN64/src/GLideNHQ/TxHiResLoader.h
+@@ -18,6 +18,8 @@
+ #include "TxImage.h"
+ #include "TxReSample.h"
+ 
++#include <stdint.h>
++
+ #ifdef _WIN32
+ #define FULLFNAME_CHARTYPE wchar_t
+ #else
+-- 
+2.43.0
+
