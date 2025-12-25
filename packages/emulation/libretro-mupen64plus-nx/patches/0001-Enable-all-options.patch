@@ -1,0 +1,141 @@
+From 40fdde51fa7aa07dbde07ca9e3c5254aa4ce158a Mon Sep 17 00:00:00 2001
+From: Garrett Brown <themagnificentmrb@gmail.com>
+Date: Tue, 2 Sep 2025 23:55:00 -0700
+Subject: [PATCH 1/4] Enable all options
+
+---
+ libretro/libretro_core_options.h | 24 ------------------------
+ 1 file changed, 24 deletions(-)
+
+diff --git a/libretro/libretro_core_options.h b/libretro/libretro_core_options.h
+index fb39aa98e..f89a088ad 100644
+--- a/libretro/libretro_core_options.h
++++ b/libretro/libretro_core_options.h
+@@ -46,20 +46,16 @@ struct retro_core_option_v2_category option_cats_us[] = {
+       "GLideN64",
+       "Configure GLideN64 Options."
+    },
+-#ifdef HAVE_PARALLEL_RDP
+    {
+       "parallel_rdp",
+       "ParaLLEl-RDP",
+       "Configure ParaLLEl-RDP Options."
+    },
+-#endif // HAVE_PARALLEL_RDP
+-#ifdef HAVE_THR_AL
+    {
+       "angrylion",
+       "Angrylion",
+       "Configure Angrylion Options."
+    },
+-#endif // HAVE_THR_AL
+    { NULL, NULL, NULL },
+ };
+ 
+@@ -72,12 +68,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         NULL,
+         NULL,
+         {
+-#ifdef HAVE_THR_AL
+             {"angrylion", "Angrylion"},
+-#endif
+-#ifdef HAVE_PARALLEL_RDP
+             {"parallel", "ParaLLEl-RDP"},
+-#endif
+             {"gliden64", "GLideN64"},
+             { NULL, NULL },
+         },
+@@ -260,7 +252,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "False"
+     },
+-#ifndef HAVE_OPENGLES2
+     {
+         CORE_NAME "-MultiSampling",
+         "MSAA level",
+@@ -278,7 +269,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "0"
+     },
+-#endif
+     {
+         CORE_NAME "-FXAA",
+         "FXAA",
+@@ -349,10 +339,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         {
+             {"Off", NULL},
+             {"Sync", NULL},
+-#ifndef HAVE_OPENGLES2
+             {"Async", "DoubleBuffer"},
+             {"TripleBuffer", "TripleBuffer"},
+-#endif // HAVE_OPENGLES2
+             { NULL, NULL },
+         },
+ #ifndef HAVE_OPENGLES2
+@@ -512,7 +500,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         "True"
+ #endif
+     },
+-#if !defined(VC) && !defined(HAVE_OPENGLES)
+     {
+         CORE_NAME "-EnableN64DepthCompare",
+         "N64 Depth Compare",
+@@ -541,7 +528,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "True"
+     },
+-#endif
+     {
+         CORE_NAME "-EnableTextureCache",
+         "Cache Textures",
+@@ -1022,7 +1008,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "late"
+     },
+-#ifdef HAVE_PARALLEL_RDP
+     {
+         CORE_NAME "-parallel-rdp-synchronous",
+         "(ParaLLEl-RDP) Synchronous RDP",
+@@ -1244,8 +1229,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+             { NULL, NULL },
+         }
+     },
+-#endif
+-#ifdef HAVE_THR_AL
+     {
+         CORE_NAME "-angrylion-vioverlay",
+         "VI Overlay",
+@@ -1371,7 +1354,6 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         },
+         "disabled"
+     },
+-#endif
+     {
+         CORE_NAME "-cpucore",
+         "CPU Core",
+@@ -1382,9 +1364,7 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         {
+             {"pure_interpreter", "Pure Interpreter"},
+             {"cached_interpreter", "Cached Interpreter"},
+-#ifdef DYNAREC
+             {"dynamic_recompiler", "Dynarec"},
+-#endif
+             { NULL, NULL },
+         },
+ #ifdef DYNAREC
+@@ -1401,12 +1381,8 @@ struct retro_core_option_v2_definition option_defs_us[] = {
+         NULL,
+         NULL,
+         {
+-#ifdef HAVE_LLE
+             {"cxd4", "CXD4"},
+-#endif
+-#ifdef HAVE_PARALLEL_RSP
+             {"parallel", "ParaLLEl"},
+-#endif
+             {"hle", "HLE"},
+             { NULL, NULL },
+         },
+-- 
+2.43.0
+
