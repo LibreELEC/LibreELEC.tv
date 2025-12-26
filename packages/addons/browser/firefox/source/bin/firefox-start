@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
+# Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
+. /etc/profile
+oe_setup_addon browser.firefox
+
+# check if firefox is already successful installed
+if [ ! -f "$ADDON_DIR/extract.ok" ]; then
+  cd $ADDON_DIR
+  firefox-downloader
+fi
+
+if [ -e $ADDON_HOME/env ]; then
+  . $ADDON_HOME/env
+fi
+
+# make sure we use "own" gtk/pango/nss/etc
+export LD_LIBRARY_PATH=$ADDON_DIR/lib.private
+
+# configure pango/pixbuf
+export PANGO_RC_FILE=$ADDON_DIR/config/pangorc
+export GDK_PIXBUF_MODULE_FILE=$ADDON_DIR/config/pixbuf.loaders.cache
+
+# font rendering in gtk widgets is broken with nvidia blob. use our Xdefaults
+export XENVIRONMENT=$ADDON_DIR/config/Xdefaults
+
+# vaapi
+LIBVA_DRIVERS_PATH="/usr/lib/dri:$ADDON_DIR/lib.private"
+LIBVA_DRIVER_NAME=''
+case $VAAPI_MODE in
+  'intel')
+    LIBVA_DRIVER_NAME='i965'
+    ;;
+  *)
+    LIBGL_ALWAYS_SOFTWARE='1'
+    export LIBGL_ALWAYS_SOFTWARE
+    ;;
+esac
+export LIBVA_DRIVER_NAME LIBVA_DRIVERS_PATH
+
+# windowed
+case $WINDOW_MODE in
+  'maximized')
+    ;;
+  'kiosk')
+    firefox_OPTS="$firefox_OPTS --kiosk"
+    ;;
+esac
+
+# alsa
+if [ "$AUDIO_DEVICE_TYPE" == "ALSA" ]; then
+  # stop pulseaudio when using an Alsa device
+  systemctl stop pulseaudio
+  LD_LIBRARY_PATH=$ADDON_DIR/lib.private/apulse${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+  if [ ! -z $ALSA_DEVICE ]; then
+    #firefox_OPTS="$firefox_OPTS --alsa-output-device=$ALSA_DEVICE"
+    APULSE_PLAYBACK_DEVICE="$ALSA_DEVICE"
+  fi
+fi
+
+# dark mode
+if [ "$DARK_MODE" == "true" ]; then
+  firefox_OPTS="$firefox_OPTS --force-dark-mode"
+fi
+
+# User-Agent
+if [ ! -z "$USER_AGENT" ]; then
+  USER_AGENT="--user-agent=$USER_AGENT"
+fi
+
+# start firefox
+LD_PRELOAD=/usr/lib/libGL.so HOME=$ADDON_HOME $ADDON_DIR/firefox/firefox-bin \
+  $firefox_OPTS \
+  $@ \
+  2>&1 | tee $ADDON_LOG_FILE
+
+sleep 5
+if [ "$AUDIO_DEVICE_TYPE" == "ALSA" ]; then
+  # restart pulseaudio when using an Alsa device
+  systemctl start pulseaudio
+fi

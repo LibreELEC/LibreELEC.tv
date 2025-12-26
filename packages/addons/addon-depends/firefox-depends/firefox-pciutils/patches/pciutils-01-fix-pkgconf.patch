@@ -1,0 +1,27 @@
+From 4dd9a1b445269aa24626b1cfb85d3c22bc0e64bb Mon Sep 17 00:00:00 2001
+From: Stefan Saraev <stefan@saraev.ca>
+Date: Sat, 16 Aug 2014 14:25:18 +0300
+Subject: [PATCH] fix pkgconf
+
+---
+ lib/libpci.pc.in |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lib/libpci.pc.in b/lib/libpci.pc.in
+index 9d7e8a0..38827ba 100644
+--- a/lib/libpci.pc.in
++++ b/lib/libpci.pc.in
+@@ -1,7 +1,7 @@
+ prefix=@PREFIX@
+-includedir=@INCDIR@
+-libdir=@LIBDIR@
+-idsdir=@IDSDIR@
++includedir=${prefix}/include
++libdir=${prefix}/lib
++idsdir=${prefix}/share
+
+ Name: libpci
+ Description: libpci
+--
+1.7.2.5
+
