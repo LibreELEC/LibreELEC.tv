@@ -381,6 +381,12 @@ setup_toolchain() {
     MAKEFLAGS+=" V=1 VERBOSE=1"
   fi
 
+  # NDEBUG flag
+  if [ "${BUILD_WITH_DEBUG}" != "yes" ] && flag_enabled "ndebug" "yes"; then
+    TARGET_CFLAGS+=" -DNDEBUG"
+    TARGET_CXXFLAGS+=" -DNDEBUG"
+  fi
+
   # average load limit
   if [ "${CONCURRENCY_LOAD}" != "0" ]; then
     NINJA_OPTS+=" -l${CONCURRENCY_LOAD}"
@@ -459,9 +465,9 @@ setup_toolchain() {
         echo "SET(CMAKE_C_COMPILER   $CC)"  >> $CMAKE_CONF
         echo "SET(CMAKE_CXX_COMPILER $CXX)" >> $CMAKE_CONF
         echo "SET(CMAKE_CPP_COMPILER $CPP)" >> $CMAKE_CONF
-        echo "SET(CMAKE_ASM_FLAGS_MINSIZEREL -DDUMMYOPT)" >> $CMAKE_CONF
-        echo "SET(CMAKE_CXX_FLAGS_MINSIZEREL -DDUMMYOPT)" >> $CMAKE_CONF
-        echo "SET(CMAKE_C_FLAGS_MINSIZEREL -DDUMMYOPT)" >> $CMAKE_CONF
+        echo "SET(CMAKE_ASM_FLAGS_RELEASE \"\")" >> $CMAKE_CONF
+        echo "SET(CMAKE_CXX_FLAGS_RELEASE \"\")" >> $CMAKE_CONF
+        echo "SET(CMAKE_C_FLAGS_RELEASE \"\")" >> $CMAKE_CONF
         echo "SET(CMAKE_FIND_ROOT_PATH  $SYSROOT_PREFIX)"   >> $CMAKE_CONF
         echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> $CMAKE_CONF
         echo "SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)"  >> $CMAKE_CONF
@@ -530,9 +536,9 @@ setup_toolchain() {
         echo "SET(CMAKE_C_COMPILER   $CC)"  >> $CMAKE_CONF
         echo "SET(CMAKE_CXX_COMPILER $CXX)" >> $CMAKE_CONF
         echo "SET(CMAKE_CPP_COMPILER $CXX)" >> $CMAKE_CONF
-        echo "SET(CMAKE_ASM_FLAGS_RELEASE -DDUMMYOPT)" >> $CMAKE_CONF
-        echo "SET(CMAKE_CXX_FLAGS_RELEASE -DDUMMYOPT)" >> $CMAKE_CONF
-        echo "SET(CMAKE_C_FLAGS_RELEASE -DDUMMYOPT)" >> $CMAKE_CONF
+        echo "SET(CMAKE_ASM_FLAGS_RELEASE \"\")" >> $CMAKE_CONF
+        echo "SET(CMAKE_CXX_FLAGS_RELEASE \"\")" >> $CMAKE_CONF
+        echo "SET(CMAKE_C_FLAGS_RELEASE \"\")" >> $CMAKE_CONF
         echo "SET(CMAKE_AR $AR CACHE FILEPATH "Archiver")" >> $CMAKE_CONF # hum?
         echo "SET(CMAKE_FIND_ROOT_PATH  $TOOLCHAIN)" >> $CMAKE_CONF
         echo "SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)" >> $CMAKE_CONF
