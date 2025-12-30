@@ -18,12 +18,6 @@
           <default>ALSA:hdmi:CARD=HDMI,DEV=0</default>
         </setting>
       </group>
-      <group id="3">
-        <visible>false</visible>
-        <setting id="audiooutput.passthrough">
-          <default>false</default>
-        </setting>
-      </group>
     </category>
   </section>
 </settings>
