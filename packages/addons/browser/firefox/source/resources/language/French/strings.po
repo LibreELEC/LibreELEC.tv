@@ -1,0 +1,58 @@
+# Kodi Media Center language file
+# Addon Name: firefox
+# Addon id: browser.firefox
+# Addon Provider: Team LibreELEC
+msgid ""
+msgstr ""
+
+msgctxt "#30000"
+msgid "General"
+msgstr "Géneral"
+
+msgctxt "#30001"
+msgid "Firefox Configuration"
+msgstr "Configuration de Firefox"
+
+msgctxt "#30002"
+msgid "Stop Kodi Player and Suspend AudioEngine"
+msgstr "Arrêt de Kodi et mise en pause du moteur audio"
+
+msgctxt "#30003"
+msgid "HW Acceleration Mode"
+msgstr "Mode d'accélération matérielle"
+
+msgctxt "#30004"
+msgid "Rasterization Mode"
+msgstr "Mode de resterization"
+
+msgctxt "#30005"
+msgid "Window Mode"
+msgstr "Mode de fenêtre"
+
+msgctxt "#30006"
+msgid "Default Homepage"
+msgstr "Page d'accueil"
+
+msgctxt "#30007"
+msgid "Use Custom Audio Device"
+msgstr "Utilisation d'un périphérique audio personnalisé"
+
+msgctxt "#30008"
+msgid "Audio Device"
+msgstr "Périphérique audio"
+
+msgctxt "#30009"
+msgid "Hide Cursor"
+msgstr "Cacher le curseur"
+
+msgctxt "#30010"
+msgid "Dark Mode"
+msgstr "Mode sombre"
+
+msgctxt "#30011"
+msgid "Use Custom User-Agent"
+msgstr "Utiliser un User-Agent personnalisé"
+
+msgctxt "#30012"
+msgid "User-Agent"
+msgstr "User-Agent"
