@@ -40,6 +40,9 @@ case "${LINUX}" in
     PKG_VERSION="6.18.8"
     PKG_SHA256="37f0c5d5c242c1d604e87d48f08795e861a5a85f725b4ca11d0a538f12ff8cff"
     PKG_URL="https://www.kernel.org/pub/linux/kernel/v${PKG_VERSION/.*/}.x/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+    PKG_VERSION="6.19-rc8"
+    PKG_SHA256=""
+    PKG_URL="https://git.kernel.org/torvalds/t/linux-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="default"
     case ${DEVICE} in
       RK3288|RK3328|RK3399)
