@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.openmpt"
 PKG_VERSION="21.0.2-Omega"
 PKG_SHA256="33b69eb155babd9b595af1af3714a1a3cc51a10e931543b13e9950663d1ec402"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.openmpt"

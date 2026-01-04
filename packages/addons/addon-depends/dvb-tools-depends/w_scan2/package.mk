@@ -10,4 +10,4 @@ PKG_URL="https://github.com/stefantalpalaru/w_scan2/archive/${PKG_VERSION}.tar.g
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="A channel scan tool which generates ATSC, DVB-C, DVB-S/S2 and DVB-T channels.conf files."
 PKG_TOOLCHAIN="autotools"
-PKG_BUILD_FLAGS="-sysroot -cfg-libs"
+PKG_BUILD_FLAGS="-sysroot"
