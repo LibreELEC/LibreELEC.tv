@@ -1,0 +1,30 @@
+################################################################################
+# setup device defaults
+################################################################################
+
+  # The TARGET_CPU variable controls which processor should be targeted for
+  # generated code.
+    case $TARGET_ARCH in
+      aarch64)
+        TARGET_CPU="cortex-a76.cortex-a55"
+        TARGET_CPU_FLAGS="+crc+crypto"
+        ;;
+    esac
+
+  # Kernel to use
+    LINUX="mediatek"
+
+  # Kernel target
+    KERNEL_TARGET="Image"
+
+  # Graphic drivers to use
+    GRAPHIC_DRIVERS="panfrost"
+
+  # kernel serial console
+    EXTRA_CMDLINE="console=ttyS0,921600 console=tty0 coherent_pool=2M cec.debounce_ms=5000 mem=3838M systemd.debug_shell=ttyS0"
+
+  # set the addon project
+    ADDON_PROJECT="ARMv8"
+
+  # additional packages
+    ADDITIONAL_PACKAGES+=" pciutils"
