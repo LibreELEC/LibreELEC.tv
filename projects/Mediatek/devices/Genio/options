@@ -21,7 +21,7 @@
     GRAPHIC_DRIVERS="panfrost"
 
   # kernel serial console
-    EXTRA_CMDLINE="console=ttyS0,921600 console=tty0 coherent_pool=2M cec.debounce_ms=5000 mem=3838M systemd.debug_shell=ttyS0"
+    EXTRA_CMDLINE="console=ttyS0,921600 console=tty0 coherent_pool=2M cec.debounce_ms=5000 mem=3838M systemd.debug_shell=ttyS0 ssh"
 
   # set the addon project
     ADDON_PROJECT="ARMv8"
