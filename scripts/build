@@ -143,7 +143,7 @@ if [ "${BUILD_WITH_DEBUG}" = "yes" ]; then
   CMAKE_BUILD_TYPE="Debug"
   MESON_BUILD_TYPE="debug"
 else
-  CMAKE_BUILD_TYPE="MinSizeRel"
+  CMAKE_BUILD_TYPE="Release"
   MESON_BUILD_TYPE="plain"
 fi
 
