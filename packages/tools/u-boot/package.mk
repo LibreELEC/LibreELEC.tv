@@ -18,8 +18,8 @@ case ${PROJECT} in
     PKG_URL="https://ftp.denx.de/pub/u-boot/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
     ;;
   *)
-    PKG_VERSION="2025.10"
-    PKG_SHA256="b4f032848e56cc8f213ad59f9132c084dbbb632bc29176d024e58220e0efdf4a"
+    PKG_VERSION="2026.01"
+    PKG_SHA256="b60d5865cefdbc75da8da4156c56c458e00de75a49b80c1a2e58a96e30ad0d54"
     PKG_URL="https://ftp.denx.de/pub/u-boot/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
     ;;
 esac
