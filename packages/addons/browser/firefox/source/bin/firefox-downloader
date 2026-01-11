@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
+
+. /etc/profile
+oe_setup_addon browser.firefox
+
+ICON="$ADDON_DIR/resources/icon.png"
+CONTROL_FILE="/tmp/curl.done"
+DATA_FILE="/tmp/curl.data"
+FIREFOX_VERSION="@FIREFOX_VERSION@"
+FIREFOX_FILE="firefox-$FIREFOX_VERSION.tar.xz"
+
+# check for enough free disk space
+if [ $(df -P . | awk 'END {print $4}') -lt 400000 ]; then
+  kodi-send --action="Notification(Not enough disk space, at least 400MB are required,30000,${ICON})" >/dev/null
+  exit 0
+fi
+
+# remove install status and folders
+if [ -f $ADDON_DIR/extract.ok ]; then
+  rm $ADDON_DIR/extract.ok
+fi
+
+if [ -d $ADDON_DIR/firefox ]; then
+  rm -rf $ADDON_DIR/firefox
+fi
+
+if [ -d $ADDON_DIR/tmp_download ]; then
+  rm -rf $ADDON_DIR/tmp_download
+fi
+
+# create tmp download dir
+mkdir -p $ADDON_DIR/tmp_download
+cd $ADDON_DIR/tmp_download
+
+echo "Downloading firefox"
+
+# download firefox
+rm -f ${CONTROL_FILE} ${DATA_FILE}
+(
+  curl -# -O -C - https://download-installer.cdn.mozilla.net/pub/firefox/releases/${FIREFOX_VERSION}/linux-x86_64/en-US/${FIREFOX_FILE} 2>${DATA_FILE}
+  touch ${CONTROL_FILE}
+) |
+  while [ : ]; do
+    [ -f ${DATA_FILE} ] && prog="$(tr '\r' '\n' <${DATA_FILE} | tail -n 1 | sed -r 's/^[# ]+/#/;s/^[^0-9]*//g')" || prog=
+    kodi-send --action="Notification(Downloading firefox,\"${prog:-0.0%}\",3000,${ICON})" >/dev/null
+    [ -f ${CONTROL_FILE} ] && break
+    sleep 4
+  done
+
+rm -f ${CONTROL_FILE} ${DATA_FILE}
+
+## extract Firefox
+# extract firefox.tar.xz data to temp
+kodi-send --action="Notification(Extracting firefox,starting,1000,${ICON})" >/dev/null
+cd ${ADDON_DIR}
+tar xf tmp_download/${FIREFOX_FILE}
+
+# cleanup
+rm -rf $ADDON_DIR/tmp_download
+
+if [ -d firefox ]; then
+  touch $ADDON_DIR/extract.ok
+  kodi-send --action="Notification(Extracting firefox,finished,1000,${ICON})" >/dev/null
+else
+  kodi-send --action="Notification(Extracting firefox,FAILED!,10000,${ICON})" >/dev/null
+fi
