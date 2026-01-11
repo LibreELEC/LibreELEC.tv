@@ -3,7 +3,7 @@
 
 PKG_NAME="nextpvr"
 PKG_VERSION="7.0.4"
-PKG_REV="4"
+PKG_REV="5"
 PKG_ARCH="any"
 PKG_LICENSE="NextPVR"
 PKG_SITE="https://nextpvr.com"

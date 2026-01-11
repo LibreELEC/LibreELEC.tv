@@ -1,18 +1,111 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <category label="30000">
-        <setting label="30001" type="lsep"/>
-        <setting type="sep" />
-        <setting id="PAUSE_XBMC" type="bool" label="30002" default="true" />
-        <setting id="VAAPI_MODE" type="labelenum" label="30003" values="off|intel|amd|nvidia" default="intel"/>
-        <setting id="RASTER_MODE" type="labelenum" label="30004" values="default|off|force" default="default" subsetting="true" enable="!eq(-1,0)"/>
-        <setting id="WINDOW_MODE" type="labelenum" label="30005" values="maximized|kiosk|none" default="maximized" />
-        <setting id="HOMEPAGE" type="text" label="30006" default="https://libreelec.tv" />
-        <setting id="USE_CUST_AUDIODEVICE" type="bool" label="30007" default="false" />
-        <setting id="CUST_AUDIODEVICE_STR" type="text" label="30008" visible="eq(-1,true)" subsetting="true" default="" />
-        <setting id="HIDE_CURSOR" type="bool" label="30009" default="false" />
-        <setting id="DARK_MODE" type="bool" label="30010" default="false" />
-        <setting id="USE_CUST_USERAGENT" type="bool" label="30011" default="false" />
-        <setting id="CUST_USERAGENT_STR" type="text" label="30012" visible="eq(-1,true)" subsetting="true" default="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/@CHROME_VERSION@" />
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="browser.chrome">
+		<category id="general" label="30000" help="">
+			<group id="1" label="30001"/>
+			<group id="2">
+				<setting id="PAUSE_XBMC" type="boolean" label="30002" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="VAAPI_MODE" type="string" label="30003" help="">
+					<level>0</level>
+					<default>intel</default>
+					<constraints>
+						<options>
+							<option label="off">off</option>
+							<option label="intel">intel</option>
+							<option label="amd">amd</option>
+							<option label="nvidia">nvidia</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="RASTER_MODE" type="string" label="30004" help="" parent="VAAPI_MODE">
+					<level>0</level>
+					<default>default</default>
+					<constraints>
+						<options>
+							<option label="default">default</option>
+							<option label="off">off</option>
+							<option label="force">force</option>
+						</options>
+					</constraints>
+					<dependencies>
+						<dependency type="enable">
+							<condition operator="!is" setting="VAAPI_MODE">0</condition>
+						</dependency>
+					</dependencies>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="WINDOW_MODE" type="string" label="30005" help="">
+					<level>0</level>
+					<default>maximized</default>
+					<constraints>
+						<options>
+							<option label="maximized">maximized</option>
+							<option label="kiosk">kiosk</option>
+							<option label="none">none</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="HOMEPAGE" type="string" label="30006" help="">
+					<level>0</level>
+					<default>https://libreelec.tv</default>
+					<control type="edit" format="string">
+						<heading>30006</heading>
+					</control>
+				</setting>
+				<setting id="USE_CUST_AUDIODEVICE" type="boolean" label="30007" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CUST_AUDIODEVICE_STR" type="string" label="30008" help="" parent="USE_CUST_AUDIODEVICE">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="USE_CUST_AUDIODEVICE">true</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30008</heading>
+					</control>
+				</setting>
+				<setting id="HIDE_CURSOR" type="boolean" label="30009" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="DARK_MODE" type="boolean" label="30010" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="USE_CUST_USERAGENT" type="boolean" label="30011" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CUST_USERAGENT_STR" type="string" label="30012" help="" parent="USE_CUST_USERAGENT">
+					<level>0</level>
+					<default>Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.7499.169</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="USE_CUST_USERAGENT">true</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30012</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

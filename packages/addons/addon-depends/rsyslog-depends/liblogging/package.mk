@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="liblogging"
-PKG_VERSION="1.0.6"
-PKG_SHA256="338c6174e5c8652eaa34f956be3451f7491a4416ab489aef63151f802b00bf93"
+PKG_VERSION="1.0.8"
+PKG_SHA256="6449b7bb75dc282ec6bf1b98a753c950746ea5b190ec9aee097881e4dc5c4bf1"
 PKG_LICENSE="GPL"
 PKG_SITE="http://www.liblogging.org"
 PKG_URL="https://download.rsyslog.com/liblogging/${PKG_NAME}-${PKG_VERSION}.tar.gz"

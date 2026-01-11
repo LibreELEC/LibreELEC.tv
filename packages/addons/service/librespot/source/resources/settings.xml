@@ -1,12 +1,83 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-  <category  label="30100">
-    <setting label="30101" id="name"           type="text"   default="Librespot@{}"   />
-    <setting label="30102" id="dnd_kodi"       type="bool"   default="false"          />
-    <setting label="30103" id="backend"        type="select" values="pulseaudio|alsa" />
-    <setting label="30104" id="player"         type="select" values="default|basic"   subsetting="true" visible="eq(-1,0)" />
-    <setting label="30105" id="alsa_device"    type="text"   default="hw:2,0"         subsetting="true" visible="eq(-2,1)" />
-    <setting label="30106" id="zeroconf_fixed" type="bool"   default="false"          />
-    <setting label="30107" id="zeroconf_port"  type="number" default="50252"          subsetting="true" visible="eq(-1,true)" range="1025,65535" />
-  </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.librespot">
+		<category id="configuration" label="30100" help="">
+			<group id="1">
+				<setting id="name" type="string" label="30101" help="">
+					<level>0</level>
+					<default>Librespot@{}</default>
+					<control type="edit" format="string">
+						<heading>30101</heading>
+					</control>
+				</setting>
+				<setting id="dnd_kodi" type="boolean" label="30102" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="backend" type="string" label="30103" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<options>
+							<option>pulseaudio</option>
+							<option>alsa</option>
+						</options>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="list" format="string">
+						<heading>30103</heading>
+					</control>
+				</setting>
+				<setting id="player" type="string" label="30104" help="" parent="backend">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<options>
+							<option>default</option>
+							<option>basic</option>
+						</options>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="backend">0</condition>
+						</dependency>
+					</dependencies>
+					<control type="list" format="string">
+						<heading>30104</heading>
+					</control>
+				</setting>
+				<setting id="alsa_device" type="string" label="30105" help="" parent="backend">
+					<level>0</level>
+					<default>hw:2,0</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="backend">1</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30105</heading>
+					</control>
+				</setting>
+				<setting id="zeroconf_fixed" type="boolean" label="30106" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="zeroconf_port" type="integer" label="30107" help="" parent="zeroconf_fixed">
+					<level>0</level>
+					<default>50252</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="zeroconf_fixed">true</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="integer">
+						<heading>30107</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

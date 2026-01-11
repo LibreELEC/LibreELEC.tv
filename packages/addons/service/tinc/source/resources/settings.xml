@@ -1,11 +1,55 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-<settings>
-  <category  label="30000">
-    <setting label="30001" type="ipaddress" id="tinc_subnet"   default="0.0.0.0"/>
-    <setting label="30002" type="number"    id="tinc_port"     default="6550"/>
-    <setting label="30003" type="text"      id="tinc_address"  default=""/>
-  </category>
-  <category  label="30004">
-    <setting label="30005" type="select"    id="tinc_loglevel" values="0|1|2|3|4|5"/>
-  </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.system.tinc">
+		<category id="host" label="30000" help="">
+			<group id="1">
+				<setting id="tinc_subnet" type="string" label="30001" help="">
+					<level>0</level>
+					<default>0.0.0.0</default>
+					<control type="edit" format="ip">
+						<heading>30001</heading>
+					</control>
+				</setting>
+				<setting id="tinc_port" type="integer" label="30002" help="">
+					<level>0</level>
+					<default>6550</default>
+					<control type="edit" format="integer">
+						<heading>30002</heading>
+					</control>
+				</setting>
+				<setting id="tinc_address" type="string" label="30003" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="edit" format="string">
+						<heading>30003</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+		<category id="debug" label="30004" help="">
+			<group id="1">
+				<setting id="tinc_loglevel" type="string" label="30005" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<options>
+							<option>0</option>
+							<option>1</option>
+							<option>2</option>
+							<option>3</option>
+							<option>4</option>
+							<option>5</option>
+						</options>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="list" format="string">
+						<heading>30005</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

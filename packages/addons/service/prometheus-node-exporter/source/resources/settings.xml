@@ -1,72 +1,344 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<settings>
-    <category label="30000">
-        <setting id="WebListenPort"             label="30001" type="number" default="9100"     />
-        <setting id="WebTelemetryPath"          label="30002" type="text"   default="/metrics" />
-        <setting id="WebDisableExporterMetrics" label="30003" type="bool"   default="false"    />
-        <setting id="WebMaxRequest"             label="30004" type="number" default="40"       />
-    </category>
-    <category label="30100">
-        <setting id="CollectorArp"              label="30101" type="bool" default="true"  />
-        <setting id="CollectorBcache"           label="30102" type="bool" default="true"  />
-        <setting id="CollectorBonding"          label="30103" type="bool" default="true"  />
-        <setting id="CollectorBtrfs"            label="30104" type="bool" default="true"  />
-        <setting id="CollectorBuddyinfo"        label="30105" type="bool" default="false" />
-        <setting id="CollectorConntrack"        label="30106" type="bool" default="true"  />
-        <setting id="CollectorCpu"              label="30107" type="bool" default="true"  />
-        <setting id="CollectorCpufreq"          label="30108" type="bool" default="true"  />
-        <setting id="CollectorDiskstats"        label="30109" type="bool" default="true"  />
-        <setting id="CollectorDrbd"             label="30110" type="bool" default="false" />
-        <setting id="CollectorEdac"             label="30111" type="bool" default="true"  />
-        <setting id="CollectorEntropy"          label="30112" type="bool" default="true"  />
-        <setting id="CollectorEthtool"          label="30113" type="bool" default="false" />
-        <setting id="CollectorFibrechannel"     label="30114" type="bool" default="true"  />
-        <setting id="CollectorFilefd"           label="30115" type="bool" default="true"  />
-        <setting id="CollectorFilesystem"       label="30116" type="bool" default="true"  />
-        <setting id="CollectorHwmon"            label="30117" type="bool" default="true"  />
-        <setting id="CollectorInfiniband"       label="30118" type="bool" default="true"  />
-        <setting id="CollectorInterrupts"       label="30119" type="bool" default="false" />
-        <setting id="CollectorIpvs"             label="30120" type="bool" default="true"  />
-        <setting id="CollectorKsmd"             label="30121" type="bool" default="false" />
-        <setting id="CollectorLoadavg"          label="30122" type="bool" default="true"  />
-        <setting id="CollectorLogind"           label="30123" type="bool" default="false" />
-        <setting id="CollectorMdadm"            label="30124" type="bool" default="true"  />
-        <setting id="CollectorMeminfo"          label="30125" type="bool" default="true"  />
-        <setting id="CollectorMeminfoNuma"      label="30126" type="bool" default="false" />
-        <setting id="CollectorMountstats"       label="30127" type="bool" default="false" />
-        <setting id="CollectorNetclass"         label="30128" type="bool" default="true"  />
-        <setting id="CollectorNetdev"           label="30129" type="bool" default="true"  />
-        <setting id="CollectorNetstat"          label="30130" type="bool" default="true"  />
-        <setting id="CollectorNetworkRoute"     label="30131" type="bool" default="false" />
-        <setting id="CollectorNfs"              label="30132" type="bool" default="true"  />
-        <setting id="CollectorNfsd"             label="30133" type="bool" default="true"  />
-        <setting id="CollectorNtp"              label="30134" type="bool" default="false" />
-        <setting id="CollectorNvme"             label="30135" type="bool" default="true"  />
-        <setting id="CollectorPerf"             label="30136" type="bool" default="false" />
-        <setting id="CollectorPowersupplyclass" label="30137" type="bool" default="true"  />
-        <setting id="CollectorPressure"         label="30138" type="bool" default="true"  />
-        <setting id="CollectorProcesses"        label="30139" type="bool" default="false" />
-        <setting id="CollectorQdisc"            label="30140" type="bool" default="false" />
-        <setting id="CollectorRapl"             label="30141" type="bool" default="true"  />
-        <setting id="CollectorRunit"            label="30142" type="bool" default="false" />
-        <setting id="CollectorSchedstat"        label="30143" type="bool" default="true"  />
-        <setting id="CollectorSockstat"         label="30144" type="bool" default="true"  />
-        <setting id="CollectorSoftnet"          label="30145" type="bool" default="true"  />
-        <setting id="CollectorStat"             label="30146" type="bool" default="true"  />
-        <setting id="CollectorSupervisord"      label="30147" type="bool" default="false" />
-        <setting id="CollectorSystemd"          label="30148" type="bool" default="false" />
-        <setting id="CollectorTapestats"        label="30149" type="bool" default="true"  />
-        <setting id="CollectorTcpstat"          label="30150" type="bool" default="false" />
-        <setting id="CollectorTextfile"         label="30151" type="bool" default="true"  />
-        <setting id="CollectorThermalZone"      label="30152" type="bool" default="true"  />
-        <setting id="CollectorTime"             label="30153" type="bool" default="true"  />
-        <setting id="CollectorTimex"            label="30154" type="bool" default="true"  />
-        <setting id="CollectorUdpQueues"        label="30155" type="bool" default="true"  />
-        <setting id="CollectorUname"            label="30156" type="bool" default="true"  />
-        <setting id="CollectorVmstat"           label="30157" type="bool" default="true"  />
-        <setting id="CollectorWifi"             label="30158" type="bool" default="false" />
-        <setting id="CollectorXfs"              label="30159" type="bool" default="true"  />
-        <setting id="CollectorZfs"              label="30160" type="bool" default="true"  />
-        <setting id="CollectorZoneinfo"         label="30161" type="bool" default="false" />
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.prometheus-node-exporter">
+		<category id="general" label="30000" help="">
+			<group id="1">
+				<setting id="WebListenPort" type="integer" label="30001" help="">
+					<level>0</level>
+					<default>9100</default>
+					<control type="edit" format="integer">
+						<heading>30001</heading>
+					</control>
+				</setting>
+				<setting id="WebTelemetryPath" type="string" label="30002" help="">
+					<level>0</level>
+					<default>/metrics</default>
+					<control type="edit" format="string">
+						<heading>30002</heading>
+					</control>
+				</setting>
+				<setting id="WebDisableExporterMetrics" type="boolean" label="30003" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="WebMaxRequest" type="integer" label="30004" help="">
+					<level>0</level>
+					<default>40</default>
+					<control type="edit" format="integer">
+						<heading>30004</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+		<category id="collectors" label="30100" help="">
+			<group id="1">
+				<setting id="CollectorArp" type="boolean" label="30101" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorBcache" type="boolean" label="30102" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorBonding" type="boolean" label="30103" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorBtrfs" type="boolean" label="30104" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorBuddyinfo" type="boolean" label="30105" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorConntrack" type="boolean" label="30106" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorCpu" type="boolean" label="30107" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorCpufreq" type="boolean" label="30108" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorDiskstats" type="boolean" label="30109" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorDrbd" type="boolean" label="30110" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorEdac" type="boolean" label="30111" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorEntropy" type="boolean" label="30112" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorEthtool" type="boolean" label="30113" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorFibrechannel" type="boolean" label="30114" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorFilefd" type="boolean" label="30115" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorFilesystem" type="boolean" label="30116" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorHwmon" type="boolean" label="30117" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorInfiniband" type="boolean" label="30118" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorInterrupts" type="boolean" label="30119" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorIpvs" type="boolean" label="30120" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorKsmd" type="boolean" label="30121" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorLoadavg" type="boolean" label="30122" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorLogind" type="boolean" label="30123" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorMdadm" type="boolean" label="30124" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorMeminfo" type="boolean" label="30125" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorMeminfoNuma" type="boolean" label="30126" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorMountstats" type="boolean" label="30127" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNetclass" type="boolean" label="30128" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNetdev" type="boolean" label="30129" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNetstat" type="boolean" label="30130" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNetworkRoute" type="boolean" label="30131" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNfs" type="boolean" label="30132" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNfsd" type="boolean" label="30133" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNtp" type="boolean" label="30134" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorNvme" type="boolean" label="30135" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorPerf" type="boolean" label="30136" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorPowersupplyclass" type="boolean" label="30137" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorPressure" type="boolean" label="30138" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorProcesses" type="boolean" label="30139" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorQdisc" type="boolean" label="30140" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorRapl" type="boolean" label="30141" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorRunit" type="boolean" label="30142" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorSchedstat" type="boolean" label="30143" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorSockstat" type="boolean" label="30144" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorSoftnet" type="boolean" label="30145" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorStat" type="boolean" label="30146" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorSupervisord" type="boolean" label="30147" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorSystemd" type="boolean" label="30148" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorTapestats" type="boolean" label="30149" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorTcpstat" type="boolean" label="30150" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorTextfile" type="boolean" label="30151" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorThermalZone" type="boolean" label="30152" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorTime" type="boolean" label="30153" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorTimex" type="boolean" label="30154" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorUdpQueues" type="boolean" label="30155" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorUname" type="boolean" label="30156" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorVmstat" type="boolean" label="30157" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorWifi" type="boolean" label="30158" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorXfs" type="boolean" label="30159" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorZfs" type="boolean" label="30160" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="CollectorZoneinfo" type="boolean" label="30161" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

@@ -1,6 +1,16 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-   <category   label="30000">
-      <setting label="30001" id="vnc_port" type="number" default="5900" />
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.tigervnc">
+		<category id="configuration" label="30000" help="">
+			<group id="1">
+				<setting id="vnc_port" type="integer" label="30001" help="">
+					<level>0</level>
+					<default>5900</default>
+					<control type="edit" format="integer">
+						<heading>30001</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

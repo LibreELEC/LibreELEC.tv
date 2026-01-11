@@ -1,8 +1,15 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <category label="30000">
-		<setting label="1010" type="lsep"/>
-		<setting type="sep" />
-		<setting id="RESTART_ON_RESUME" type="bool" label="30001" default="true" />
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.multimedia.mpd">
+		<category id="general" label="30000" help="">
+			<group id="1" label="1010"/>
+			<group id="2">
+				<setting id="RESTART_ON_RESUME" type="boolean" label="30001" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

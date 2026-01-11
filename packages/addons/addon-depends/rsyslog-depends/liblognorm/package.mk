@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="liblognorm"
-PKG_VERSION="2.0.8"
-PKG_SHA256="00309c44d817a5fd27225f62ef96eddf3c27978a88afc16c4236ae809f2522a8"
+PKG_VERSION="2.0.9"
+PKG_SHA256="5ba04e808f6530592b699e0994fd00fab84c1e323885d9be6dc91f4919f57801"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.liblognorm.com"
 PKG_URL="https://github.com/rsyslog/liblognorm/archive/v${PKG_VERSION}.tar.gz"

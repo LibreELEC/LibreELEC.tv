@@ -1,8 +1,29 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-  <category label="30000">
-    <setting label="30001" type="lsep"/>
-    <setting label="30002" id="MYSQL_ROOT_PASS" type="text" default="" />
-    <setting label="30003" id="MYSQL_KODI_PASS" type="text" default="" />
-  </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.mariadb">
+		<category id="accounts" label="30000" help="">
+			<group id="1" label="30001">
+				<setting id="MYSQL_ROOT_PASS" type="string" label="30002" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="edit" format="string">
+						<heading>30002</heading>
+					</control>
+				</setting>
+				<setting id="MYSQL_KODI_PASS" type="string" label="30003" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control type="edit" format="string">
+						<heading>30003</heading>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

@@ -1,16 +1,70 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-   <!-- net-snmp -->
-    <category label="32000">
-		<setting label="32001" id="COMMUNITY" type="text" default="libreelec"/>
-		<setting label="32002" id="LOCATION" type="text" default="HOME"/>
-		<setting label="32003" id="CONTACT" type="text" default="root@localhost"/>
-		<setting label="32004" id="SNMPVERSION" type="labelenum" values="v1|v2c|v3" default="v2c"/>
-		<setting label="32007" type="lsep"/>
-		<setting label="32005" id="SNMPUSER" type="text" default="user"/>
-		<setting label="32006" id="SNMPPASSWORD" type="text" default="password"/>
-		<setting label="32008" type="lsep"/>
-		<setting label="32009" type="bool" id="CPUTEMP" default="true"/>
-		<setting label="32010" type="bool" id="GPUTEMP" default="false"/>
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.net-snmp">
+		<category id="general" label="32000" help="">
+			<group id="1">
+				<setting id="COMMUNITY" type="string" label="32001" help="">
+					<level>0</level>
+					<default>libreelec</default>
+					<control type="edit" format="string">
+						<heading>32001</heading>
+					</control>
+				</setting>
+				<setting id="LOCATION" type="string" label="32002" help="">
+					<level>0</level>
+					<default>HOME</default>
+					<control type="edit" format="string">
+						<heading>32002</heading>
+					</control>
+				</setting>
+				<setting id="CONTACT" type="string" label="32003" help="">
+					<level>0</level>
+					<default>root@localhost</default>
+					<control type="edit" format="string">
+						<heading>32003</heading>
+					</control>
+				</setting>
+				<setting id="SNMPVERSION" type="string" label="32004" help="">
+					<level>0</level>
+					<default>v2c</default>
+					<constraints>
+						<options>
+							<option label="v1">v1</option>
+							<option label="v2c">v2c</option>
+							<option label="v3">v3</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+			</group>
+			<group id="2" label="32007">
+				<setting id="SNMPUSER" type="string" label="32005" help="">
+					<level>0</level>
+					<default>user</default>
+					<control type="edit" format="string">
+						<heading>32005</heading>
+					</control>
+				</setting>
+				<setting id="SNMPPASSWORD" type="string" label="32006" help="">
+					<level>0</level>
+					<default>password</default>
+					<control type="edit" format="string">
+						<heading>32006</heading>
+					</control>
+				</setting>
+			</group>
+			<group id="3" label="32008">
+				<setting id="CPUTEMP" type="boolean" label="32009" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="GPUTEMP" type="boolean" label="32010" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

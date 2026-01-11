@@ -1,6 +1,21 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-   <category   label="30000">
-      <setting label="30001" id="emby_nice" type="slider" default="10" range="0,1,19" option="int" />
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.emby4">
+		<category id="configuration" label="30000" help="">
+			<group id="1">
+				<setting id="emby_nice" type="integer" label="30001" help="">
+					<level>0</level>
+					<default>10</default>
+					<constraints>
+						<minimum>0</minimum>
+						<step>1</step>
+						<maximum>19</maximum>
+					</constraints>
+					<control type="slider" format="integer">
+						<popup>false</popup>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

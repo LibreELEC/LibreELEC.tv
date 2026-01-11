@@ -1,13 +1,122 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-   <category   label="30000">
-      <setting label="30001" type="bool"      id="RSYSLOG_MANUAL"                                              default="false" />
-      <setting label="30002" type="text"      id="RSYSLOG_IP_NAME_FQDN"                                        default=""       visible="eq(-1,false)" />
-      <setting label="30003" type="number"    id="RSYSLOG_PORT"                                                default="514"    visible="eq(-2,false)" />
-      <setting label="30004" type="labelenum" id="RSYSLOG_PROTOCOL"               values="UDP|TCP|RELP"        default="UDP"    visible="eq(-3,false)" />
-      <setting label="30005" type="bool"      id="RSYSLOG_JOURNAL_LOGGING"                                     default="false"  visible="eq(-4,false)" />
-      <setting label="30006" type="bool"      id="RSYSLOG_KODI_LOGGING"                                        default="true"   visible="eq(-5,false)" />
-      <setting label="30007" type="bool"      id="RSYSLOG_ZLIB_COMPRESSION"                                    default="false"  visible="eq(-6,false)+!eq(-3,2)" />
-      <setting label="30008" type="labelenum" id="RSYSLOG_ZLIB_COMPRESSION_LEVEL" values="0|1|2|3|4|5|6|7|8|9" default="0"      visible="eq(-7,false)+!eq(-4,2)+eq(-1,true)" enable="eq(-1,true)" subsetting="true" />
-   </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.rsyslog">
+		<category id="configuration" label="30000" help="">
+			<group id="1">
+				<setting id="RSYSLOG_MANUAL" type="boolean" label="30001" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
+				<setting id="RSYSLOG_IP_NAME_FQDN" type="string" label="30002" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30002</heading>
+					</control>
+				</setting>
+				<setting id="RSYSLOG_PORT" type="integer" label="30003" help="">
+					<level>0</level>
+					<default>514</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="integer">
+						<heading>30003</heading>
+					</control>
+				</setting>
+				<setting id="RSYSLOG_PROTOCOL" type="string" label="30004" help="">
+					<level>0</level>
+					<default>UDP</default>
+					<constraints>
+						<options>
+							<option label="UDP">UDP</option>
+							<option label="TCP">TCP</option>
+							<option label="RELP">RELP</option>
+						</options>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="RSYSLOG_JOURNAL_LOGGING" type="boolean" label="30005" help="">
+					<level>0</level>
+					<default>false</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="toggle"/>
+				</setting>
+				<setting id="RSYSLOG_KODI_LOGGING" type="boolean" label="30006" help="">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+						</dependency>
+					</dependencies>
+					<control type="toggle"/>
+				</setting>
+				<setting id="RSYSLOG_ZLIB_COMPRESSION" type="boolean" label="30007" help="">
+					<level>0</level>
+					<default>false</default>
+					<dependencies>
+						<dependency type="visible">
+							<and>
+								<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+								<condition operator="!is" setting="RSYSLOG_PROTOCOL">2</condition>
+							</and>
+						</dependency>
+					</dependencies>
+					<control type="toggle"/>
+				</setting>
+				<setting id="RSYSLOG_ZLIB_COMPRESSION_LEVEL" type="string" label="30008" help="" parent="RSYSLOG_ZLIB_COMPRESSION">
+					<level>0</level>
+					<default>0</default>
+					<constraints>
+						<options>
+							<option label="0">0</option>
+							<option label="1">1</option>
+							<option label="2">2</option>
+							<option label="3">3</option>
+							<option label="4">4</option>
+							<option label="5">5</option>
+							<option label="6">6</option>
+							<option label="7">7</option>
+							<option label="8">8</option>
+							<option label="9">9</option>
+						</options>
+					</constraints>
+					<dependencies>
+						<dependency type="enable">
+							<condition operator="is" setting="RSYSLOG_ZLIB_COMPRESSION">true</condition>
+						</dependency>
+						<dependency type="visible">
+							<and>
+								<condition operator="is" setting="RSYSLOG_MANUAL">false</condition>
+								<condition operator="!is" setting="RSYSLOG_PROTOCOL">2</condition>
+								<condition operator="is" setting="RSYSLOG_ZLIB_COMPRESSION">true</condition>
+							</and>
+						</dependency>
+					</dependencies>
+					<control type="spinner" format="string"/>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>

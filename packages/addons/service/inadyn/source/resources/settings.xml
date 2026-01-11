@@ -1,42 +1,107 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-   <category label="30000">
-      <!-- grep \"default@ inadyn-2.4/plugins/* | awk '{print $4}' | sed 's/"//g;s/,/|/g' | sort -->
-      <setting id="inadyn_S" label="30001" type="select" default="inadyn.conf" values="inadyn.conf|
-default@changeip.com|
-default@cloudxns.net|
-default@ddnss.de|
-default@dhis.org|
-default@dnsexit.com|
-default@dnsomatic.com|
-default@dnspod.cn|
-default@domains.google.com|
-default@dtdns.com|
-default@duckdns.org|
-default@duiadns.net|
-default@dyndns.org|
-default@dynsip.org|
-default@dynu.com|
-default@dynv6.com|
-default@easydns.com|
-default@freedns.afraid.org|
-default@freemyip.com|
-default@gira.de|
-default@ipv4.dynv6.com|
-default@loopia.com|
-default@no-ip.com|
-default@ovh.com|
-default@sitelutions.com|
-default@spdyn.de|
-default@strato.com|
-default@tunnelbroker.net|
-default@tzo.com|
-default@zerigo.com|
-default@zoneedit.com
-" />
-      <setting id="inadyn_u" label="30002" type="text" visible="!eq(-1,inadyn.conf)" />
-      <setting id="inadyn_p" label="30003" type="text" visible="!eq(-2,inadyn.conf)" option="hidden" />
-      <setting id="inadyn_a" label="30004" type="text" visible="!eq(-3,inadyn.conf)" />
-      <setting id="inadyn_c" label="30005" type="bool" visible="!eq(-4,inadyn.conf)" default="true"/>
-    </category>
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="service.system.inadyn">
+		<category id="configuration" label="30000" help="">
+			<group id="1">
+				<setting id="inadyn_S" type="string" label="30001" help="">
+					<level>0</level>
+					<default>inadyn.conf</default>
+					<constraints>
+						<options>
+							<option>inadyn.conf</option>
+							<option> default@changeip.com</option>
+							<option> default@cloudxns.net</option>
+							<option> default@ddnss.de</option>
+							<option> default@dhis.org</option>
+							<option> default@dnsexit.com</option>
+							<option> default@dnsomatic.com</option>
+							<option> default@dnspod.cn</option>
+							<option> default@domains.google.com</option>
+							<option> default@dtdns.com</option>
+							<option> default@duckdns.org</option>
+							<option> default@duiadns.net</option>
+							<option> default@dyndns.org</option>
+							<option> default@dynsip.org</option>
+							<option> default@dynu.com</option>
+							<option> default@dynv6.com</option>
+							<option> default@easydns.com</option>
+							<option> default@freedns.afraid.org</option>
+							<option> default@freemyip.com</option>
+							<option> default@gira.de</option>
+							<option> default@ipv4.dynv6.com</option>
+							<option> default@loopia.com</option>
+							<option> default@no-ip.com</option>
+							<option> default@ovh.com</option>
+							<option> default@sitelutions.com</option>
+							<option> default@spdyn.de</option>
+							<option> default@strato.com</option>
+							<option> default@tunnelbroker.net</option>
+							<option> default@tzo.com</option>
+							<option> default@zerigo.com</option>
+							<option> default@zoneedit.com </option>
+						</options>
+					</constraints>
+					<control type="list" format="string">
+						<heading>30001</heading>
+					</control>
+				</setting>
+				<setting id="inadyn_u" type="string" label="30002" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="!is" setting="inadyn_S">inadyn.conf</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30002</heading>
+					</control>
+				</setting>
+				<setting id="inadyn_p" type="string" label="30003" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="!is" setting="inadyn_S">inadyn.conf</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30003</heading>
+						<hidden>true</hidden>
+					</control>
+				</setting>
+				<setting id="inadyn_a" type="string" label="30004" help="">
+					<level>0</level>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="!is" setting="inadyn_S">inadyn.conf</condition>
+						</dependency>
+					</dependencies>
+					<control type="edit" format="string">
+						<heading>30004</heading>
+					</control>
+				</setting>
+				<setting id="inadyn_c" type="boolean" label="30005" help="">
+					<level>0</level>
+					<default>true</default>
+					<dependencies>
+						<dependency type="visible">
+							<condition operator="!is" setting="inadyn_S">inadyn.conf</condition>
+						</dependency>
+					</dependencies>
+					<control type="toggle"/>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>
