@@ -2,8 +2,8 @@
 # Copyright (C) 2025-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="ntfsprogs-plus"
-PKG_VERSION="07376d823679eeddce8e20a8675e66b48999c8ae"
-PKG_SHA256="99532bfef9514d940615d552784e4a38f49ee6d1c03c0ae0523c893ca6d3f842"
+PKG_VERSION="c11c1f69968dd169203729a6e25eaf5af0fcad8a"
+PKG_SHA256="fe14e374373ee427643d3d0bbedcfa19f37ecd1628d4b9e78565f4002c1f1d25"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/ntfsprogs-plus/ntfsprogs-plus"
 PKG_URL="https://github.com/ntfsprogs-plus/ntfsprogs-plus/archive/${PKG_VERSION}.tar.gz"
