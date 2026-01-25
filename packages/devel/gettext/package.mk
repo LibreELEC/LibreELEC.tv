@@ -3,11 +3,12 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="gettext"
-PKG_VERSION="0.26"
-PKG_SHA256="d1fb86e260cfe7da6031f94d2e44c0da55903dbae0a2fa0fae78c91ae1b56f00"
+PKG_VERSION="1.0-pre2"
+PKG_SHA256="c2ea47b7d8d873a19e138b5d89cc052aea49171a8e5f2714f7fbd5b80e7069b8"
 PKG_LICENSE="GPL"
 PKG_SITE="https://www.gnu.org/s/gettext/"
 PKG_URL="https://ftp.gnu.org/pub/gnu/gettext/${PKG_NAME}-${PKG_VERSION}.tar.xz"
+PKG_URL="https://alpha.gnu.org/gnu/gettext/${PKG_NAME}-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_HOST="make:host"
 PKG_DEPENDS_TARGET="autotools:host make:host gcc:host"
 PKG_LONGDESC="A program internationalization library and tools."
