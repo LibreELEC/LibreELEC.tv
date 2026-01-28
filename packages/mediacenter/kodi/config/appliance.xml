@@ -27,7 +27,7 @@
     <category id="audio">
       <group id="1">
         <setting id="audiooutput.volumesteps">
-          <default>20</default>
+          <default>30</default>
         </setting>
       </group>
     </category>
