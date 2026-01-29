@@ -1,0 +1,39 @@
+From 87404577c3413d9b1dc667daa55c3f31fe7d14b4 Mon Sep 17 00:00:00 2001
+From: Stephan Raue <stephan@openelec.tv>
+Date: Mon, 23 Jun 2014 19:01:16 +0200
+Subject: [PATCH] dont build docs and examples
+
+---
+ gettext-tools/Makefile.am | 2 +-
+ gettext-tools/Makefile.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gettext-tools/Makefile.am b/gettext-tools/Makefile.am
+index e045161c3..bb5e06596 100644
+--- a/gettext-tools/Makefile.am
++++ b/gettext-tools/Makefile.am
+@@ -19,7 +19,7 @@
+ AUTOMAKE_OPTIONS = 1.5 gnu
+ ACLOCAL_AMFLAGS = -I m4 -I ../gettext-runtime/m4 -I ../m4 -I gnulib-m4 -I libgrep/gnulib-m4 -I libgettextpo/gnulib-m4 -I tests/gnulib-m4
+ 
+-SUBDIRS = gnulib-lib libgrep src libgettextpo po its projects styles wizard autotools misc emacs man m4 tests system-tests gnulib-tests install-tests examples doc
++SUBDIRS = gnulib-lib libgrep src libgettextpo po its projects styles wizard autotools misc emacs man m4 tests system-tests gnulib-tests install-tests
+ 
+ EXTRA_DIST =
+ MOSTLYCLEANFILES = core *.stackdump
+diff --git a/gettext-tools/Makefile.in b/gettext-tools/Makefile.in
+index 147f88d8f..5f1aa9dbd 100644
+--- a/gettext-tools/Makefile.in
++++ b/gettext-tools/Makefile.in
+@@ -4014,7 +4014,7 @@ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ AUTOMAKE_OPTIONS = 1.5 gnu
+ ACLOCAL_AMFLAGS = -I m4 -I ../gettext-runtime/m4 -I ../m4 -I gnulib-m4 -I libgrep/gnulib-m4 -I libgettextpo/gnulib-m4 -I tests/gnulib-m4
+-SUBDIRS = gnulib-lib libgrep src libgettextpo po its projects styles wizard autotools misc emacs man m4 tests system-tests gnulib-tests install-tests examples doc
++SUBDIRS = gnulib-lib libgrep src libgettextpo po its projects styles wizard autotools misc emacs man m4 tests system-tests gnulib-tests install-tests
+ 
+ # Files imported from tree-sitter.
+ 
+-- 
+2.51.0
+

@@ -1,0 +1,31 @@
+From 7bc50b4959949318a54355dfedbcc3b82658b1ae Mon Sep 17 00:00:00 2001
+From: Stephan Raue <stephan@openelec.tv>
+Date: Thu, 6 Oct 2011 21:12:09 +0200
+Subject: [PATCH] non interactive
+
+---
+ gettext-tools/wizard/gettextize.in | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gettext-tools/wizard/gettextize.in b/gettext-tools/wizard/gettextize.in
+index d50eb480c..bfe408109 100644
+--- a/gettext-tools/wizard/gettextize.in
++++ b/gettext-tools/wizard/gettextize.in
+@@ -1318,10 +1318,10 @@ if $doit; then
+     5) count="five paragraphs";;
+     *) count="$count paragraphs";;
+   esac
+-  echo "Press Return to acknowledge the previous $count."
+-  # Read from /dev/tty, not stdin, so that gettextize cannot be abused by
+-  # non-interactive tools.
+-  read dummy < /dev/tty
++#  echo "Press Return to acknowledge the previous $count."
++#  # Read from /dev/tty, not stdin, so that gettextize cannot be abused by
++#  # non-interactive tools.
++#  read dummy < /dev/tty
+ fi
+ 
+ exit 0
+-- 
+2.51.0
+
