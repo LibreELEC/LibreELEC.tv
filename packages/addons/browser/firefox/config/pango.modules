@@ -1,0 +1,13 @@
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-arabic-lang.so ArabicScriptEngineLang PangoEngineLang PangoRenderNone arabic:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-basic-fc.so BasicScriptEngineFc PangoEngineShape PangoRenderFc common:
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so devaIndicScriptEngineLang PangoEngineLang PangoRenderNone devanagari:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so bengIndicScriptEngineLang PangoEngineLang PangoRenderNone bengali:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so guruIndicScriptEngineLang PangoEngineLang PangoRenderNone gurmukhi:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so gujrIndicScriptEngineLang PangoEngineLang PangoRenderNone gujarati:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so oryaIndicScriptEngineLang PangoEngineLang PangoRenderNone oriya:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so tamlIndicScriptEngineLang PangoEngineLang PangoRenderNone tamil:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so teluIndicScriptEngineLang PangoEngineLang PangoRenderNone telugu:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so kndaIndicScriptEngineLang PangoEngineLang PangoRenderNone kannada:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so mlymIndicScriptEngineLang PangoEngineLang PangoRenderNone malayalam:*
+/storage/.kodi/addons/browser.firefox/pango-modules/pango-indic-lang.so sinhIndicScriptEngineLang PangoEngineLang PangoRenderNone sinhala:*
+
