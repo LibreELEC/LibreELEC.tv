@@ -2,8 +2,8 @@
 # Copyright (C) 2024-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="tree"
-PKG_VERSION="2.2.1"
-PKG_SHA256="5caddcbca805131ff590b126d3218019882e4ca10bc9eb490bba51c05b9b3b75"
+PKG_VERSION="2.3.1"
+PKG_SHA256="621ff2b4faf214d7023143f6f9d496117c7c75131927837750b904140aff48a1"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/Old-Man-Programmer/tree"
 PKG_URL="https://github.com/Old-Man-Programmer/tree/archive/${PKG_VERSION}.tar.gz"
