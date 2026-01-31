@@ -33,5 +33,8 @@
   # set the addon project
     ADDON_PROJECT="ARMv8"
 
+  # additional drivers
+    ADDITIONAL_DRIVERS+=" aic8800"
+
   # additional packages
     ADDITIONAL_PACKAGES+=" pciutils"
