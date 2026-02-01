@@ -1,0 +1,39 @@
+From 4ae6b5b06df28680ee49c59bd4946609b540ef41 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 31 Jan 2026 12:08:53 +0000
+Subject: [PATCH] dont build tests
+
+---
+ Makefile.am | 2 +-
+ Makefile.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index f4da0905..7994ed3e 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -42,7 +42,7 @@ endif
+ 
+ 
+ DIST_SUBDIRS = m4 compat mpi cipher random src doc tests
+-SUBDIRS =         compat mpi cipher random src $(doc) tests
++SUBDIRS =         compat mpi cipher random src $(doc)
+ 
+ EXTRA_DIST = autogen.sh autogen.rc README.GIT LICENSES			   \
+ 	     ChangeLog-2011 build-aux/ChangeLog-2011 doc/ChangeLog-2011	   \
+diff --git a/Makefile.in b/Makefile.in
+index 3d310b20..0372a877 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -423,7 +423,7 @@ GITLOG_TO_CHANGELOG = gitlog-to-changelog
+ @BUILD_DOC_FALSE@doc = 
+ @BUILD_DOC_TRUE@doc = doc
+ DIST_SUBDIRS = m4 compat mpi cipher random src doc tests
+-SUBDIRS = compat mpi cipher random src $(doc) tests
++SUBDIRS = compat mpi cipher random src $(doc)
+ EXTRA_DIST = autogen.sh autogen.rc README.GIT LICENSES			   \
+ 	     ChangeLog-2011 build-aux/ChangeLog-2011 doc/ChangeLog-2011	   \
+ 	     m4/ChangeLog-2011 cipher/ChangeLog-2011 src/ChangeLog-2011	   \
+-- 
+2.51.0
+

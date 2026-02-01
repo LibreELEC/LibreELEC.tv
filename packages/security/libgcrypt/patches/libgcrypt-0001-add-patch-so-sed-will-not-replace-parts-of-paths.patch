@@ -1,7 +1,19 @@
-diff -Naur libgcrypt-1.11.0/cipher/Makefile.am libgcrypt-1.11.0.patch/cipher/Makefile.am
---- libgcrypt-1.11.0/cipher/Makefile.am	2009-12-11 16:31:38.000000000 +0100
-+++ libgcrypt-1.11.0.patch/cipher/Makefile.am	2011-05-08 03:21:56.463021968 +0200
-@@ -174,7 +174,7 @@
+From 5720a854ebaa84a04d7393f2acd3466494d3165c Mon Sep 17 00:00:00 2001
+From: Stephan Raue <stephan@openelec.tv>
+Date: Sun, 8 May 2011 03:25:04 +0200
+Subject: [PATCH] add patch so sed will not replace parts of paths
+
+Signed-off-by: Stephan Raue <stephan@openelec.tv>
+---
+ cipher/Makefile.am | 2 +-
+ cipher/Makefile.in | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cipher/Makefile.am b/cipher/Makefile.am
+index 11bb19d7..f9219f54 100644
+--- a/cipher/Makefile.am
++++ b/cipher/Makefile.am
+@@ -180,7 +180,7 @@ gost-s-box$(EXEEXT_FOR_BUILD): gost-s-box.c
  
  
  if ENABLE_O_FLAG_MUNGING
@@ -10,11 +22,11 @@ diff -Naur libgcrypt-1.11.0/cipher/Makefile.am libgcrypt-1.11.0.patch/cipher/Mak
  else
  o_flag_munging = cat
  endif
-diff -Naur libgcrypt-1.11.0/cipher/Makefile.in libgcrypt-1.11.0.patch/cipher/Makefile.in
---- libgcrypt-1.11.0/cipher/Makefile.in	2010-07-13 17:42:20.000000000 +0200
-+++ libgcrypt-1.11.0.patch/cipher/Makefile.in	2011-05-08 03:22:12.059208971 +0200
-@ENABLE_O_FLAG_MUNGING_TRUE@o_flag_munging = sed -e 's/[[:blank:]]-O\([2-9sgz][2-9sgz]*\)/ -O1 /' -e 's/[[:blank:]]-Ofast/ -O1 /g'
-@@ -654,7 +654,7 @@
+diff --git a/cipher/Makefile.in b/cipher/Makefile.in
+index c9a57a1e..b170315a 100644
+--- a/cipher/Makefile.in
++++ b/cipher/Makefile.in
+@@ -671,7 +671,7 @@ EXTRA_libcipher_la_SOURCES = \
  	blake2s-amd64-avx.S blake2s-amd64-avx512.S
  
  @ENABLE_O_FLAG_MUNGING_FALSE@o_flag_munging = cat
@@ -23,3 +35,6 @@ diff -Naur libgcrypt-1.11.0/cipher/Makefile.in libgcrypt-1.11.0.patch/cipher/Mak
  @ENABLE_INSTRUMENTATION_MUNGING_FALSE@instrumentation_munging = cat
  
  # We need to disable instrumentation for these modules as they use cc as
+-- 
+2.51.0
+

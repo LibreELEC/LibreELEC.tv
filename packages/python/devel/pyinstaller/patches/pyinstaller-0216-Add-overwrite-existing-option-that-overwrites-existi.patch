@@ -1,14 +1,13 @@
-From 4628ef70e1159d3cbab58d395f647c3dff887650 Mon Sep 17 00:00:00 2001
+From 0b003fab8e86fcf569ab7a6cbf9cf19b3a08f3f1 Mon Sep 17 00:00:00 2001
 From: Carl Smedstad <carl.smedstad@protonmail.com>
-Date: Tue, 13 Feb 2024 21:10:22 +0100
+Date: Wed, 28 Aug 2024 21:47:18 +0200
 Subject: [PATCH] Add --overwrite-existing option that overwrites existing
- files
+ files (#216)
 
-Implement the --overwrite-existing option that, if supplied, will make
-installer overwrite any already existing package files instead of
-failing. With this flag, installer can be used in an idempotent manner,
-i.e. the same command can be executed multiple times with the same
-result:
+Implement the --overwrite-existing option that, if supplied, will make installer
+overwrite any already existing package files instead of failing. With
+this flag, installer can be used in an idempotent manner, i.e. the same
+command can be executed multiple times with the same result:
 
     python -m installer --overwrite-existing --destdir=tmp dist/*.whl
     python -m installer --overwrite-existing --destdir=tmp dist/*.whl
@@ -23,9 +22,9 @@ diff --git a/src/installer/__main__.py b/src/installer/__main__.py
 index 7ece8d213fe4..b587232912f9 100644
 --- a/src/installer/__main__.py
 +++ b/src/installer/__main__.py
-@@ -51,6 +51,11 @@ def _get_main_parser() -> argparse.ArgumentParser:
-         choices=["all", "entries", "none"],
-         help="validate the wheel against certain part of its record (default=none)",
+@@ -43,6 +43,11 @@ def _get_main_parser() -> argparse.ArgumentParser:
+         action="store_true",
+         help="don't generate bytecode for installed modules",
      )
 +    parser.add_argument(
 +        "--overwrite-existing",
@@ -35,7 +34,7 @@ index 7ece8d213fe4..b587232912f9 100644
      return parser
  
  
-@@ -95,6 +100,7 @@ def _main(cli_args: Sequence[str], program: Optional[str] = None) -> None:
+@@ -90,6 +95,7 @@ def _main(cli_args: Sequence[str], program: Optional[str] = None) -> None:
              script_kind=get_launcher_kind(),
              bytecode_optimization_levels=bytecode_levels,
              destdir=args.destdir,
@@ -47,7 +46,7 @@ diff --git a/src/installer/destinations.py b/src/installer/destinations.py
 index 31a254c387be..982e6adfc218 100644
 --- a/src/installer/destinations.py
 +++ b/src/installer/destinations.py
-@@ -111,6 +111,7 @@ class SchemeDictionaryDestination(WheelDestination):
+@@ -112,6 +112,7 @@ class SchemeDictionaryDestination(WheelDestination):
          hash_algorithm: str = "sha256",
          bytecode_optimization_levels: Collection[int] = (),
          destdir: Optional[str] = None,
@@ -55,7 +54,7 @@ index 31a254c387be..982e6adfc218 100644
      ) -> None:
          """Construct a ``SchemeDictionaryDestination`` object.
  
-@@ -127,6 +128,7 @@ class SchemeDictionaryDestination(WheelDestination):
+@@ -128,6 +129,7 @@ class SchemeDictionaryDestination(WheelDestination):
          :param destdir: A staging directory in which to write all files. This
              is expected to be the filesystem root at runtime, so embedded paths
              will be written as though this was the root.
@@ -63,7 +62,7 @@ index 31a254c387be..982e6adfc218 100644
          """
          self.scheme_dict = scheme_dict
          self.interpreter = interpreter
-@@ -134,6 +136,7 @@ class SchemeDictionaryDestination(WheelDestination):
+@@ -135,6 +137,7 @@ class SchemeDictionaryDestination(WheelDestination):
          self.hash_algorithm = hash_algorithm
          self.bytecode_optimization_levels = bytecode_optimization_levels
          self.destdir = destdir
@@ -71,7 +70,7 @@ index 31a254c387be..982e6adfc218 100644
  
      def _path_with_destdir(self, scheme: Scheme, path: str) -> str:
          file = os.path.join(self.scheme_dict[scheme], path)
-@@ -161,7 +164,7 @@ class SchemeDictionaryDestination(WheelDestination):
+@@ -162,7 +165,7 @@ class SchemeDictionaryDestination(WheelDestination):
          - Hashes the written content, to determine the entry in the ``RECORD`` file.
          """
          target_path = self._path_with_destdir(scheme, path)
