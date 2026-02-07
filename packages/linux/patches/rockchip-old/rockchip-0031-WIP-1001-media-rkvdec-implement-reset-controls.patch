@@ -58,10 +58,10 @@ diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h b/drivers/medi
 index 15b9bee92016..3acc914888f6 100644
 --- a/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
 +++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-regs.h
-@@ -28,6 +28,11 @@
- #define RKVDEC_SOFTRST_EN_P				BIT(20)
+@@ -29,6 +29,11 @@
  #define RKVDEC_FORCE_SOFTRESET_VALID			BIT(21)
  #define RKVDEC_SOFTRESET_RDY				BIT(22)
+ #define RKVDEC_WR_DDR_ALIGN_EN				BIT(23)
 +#define RKVDEC_ERR_MASK					(RKVDEC_BUS_STA \
 +							 | RKVDEC_ERR_STA \
 +							 | RKVDEC_TIMEOUT_STA \
@@ -74,7 +74,7 @@ diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/pla
 index 7747e8396626..c9c59d090bb3 100644
 --- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 +++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
-@@ -10,13 +10,16 @@
+@@ -10,14 +10,17 @@
   */
  
  #include <linux/clk.h>
@@ -83,6 +83,7 @@ index 7747e8396626..c9c59d090bb3 100644
  #include <linux/iommu.h>
  #include <linux/module.h>
  #include <linux/of.h>
+ #include <linux/of_device.h>
  #include <linux/platform_device.h>
  #include <linux/pm.h>
  #include <linux/pm_runtime.h>
@@ -207,9 +208,9 @@ index 9a9f4fced7a1..101dfb4ec389 100644
  
  struct rkvdec_ctrl_desc {
 @@ -111,6 +118,8 @@ struct rkvdec_dev {
- 	struct mutex vdev_lock; /* serializes ioctls */
  	struct delayed_work watchdog_work;
  	struct iommu_domain *empty_domain;
+ 	const struct rkvdec_variant *variant;
 +	struct reset_control *rstc;
 +	u8 reset_mask;
  };

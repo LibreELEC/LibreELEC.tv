@@ -27,6 +27,14 @@ index c7841c7d5daf..a50218412fb0 100644
  #include <linux/module.h>
  #include <linux/platform_device.h>
  #include <linux/phy/phy.h>
+@@ -16,6 +16,7 @@
+ #include <drm/bridge/dw_hdmi.h>
+ #include <drm/drm_edid.h>
+ #include <drm/drm_of.h>
++#include <drm/drm_print.h>
+ #include <drm/drm_probe_helper.h>
+ #include <drm/drm_simple_kms_helper.h>
+ 
 @@ -73,6 +74,7 @@ struct rockchip_hdmi_chip_data {
  struct rockchip_hdmi {
  	struct device *dev;

@@ -629,7 +629,7 @@ index 000000000000..2e547133c3be
 +	addr = vb2_dma_contig_plane_dma_addr(&dst->vb2_buf, 0);
 +
 +	if (IEP_DEIN_OUT_MODE_FRAMES(dein_mode) == IEP_DEIN_OUT_FRAMES_2) {
-+		v4l2_m2m_buf_copy_metadata(ctx->prev_src_buf, dst, true);
++		v4l2_m2m_buf_copy_metadata(ctx->prev_src_buf, dst);
 +
 +		iep_write(iep, IEP_DEIN_OUT_IMG0_Y(ctx->field_bff), addr);
 +
@@ -645,7 +645,7 @@ index 000000000000..2e547133c3be
 +		addr = vb2_dma_contig_plane_dma_addr(&dst->vb2_buf, 0);
 +	}
 +
-+	v4l2_m2m_buf_copy_metadata(src, dst, true);
++	v4l2_m2m_buf_copy_metadata(src, dst);
 +
 +	iep_write(iep, IEP_DEIN_OUT_IMG1_Y(ctx->field_bff), addr);
 +
