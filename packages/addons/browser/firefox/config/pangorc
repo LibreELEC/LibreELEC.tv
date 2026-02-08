@@ -1,0 +1,10 @@
+#
+# pangorc file for uninstalled operation. If pango-viewer is run with
+# this file in the current directory it will set it as PANGO_RC_FILE
+#
+
+[Pango]
+ModuleFiles = /storage/.kodi/addons/browser.firefox/config/pango.modules
+
+[PangoX]
+AliasFiles = /storage/.kodi/addons/browser.firefox/config/pangx.aliases
