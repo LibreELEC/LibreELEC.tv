@@ -20,6 +20,10 @@ PKG_CMAKE_OPTS_TARGET="-DWITH_EXTERNAL_ZLIB=ON
                        -DDEFAULT_SSL_VERIFY_SERVER_CERT=OFF
                       "
 
+pre_configure_target() {
+  export CFLAGS+=" -Wno-discarded-qualifiers"
+}
+
 post_makeinstall_target() {
   # keep mariadb shared library and modern authentication plugins
   LIBDIR=${INSTALL}/usr/lib
