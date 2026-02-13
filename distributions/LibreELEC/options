@@ -90,6 +90,9 @@
 # swapfile size if SWAP_SUPPORT=yes in MB
   SWAPFILESIZE="128"
 
+# use an overlayfs for a writeable /etc/
+  WRITEABLE_ETC="no"
+
 # debug tty path
   DEBUG_TTY="/dev/tty3"
 

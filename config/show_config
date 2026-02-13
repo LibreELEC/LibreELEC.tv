@@ -81,6 +81,7 @@ show_config() {
   config_message+="\n\n Misc. Filesystems:"
   config_message+="\n ${dashes}${dashes}"
 
+  config_message+="\n - Writeable /etc support: \t\t ${WRITEABLE_ETC}"
   config_message+="\n - Swap Support:\t\t\t ${SWAP_SUPPORT}"
   if [ "${SWAP_SUPPORT}" = "yes" ]; then
     config_message+="\n   - Swapfile default size:\t\t ${SWAPFILESIZE}"
