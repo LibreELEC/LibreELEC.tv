@@ -18,15 +18,6 @@ if [ "${MOLD_SUPPORT}" = "yes" ]; then
   PKG_DEPENDS_HOST+=" mold:host"
 fi
 
-case ${TARGET_ARCH} in
-  arm | riscv64)
-    OPTS_LIBATOMIC="--enable-libatomic"
-    ;;
-  *)
-    OPTS_LIBATOMIC="--disable-libatomic"
-    ;;
-esac
-
 GCC_COMMON_CONFIGURE_OPTS="--target=${TARGET_NAME} \
                            --with-sysroot=${SYSROOT_PREFIX} \
                            --with-gmp=${TOOLCHAIN} \
@@ -70,7 +61,7 @@ PKG_CONFIGURE_OPTS_BOOTSTRAP="${GCC_COMMON_CONFIGURE_OPTS} \
 
 PKG_CONFIGURE_OPTS_HOST="${GCC_COMMON_CONFIGURE_OPTS} \
                          --enable-languages=c,c++ \
-                         ${OPTS_LIBATOMIC} \
+                         --enable-libatomic \
                          --enable-decimal-float \
                          --enable-tls \
                          --enable-shared \
@@ -168,9 +159,7 @@ makeinstall_target() {
   mkdir -p ${INSTALL}/usr/lib
     cp -P ${PKG_BUILD}/.${HOST_NAME}/${TARGET_NAME}/libgcc/libgcc_s.so* ${INSTALL}/usr/lib
     cp -P ${PKG_BUILD}/.${HOST_NAME}/${TARGET_NAME}/libstdc++-v3/src/.libs/libstdc++.so* ${INSTALL}/usr/lib
-    if [ "${OPTS_LIBATOMIC}" = "--enable-libatomic" ]; then
-      cp -P ${PKG_BUILD}/.${HOST_NAME}/${TARGET_NAME}/libatomic/.libs/libatomic.so* ${INSTALL}/usr/lib
-    fi
+    cp -P ${PKG_BUILD}/.${HOST_NAME}/${TARGET_NAME}/libatomic/.libs/libatomic.so* ${INSTALL}/usr/lib
 }
 
 configure_init() {
