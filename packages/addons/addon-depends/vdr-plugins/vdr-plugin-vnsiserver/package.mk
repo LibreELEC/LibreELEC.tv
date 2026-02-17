@@ -3,8 +3,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="vdr-plugin-vnsiserver"
-PKG_VERSION="65bfc62b16ffd278f40eb35a749fb3d1f467e112"
-PKG_SHA256="e34533c0aed3f6e1dac3bfb608509df532089736ff04632d762438d796d339db"
+PKG_VERSION="1.8.4"
+PKG_SHA256="c8fe885a979dd9b6ba1536b9141096fe228975a39e08077218d845e7f2f0a947"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/vdr-projects/vdr-plugin-vnsiserver"
 PKG_URL="https://github.com/vdr-projects/vdr-plugin-vnsiserver/archive/${PKG_VERSION}.tar.gz"
