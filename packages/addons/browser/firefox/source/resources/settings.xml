@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+    <category label="30000">
+        <setting label="30001" type="lsep"/>
+        <setting type="sep" />
+        <setting id="PAUSE_XBMC" type="bool" label="30002" default="true" />
+        <setting id="VAAPI_MODE" type="labelenum" label="30003" values="off|intel|amd|nvidia" default="intel"/>
+        <setting id="WINDOW_MODE" type="labelenum" label="30005" values="maximized|kiosk|none" default="maximized" />
+        <setting id="HOMEPAGE" type="text" label="30006" default="https://libreelec.tv" />
+        <setting id="USE_CUST_AUDIODEVICE" type="bool" label="30007" default="false" />
+        <setting id="CUST_AUDIODEVICE_STR" type="text" label="30008" visible="eq(-1,true)" subsetting="true" default="" />
+        <setting id="HIDE_CURSOR" type="bool" label="30009" default="false" />
+        <setting id="DARK_MODE" type="bool" label="30010" default="false" />
+        <setting id="USE_CUST_USERAGENT" type="bool" label="30011" default="false" />
+        <setting id="CUST_USERAGENT_STR" type="text" label="30012" visible="eq(-1,true)" subsetting="true" default="Mozilla/5.0 (X11; Linux x86_64; rv:140.0) like Gecko/20100101 Firefox/140.0" />
+    </category>
+</settings>
