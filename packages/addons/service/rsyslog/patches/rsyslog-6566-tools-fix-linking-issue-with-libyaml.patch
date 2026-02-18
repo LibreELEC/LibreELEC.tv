@@ -1,0 +1,41 @@
+From 4f85f2898b0f0a8be2e23888889be8de09082fe7 Mon Sep 17 00:00:00 2001
+From: Rainer Gerhards <rgerhards@adiscon.com>
+Date: Wed, 18 Feb 2026 17:29:38 +0100
+Subject: [PATCH] tools: fix linking issue with libyaml
+
+When building rsyslogd with libyaml support, the library was not being
+explicitly linked. This implementation adds $(LIBYAML_LIBS) to
+rsyslogd_LDADD to resolve undefined references during linking,
+particularly in static or cross-compilation scenarios.
+
+Fixes https://github.com/rsyslog/rsyslog/issues/6563
+
+With the help of AI-Agents: Antigravity
+---
+ tools/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/Makefile.am b/tools/Makefile.am
+index 195c1e771b..825c01ae98 100644
+--- a/tools/Makefile.am
++++ b/tools/Makefile.am
+@@ -48,7 +48,7 @@ rsyslogd_CPPFLAGS += -DSD_EXPORT_SYMBOLS
+ # note: it looks like librsyslog.la must be explicitely given on LDDADD,
+ # otherwise dependencies are not properly calculated (resulting in a
+ # potentially incomplete build, a problem we had several times...)
+-rsyslogd_LDADD = ../grammar/libgrammar.la ../runtime/librsyslog.la ../compat/compat.la $(ZLIB_LIBS) $(PTHREADS_LIBS) $(RSRT_LIBS) $(SOL_LIBS) $(LIBUUID_LIBS) $(HASH_XXHASH_LIBS) $(LIBRESOLV_LIBS)
++rsyslogd_LDADD = ../grammar/libgrammar.la ../runtime/librsyslog.la ../compat/compat.la $(ZLIB_LIBS) $(PTHREADS_LIBS) $(RSRT_LIBS) $(SOL_LIBS) $(LIBUUID_LIBS) $(HASH_XXHASH_LIBS) $(LIBRESOLV_LIBS) $(LIBYAML_LIBS)
+ 
+ # Note: do NOT indent the if chain - it will not work!
+ if OS_LINUX
+--- a/tools/Makefile.in	2026-02-16 16:26:02.831439349 +0000
++++ b/tools/Makefile.in	2026-02-18 21:07:24.098038149 +0000
+@@ -608,7 +608,7 @@
+ rsyslogd_LDADD = ../grammar/libgrammar.la ../runtime/librsyslog.la \
+ 	../compat/compat.la $(ZLIB_LIBS) $(PTHREADS_LIBS) $(RSRT_LIBS) \
+ 	$(SOL_LIBS) $(LIBUUID_LIBS) $(HASH_XXHASH_LIBS) \
+-	$(LIBRESOLV_LIBS) $(am__append_2)
++	$(LIBRESOLV_LIBS) $(am__append_2) $(LIBYAML_LIBS)
+ @OS_AIX_FALSE@@OS_APPLE_FALSE@@OS_LINUX_FALSE@rsyslogd_LDFLAGS = -export-dynamic
+ @OS_AIX_TRUE@@OS_APPLE_FALSE@@OS_LINUX_FALSE@rsyslogd_LDFLAGS = -brtl -bexpall -f"aix_exports_list" -lsrc
+ @OS_APPLE_TRUE@@OS_LINUX_FALSE@rsyslogd_LDFLAGS = -export-dynamic \
