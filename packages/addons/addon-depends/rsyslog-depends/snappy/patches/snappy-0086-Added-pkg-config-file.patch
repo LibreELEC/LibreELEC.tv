@@ -1,0 +1,71 @@
+From 94dd4a1079d8d4d6e5871f20aee9fd49ffc75e75 Mon Sep 17 00:00:00 2001
+From: Sebastien Lavoie <sebastien.lavoie@shopify.com>
+Date: Mon, 28 Oct 2019 10:51:47 -0400
+Subject: [PATCH] Added pkg-config file and .gitignore
+
+---
+ CMakeLists.txt        | 23 ++++++++++++++++++++++-
+ cmake/snappy.pc.in | 10 ++++++++++
+ 2 files changed, 32 insertions(+), 1 deletion(-)
+ create mode 100644 cmake/snappy.pc.in
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 32bfd90..879d733 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,8 @@
+ cmake_minimum_required(VERSION 3.10)
+-project(Snappy VERSION 1.2.2 LANGUAGES C CXX)
++
++set(SNAPPY_VER 1.2.2)
++
++project(Snappy VERSION ${SNAPPY_VER} LANGUAGES C CXX)
+ 
+ # This project requires C++11.
+ set(CMAKE_CXX_STANDARD 11)
+@@ -107,6 +110,21 @@ configure_file(
+   "${PROJECT_BINARY_DIR}/config.h"
+ )
+ 
++include(GNUInstallDirs)
++set(PKG_CONFIG_PREFIX ${CMAKE_INSTALL_PREFIX})
++if(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
++    set(PKG_CONFIG_LIBDIR ${CMAKE_INSTALL_LIBDIR})
++    set(PKG_CONFIG_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
++    set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
++else()
++    set(PKG_CONFIG_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
++    set(PKG_CONFIG_INCLUDEDIR "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
++    set(INSTALL_PKGCONFIG_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/pkgconfig" CACHE PATH "Installation directory for pkgconfig (.pc) files")
++endif(IS_ABSOLUTE ${CMAKE_INSTALL_LIBDIR})
++configure_file(
++  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/snappy.pc.in"
++  "${CMAKE_CURRENT_BINARY_DIR}/snappy.pc")
++
+ # We don't want to define HAVE_ macros in public headers. Instead, we use
+ # CMake's variable substitution with 0/1 variables, which will be seen by the
+ # preprocessor as constants.
+@@ -253,4 +271,7 @@ install(
+       "${PROJECT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake"
+     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+   )
++
++  install(FILES ${PROJECT_BINARY_DIR}/snappy.pc
++          DESTINATION ${INSTALL_PKGCONFIG_DIR})
+ endif(SNAPPY_INSTALL)
+diff --git a/cmake/snappy.pc.in b/cmake/snappy.pc.in
+new file mode 100644
+index 0000000..941ab08
+--- /dev/null
++++ b/cmake/snappy.pc.in
+@@ -0,0 +1,10 @@
++prefix=@PKG_CONFIG_PREFIX@
++exec_prefix=@PKG_CONFIG_PREFIX@
++libdir=@PKG_CONFIG_LIBDIR@
++includedir=@PKG_CONFIG_INCLUDEDIR@
++
++Name: snappy
++Description: Fast compressor/decompressor library.
++Version: @SNAPPY_VER@
++Libs: -L@PKG_CONFIG_LIBDIR@ -lsnappy
++Cflags: -I@PKG_CONFIG_INCLUDEDIR@
