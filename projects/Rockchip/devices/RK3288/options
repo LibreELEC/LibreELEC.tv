@@ -12,6 +12,9 @@
         ;;
     esac
 
+  # Kernel to use
+    LINUX="rockchip"
+
   # Kernel target
     KERNEL_TARGET="zImage"
 
