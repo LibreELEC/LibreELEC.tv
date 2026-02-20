@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2024-present Team LibreELEC (https://libreelec.tv)
+
+NTFSFIX=/usr/bin/ntfsfix
+NTFSPROBE=/usr/bin/ntfs-3g.probe
+
+# skip option arguments
+while getopts ":fnrsvwt:o:" opt; do
+  if [ "${opt}" = ':' ]; then
+    echo "$0: illegal option ${OPTARG}" >&2
+    exit 1
+  fi
+done
+
+# first non-option argument is device
+eval DEV=\$${OPTIND}
+if [ "${DEV}" ] && ! "${NTFSPROBE}" --readwrite "${DEV}"; then
+  "${NTFSFIX}" -d "${DEV}"
+fi
+
+exec /usr/bin/mount -t ntfs3 "$@"
