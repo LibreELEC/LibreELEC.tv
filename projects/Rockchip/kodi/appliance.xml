@@ -12,12 +12,5 @@
         </setting>
       </group>
     </category>
-    <category id="audio">
-      <group id="1">
-        <setting id="audiooutput.audiodevice">
-          <default>ALSA:hdmi:CARD=HDMI,DEV=0</default>
-        </setting>
-      </group>
-    </category>
   </section>
 </settings>
