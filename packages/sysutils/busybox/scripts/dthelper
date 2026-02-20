@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
-COMPATIBLE=$(cat /proc/device-tree/compatible 2>/dev/null | tr -d '\000' | sed -n -e 's/.*\(allwinner\|amlogic\|fsl\|nxp\|qcom\|raspberrypi\|rockchip\|samsung\).*/\1/p')
+COMPATIBLE=$(cat /proc/device-tree/compatible 2>/dev/null | tr -d '\000' | sed -n -e 's/.*\(allwinner\|amlogic\|fsl\|mediatek\|nxp\|qcom\|raspberrypi\|rockchip\|samsung\).*/\1/p')
 
 do_dtfile() {
   if [[ -n $(find /flash -name extlinux.conf) ]]; then

@@ -172,6 +172,8 @@ mixer() {
         mixer "$card" 'AIU ACODEC SRC' 'I2S'
         mixer "$card" 'AIU ACODEC OUT EN' on
         ;;
+      mediatek,mt**)
+        alsactl init # force init
     esac
 
     # ES8316 headphone jack
