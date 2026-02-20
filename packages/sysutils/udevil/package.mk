@@ -29,9 +29,11 @@ post_makeinstall_target() {
   mkdir -p ${INSTALL}/usr/bin
     cp -PR src/udevil ${INSTALL}/usr/bin
 
-  mkdir -p ${INSTALL}/usr/sbin
-  echo -e '#!/bin/sh\nexec /usr/bin/mount -t ntfs3 "$@"' >${INSTALL}/usr/sbin/mount.ntfs
-  chmod 755 ${INSTALL}/usr/sbin/mount.ntfs
+  if [ "${PROJECT}" = "RPi" ]; then
+    mkdir -p ${INSTALL}/usr/sbin
+    echo -e '#!/bin/sh\nexec /usr/bin/mount -t ntfs3 "$@"' >${INSTALL}/usr/sbin/mount.ntfs
+    chmod 755 ${INSTALL}/usr/sbin/mount.ntfs
+  fi
 }
 
 post_install() {

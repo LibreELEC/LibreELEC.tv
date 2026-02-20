@@ -1,0 +1,10 @@
+--- a/fs/ntfs/super.c	2026-02-09 10:30:47.452076283 +0000
++++ b/fs/ntfs/super.c	2026-02-09 10:31:05.853718247 +0000
+@@ -2759,6 +2759,7 @@
+ module_init(init_ntfs_fs);
+ module_exit(exit_ntfs_fs);
+ 
++MODULE_ALIAS_FS("ntfs");
+ MODULE_AUTHOR("Anton Altaparmakov <anton@tuxera.com>"); /* Original read-only NTFS driver */
+ MODULE_AUTHOR("Namjae Jeon <linkinjeon@kernel.org>"); /* Add write, iomap and various features */
+ MODULE_DESCRIPTION("NTFS read-write filesystem driver");
