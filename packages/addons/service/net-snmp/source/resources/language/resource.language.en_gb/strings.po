@@ -48,3 +48,7 @@ msgstr ""
 msgctxt "#32010"
 msgid "Expose gputemp"
 msgstr ""
+
+msgctxt "#32011"
+msgid "Write access"
+msgstr ""

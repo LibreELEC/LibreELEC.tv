@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
+import os
 import xbmc
 import xbmcvfs
 import xbmcaddon
-from os import system
 
 
 class MyMonitor(xbmc.Monitor):
@@ -26,11 +26,12 @@ persistent = xbmcvfs.translatePath(__addonhome__ + 'snmpd.conf')
 
 
 def writeconfig():
-    system("systemctl stop service.net-snmp.service")
+    os.system("systemctl stop service.net-snmp.service")
     community = __addon__.getSetting("COMMUNITY")
     location = __addon__.getSetting("LOCATION")
     contact = __addon__.getSetting("CONTACT")
     snmpversion = __addon__.getSetting("SNMPVERSION")
+    snmpwrite = __addon__.getSetting("SNMPWRITE")
     cputemp = __addon__.getSetting("CPUTEMP")
     gputemp = __addon__.getSetting("GPUTEMP")
 
@@ -40,7 +41,10 @@ def writeconfig():
     file = xbmcvfs.File(config, 'w')
     file.write('com2sec local default {}\n'.format(community))
     file.write('group localgroup {} local\n'.format(snmpversion))
-    file.write('access localgroup "" any noauth exact all all none\n')
+    if snmpwrite == "true":
+        file.write('access localgroup "" any noauth exact all all none\n')
+    else:
+        file.write('access localgroup "" any noauth exact all none none\n')
     file.write('view all included .1 80\n')
     file.write('syslocation {}\n'.format(location))
     file.write('syscontact {}\n'.format(contact))
@@ -56,10 +60,15 @@ def writeconfig():
         file.write('includeFile ../../snmpd.conf\n')
         snmppassword = __addon__.getSetting("SNMPPASSWORD")
         snmpuser = __addon__.getSetting("SNMPUSER")
-        system("net-snmp-config --create-snmpv3-user -a MD5 -A {0} {1}".format(snmppassword,snmpuser))
+        os.environ["PATH"] += os.pathsep + os.path.join(__addonpath__, "bin")
+        if snmpwrite == "true":
+            os.system("net-snmp-config --create-snmpv3-user -a MD5 -A {0} {1}".format(snmppassword,snmpuser))
+        else:
+            os.system("net-snmp-config --create-snmpv3-user -ro -a MD5 -A {0} {1}".format(snmppassword,snmpuser))
+        file.write(f'group localgroup usm {snmpuser}\n')
 
     file.close()
-    system("systemctl start service.net-snmp.service")
+    os.system("systemctl start service.net-snmp.service")
 
 
 if not xbmcvfs.exists(config):
