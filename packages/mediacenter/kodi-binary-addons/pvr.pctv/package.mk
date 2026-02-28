@@ -5,7 +5,7 @@
 PKG_NAME="pvr.pctv"
 PKG_VERSION="22.2.2-Piers"
 PKG_SHA256="eeba7e5638263fd547fec2915b6c4d7db854bb896eae99043f3f22e0e5557ef9"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.pctv"

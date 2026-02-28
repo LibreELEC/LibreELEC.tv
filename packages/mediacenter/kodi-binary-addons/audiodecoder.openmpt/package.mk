@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.openmpt"
 PKG_VERSION="22.0.2-Piers"
 PKG_SHA256="13c8e6917b7f58c4afd38241b70384e4240657bd2a4793f67bb431ebac54c57f"
-PKG_REV="4"
+PKG_REV="5"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.openmpt"

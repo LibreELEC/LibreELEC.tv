@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.supafaust"
 PKG_VERSION="1.29.0.39-Omega"
 PKG_SHA256="a40b8edf8dbef3bd0196d141130ce2f46bfd454938a9ae0efb2775a8ed828682"
-PKG_REV="2"
+PKG_REV="3"
 PKG_ARCH="any"
 PKG_LICENSE="GPLv2+"
 PKG_SITE="https://github.com/kodi-game/game.libretro.supafaust"

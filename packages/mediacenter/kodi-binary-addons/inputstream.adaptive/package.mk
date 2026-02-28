@@ -4,7 +4,7 @@
 PKG_NAME="inputstream.adaptive"
 PKG_VERSION="22.3.8-Piers"
 PKG_SHA256="216f18343b79edbd8a7585685f40f958a9c50797817d9e531f0b282c44ac1823"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/inputstream.adaptive"

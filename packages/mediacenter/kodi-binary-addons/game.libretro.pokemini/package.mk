@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.pokemini"
 PKG_VERSION="0.60.0.44-Omega"
 PKG_SHA256="ba1b7961d926ca8842bce0cf394b636ba21371de201985860200c7413a6fcd7b"
-PKG_REV="2"
+PKG_REV="3"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-game/game.libretro.pokemini"

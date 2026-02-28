@@ -5,7 +5,7 @@
 PKG_NAME="screensaver.pingpong"
 PKG_VERSION="22.0.4-Piers"
 PKG_SHA256="4e9e35274ab449d3f5adeb0a548e3c8de8e444f9f8637c767aa9144175d9815e"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/screensaver.pingpong"

@@ -5,7 +5,7 @@
 PKG_NAME="audioencoder.lame"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="cb44ffcba64e90d27322166b049233553b628e50ed511e200c56a4ebf9faab69"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audioencoder.lame"

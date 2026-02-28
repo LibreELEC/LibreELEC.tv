@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.asap"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="85119a8e9103f951c0a99d3c25d50efa1fd8657c181e8bebfce99361d2c71169"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.asap"

@@ -5,7 +5,7 @@
 PKG_NAME="pvr.hts"
 PKG_VERSION="22.8.0-Piers"
 PKG_SHA256="832f2148b8d80acfc89ef8b9d6821a83fe7147b99687b40786ea28993965e245"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.hts"

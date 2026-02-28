@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.vgmstream"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="692ee59df1113233155bff22ba33af71cc71f41f14b5f7fe578fb4a6d0c719e4"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.vgmstream"

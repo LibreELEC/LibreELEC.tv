@@ -5,7 +5,7 @@
 PKG_NAME="pvr.vuplus"
 PKG_VERSION="22.3.3-Piers"
 PKG_SHA256="67d1b8656bf46f261d92e221f2c39b0bd7f3d6ab268ddedc23cec69f276efa36"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.vuplus"

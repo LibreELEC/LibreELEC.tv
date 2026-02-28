@@ -5,7 +5,7 @@
 PKG_NAME="audioencoder.wav"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="2f8845da1b3fc0096933c6cc609183101dce5995b923eef6023b64e18b032dac"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audioencoder.wav"

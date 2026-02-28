@@ -5,7 +5,7 @@
 PKG_NAME="pvr.njoy"
 PKG_VERSION="22.2.2-Piers"
 PKG_SHA256="79ba94f53a8d1b9006f6390f415d20a3ee5c52dc2347b75f8cb15537b8fcbe76"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.njoy"

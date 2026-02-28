@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.swanstation"
 PKG_VERSION="1.0.0.34-Omega"
 PKG_SHA256="cc7b78e772da5e5a6ecb14a1b700c5a09f3bb6d7ed546c0e0a41338179980bce"
-PKG_REV="5"
+PKG_REV="6"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-game/game.libretro.swanstation"

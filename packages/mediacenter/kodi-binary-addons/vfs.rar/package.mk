@@ -4,7 +4,7 @@
 PKG_NAME="vfs.rar"
 PKG_VERSION="22.0.2-Piers"
 PKG_SHA256="96a3f47c92eadcd86393afadb63a009fb1c42d1ed16d15f7b3882f40df218d53"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/vfs.rar"

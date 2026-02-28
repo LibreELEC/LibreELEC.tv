@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.dumb"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="e18dd848c0d224981cbc4739d6ba3d085f15083596f683d520c4f6961fed71a4"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.dumb"

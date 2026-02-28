@@ -4,7 +4,7 @@
 PKG_NAME="imagedecoder.heif"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="e6a9eff46e0995242995da501db18324c2189dfff654713664e57c6ed1cf9f74"
-PKG_REV="6"
+PKG_REV="7"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/imagedecoder.heif"

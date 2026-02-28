@@ -5,7 +5,7 @@
 PKG_NAME="pvr.wmc"
 PKG_VERSION="22.2.2-Piers"
 PKG_SHA256="d6c6fee746018f541ef18e7021df95e04270d45c5db16acb1c2158fe3dc5f63d"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.wmc"

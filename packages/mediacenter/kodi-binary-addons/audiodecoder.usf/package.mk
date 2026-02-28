@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.usf"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="de970be6d0c804ce7dc0fb2113a618b5e4c07866212e3b8909e92665aa3524e2"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.usf"

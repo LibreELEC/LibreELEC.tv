@@ -4,7 +4,7 @@
 PKG_NAME="visualization.matrix"
 PKG_VERSION="22.0.2-Piers"
 PKG_SHA256="78e5698aa12c10b98a2118dd2d367f4072710affd96dcc4c1cbec53a9badf86b"
-PKG_REV="3"
+PKG_REV="4"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/visualization.matrix"
 PKG_URL="https://github.com/xbmc/visualization.matrix/archive/${PKG_VERSION}.tar.gz"

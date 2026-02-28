@@ -4,7 +4,7 @@
 PKG_NAME="imagedecoder.mpo"
 PKG_VERSION="22.0.2-Piers"
 PKG_SHA256="d3cb85cdd6a665ca3fee2473c6d4f3cd6298b6c086ad24df693ef16ac6b8fa9d"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/imagedecoder.mpo"

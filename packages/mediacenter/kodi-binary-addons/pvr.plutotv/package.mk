@@ -4,7 +4,7 @@
 PKG_NAME="pvr.plutotv"
 PKG_VERSION="22.2.2-Piers"
 PKG_SHA256="b92d4c8c2229d5efda17066e7829c9d6e4f59cde24b564eeeec98729f9430ed1"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.plutotv"

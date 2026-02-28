@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.wsr"
 PKG_VERSION="22.0.1-Piers"
 PKG_SHA256="b19a60ad83f5a2a23eb3b475bc51ae172f846dcff27f77cbc79a0f02728e2262"
-PKG_REV="3"
+PKG_REV="4"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.wsr"
