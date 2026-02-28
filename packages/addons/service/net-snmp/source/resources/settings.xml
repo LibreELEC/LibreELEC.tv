@@ -57,6 +57,11 @@
 						<heading>32006</heading>
 					</control>
 				</setting>
+				<setting id="SNMPPRIV" type="boolean" label="32012" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
+				</setting>
 			</group>
 			<group id="3" label="32008">
 				<setting id="CPUTEMP" type="boolean" label="32009" help="">

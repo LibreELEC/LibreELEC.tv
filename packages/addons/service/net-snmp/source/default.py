@@ -2,6 +2,7 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 import os
+from shlex import quote
 import xbmc
 import xbmcvfs
 import xbmcaddon
@@ -39,15 +40,10 @@ def writeconfig():
         xbmcvfs.delete(persistent)
 
     file = xbmcvfs.File(config, 'w')
-    file.write('com2sec local default {}\n'.format(community))
-    file.write('group localgroup {} local\n'.format(snmpversion))
-    if snmpwrite == "true":
-        file.write('access localgroup "" any noauth exact all all none\n')
-    else:
-        file.write('access localgroup "" any noauth exact all none none\n')
-    file.write('view all included .1 80\n')
-    file.write('syslocation {}\n'.format(location))
-    file.write('syscontact {}\n'.format(contact))
+    file.write('view allview included .1 80\n')
+    writeview = 'allview' if snmpwrite == 'true' else 'none'
+    file.write(f'syslocation {location}\n')
+    file.write(f'syscontact {contact}\n')
     file.write('dontLogTCPWrappersConnects yes\n')
 
     if cputemp == "true":
@@ -56,18 +52,30 @@ def writeconfig():
     if gputemp == "true":
         file.write('extend gputemp "/usr/bin/gputemp"\n')
 
+    if snmpversion != "v3":
+        file.write(f'com2sec local default {community}\n')
+        file.write(f'group localgroup {snmpversion} local\n')
+        file.write(f'access localgroup "" any noauth exact allview {writeview} none\n')
+        file.close()
+
     if snmpversion == "v3":
-        file.write('includeFile ../../snmpd.conf\n')
         snmppassword = __addon__.getSetting("SNMPPASSWORD")
         snmpuser = __addon__.getSetting("SNMPUSER")
+        snmppriv = __addon__.getSetting("SNMPPRIV")
+        accesslevel = "priv" if snmppriv == "true" else "auth"
+        file.write('includeFile ../../snmpd.conf\n')
+        file.write(f'access v3group "" any {accesslevel} exact allview {writeview} none\n')
+        file.write(f'group v3group usm {snmpuser}\n')
+
+        # net-snmp-config modifies snmpd.conf, so we need to stop writing here
+        file.close()
+
         os.environ["PATH"] += os.pathsep + os.path.join(__addonpath__, "bin")
         if snmpwrite == "true":
-            os.system("net-snmp-config --create-snmpv3-user -a MD5 -A {0} {1}".format(snmppassword,snmpuser))
+            os.system(f"net-snmp-config --create-snmpv3-user -a SHA-512 -A {quote(snmppassword)} -x AES -X {quote(snmppassword)} {quote(snmpuser)}")
         else:
-            os.system("net-snmp-config --create-snmpv3-user -ro -a MD5 -A {0} {1}".format(snmppassword,snmpuser))
-        file.write(f'group localgroup usm {snmpuser}\n')
+            os.system(f"net-snmp-config --create-snmpv3-user -ro -a SHA-512 -A {quote(snmppassword)} -x AES -X {quote(snmppassword)} {quote(snmpuser)}")
 
-    file.close()
     os.system("systemctl start service.net-snmp.service")
 
 
