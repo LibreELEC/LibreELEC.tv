@@ -3,7 +3,7 @@
 
 PKG_NAME="steamlink"
 PKG_VERSION="1.0"
-PKG_REV="3"
+PKG_REV="0"
 PKG_ARCH="aarch64"
 PKG_LICENSE="custom"
 PKG_SITE="https://support.steampowered.com/kb_article.php?ref=6153-IFGH-6589"
