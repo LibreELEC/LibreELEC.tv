@@ -56,3 +56,11 @@ msgstr ""
 msgctxt "#32012"
 msgid "Require encryption"
 msgstr ""
+
+msgctxt "#32013"
+msgid "Authentication protocol"
+msgstr ""
+
+msgctxt "#32014"
+msgid "Privacy protocol"
+msgstr ""

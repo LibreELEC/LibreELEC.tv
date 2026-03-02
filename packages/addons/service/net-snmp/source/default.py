@@ -61,6 +61,8 @@ def writeconfig():
     if snmpversion == "v3":
         snmppassword = __addon__.getSetting("SNMPPASSWORD")
         snmpuser = __addon__.getSetting("SNMPUSER")
+        snmpauthproto = __addon__.getSetting("SNMPAUTHPROTO")
+        snmpprivproto = __addon__.getSetting("SNMPPRIVPROTO")
         snmppriv = __addon__.getSetting("SNMPPRIV")
         accesslevel = "priv" if snmppriv == "true" else "auth"
         file.write('includeFile ../../snmpd.conf\n')
@@ -72,9 +74,9 @@ def writeconfig():
 
         os.environ["PATH"] += os.pathsep + os.path.join(__addonpath__, "bin")
         if snmpwrite == "true":
-            os.system(f"net-snmp-config --create-snmpv3-user -a SHA-512 -A {quote(snmppassword)} -x AES -X {quote(snmppassword)} {quote(snmpuser)}")
+            os.system(f"net-snmp-config --create-snmpv3-user -a {quote(snmpauthproto)} -A {quote(snmppassword)} -x {quote(snmpprivproto)} -X {quote(snmppassword)} {quote(snmpuser)}")
         else:
-            os.system(f"net-snmp-config --create-snmpv3-user -ro -a SHA-512 -A {quote(snmppassword)} -x AES -X {quote(snmppassword)} {quote(snmpuser)}")
+            os.system(f"net-snmp-config --create-snmpv3-user -ro -a {quote(snmpauthproto)} -A {quote(snmppassword)} -x {quote(snmpprivproto)} -X {quote(snmppassword)} {quote(snmpuser)}")
 
     os.system("systemctl start service.net-snmp.service")
 
