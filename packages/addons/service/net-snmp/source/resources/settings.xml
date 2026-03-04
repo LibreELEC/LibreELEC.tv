@@ -36,6 +36,11 @@
 					</constraints>
 					<control type="spinner" format="string"/>
 				</setting>
+				<setting id="SNMPWRITE" type="boolean" label="32011" help="">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"/>
+				</setting>
 			</group>
 			<group id="2" label="32007">
 				<setting id="SNMPUSER" type="string" label="32005" help="">
@@ -51,6 +56,38 @@
 					<control type="edit" format="string">
 						<heading>32006</heading>
 					</control>
+				</setting>
+				<setting id="SNMPAUTHPROTO" type="string" label="32013" help="">
+					<level>0</level>
+					<default>SHA-512</default>
+					<constraints>
+						<options>
+							<option label="SHA-512">SHA-512</option>
+							<option label="SHA-384">SHA-384</option>
+							<option label="SHA-256">SHA-256</option>
+							<option label="SHA-224">SHA-224</option>
+							<option label="SHA-1">SHA</option>
+							<option label="MD5">MD5</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="SNMPPRIVPROTO" type="string" label="32014" help="">
+					<level>0</level>
+					<default>AES128</default>
+					<constraints>
+						<options>
+							<option label="AES128">AES128</option>
+							<option label="AES">AES</option>
+							<option label="DES">DES</option>
+						</options>
+					</constraints>
+					<control type="spinner" format="string"/>
+				</setting>
+				<setting id="SNMPPRIV" type="boolean" label="32012" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"/>
 				</setting>
 			</group>
 			<group id="3" label="32008">
