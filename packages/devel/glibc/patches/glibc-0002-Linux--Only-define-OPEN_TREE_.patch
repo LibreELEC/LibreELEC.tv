@@ -1,0 +1,97 @@
+From mboxrd@z Thu Jan  1 00:00:00 1970
+Return-Path: <SRS0=rqRR=BE=redhat.com=fweimer@sourceware.org>
+Received: from us-smtp-delivery-124.mimecast.com (us-smtp-delivery-124.mimecast.com [170.10.129.124])
+	by sourceware.org (Postfix) with ESMTP id A2E4F4BA2E08
+	for <libc-alpha@sourceware.org>; Wed,  4 Mar 2026 09:54:55 +0000 (GMT)
+DMARC-Filter: OpenDMARC Filter v1.4.2 sourceware.org A2E4F4BA2E08
+Authentication-Results: sourceware.org; dmarc=pass (p=quarantine dis=none) header.from=redhat.com
+Authentication-Results: sourceware.org; spf=pass smtp.mailfrom=redhat.com
+ARC-Filter: OpenARC Filter v1.0.0 sourceware.org A2E4F4BA2E08
+Authentication-Results: server2.sourceware.org; arc=none smtp.remote-ip=170.10.129.124
+ARC-Seal: i=1; a=rsa-sha256; d=sourceware.org; s=key; t=1772618095; cv=none;
+	b=UVMjH4LqHXNoXJzJgRhFkrvWc+6HzguZuTzzId0A75sCFYhQLvWLImyTx8zSZv72jtEPHC7JG07CxNpJJvgANFhBsb/xrbxdphG4r4ubksz2ltxJeqUWnlLjO25sbQlJ2m47VDqaQtaff1Yrff9Nueh8yAk6+P6cEnHvt9lM0FM=
+ARC-Message-Signature: i=1; a=rsa-sha256; d=sourceware.org; s=key;
+	t=1772618095; c=relaxed/simple;
+	bh=7rSHyZ7paS87TYa31Ldb0Xr/vq+OswWRlUUL3kRvXzs=;
+	h=DKIM-Signature:From:To:Subject:Date:Message-ID:MIME-Version; b=gE0BEdX93RvzOLxksAJv120jqXrpzAdRVcUoHc875jA5QmyKFtLNTuhqGeQ7Dzo0dt7NvbMBaKeWCU8pBj7dxxQ60a8zot52cc5wNxrF3lLUjxZXcKJllGPlKVRFPjnMwx/N/nxpyBtAW89Z7MjwOEwJs2LR8Xgp0AeBXR0859M=
+ARC-Authentication-Results: i=1; server2.sourceware.org
+DKIM-Filter: OpenDKIM Filter v2.11.0 sourceware.org A2E4F4BA2E08
+Authentication-Results: sourceware.org;
+	dkim=pass (1024-bit key, unprotected) header.d=redhat.com header.i=@redhat.com header.a=rsa-sha256 header.s=mimecast20190719 header.b=LijDoGtu
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=redhat.com;
+	s=mimecast20190719; t=1772618095;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type;
+	bh=33EqodeL54bpSYdqE8a94XTJFN579BSp93yZRl/1fds=;
+	b=LijDoGtudEI6Kfdz5VLsKvGWJc+RVwfMbADntgQOh7FtVQZZDulWSdjehWfP7Fx7wVUa1A
+	YlP6NIsgzJ45KbZXf1MqVn4bS45rJYJ7U8BqWBH9A+AGl8QLdz+rg6mXgr9zL0v/l7BKUf
+	3LsXfVL8kJIx2vCuHwlJVudq+y1pSro=
+Received: from mx-prod-mc-01.mail-002.prod.us-west-2.aws.redhat.com
+ (ec2-54-186-198-63.us-west-2.compute.amazonaws.com [54.186.198.63]) by
+ relay.mimecast.com with ESMTP with STARTTLS (version=TLSv1.3,
+ cipher=TLS_AES_256_GCM_SHA384) id us-mta-125-iIKTreLoNBaRmF77xmW30A-1; Wed,
+ 04 Mar 2026 04:54:54 -0500
+X-MC-Unique: iIKTreLoNBaRmF77xmW30A-1
+X-Mimecast-MFC-AGG-ID: iIKTreLoNBaRmF77xmW30A_1772618093
+Received: from mx-prod-int-05.mail-002.prod.us-west-2.aws.redhat.com (mx-prod-int-05.mail-002.prod.us-west-2.aws.redhat.com [10.30.177.17])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx-prod-mc-01.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 42C4C1955DE3
+	for <libc-alpha@sourceware.org>; Wed,  4 Mar 2026 09:54:53 +0000 (UTC)
+Received: from fweimer-oldenburg.csb.redhat.com (unknown [10.44.33.34])
+	by mx-prod-int-05.mail-002.prod.us-west-2.aws.redhat.com (Postfix) with ESMTPS id 89344195608E
+	for <libc-alpha@sourceware.org>; Wed,  4 Mar 2026 09:54:52 +0000 (UTC)
+From: Florian Weimer <fweimer@redhat.com>
+To: libc-alpha@sourceware.org
+Subject: [PATCH] Linux: Only define OPEN_TREE_* macros in <sys/mount.h> if
+ undefined (bug 33921)
+Date: Wed, 04 Mar 2026 10:54:49 +0100
+Message-ID: <lhu1phzkjh2.fsf@oldenburg.str.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13)
+MIME-Version: 1.0
+X-Scanned-By: MIMEDefang 3.0 on 10.30.177.17
+X-Mimecast-Spam-Score: 0
+X-Mimecast-MFC-PROC-ID: JqcZ_ftMUa1nSYqCX-wJ18MEfgkEpJ7xCbYZ9SPfkKA_1772618093
+X-Mimecast-Originator: redhat.com
+Content-Type: text/plain
+X-Spam-Status: No, score=-9.7 required=5.0 tests=BAYES_00,DKIMWL_WL_HIGH,DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,DKIM_VALID_EF,GIT_PATCH_0,RCVD_IN_DNSWL_NONE,RCVD_IN_MSPIKE_H4,RCVD_IN_MSPIKE_WL,RCVD_IN_VALIDITY_RPBL_BLOCKED,RCVD_IN_VALIDITY_SAFE_BLOCKED,SPF_HELO_PASS,SPF_NONE,TXREP autolearn=ham autolearn_force=no version=3.4.6
+X-Spam-Checker-Version: SpamAssassin 3.4.6 (2021-04-09) on sourceware.org
+List-Id: <libc-alpha.sourceware.org>
+
+There is a conditional inclusion of <linux/mount.h> earlier in the file.
+If that defines the macros, do not redefine them.  This addresses build
+problems as the token sequence used by the UAPI macro definitions
+changes between Linux versions.
+
+---
+ sysdeps/unix/sysv/linux/sys/mount.h | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/sysdeps/unix/sysv/linux/sys/mount.h b/sysdeps/unix/sysv/linux/sys/mount.h
+index 5e496caf2f..0c5ebed33a 100644
+--- a/sysdeps/unix/sysv/linux/sys/mount.h
++++ b/sysdeps/unix/sysv/linux/sys/mount.h
+@@ -265,8 +265,16 @@
+ #define FSOPEN_CLOEXEC          0x00000001
+ 
+ /* open_tree flags.  */
+-#define OPEN_TREE_CLONE    1         /* Clone the target tree and attach the clone */
+-#define OPEN_TREE_CLOEXEC  O_CLOEXEC /* Close the file on execve() */
++#ifndef OPEN_TREE_CLONE
++# define OPEN_TREE_CLONE    1 /* Clone the target tree and attach the clone */
++#endif
++#ifndef O_CLOEXEC
++# include <bits/cloexec.h>
++# define O_CLOEXEC __O_CLOEXEC
++#endif
++#ifndef OPEN_TREE_CLOEXEC
++# define OPEN_TREE_CLOEXEC  O_CLOEXEC /* Close the file on execve() */
++#endif
+ 
+ 
+ __BEGIN_DECLS
+
+base-commit: 7053778703f8de2488789a002d093247d2626921
+
+
