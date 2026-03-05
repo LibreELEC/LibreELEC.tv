@@ -34,7 +34,7 @@ diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i
 index 718736950b98..431f9e1f611a 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
-@@ -8,13 +8,91 @@
+@@ -8,13 +8,92 @@
  #include <linux/of.h>
  #include <linux/platform_device.h>
  
@@ -73,6 +73,7 @@ index 718736950b98..431f9e1f611a 100644
 +}
 +
 +static void sun8i_hdmi_enc_hpd_notify(struct drm_bridge *bridge,
++				      struct drm_connector *connector,
 +				      enum drm_connector_status status)
 +{
 +	struct sun8i_dw_hdmi *hdmi = bridge_to_sun8i_dw_hdmi(bridge);

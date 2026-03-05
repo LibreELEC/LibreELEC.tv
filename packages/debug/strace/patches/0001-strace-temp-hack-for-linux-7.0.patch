@@ -1,0 +1,40 @@
+From 092a36c980b15f2aa142609c052b43265ee87374 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Tue, 24 Feb 2026 16:38:48 +0000
+Subject: [PATCH] strace: temp hack for linux 7.0
+
+---
+ src/io_uring.c | 10 ----------
+ 1 file changed, 10 deletions(-)
+
+diff --git a/src/io_uring.c b/src/io_uring.c
+index a479c9570..cad5aa0bd 100644
+--- a/src/io_uring.c
++++ b/src/io_uring.c
+@@ -1255,11 +1255,6 @@ print_io_uring_zcrx_ifq_reg(struct tcb *tcp, const kernel_ulong_t addr)
+ 	tprint_struct_next();
+ 	PRINT_FIELD_U(arg, zcrx_id);
+ 
+-	if (arg.__resv2) {
+-		tprint_struct_next();
+-		PRINT_FIELD_X(arg, __resv2);
+-	}
+-
+ 	if (!IS_ARRAY_ZERO(arg.__resv)) {
+ 		tprint_struct_next();
+ 		PRINT_FIELD_ARRAY(arg, __resv, tcp, print_xint_array_member);
+@@ -1545,11 +1540,6 @@ print_io_uring_query_zcrx(struct tcb *tcp, const kernel_ulong_t addr)
+ 	tprint_struct_next();
+ 	PRINT_FIELD_U(zcrx, rq_hdr_alignment);
+ 
+-	if (zcrx.__resv1) {
+-		tprint_struct_next();
+-		PRINT_FIELD_X(zcrx, __resv1);
+-	}
+-
+ 	if (zcrx.__resv2) {
+ 		tprint_struct_next();
+ 		PRINT_FIELD_X(zcrx, __resv2);
+-- 
+2.51.0
+

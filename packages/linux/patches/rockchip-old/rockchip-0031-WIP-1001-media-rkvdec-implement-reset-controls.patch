@@ -75,9 +75,9 @@ index 7747e8396626..c9c59d090bb3 100644
 --- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 +++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
 @@ -10,14 +10,17 @@
-  */
- 
+ #include <linux/hw_bitfield.h>
  #include <linux/clk.h>
+ #include <linux/genalloc.h>
 +#include <linux/delay.h>
  #include <linux/interrupt.h>
  #include <linux/iommu.h>

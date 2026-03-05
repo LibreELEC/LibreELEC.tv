@@ -70,7 +70,7 @@ new file mode 100644
 index 000000000000..18bbba8f017f
 --- /dev/null
 +++ b/drivers/media/platform/sunxi/sun50i-di/sun50i-di.c
-@@ -0,0 +1,1135 @@
+@@ -0,0 +1,1133 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Allwinner sun50i deinterlacer driver
@@ -857,8 +857,6 @@ index 000000000000..18bbba8f017f
 +	.buf_queue		= deinterlace_buf_queue,
 +	.start_streaming	= deinterlace_start_streaming,
 +	.stop_streaming		= deinterlace_stop_streaming,
-+	.wait_prepare		= vb2_ops_wait_prepare,
-+	.wait_finish		= vb2_ops_wait_finish,
 +};
 +
 +static int deinterlace_queue_init(void *priv, struct vb2_queue *src_vq,

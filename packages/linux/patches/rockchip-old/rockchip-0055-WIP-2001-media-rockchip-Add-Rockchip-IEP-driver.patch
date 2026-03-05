@@ -374,7 +374,7 @@ new file mode 100644
 index 000000000000..2e547133c3be
 --- /dev/null
 +++ b/drivers/media/platform/rockchip/iep/iep.c
-@@ -0,0 +1,1087 @@
+@@ -0,0 +1,1085 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Rockchip Image Enhancement Processor (IEP) driver
@@ -818,8 +818,6 @@ index 000000000000..2e547133c3be
 +	.buf_queue		= iep_buf_queue,
 +	.start_streaming	= iep_start_streaming,
 +	.stop_streaming		= iep_stop_streaming,
-+	.wait_prepare		= vb2_ops_wait_prepare,
-+	.wait_finish		= vb2_ops_wait_finish,
 +};
 +
 +static int iep_queue_init(void *priv, struct vb2_queue *src_vq,

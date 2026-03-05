@@ -2972,7 +2972,7 @@ index 0000000000000..98116ef012fa3
 +
 +	if (mhdp->connector_type == DRM_MODE_CONNECTOR_HDMIA) {
 +		mhdp->bridge.funcs = &cdns_hdmi_bridge_funcs;
-+		mhdp->bridge.ops |= DRM_BRIDGE_OP_HDMI;
++		mhdp->bridge.ops |= DRM_BRIDGE_OP_HDMI | DRM_BRIDGE_OP_HDMI_SPD_INFOFRAME;
 +		mhdp->bridge.ddc = cdns_hdmi_i2c_adapter(mhdp);
 +	} else if (mhdp->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
 +		mhdp->bridge.funcs = &cdns_dp_bridge_funcs;
@@ -4228,7 +4228,7 @@ new file mode 100644
 index 0000000000000..9556d0929e21d
 --- /dev/null
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-hdmi.c
-@@ -0,0 +1,745 @@
+@@ -0,0 +1,749 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Cadence MHDP8501 HDMI bridge driver
@@ -4906,48 +4906,48 @@ index 0000000000000..9556d0929e21d
 +	}
 +}
 +
-+static int cdns_hdmi_bridge_clear_infoframe(struct drm_bridge *bridge,
-+					    enum hdmi_infoframe_type type)
++static int cdns_hdmi_bridge_clear_avi_infoframe(struct drm_bridge *bridge)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
-+
-+	switch (type) {
-+	case HDMI_INFOFRAME_TYPE_AVI:
-+		cdns_hdmi_clear_infoframe(mhdp, 0, HDMI_INFOFRAME_TYPE_AVI);
-+		break;
-+	case HDMI_INFOFRAME_TYPE_SPD:
-+		cdns_hdmi_clear_infoframe(mhdp, 1, HDMI_INFOFRAME_TYPE_SPD);
-+		break;
-+	case HDMI_INFOFRAME_TYPE_VENDOR:
-+		cdns_hdmi_clear_infoframe(mhdp, 2, HDMI_INFOFRAME_TYPE_VENDOR);
-+		break;
-+	default:
-+		dev_dbg(mhdp->dev, "Unsupported infoframe type %x\n", type);
-+	}
-+
++	cdns_hdmi_clear_infoframe(mhdp, 0, HDMI_INFOFRAME_TYPE_AVI);
 +	return 0;
 +}
 +
-+static int cdns_hdmi_bridge_write_infoframe(struct drm_bridge *bridge,
-+					    enum hdmi_infoframe_type type,
++static int cdns_hdmi_bridge_clear_spd_infoframe(struct drm_bridge *bridge)
++{
++	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
++	cdns_hdmi_clear_infoframe(mhdp, 1, HDMI_INFOFRAME_TYPE_SPD);
++	return 0;
++}
++
++static int cdns_hdmi_bridge_clear_hdmi_infoframe(struct drm_bridge *bridge)
++{
++	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
++	cdns_hdmi_clear_infoframe(mhdp, 2, HDMI_INFOFRAME_TYPE_VENDOR);
++	return 0;
++}
++
++static int cdns_hdmi_bridge_write_avi_infoframe(struct drm_bridge *bridge,
 +					    const u8 *buffer, size_t len)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
++	cdns_hdmi_config_infoframe(mhdp, 0, len, buffer, HDMI_INFOFRAME_TYPE_AVI);
++	return 0;
++}
 +
-+	switch (type) {
-+	case HDMI_INFOFRAME_TYPE_AVI:
-+		cdns_hdmi_config_infoframe(mhdp, 0, len, buffer, HDMI_INFOFRAME_TYPE_AVI);
-+		break;
-+	case HDMI_INFOFRAME_TYPE_SPD:
-+		cdns_hdmi_config_infoframe(mhdp, 1, len, buffer, HDMI_INFOFRAME_TYPE_SPD);
-+		break;
-+	case HDMI_INFOFRAME_TYPE_VENDOR:
-+		cdns_hdmi_config_infoframe(mhdp, 2, len, buffer, HDMI_INFOFRAME_TYPE_VENDOR);
-+		break;
-+	default:
-+		dev_dbg(mhdp->dev, "Unsupported infoframe type %x\n", type);
-+	}
++static int cdns_hdmi_bridge_write_spd_infoframe(struct drm_bridge *bridge,
++					    const u8 *buffer, size_t len)
++{
++	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
++	cdns_hdmi_config_infoframe(mhdp, 1, len, buffer, HDMI_INFOFRAME_TYPE_SPD);
++	return 0;
++}
 +
++static int cdns_hdmi_bridge_write_hdmi_infoframe(struct drm_bridge *bridge,
++					    const u8 *buffer, size_t len)
++{
++	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
++	cdns_hdmi_config_infoframe(mhdp, 2, len, buffer, HDMI_INFOFRAME_TYPE_VENDOR);
 +	return 0;
 +}
 +
@@ -4970,8 +4970,12 @@ index 0000000000000..9556d0929e21d
 +	.atomic_duplicate_state = drm_atomic_helper_bridge_duplicate_state,
 +	.atomic_destroy_state = drm_atomic_helper_bridge_destroy_state,
 +	.atomic_reset = drm_atomic_helper_bridge_reset,
-+	.hdmi_clear_infoframe = cdns_hdmi_bridge_clear_infoframe,
-+	.hdmi_write_infoframe = cdns_hdmi_bridge_write_infoframe,
++	.hdmi_clear_avi_infoframe = cdns_hdmi_bridge_clear_avi_infoframe,
++	.hdmi_write_avi_infoframe = cdns_hdmi_bridge_write_avi_infoframe,
++	.hdmi_clear_spd_infoframe = cdns_hdmi_bridge_clear_spd_infoframe,
++	.hdmi_write_spd_infoframe = cdns_hdmi_bridge_write_spd_infoframe,
++	.hdmi_clear_hdmi_infoframe = cdns_hdmi_bridge_clear_hdmi_infoframe,
++	.hdmi_write_hdmi_infoframe = cdns_hdmi_bridge_write_hdmi_infoframe,
 +	.hdmi_tmds_char_rate_valid = cdns_hdmi_tmds_char_rate_valid,
 +};
 
