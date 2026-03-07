@@ -3,9 +3,9 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="audiodecoder.asap"
-PKG_VERSION="22.0.1-Piers"
-PKG_SHA256="85119a8e9103f951c0a99d3c25d50efa1fd8657c181e8bebfce99361d2c71169"
-PKG_REV="3"
+PKG_VERSION="22.0.2-Piers"
+PKG_SHA256="9a9bc5f4caf09c430c0a852109a8fa0aeb9082ad24d7acab312df326be987a01"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.asap"

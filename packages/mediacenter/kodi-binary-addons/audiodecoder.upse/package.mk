@@ -3,9 +3,9 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="audiodecoder.upse"
-PKG_VERSION="22.0.1-Piers"
-PKG_SHA256="c6ef987061e9e7ce2a252062cf5d7e0a8749e5dbd3c2ad1f04daaa68aafb86f0"
-PKG_REV="3"
+PKG_VERSION="22.0.2-Piers"
+PKG_SHA256="9c2d3462005fa48b93e92fb4ed42aa30bdab9d2b240016f67ff3e5f78f1314f6"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.upse"

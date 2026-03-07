@@ -3,9 +3,9 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="audiodecoder.usf"
-PKG_VERSION="22.0.1-Piers"
-PKG_SHA256="de970be6d0c804ce7dc0fb2113a618b5e4c07866212e3b8909e92665aa3524e2"
-PKG_REV="3"
+PKG_VERSION="22.0.2-Piers"
+PKG_SHA256="e63124f18d7d8efd66e4f3cbc9336a61c28697a19a5b73ee16fe52d4dec405e3"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/audiodecoder.usf"

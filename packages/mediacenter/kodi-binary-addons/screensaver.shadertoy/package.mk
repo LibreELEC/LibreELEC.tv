@@ -3,9 +3,9 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="screensaver.shadertoy"
-PKG_VERSION="22.0.2-Piers"
-PKG_SHA256="e821304e6f40841c570b788ae70555ea21a8e5b2d9c53af66389a8d08e08f84f"
-PKG_REV="3"
+PKG_VERSION="22.0.3-Piers"
+PKG_SHA256="74d946061debafe254fb816a89c96e37d9be59827728d6ba22720d554dd0eb4d"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/xbmc/screensaver.shadertoy"

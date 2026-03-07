@@ -3,7 +3,7 @@
 
 PKG_NAME="mariadb"
 PKG_VERSION="12.3.1"
-PKG_REV="3"
+PKG_REV="0"
 PKG_SHA256="2da62b57da70975d0865d4a1ae4ae4cf422e1b7dcc709eba855cf14f5104617e"
 PKG_LICENSE="GPL2"
 PKG_SITE="https://mariadb.org"

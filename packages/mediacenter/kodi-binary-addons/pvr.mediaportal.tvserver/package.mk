@@ -3,9 +3,9 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="pvr.mediaportal.tvserver"
-PKG_VERSION="22.2.2-Piers"
-PKG_SHA256="cfd49402a0fd2604b0f915ac6ed20506a0f636ddb1764c1085f0757226442a1f"
-PKG_REV="3"
+PKG_VERSION="22.2.4-Piers"
+PKG_SHA256="c6ff60b6f45e93542a48e2bebaf172618b62371c3b60802dc6d8ae7f56b05daa"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-pvr/pvr.mediaportal.tvserver"

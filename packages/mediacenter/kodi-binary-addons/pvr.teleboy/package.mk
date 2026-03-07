@@ -4,7 +4,7 @@
 PKG_NAME="pvr.teleboy"
 PKG_VERSION="22.2.0-Piers"
 PKG_SHA256="11bdf3b64618d5b8f9dfbfb91194350ebfb62d8be6c36c372e39b32f48a9dcd8"
-PKG_REV="5"
+PKG_REV="6"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/rbuehlma/pvr.teleboy"

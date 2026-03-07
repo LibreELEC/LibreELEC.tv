@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.bsnes-hd"
 PKG_VERSION="10.6.0.16-Omega"
 PKG_SHA256="9a08d62194a562ad30d9207a785d318e1faff1530c98c0abb45f4ad956c6e675"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPLv3"
 PKG_SITE="https://github.com/kodi-game/game.libretro.bsnes-hd"

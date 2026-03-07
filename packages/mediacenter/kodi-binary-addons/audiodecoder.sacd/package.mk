@@ -2,8 +2,8 @@
 # Copyright (C) 2020-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="audiodecoder.sacd"
-PKG_VERSION="22.0.2-Piers"
-PKG_SHA256="7fe22412222d425e28b9225bc96ef41df033d70341ee3a697433e9742a8a80ed"
+PKG_VERSION="22.0.3-Piers"
+PKG_SHA256="98cacb7cdaba8f4605d277cfb55639b4cecbdea1c9fdc168dbd737d1b755be0c"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"

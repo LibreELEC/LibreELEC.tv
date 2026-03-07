@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.prboom"
 PKG_VERSION="2.5.0.54-Omega"
 PKG_SHA256="c2fcbfc74a462c26f1f62ad5696ee32e5380af2374619617ee68bd59bd92a7bd"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL"
 PKG_SITE="https://github.com/kodi-game/game.libretro.prboom"
