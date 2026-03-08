@@ -280,6 +280,14 @@ devices = \
       },
     },
   },
+  'Mediatek': {
+    'Genio': {
+      'nio-12l': {
+        'dtb': 'mt8395-radxa-nio-12l-extra.dtb',
+        'config': 'none'
+      },
+    },
+  },
   'Qualcomm': {
     'Dragonboard': {
       '410c': {
