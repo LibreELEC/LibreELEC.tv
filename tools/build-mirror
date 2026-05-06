@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2024-2025 Ian Leonard (antonlacon@gmail.com)
+
+# Takes input in the following format:
+# {Package Name} {Primary Download URL} {Secondary Download URL}
+#
+# Attempts to download the package from primary and fallsback to seconday
+
+set -e
+
+# helper functions
+# die (message, code) abort with optional message and error code
+die() {
+  if [ -n "${1}" ]; then
+    echo -e "${1}" >&2
+  fi
+  exit "${2:-1}"
+}
+
+help() {
+  echo "Usage: ${0} [-i file] [-o directory]"
+  echo "  -h this help"
+  echo "  -i input file - list of files to download"
+  echo "  -o output directory - location to download files"
+  echo "  -v verbose progress output"
+}
+
+# command line opts
+while getopts hi:o:v OPT; do
+  case "${OPT}" in
+    h)
+      help
+      exit 0
+      ;;
+    i)
+      INPUT_FILE="${OPTARG}"
+      ;;
+    o)
+      OUTPUT_DIR="${OPTARG}"
+      ;;
+    v)
+      VERBOSE="true"
+      ;;
+    \?)
+      # error and output help on unknown
+      help
+      die
+      ;;
+  esac
+done
+
+shift $((${OPTIND} - 1))
+
+# sanity checking
+if [ -n "${INPUT_FILE}" ] && [ ! -f "${INPUT_FILE}" ]; then
+  die "Error: Unable to find input file: ${INPUT_FILE}"
+fi
+if [ -z "${OUTPUT_DIR}" ]; then
+  die "Error: Output directory must be specified."
+fi
+
+# import file or read from stdin
+while read -r line; do
+  PKG_NAME=$(echo "${line}" | cut -d" " -f1 | cut -d":" -f1)
+  PKG_URL=$(echo "${line}" | cut -d" " -f2)
+  PKG_FALLBACK=$(echo "${line}" | cut -d" " -f3)
+  PKG_FILENAME=$(basename "${PKG_URL}")
+  if [ ! -d "${OUTPUT_DIR}/${PKG_NAME}" ]; then
+    mkdir -p "${OUTPUT_DIR}/${PKG_NAME}"
+  fi
+  if [ ! -f "${OUTPUT_DIR}/${PKG_NAME}/${PKG_FILENAME}" ]; then
+    if [ "${VERBOSE}" = "true" ]; then
+      echo "Downloading: ${PKG_NAME} from ${PKG_URL}"
+    else
+      VERBOSE_OPTS="--silent --show-error"
+    fi
+    curl --progress-bar ${VERBOSE_OPTS} --fail --connect-timeout 30 --retry 3 --continue-at - --location --max-redirs 5 --output-dir "${OUTPUT_DIR}/${PKG_NAME}/" --output "${PKG_FILENAME}" "${PKG_URL}" || echo "ERROR: Failed to download ${PKG_NAME}. Trying fallback..."
+    # try distro's mirror as fallback
+    if [ ! -f "${OUTPUT_DIR}/${PKG_NAME}/${PKG_FILENAME}" ]; then
+      if [ "${VERBOSE}" = "true" ]; then
+        echo "Downloading: ${PKG_NAME} from ${PKG_URL}"
+      else
+        VERBOSE_OPTS="--silent --show-error"
+      fi
+      curl --progress-bar ${VERBOSE_OPTS} --fail --connect-timeout 30 --retry 3 --continue-at - --location --max-redirs 5 --output-dir "${OUTPUT_DIR}/${PKG_NAME}/" --output "${PKG_FILENAME}" "${PKG_FALLBACK}" || echo "ERROR: ${PKG_NAME} failed to download. Moving to next package..."
+    fi
+  fi
+done < "${INPUT_FILE:-/dev/stdin}"
