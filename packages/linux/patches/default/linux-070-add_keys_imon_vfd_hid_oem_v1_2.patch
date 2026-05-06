@@ -1,0 +1,13 @@
+--- linux-7.0.1/drivers/media/rc/imon.c	2026-05-01 09:57:24.692719350 +0200
++++ linux-7.0.1.patch/drivers/media/rc/imon.c	2026-05-01 10:45:45.332755831 +0200
+@@ -290,6 +290,10 @@ static const struct imon_usb_dev_descr i
+ 		{ 0x000100000000ffeell, KEY_VOLUMEUP },
+ 		{ 0x010000000000ffeell, KEY_VOLUMEDOWN },
+ 		{ 0x000000000100ffeell, KEY_MUTE },
++		/* iMON VFD HID OEM v1.2 */
++		{ 0x000000000a00ffeell, KEY_VOLUMEUP },
++		{ 0x000000000b00ffeell, KEY_VOLUMEDOWN },
++		{ 0x000000000c00ffeell, KEY_MUTE },
+ 		/* 0xffdc iMON MCE VFD */
+ 		{ 0x00010000ffffffeell, KEY_VOLUMEUP },
+ 		{ 0x01000000ffffffeell, KEY_VOLUMEDOWN },
