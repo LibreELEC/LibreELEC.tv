@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Prevents snapclient from interfering with Kodi ALSA output detection on boot
+# TODO: is this masking a root cause? This service should already be waiting for kodi, perhaps best to just improve the detection of when Kodi has more fully initialized?
+# TODO: make user configurable in add-on settings? Or perhaps add as hardware specific quirk?
+sleep 3
+
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
