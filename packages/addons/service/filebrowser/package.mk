@@ -2,8 +2,8 @@
 # Copyright (C) 2023-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="filebrowser"
-PKG_VERSION="2.63.2"
-PKG_REV="4"
+PKG_VERSION="2.63.4"
+PKG_REV="5"
 PKG_LICENSE="Apache License 2.0"
 PKG_SITE="https://filebrowser.org"
 PKG_DEPENDS_TARGET="toolchain:host"
@@ -15,15 +15,15 @@ PKG_TOOLCHAIN="manual"
 
 case "${ARCH}" in
   "aarch64")
-    PKG_SHA256="246938e22a1d44caae43f114eb087a8553f4fa008fb01155e1acd89a80d257f1"
+    PKG_SHA256="fbbec420e4b1c866e73f8699116bedfed9bc0acfe79dccae906dee746d633a40"
     PKG_URL="https://github.com/filebrowser/filebrowser/releases/download/v${PKG_VERSION}/linux-arm64-filebrowser.tar.gz"
     ;;
   "arm")
-    PKG_SHA256="efaba5e47fb34441148b42ba5dd5c7f9fd24309f92c037d967f24293eaa0ff2c"
+    PKG_SHA256="bf90bb61311a0c80e8fe546e0337460b422f80fadceb64110357d440ec14664d"
     PKG_URL="https://github.com/filebrowser/filebrowser/releases/download/v${PKG_VERSION}/linux-armv7-filebrowser.tar.gz"
     ;;
   "x86_64")
-    PKG_SHA256="5a6bb687af0a4cf6148a6e09b6fc45f60e8d4b159db37b7138f81fc97033a9bb"
+    PKG_SHA256="ba0eedcb8fe88a97703b610346635caaab1d6ae3ffccf004b520df6982451004"
     PKG_URL="https://github.com/filebrowser/filebrowser/releases/download/v${PKG_VERSION}/linux-amd64-filebrowser.tar.gz"
     ;;
 esac
