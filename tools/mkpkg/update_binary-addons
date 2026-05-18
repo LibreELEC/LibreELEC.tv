@@ -5,15 +5,17 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 BUMP_PKG_REV=""
+COMMIT=""
 KEEP_GIT_DIRS="yes"
 UPDATE_TO_HASH="yes"
 
 usage() {
   echo "Usage: $0 [options] <kodi-branch> [<unofficial-addon-branch>]"
-  echo " -b, --bump-pkg-rev: bump PKG_REV if package was not updated"
-  echo " -d, --delete-git-dirs: delete cloned git dirs after update"
-  echo " -x, --no-update-to-hash: do not update to hash if tag is not set"
-  echo " -h, --help: display help and exit"
+  echo " -b, --bump-pkg-rev:       bump PKG_REV if package was not updated"
+  echo " -c, --commit:             create a git commit for any updates made"
+  echo " -d, --delete-git-dirs:    delete cloned git dirs after update"
+  echo " -x, --no-update-to-hash:  do not update to hash if tag is not set"
+  echo " -h, --help:               display help and exit"
   exit 1
 }
 
@@ -21,6 +23,10 @@ while [ $# -ne 0 ]; do
   case "$1" in
     -b | --bump-pkg-rev)
       BUMP_PKG_REV="yes"
+      shift
+      ;;
+    -c | --commit)
+      COMMIT="yes"
       shift
       ;;
     -d | --delete-git-dirs)
@@ -60,6 +66,14 @@ TMPDIR="$(pwd)/.update-binary-addons-tmp"
 TMP_PKG_FILE="${TMPDIR}/package.tar.gz"
 TMP_PKG_DIR="${TMPDIR}/package"
 
+if [ -n "${COMMIT}" ]; then
+  if ! git -C "${ROOT}" diff --quiet || ! git -C "${ROOT}" diff --cached --quiet; then
+    echo "ERROR: Working tree has modified files. Commit or stash them first."
+    git -C "${ROOT}" status --short
+    exit 1
+  fi
+fi
+
 rm -rf "${TMPDIR}"
 mkdir -p "${TMPDIR}"
 
@@ -75,6 +89,8 @@ fi
 . "${MY_DIR}/update_common_functions"
 
 get_gh_token
+
+COMMIT_CHANGES=()
 
 if [ -z "${GITHUB_API_TOKEN}" ]; then
   git_clone https://github.com/xbmc/xbmc ${KODI_DIR} ${KODI_BRANCH}
@@ -160,7 +176,9 @@ for addontxt in ${ADDONS_REPO_LOCATION}/*-addons.txt; do
       if [ ! -z "${NEW_VERSION}" ]; then
         echo "Resolved version for ${ADDON}: ${GIT_BRANCH} => ${NEW_VERSION}"
 
+        OLD_VER=$(get_pkg_var "${ADDON}" PKG_VERSION)
         if update_pkg "${ADDON_PATH}" ${ADDON} ${NEW_VERSION}; then
+          [ -n "${COMMIT}" ] && COMMIT_CHANGES+=("${ADDON}: update ${OLD_VER} to ${NEW_VERSION}")
           if [ -n "${NO_TAG}" ]; then
             # always bump PKG_REV on updates as we have no info if version changed
             bump_pkg_rev "${ADDON_PATH}" "${ADDON}"
@@ -227,7 +245,9 @@ for ADDON in $(ls -1 "${ROOT}/packages/mediacenter/kodi-binary-addons"); do
     continue
   fi
 
+  OLD_VER=$(get_pkg_var "${ADDON}" PKG_VERSION)
   if update_pkg "${ADDON_PATH}" "${ADDON}" "${RESOLVED_HASH}"; then
+    [ -n "${COMMIT}" ] && COMMIT_CHANGES+=("${ADDON}: update ${OLD_VER} to ${RESOLVED_HASH}")
     # always bump PKG_REV when updating untagged addons
     bump_pkg_rev "${ADDON_PATH}" "${ADDON}"
   else
@@ -238,6 +258,24 @@ for ADDON in $(ls -1 "${ROOT}/packages/mediacenter/kodi-binary-addons"); do
     [ -d "${GIT_DIR}" ] && rm -rf ${GIT_DIR}
   fi
 done
+
+if [ -n "${COMMIT}" ]; then
+  if [ ${#COMMIT_CHANGES[@]} -eq 0 ]; then
+    echo "Nothing updated, skipping commit."
+  else
+    TMPMSG="${TMPDIR}/commit-msg"
+    if [ ${#COMMIT_CHANGES[@]} -eq 1 ]; then
+      echo "${COMMIT_CHANGES[0]}" > "${TMPMSG}"
+    else
+      echo "kodi-binary-addons: update to latest versions" > "${TMPMSG}"
+      echo >> "${TMPMSG}"
+      for change in "${COMMIT_CHANGES[@]}"; do
+        echo "- ${change}" >> "${TMPMSG}"
+      done
+    fi
+    git -C "${ROOT}" commit -F "${TMPMSG}" -- packages/mediacenter/kodi-binary-addons/
+  fi
+fi
 
 rm -rf "${TMPDIR}"
 
