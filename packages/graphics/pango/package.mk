@@ -18,6 +18,8 @@ configure_package() {
     PKG_DEPENDS_TARGET+=" libX11 libXft"
     PKG_DEPENDS_CONFIG+=" libXft"
     PKG_BUILD_FLAGS="-sysroot"
+  elif [ ${DISPLAYSERVER} != "wl" ]; then
+    PKG_BUILD_FLAGS="-sysroot"
   fi
 }
 
