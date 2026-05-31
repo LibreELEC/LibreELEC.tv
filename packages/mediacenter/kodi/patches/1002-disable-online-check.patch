@@ -11,10 +11,10 @@ LibreELEC specific patch - will not be submitted upstream.
  3 files changed, 2 insertions(+), 7 deletions(-)
 
 diff --git a/xbmc/GUIInfoManager.cpp b/xbmc/GUIInfoManager.cpp
-index 1f8edde..83b9a80 100644
+index 8c8cd8b..a8be371 100644
 --- a/xbmc/GUIInfoManager.cpp
 +++ b/xbmc/GUIInfoManager.cpp
-@@ -1952,7 +1952,7 @@ constexpr std::array<InfoMap, 10> weathe
+@@ -1971,7 +1971,7 @@ constexpr std::array<InfoMap, 10> weather = {{
  ///     <p>
  ///   }
  // clang-format off
@@ -23,7 +23,7 @@ index 1f8edde..83b9a80 100644
      {"hasnetwork",              SYSTEM_ETHERNET_LINK_ACTIVE},
      {"hasmediadvd",             SYSTEM_MEDIA_DVD},
      {"hasmediaaudiocd",         SYSTEM_MEDIA_AUDIO_CD},
-@@ -2000,7 +2000,6 @@ constexpr std::array<InfoMap, 76> system
+@@ -2019,7 +2019,6 @@ constexpr std::array<InfoMap, 76> system_labels = {{
      {"currentcontrol",          SYSTEM_CURRENT_CONTROL},
      {"currentcontrolid",        SYSTEM_CURRENT_CONTROL_ID},
      {"dvdlabel",                SYSTEM_DVD_LABEL},
@@ -55,7 +55,7 @@ index f65e114..c7b3f73 100644
  
  std::string CSysInfo::GetHddSpaceInfo(int drive, bool shortText)
 diff --git a/xbmc/windows/GUIWindowSystemInfo.cpp b/xbmc/windows/GUIWindowSystemInfo.cpp
-index 2b3a630..1acc09a 100644
+index 47f25d9..664e4bd 100644
 --- a/xbmc/windows/GUIWindowSystemInfo.cpp
 +++ b/xbmc/windows/GUIWindowSystemInfo.cpp
 @@ -150,7 +150,6 @@ void CGUIWindowSystemInfo::FrameMove()
