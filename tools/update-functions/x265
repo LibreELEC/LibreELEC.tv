@@ -1,14 +1,3 @@
-function custom_post_script() {
-  local _tarball _x265h x265_build
-  _tarball="${SOURCES}/${pkgname}/${pkgname}-${pkgver}.tar.bz2"
-  _x265cmake=$(tar -tjf "${_tarball}" 2>/dev/null | grep '/source/CMakeLists\.txt$')
-  [ -z "${_x265cmake}" ] && { echo "x265: source/CMakeLists.txt not found in ${_tarball}"; return 1; }
-  x265_build=$(tar -xOf "${_tarball}" "${_x265cmake}" 2>/dev/null | awk '/^set\(X265_BUILD /{sub(/\)/, ""); print $2}')
-  [ -z "${x265_build}" ] && { echo "x265: failed to read X265_BUILD from source"; return 1; }
-  sed -e "s|^PKG_X265_SONAME=.*|PKG_X265_SONAME=\"${x265_build}\"|" -i "${pkgmk}"
-  echo "x265: X265_BUILD=${x265_build} (PKG_X265_SONAME updated)"
-}
-
 function custom_post_commit() {
   local addon tvh_pkgmk tvh_rev
 
