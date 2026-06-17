@@ -42,13 +42,13 @@ PKG_CMAKE_OPTS_COMMON="-DLLVM_INCLUDE_TOOLS=ON \
                        -DLLVM_ENABLE_Z3_SOLVER=OFF \
                        -DCMAKE_SKIP_RPATH=ON"
 
-if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
+if listcontains "${GRAPHIC_DRIVERS}" "(imagination|iris|panfrost)"; then
   PKG_DEPENDS_UNPACK="spirv-headers spirv-llvm-translator"
   PKG_CMAKE_OPTS_COMMON+=" -DLLVM_SPIRV_INCLUDE_TESTS=OFF"
 fi
 
 post_unpack() {
-  if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
+  if listcontains "${GRAPHIC_DRIVERS}" "(imagination|iris|panfrost)"; then
     mkdir -p "${PKG_BUILD}"/llvm/projects/{SPIRV-Headers,SPIRV-LLVM-Translator}
       tar --strip-components=1 \
         -xf "${SOURCES}/spirv-headers/spirv-headers-$(get_pkg_version spirv-headers).tar.gz" \
@@ -104,7 +104,7 @@ post_make_host() {
                       llvm-profdata llvm-readobj llvm-size llvm-strip \
                       llvm-tblgen opt
 
-  if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
+  if listcontains "${GRAPHIC_DRIVERS}" "(imagination|iris|panfrost)"; then
     ninja ${NINJA_OPTS} llvm-spirv
   fi
 }
@@ -116,7 +116,7 @@ post_makeinstall_host() {
     cp -a bin/{llvm-profdata,llvm-readobj,llvm-size,llvm-strip} "${TOOLCHAIN}/bin"
     cp -a bin/{llvm-tblgen,opt} "${TOOLCHAIN}/bin"
 
-  if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
+  if listcontains "${GRAPHIC_DRIVERS}" "(imagination|iris|panfrost)"; then
     cp -a bin/llvm-spirv "${TOOLCHAIN}/bin"
   fi
 }

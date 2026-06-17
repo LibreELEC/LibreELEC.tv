@@ -79,6 +79,10 @@ if listcontains "${GRAPHIC_DRIVERS}" "(iris|panfrost)"; then
   PKG_MESON_OPTS_TARGET+=" -Dmesa-clc=system -Dprecomp-compiler=system"
 fi
 
+if listcontains "${GRAPHIC_DRIVERS}" "imagination"; then
+  PKG_DEPENDS_TARGET+=" libclc"
+fi
+
 if listcontains "${GRAPHIC_DRIVERS}" "(nvidia|nvidia-ng)" ||
               [ "${OPENGL_SUPPORT}" = "yes" -a "${DISPLAYSERVER}" != "x11" ]; then
   PKG_DEPENDS_TARGET+=" libglvnd"

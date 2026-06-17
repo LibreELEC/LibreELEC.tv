@@ -63,6 +63,12 @@ get_graphicdrivers() {
     VAAPI_SUPPORT="yes"
   fi
 
+  if listcontains "${GRAPHIC_DRIVERS}" "imagination"; then
+    GALLIUM_DRIVERS+=" pvr"
+    LLVM_SUPPORT="yes"
+    V4L2_SUPPORT="yes"
+  fi
+
   if listcontains "${GRAPHIC_DRIVERS}" "iris"; then
     GALLIUM_DRIVERS+=" iris"
     XORG_DRIVERS+=" intel"
