@@ -1,0 +1,115 @@
+name: Bug Report
+description: Report a reproducible bug in LibreELEC
+title: "[BUG] "
+labels: ["ISSUE NEEDS REVIEW"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report.
+
+        **Before you start — please read:** LibreELEC support happens on the
+        [forum](https://forum.libreelec.tv), not here. Triage your problem there
+        first. Reports opened without forum triage, without a debug log, on an
+        end-of-life release, or that are really support/configuration questions
+        will be closed with a pointer to the forum.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      options:
+        - label: I have searched the forum and the existing issues for my problem
+          required: true
+        - label: I am running a current LibreELEC release or nightly (not an end-of-life version)
+          required: true
+        - label: This is a reproducible bug, not a support or configuration question
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: LibreELEC version
+      description: Exact version from Settings → System Information (e.g. `12.2.1`, or the nightly date / githash).
+      placeholder: "12.2.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Release channel
+      options:
+        - Stable release
+        - Nightly / test build
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Hardware platform
+      options:
+        - Generic (x86_64 PC)
+        - Generic-Legacy (X11)
+        - Raspberry Pi 5
+        - Raspberry Pi 4 / 400
+        - Raspberry Pi 2 / 3
+        - Allwinner
+        - Amlogic
+        - Rockchip
+        - NXP (i.MX)
+        - Qualcomm (Dragonboard)
+        - Samsung (Exynos)
+        - Other (describe in Additional context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear description of what the bug is and what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Steps to reproduce the behaviour.
+      placeholder: |
+        1. Go to '...'
+        2. Play '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: input
+    id: log
+    attributes:
+      label: Debug log URL
+      description: >-
+        Capture a debug log (https://libreelec.wiki/how_to/provide_logfile),
+        upload it to https://paste.libreelec.tv and paste the link here.
+        Do NOT paste the log inline.
+      placeholder: "https://paste.libreelec.tv/..."
+    validations:
+      required: true
+
+  - type: input
+    id: forum
+    attributes:
+      label: Forum thread URL
+      description: Link to the forum thread where you triaged this first.
+      placeholder: "https://forum.libreelec.tv/thread/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else relevant — exact hardware, attached peripherals, when it started, etc.
+    validations:
+      required: false
