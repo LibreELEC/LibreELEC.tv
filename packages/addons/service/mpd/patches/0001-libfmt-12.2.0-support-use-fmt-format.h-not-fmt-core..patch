@@ -1,0 +1,198 @@
+From e8b79dff3e833edde172a0e20286e97d6d9c0858 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Thu, 18 Jun 2026 13:32:33 +0000
+Subject: [PATCH] libfmt 12.2.0 support: use fmt/format.h not fmt/core.h
+
+Since libfmt 12.2.0, fmt/core.h is a shim that only includes
+fmt/base.h which does not provide fmt::format(). Include
+fmt/format.h directly in files that call fmt::format().
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ src/input/plugins/AlsaInputPlugin.cxx          | 2 +-
+ src/input/plugins/QobuzClient.cxx              | 2 +-
+ src/input/plugins/QobuzLoginRequest.cxx        | 2 +-
+ src/input/plugins/QobuzTrackRequest.cxx        | 2 +-
+ src/lib/avahi/Publisher.cxx                    | 2 +-
+ src/lib/nfs/FileReader.cxx                     | 2 +-
+ src/net/ToString.cxx                           | 2 +-
+ src/output/plugins/httpd/HttpdClient.cxx       | 2 +-
+ src/output/plugins/httpd/IcyMetaDataServer.cxx | 2 +-
+ src/song/AddedSinceSongFilter.cxx              | 2 +-
+ src/song/AudioFormatSongFilter.cxx             | 2 +-
+ src/song/ModifiedSinceSongFilter.cxx           | 2 +-
+ src/storage/plugins/NfsStorage.cxx             | 2 +-
+ 13 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/src/input/plugins/AlsaInputPlugin.cxx b/src/input/plugins/AlsaInputPlugin.cxx
+index 6bf8034dc..5fc8dd99a 100644
+--- a/src/input/plugins/AlsaInputPlugin.cxx
++++ b/src/input/plugins/AlsaInputPlugin.cxx
+@@ -27,7 +27,7 @@
+ 
+ #include <alsa/asoundlib.h>
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <cassert>
+ 
+diff --git a/src/input/plugins/QobuzClient.cxx b/src/input/plugins/QobuzClient.cxx
+index 233c1bbad..92de56695 100644
+--- a/src/input/plugins/QobuzClient.cxx
++++ b/src/input/plugins/QobuzClient.cxx
+@@ -5,7 +5,7 @@
+ #include "lib/crypto/MD5.hxx"
+ #include "thread/ScopeUnlock.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <cassert>
+ #include <stdexcept>
+diff --git a/src/input/plugins/QobuzLoginRequest.cxx b/src/input/plugins/QobuzLoginRequest.cxx
+index 41d4dcabf..7e2e6b64c 100644
+--- a/src/input/plugins/QobuzLoginRequest.cxx
++++ b/src/input/plugins/QobuzLoginRequest.cxx
+@@ -6,7 +6,7 @@
+ #include "QobuzSession.hxx"
+ #include "lib/curl/Form.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ #include <nlohmann/json.hpp>
+ 
+ #include <cassert>
+diff --git a/src/input/plugins/QobuzTrackRequest.cxx b/src/input/plugins/QobuzTrackRequest.cxx
+index 59b6cf480..3de5e7ea0 100644
+--- a/src/input/plugins/QobuzTrackRequest.cxx
++++ b/src/input/plugins/QobuzTrackRequest.cxx
+@@ -5,7 +5,7 @@
+ #include "QobuzErrorParser.hxx"
+ #include "QobuzClient.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ #include <nlohmann/json.hpp>
+ 
+ using std::string_view_literals::operator""sv;
+diff --git a/src/lib/avahi/Publisher.cxx b/src/lib/avahi/Publisher.cxx
+index 1ac4d61e6..174f57198 100644
+--- a/src/lib/avahi/Publisher.cxx
++++ b/src/lib/avahi/Publisher.cxx
+@@ -13,7 +13,7 @@
+ #include <avahi-common/malloc.h>
+ #include <avahi-common/alternative.h>
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <cassert>
+ 
+diff --git a/src/lib/nfs/FileReader.cxx b/src/lib/nfs/FileReader.cxx
+index bc14fd325..805babef6 100644
+--- a/src/lib/nfs/FileReader.cxx
++++ b/src/lib/nfs/FileReader.cxx
+@@ -10,7 +10,7 @@
+ 
+ #include <nfsc/libnfs.h> // for struct nfs_stat_64
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <cassert>
+ #include <cstring>
+diff --git a/src/net/ToString.cxx b/src/net/ToString.cxx
+index 6f9706c0a..539ad5c61 100644
+--- a/src/net/ToString.cxx
++++ b/src/net/ToString.cxx
+@@ -6,7 +6,7 @@
+ #include "IPv4Address.hxx"
+ #include "net/Features.hxx" // for HAVE_TCP, HAVE_IPV6, HAVE_UN
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <algorithm>
+ #include <cassert>
+diff --git a/src/output/plugins/httpd/HttpdClient.cxx b/src/output/plugins/httpd/HttpdClient.cxx
+index 7192b6ae4..5b23a385c 100644
+--- a/src/output/plugins/httpd/HttpdClient.cxx
++++ b/src/output/plugins/httpd/HttpdClient.cxx
+@@ -13,7 +13,7 @@
+ #include "util/StringSplit.hxx"
+ #include "Log.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <cassert>
+ 
+diff --git a/src/output/plugins/httpd/IcyMetaDataServer.cxx b/src/output/plugins/httpd/IcyMetaDataServer.cxx
+index 0314089f1..0796bffcb 100644
+--- a/src/output/plugins/httpd/IcyMetaDataServer.cxx
++++ b/src/output/plugins/httpd/IcyMetaDataServer.cxx
+@@ -5,7 +5,7 @@
+ #include "tag/Tag.hxx"
+ #include "util/TruncateString.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <iterator>
+ 
+diff --git a/src/song/AddedSinceSongFilter.cxx b/src/song/AddedSinceSongFilter.cxx
+index efc394fd0..dfe397542 100644
+--- a/src/song/AddedSinceSongFilter.cxx
++++ b/src/song/AddedSinceSongFilter.cxx
+@@ -6,7 +6,7 @@
+ #include "time/ISO8601.hxx"
+ #include "util/StringBuffer.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ using std::string_view_literals::operator""sv;
+ 
+diff --git a/src/song/AudioFormatSongFilter.cxx b/src/song/AudioFormatSongFilter.cxx
+index 69bd2b1a8..c1f209730 100644
+--- a/src/song/AudioFormatSongFilter.cxx
++++ b/src/song/AudioFormatSongFilter.cxx
+@@ -5,7 +5,7 @@
+ #include "LightSong.hxx"
+ #include "util/StringBuffer.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ using std::string_view_literals::operator""sv;
+ 
+diff --git a/src/song/ModifiedSinceSongFilter.cxx b/src/song/ModifiedSinceSongFilter.cxx
+index 43879c789..715f65e15 100644
+--- a/src/song/ModifiedSinceSongFilter.cxx
++++ b/src/song/ModifiedSinceSongFilter.cxx
+@@ -6,7 +6,7 @@
+ #include "time/ISO8601.hxx"
+ #include "util/StringBuffer.hxx"
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ using std::string_view_literals::operator""sv;
+ 
+diff --git a/src/storage/plugins/NfsStorage.cxx b/src/storage/plugins/NfsStorage.cxx
+index d1366ac74..700e5c562 100644
+--- a/src/storage/plugins/NfsStorage.cxx
++++ b/src/storage/plugins/NfsStorage.cxx
+@@ -28,7 +28,7 @@ extern "C" {
+ #include <nfsc/libnfs-raw-nfs.h>
+ }
+ 
+-#include <fmt/core.h>
++#include <fmt/format.h>
+ 
+ #include <cassert>
+ #include <string>
+-- 
+2.53.0
+

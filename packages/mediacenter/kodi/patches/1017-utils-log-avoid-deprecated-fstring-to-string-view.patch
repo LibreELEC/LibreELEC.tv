@@ -1,0 +1,46 @@
+From 214231ee7f1ad50c52808fd764929b1b06bb1193 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Thu, 18 Jun 2026 00:00:00 +0000
+Subject: [PATCH] utils/log: avoid deprecated fstring to string_view conversion
+
+fstring's implicit operator const string_view&() was deprecated in
+libfmt 12.2.0 (FMT_VERSION >= 120200). Access the public str member
+directly for libfmt 12.2.0 and later to avoid -Wdeprecated-declarations.
+---
+ xbmc/utils/log.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/xbmc/utils/log.h b/xbmc/utils/log.h
+index c9b8687819..9cc6282e48 100644
+--- a/xbmc/utils/log.h
++++ b/xbmc/utils/log.h
+@@ -118,7 +118,12 @@ public:
+     if (!GetInstance().CanLogComponent(component))
+       return;
+ 
++#if FMT_VERSION >= 120200
++    GetInstance().FormatAndLogInternal(level, component, format.str,
++                                       fmt::make_format_args(args...));
++#else
+     GetInstance().FormatAndLogInternal(level, component, format, fmt::make_format_args(args...));
++#endif
+   }
+ 
+   template<typename... Args>
+@@ -127,8 +132,13 @@ public:
+                   fmt::format_string<Args...> format,
+                   Args&&... args)
+   {
++#if FMT_VERSION >= 120200
++    GetInstance().FormatAndLogInternal(loggerName, MapLogLevel(level), format.str,
++                                       fmt::make_format_args(args...));
++#else
+     GetInstance().FormatAndLogInternal(loggerName, MapLogLevel(level), format,
+                                        fmt::make_format_args(args...));
++#endif
+   }
+ 
+ #ifdef TARGET_WINDOWS
+-- 
+2.53.0
+
