@@ -16,6 +16,22 @@ pre_configure_host() {
   "$(get_build_dir rustc-snapshot)/install.sh" --prefix="${PKG_BUILD}/rust-snapshot" --disable-ldconfig
   "$(get_build_dir rust-std-snapshot)/install.sh" --prefix="${PKG_BUILD}/rust-snapshot" --disable-ldconfig
   "$(get_build_dir cargo-snapshot)/install.sh" --prefix="${PKG_BUILD}/rust-snapshot" --disable-ldconfig
+
+  (
+    # Patch in required updated crates
+    cd ${PKG_BUILD}
+
+    # Download the crates
+    curl -L -H "User-Agent: LibreELEC-build/1.0 (builder@libreelec.tv)" \
+      https://crates.io/api/v1/crates/openssl-sys/0.9.114/download -o openssl-sys-0.9.114.crate
+
+    # Extract and replace in vendor
+    tar -xzf openssl-sys-0.9.114.crate -C vendor/
+
+    # Create checksum files
+    echo '{"files":{},"package":"13ce1245cd07fcc4cfdb438f7507b0c7e4f3849a69fd84d52374c66d83741bb6"}' \
+      > vendor/openssl-sys-0.9.114/.cargo-checksum.json
+  )
 }
 
 configure_host() {
