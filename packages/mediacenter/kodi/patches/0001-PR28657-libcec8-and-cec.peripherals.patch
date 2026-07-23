@@ -1,0 +1,528 @@
+From 1099dd417af3169f06df88b86b1f714fecce31ea Mon Sep 17 00:00:00 2001
+From: Lars Op den Kamp <lars@opdenkamp.eu>
+Date: Wed, 22 Jul 2026 18:31:35 +0200
+Subject: [PATCH 1/3] [depends] bump libcec to 8.1.0
+
+libcec 8.x provides, upstream, everything the depends patches used to add, so
+they are all gone and cec builds with plain CMake options:
+
+- client applications  -> -DDISABLE_CLIENT=ON
+- build metadata       -> -DDISABLE_BUILDINFO=ON
+- static library       -> -DDISABLE_STATIC=ON
+- flat install layout  -> -DCMAKE_INSTALL_LIBDIR=lib / -DCMAKE_INSTALL_INCLUDEDIR=include
+- a CMake package config for find_package(libcec)
+
+The last downstream change (an MSVC pdb tweak) is unnecessary too: the upstream
+pdb install is OPTIONAL, so it can't fail whatever the compile flags produce.
+
+libcec 8.x also dropped its p8-platform dependency, so cec no longer needs it:
+drop the P8Platform find/build hooks from FindCEC.cmake and the "cec: p8-platform"
+order from the depends Makefile. p8-platform stays in the tree for the binary
+addons that still use it.
+
+Bump CEC-VERSION and pass the options from the depends Makefile and
+FindCEC.cmake; drop the 001/002/003 patches. The SHA512 is the sha512sum of
+github.com/Pulse-Eight/libcec archive/refs/tags/libcec-8.1.0.tar.gz.
+---
+ cmake/modules/FindCEC.cmake                   | 25 +-----
+ tools/depends/target/Makefile                 |  1 -
+ .../target/cec/001-all-cmakelists.patch       | 31 -------
+ .../target/cec/002-all-libceccmakelists.patch | 89 -------------------
+ .../target/cec/003-all-remove_git_info.patch  | 19 ----
+ tools/depends/target/cec/CEC-VERSION          |  4 +-
+ tools/depends/target/cec/Makefile             | 12 ++-
+ 7 files changed, 11 insertions(+), 170 deletions(-)
+ delete mode 100644 tools/depends/target/cec/001-all-cmakelists.patch
+ delete mode 100644 tools/depends/target/cec/002-all-libceccmakelists.patch
+ delete mode 100644 tools/depends/target/cec/003-all-remove_git_info.patch
+
+diff --git a/cmake/modules/FindCEC.cmake b/cmake/modules/FindCEC.cmake
+index c2e9fb746bef5..d567857e11d3f 100644
+--- a/cmake/modules/FindCEC.cmake
++++ b/cmake/modules/FindCEC.cmake
+@@ -12,17 +12,8 @@ if(NOT TARGET ${APP_NAME_LC}::${CMAKE_FIND_PACKAGE_NAME})
+ 
+   macro(buildmacroCEC)
+ 
+-    find_package(P8Platform REQUIRED ${SEARCH_QUIET})
+-
+     set(${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_VERSION ${${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_VER})
+ 
+-    set(patches "${CORE_SOURCE_DIR}/tools/depends/target/${${CMAKE_FIND_PACKAGE_NAME}_MODULE_LC}/001-all-cmakelists.patch"
+-                "${CORE_SOURCE_DIR}/tools/depends/target/${${CMAKE_FIND_PACKAGE_NAME}_MODULE_LC}/002-all-libceccmakelists.patch"
+-                "${CORE_SOURCE_DIR}/tools/depends/target/${${CMAKE_FIND_PACKAGE_NAME}_MODULE_LC}/003-all-remove_git_info.patch")
+-
+-    generate_patchcommand("${patches}")
+-    unset(patches)
+-
+     set(${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_SHARED_LIB TRUE)
+ 
+     if(CORE_SYSTEM_NAME STREQUAL "osx")
+@@ -32,6 +23,10 @@ if(NOT TARGET ${APP_NAME_LC}::${CMAKE_FIND_PACKAGE_NAME})
+     set(CMAKE_ARGS -DBUILD_SHARED_LIBS=ON
+                    -DSKIP_PYTHON_WRAPPER=ON
+                    -DDISABLE_BUILDINFO=ON
++                   -DDISABLE_CLIENT=ON
++                   -DDISABLE_STATIC=ON
++                   -DCMAKE_INSTALL_LIBDIR=lib
++                   -DCMAKE_INSTALL_INCLUDEDIR=include
+                    -DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON)
+ 
+     BUILD_DEP_TARGET()
+@@ -41,20 +36,8 @@ if(NOT TARGET ${APP_NAME_LC}::${CMAKE_FIND_PACKAGE_NAME})
+       add_custom_command(TARGET ${${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_BUILD_NAME} POST_BUILD
+                          COMMAND ${INSTALL_NAME_TOOL} -id ${${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_LIBRARY} ${${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_LIBRARY})
+     endif()
+-
+-    add_dependencies(${${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_BUILD_NAME} LIBRARY::P8Platform)
+   endmacro()
+ 
+-  # If there is a potential this library can be built internally
+-  # Check its dependencies to allow forcing this lib to be built if one of its
+-  # dependencies requires being rebuilt
+-  if(ENABLE_INTERNAL_CEC)
+-    # Dependency list of this find module for an INTERNAL build
+-    set(${CMAKE_FIND_PACKAGE_NAME}_DEPLIST P8Platform)
+-
+-    check_dependency_build(${CMAKE_FIND_PACKAGE_NAME} "${${CMAKE_FIND_PACKAGE_NAME}_DEPLIST}")
+-  endif()
+-
+   set(${CMAKE_FIND_PACKAGE_NAME}_MODULE_LC cec)
+   set(${CMAKE_FIND_PACKAGE_NAME}_SEARCH_NAME libcec)
+ 
+diff --git a/tools/depends/target/Makefile b/tools/depends/target/Makefile
+index e66a79a3d88ad..cecbe7f884820 100644
+--- a/tools/depends/target/Makefile
++++ b/tools/depends/target/Makefile
+@@ -150,7 +150,6 @@ $(DOWNLOAD_TARGETS):
+ 
+ download: $(DOWNLOAD_TARGETS)
+ 
+-cec: p8-platform
+ crossguid: $(LIBUUID)
+ curl: brotli openssl nghttp2 $(ZLIB)
+ dbus: expat
+diff --git a/tools/depends/target/cec/001-all-cmakelists.patch b/tools/depends/target/cec/001-all-cmakelists.patch
+deleted file mode 100644
+index 23197d1e7e27a..0000000000000
+--- a/tools/depends/target/cec/001-all-cmakelists.patch
++++ /dev/null
+@@ -1,31 +0,0 @@
+---- a/CMakeLists.txt
+-+++ b/CMakeLists.txt
+-@@ -6,6 +6,7 @@
+- set(LIBCEC_VERSION_PATCH 1)
+- 
+- # cec-client
+-+if(ENABLE_CLIENT)
+- add_subdirectory(src/cec-client)
+- add_dependencies(cec-client cec-shared)
+- 
+-@@ -15,6 +16,7 @@
+- 
+- # pyCecClient
+- add_subdirectory(src/pyCecClient)
+-+endif()
+- 
+- # libCEC
+- add_subdirectory(src/libcec)
+-@@ -25,6 +27,7 @@
+- 
+- # windows specific files
+- if(WIN32)
+-+if(ENABLE_CLIENT)
+-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/project/nsis/libcec-version.nsh.in
+-                  ${CMAKE_CURRENT_SOURCE_DIR}/project/nsis/libcec-version.nsh)
+-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dotnetlib/LibCecSharp/LibCecSharp.rc.in
+-@@ -44,3 +47,4 @@
+-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dotnet/src/CecSharpTester/netfx/Properties/AssemblyInfo.cs.in
+-                  ${CMAKE_CURRENT_SOURCE_DIR}/src/dotnet/src/CecSharpTester/netfx/Properties/AssemblyInfo.cs)
+- endif()
+-+endif()
+diff --git a/tools/depends/target/cec/002-all-libceccmakelists.patch b/tools/depends/target/cec/002-all-libceccmakelists.patch
+deleted file mode 100644
+index 7a5b895faa1e7..0000000000000
+--- a/tools/depends/target/cec/002-all-libceccmakelists.patch
++++ /dev/null
+@@ -1,89 +0,0 @@
+---- a/src/libcec/CMakeLists.txt
+-+++ b/src/libcec/CMakeLists.txt
+-@@ -176,7 +176,7 @@
+-                         ${CMAKE_INSTALL_PREFIX}/include)
+- 
+-   install(FILES         ${CMAKE_CURRENT_SOURCE_DIR}/libcec.pc
+--          DESTINATION   ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+-+          DESTINATION   lib/pkgconfig)
+- endif()
+- 
+- # install headers
+-@@ -186,7 +186,7 @@
+-               ${PROJECT_SOURCE_DIR}/../../include/ceccloader.h
+-               ${PROJECT_SOURCE_DIR}/../../include/cectypes.h
+-               ${PROJECT_SOURCE_DIR}/../../include/version.h
+--        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libcec)
+-+        DESTINATION include/libcec)
+- 
+- # external dependencies
+- include(cmake/LinkPlatformSupport.cmake)
+-@@ -203,20 +203,23 @@
+-     OUTPUT_NAME cec)
+- target_link_libraries(cec-shared ${cec_depends})
+- 
+--
+-+if(ENABLE_STATIC)
+- add_library(cec-static STATIC $<TARGET_OBJECTS:libobj>)
+- set_target_properties(cec-static PROPERTIES
+-     VERSION   ${LIBCEC_VERSION_MAJOR}.${LIBCEC_VERSION_MINOR}.${LIBCEC_VERSION_PATCH}
+- 	SOVERSION ${LIBCEC_VERSION_MAJOR}
+-     OUTPUT_NAME cec)
+- target_link_libraries(cec-static ${cec_depends})
+-+endif()
+- 
+- if(WIN32)
+-   if (MSVC)
+--    # generate pdb in release mode too
+--	cmake_policy(SET CMP0141 NEW)
+--	set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Release,RelWithDebInfo>:ProgramDatabase>")
+-+   target_compile_options(cec-shared PRIVATE /Zi)
+- 
+-+   # Tell linker to include symbol data
+-+    set_target_properties(cec-shared PROPERTIES 
+-+        LINK_FLAGS "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF"
+-+    )
+-     set_target_properties(cec-shared PROPERTIES
+-         COMPILE_PDB_NAME_DEBUG cec
+-         COMPILE_PDB_NAME_RELEASE cec
+-@@ -225,11 +228,33 @@
+- 
+-     # install generated pdb
+-     install(FILES $<TARGET_FILE_DIR:cec-shared>/cec.pdb
+--            DESTINATION ${LIB_DESTINATION})
+-+            DESTINATION lib)
+-   endif(MSVC)
+- endif(WIN32)
+- 
+--install(TARGETS cec-shared cec-static
+--        DESTINATION ${LIB_DESTINATION})
+-+install(TARGETS cec-shared
+-+        EXPORT libcec
+-+        RUNTIME DESTINATION bin
+-+        ARCHIVE DESTINATION lib
+-+        LIBRARY DESTINATION lib)
+- 
+-+# handle version file
+-+include(CMakePackageConfigHelpers)
+-+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/libcec-config-version.cmake
+-+                                 VERSION ${LIBCEC_VERSION_MAJOR}.${LIBCEC_VERSION_MINOR}.${LIBCEC_VERSION_PATCH}
+-+                                 COMPATIBILITY AnyNewerVersion)
+-+
+-+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libcec-config-version.cmake
+-+        DESTINATION lib/cmake/libcec)
+-+
+-+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/libcec-config.cmake
+-+        DESTINATION lib/cmake/libcec)
+-+
+-+install(EXPORT libcec
+-+  NAMESPACE
+-+    libcec::
+-+  DESTINATION
+-+    lib/cmake/libcec
+-+)
+-+
+- include(cmake/DisplayPlatformSupport.cmake)
+---- /dev/null
+-+++ b/src/libcec/cmake/libcec-config.cmake
+-@@ -0,0 +1 @@
+-+include(${CMAKE_CURRENT_LIST_DIR}/libcec.cmake)
+diff --git a/tools/depends/target/cec/003-all-remove_git_info.patch b/tools/depends/target/cec/003-all-remove_git_info.patch
+deleted file mode 100644
+index d9d564b5daa25..0000000000000
+--- a/tools/depends/target/cec/003-all-remove_git_info.patch
++++ /dev/null
+@@ -1,19 +0,0 @@
+---- a/src/libcec/cmake/SetBuildInfo.cmake
+-+++ b/src/libcec/cmake/SetBuildInfo.cmake
+-@@ -12,7 +12,7 @@
+- else()
+-   # not Windows
+-   set(LIB_INFO "")
+--
+-+if(NOT DISABLE_BUILDINFO)
+-   # add git revision to compile info
+-   find_program(GIT_BIN git /bin /usr/bin /usr/local/bin)
+-   if(GIT_BIN)
+-@@ -69,6 +69,6 @@
+- 
+-     set(LIB_INFO "${LIB_INFO} on ${BUILD_SYSNAME} ${BUILD_SYSVER} (${BUILD_SYSARCH})")
+-   endif()
+--
+- endif()
+-+endif()
+- 
+diff --git a/tools/depends/target/cec/CEC-VERSION b/tools/depends/target/cec/CEC-VERSION
+index fb78e5dc2e2db..7b8042af5d4c6 100644
+--- a/tools/depends/target/cec/CEC-VERSION
++++ b/tools/depends/target/cec/CEC-VERSION
+@@ -1,6 +1,6 @@
+ LIBNAME=libcec
+-VERSION=7.1.1
++VERSION=8.1.0
+ ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
+-SHA512=f4c12b68f275bde32a1f91e48e392c0d7fc0cf9f86fb4635a79869dc2398cbd63a1f8fdedc21d61f15afbe53ac8ece20cddeec4bac91de97de32fdcca61848e6
++SHA512=04694b88cdb21234d8cda609f1721afcecdde1eec9b0f1b525e5938345ef6f91a846ecf745a806ea82bb9db5ba0b2ed6fa1a3382cfa79586aecde866610c2df5
+ BYPRODUCT=libcec.so
+ BYPRODUCT_WIN=cec.lib
+diff --git a/tools/depends/target/cec/Makefile b/tools/depends/target/cec/Makefile
+index c335d412c0be8..bb172e794f88f 100644
+--- a/tools/depends/target/cec/Makefile
++++ b/tools/depends/target/cec/Makefile
+@@ -1,8 +1,5 @@
+ include ../../Makefile.include CEC-VERSION ../../download-files.include
+-DEPS = ../../Makefile.include Makefile CEC-VERSION ../../download-files.include \
+-                            001-all-cmakelists.patch \
+-                            002-all-libceccmakelists.patch \
+-                            003-all-remove_git_info.patch
++DEPS = ../../Makefile.include Makefile CEC-VERSION ../../download-files.include
+ 
+ LIBDYLIB=$(PLATFORM)/build/src/$(LIBNAME)/$(BYPRODUCT)
+ ifeq (darwin, $(findstring darwin, $(HOST)))
+@@ -13,6 +10,10 @@ CMAKE_OPTIONS=-DBUILD_SHARED_LIBS=1 \
+               -DSKIP_PYTHON_WRAPPER:STRING=1 \
+               -DCMAKE_PLATFORM_NO_VERSIONED_SONAME=1 \
+               -DDISABLE_BUILDINFO=ON \
++              -DDISABLE_CLIENT=ON \
++              -DDISABLE_STATIC=ON \
++              -DCMAKE_INSTALL_LIBDIR=lib \
++              -DCMAKE_INSTALL_INCLUDEDIR=include \
+               -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+               -DCMAKE_BUILD_TYPE=Debug
+ 
+@@ -21,9 +22,6 @@ all: .installed-$(PLATFORM)
+ .configured-$(PLATFORM): $(DEPS) | $(TARBALLS_LOCATION)/$(ARCHIVE).$(HASH_TYPE)
+ 	rm -rf $(PLATFORM); mkdir -p $(PLATFORM)/build
+ 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
+-	cd $(PLATFORM); patch -p1 -i ../001-all-cmakelists.patch
+-	cd $(PLATFORM); patch -p1 -i ../002-all-libceccmakelists.patch
+-	cd $(PLATFORM); patch -p1 -i ../003-all-remove_git_info.patch
+ 	cd $(PLATFORM)/build; $(CMAKE) ${CMAKE_OPTIONS} ..
+ 	touch $@
+ 
+
+From 3245dacdfc199261eaecfd4dc33b1b1fcd3837c5 Mon Sep 17 00:00:00 2001
+From: Lars Op den Kamp <lars@opdenkamp.eu>
+Date: Thu, 23 Jul 2026 00:49:32 +0200
+Subject: [PATCH 2/3] [depends] cec: fix Windows library path for libcec 8.x
+ layout
+
+libcec installs the shared library and its import lib to the root of the
+install prefix on Windows (its CheckPlatformSupport.cmake hardcodes
+LIB_DESTINATION "."), whereas the removed downstream patch used to install
+them to bin/ and lib/. FindCEC.cmake still expected the default bin/ (dll)
+and lib/ (implib) layout, so linking kodi.exe failed with:
+
+  LINK : fatal error LNK1181: cannot open input file '...\lib\cec.lib'
+
+Point CEC_LOCATION_PATH and CEC_IMPLIB_PATH at the prefix root on Windows so
+the module resolves the library where libcec actually installs it.
+---
+ cmake/modules/FindCEC.cmake | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/cmake/modules/FindCEC.cmake b/cmake/modules/FindCEC.cmake
+index d567857e11d3f..7bdeac12b96f4 100644
+--- a/cmake/modules/FindCEC.cmake
++++ b/cmake/modules/FindCEC.cmake
+@@ -20,6 +20,14 @@ if(NOT TARGET ${APP_NAME_LC}::${CMAKE_FIND_PACKAGE_NAME})
+       set(${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_LOCATION_POSTFIX "dylib")
+     endif()
+ 
++    if(WIN32 OR WINDOWS_STORE)
++      # libcec installs the .dll and its import .lib into the install prefix root
++      # on Windows (LIB_DESTINATION "." in its CheckPlatformSupport.cmake), not
++      # bin/ and lib/. Point the module at that layout so the library is found.
++      set(${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_LOCATION_PATH ".")
++      set(${${CMAKE_FIND_PACKAGE_NAME}_MODULE}_IMPLIB_PATH ".")
++    endif()
++
+     set(CMAKE_ARGS -DBUILD_SHARED_LIBS=ON
+                    -DSKIP_PYTHON_WRAPPER=ON
+                    -DDISABLE_BUILDINFO=ON
+
+From fa92b989782babc2b1e7cae9f16c2080840da518 Mon Sep 17 00:00:00 2001
+From: Lars Op den Kamp <lars@opdenkamp.eu>
+Date: Wed, 22 Jul 2026 18:31:35 +0200
+Subject: [PATCH 3/3] [peripherals] give each CEC adapter its own settings file
+
+Multiple CEC adapters of the same model (e.g. both HDMI CEC devices on a
+Raspberry Pi, or two USB-CEC adapters) report identical vendor/product ids, so
+they all resolved to the same peripheral_data settings file and clobbered each
+other's configuration.
+
+Scope the settings file by the adapter's stable physical location (its com
+path), which libCEC reports and which does not change with device-node
+enumeration order. The display name is deliberately not part of the file name:
+it is not stable, since a lone CEC adapter is shown as "HDMI" but becomes
+"HDMI 1"/"HDMI 2" once a second one appears.
+
+Show the per-adapter display name libCEC now assigns, so adapters are listed
+distinctly instead of as identical "CEC Adapter" entries.
+---
+ xbmc/peripherals/PeripheralTypes.h            |  2 +
+ .../bus/virtual/PeripheralBusCEC.cpp          | 10 +++
+ xbmc/peripherals/devices/Peripheral.cpp       | 68 +++++++++++++++----
+ xbmc/peripherals/devices/Peripheral.h         |  4 +-
+ 4 files changed, 68 insertions(+), 16 deletions(-)
+
+diff --git a/xbmc/peripherals/PeripheralTypes.h b/xbmc/peripherals/PeripheralTypes.h
+index 138316a9f2c05..c5bc3d8b63d9d 100644
+--- a/xbmc/peripherals/PeripheralTypes.h
++++ b/xbmc/peripherals/PeripheralTypes.h
+@@ -345,6 +345,8 @@ class PeripheralScanResult
+ 
+   PeripheralType m_type = PERIPHERAL_UNKNOWN;
+   std::string m_strLocation;
++  // Stable physical/topology location, used to key per-adapter settings. Empty if unavailable.
++  std::string m_strPhysicalLocation;
+   int m_iVendorId = 0;
+   int m_iProductId = 0;
+   PeripheralType m_mappedType = PERIPHERAL_UNKNOWN;
+diff --git a/xbmc/peripherals/bus/virtual/PeripheralBusCEC.cpp b/xbmc/peripherals/bus/virtual/PeripheralBusCEC.cpp
+index cdfb68181b95b..b56656ff36d1f 100644
+--- a/xbmc/peripherals/bus/virtual/PeripheralBusCEC.cpp
++++ b/xbmc/peripherals/bus/virtual/PeripheralBusCEC.cpp
+@@ -44,8 +44,18 @@ bool CPeripheralBusCEC::PerformDeviceScan(PeripheralScanResults& results)
+     result.m_iVendorId = deviceList[iDevicePtr].iVendorId;
+     result.m_iProductId = deviceList[iDevicePtr].iProductId;
+     result.m_strLocation = deviceList[iDevicePtr].strComName;
++    // physical device path, stable across reboots/replugs unlike the com port name
++    result.m_strPhysicalLocation = deviceList[iDevicePtr].strComPath;
++    if (result.m_strPhysicalLocation.empty())
++      result.m_strPhysicalLocation = deviceList[iDevicePtr].strComName;
+     result.m_type = PERIPHERAL_CEC;
+ 
++    // Display name assigned by libCEC (e.g. "HDMI 1"/"HDMI 2" for the kernel CEC
++    // nodes on a multi-HDMI board, "USB-CEC Adapter N" for USB), so multiple
++    // adapters aren't listed as identical entries. Left empty for adapters libCEC
++    // didn't name, which then fall back to the generic peripherals.xml mapping.
++    result.m_strDeviceName = deviceList[iDevicePtr].strDeviceName;
++
+     // override the bus type, so users don't have to reconfigure their adapters
+     switch (deviceList[iDevicePtr].adapterType)
+     {
+diff --git a/xbmc/peripherals/devices/Peripheral.cpp b/xbmc/peripherals/devices/Peripheral.cpp
+index 77c5de2a02ab7..5032163b9eae2 100644
+--- a/xbmc/peripherals/devices/Peripheral.cpp
++++ b/xbmc/peripherals/devices/Peripheral.cpp
+@@ -70,6 +70,7 @@ CPeripheral::CPeripheral(CPeripherals& manager,
+ {
+   PeripheralTypeTranslator::FormatHexString(scanResult.m_iVendorId, m_strVendorId);
+   PeripheralTypeTranslator::FormatHexString(scanResult.m_iProductId, m_strProductId);
++  m_strPhysicalLocation = scanResult.m_strPhysicalLocation;
+   if (scanResult.m_iSequence > 0)
+   {
+     m_strFileLocation =
+@@ -170,28 +171,65 @@ bool CPeripheral::Initialise(void)
+ 
+   m_manager.GetSettingsFromMapping(*this);
+ 
++  const std::string busStr = PeripheralTypeTranslator::BusTypeToString(m_mappedBusType);
++
+   std::string safeDeviceName = m_strDeviceName;
+   StringUtils::Replace(safeDeviceName, ' ', '_');
++  safeDeviceName = CUtil::MakeLegalFileName(std::move(safeDeviceName), LegalPath::WIN32_COMPAT);
++
++  // Disambiguates settings for adapters of the same model (identical vendor/product/name).
++  std::string safeLocation = m_strPhysicalLocation;
++  StringUtils::Replace(safeLocation, ' ', '_');
++  safeLocation = CUtil::MakeLegalFileName(std::move(safeLocation), LegalPath::WIN32_COMPAT);
+ 
++  // Settings file name without a location component (backward compatible).
++  std::string legacyFile;
+   if (m_iVendorId == 0x0000 && m_iProductId == 0x0000)
+   {
+-    m_strSettingsFile = StringUtils::Format(
+-        "special://profile/peripheral_data/{}_{}.xml",
+-        PeripheralTypeTranslator::BusTypeToString(m_mappedBusType),
+-        CUtil::MakeLegalFileName(std::move(safeDeviceName), LegalPath::WIN32_COMPAT));
++    legacyFile = StringUtils::Format("special://profile/peripheral_data/{}_{}.xml", busStr,
++                                     safeDeviceName);
+   }
+   else
+   {
+-    // Backwards compatibility - old settings files didn't include the device name
+-    m_strSettingsFile = StringUtils::Format(
+-        "special://profile/peripheral_data/{}_{}_{}.xml",
+-        PeripheralTypeTranslator::BusTypeToString(m_mappedBusType), m_strVendorId, m_strProductId);
+-
+-    if (!CFileUtils::Exists(m_strSettingsFile))
+-      m_strSettingsFile = StringUtils::Format(
+-          "special://profile/peripheral_data/{}_{}_{}_{}.xml",
+-          PeripheralTypeTranslator::BusTypeToString(m_mappedBusType), m_strVendorId, m_strProductId,
+-          CUtil::MakeLegalFileName(std::move(safeDeviceName), LegalPath::WIN32_COMPAT));
++    legacyFile = StringUtils::Format("special://profile/peripheral_data/{}_{}_{}.xml", busStr,
++                                     m_strVendorId, m_strProductId);
++
++    // even older layout also included the device name
++    if (!CFileUtils::Exists(legacyFile))
++      legacyFile = StringUtils::Format("special://profile/peripheral_data/{}_{}_{}_{}.xml", busStr,
++                                       m_strVendorId, m_strProductId, safeDeviceName);
++  }
++
++  // Settings file scoped to this adapter's physical location. The display name
++  // must not be part of the identity (it can change - e.g. a CEC adapter is
++  // "HDMI" alone but "HDMI 1"/"HDMI 2" once a second one appears - which would
++  // orphan the saved settings).
++  std::string locationFile;
++  if (m_iVendorId == 0x0000 && m_iProductId == 0x0000)
++  {
++    locationFile = StringUtils::Format("special://profile/peripheral_data/{}_{}.xml", busStr,
++                                       safeLocation);
++  }
++  else
++  {
++    locationFile = StringUtils::Format("special://profile/peripheral_data/{}_{}_{}_{}.xml", busStr,
++                                       m_strVendorId, m_strProductId, safeLocation);
++  }
++
++  // Write to the per-location file, but keep reading the legacy file until it is superseded by
++  // a write, so read-only sessions don't migrate.
++  if (safeLocation.empty())
++  {
++    m_strSettingsFile = legacyFile;
++    m_strSettingsFileLoad = legacyFile;
++  }
++  else
++  {
++    m_strSettingsFile = locationFile;
++    if (!CFileUtils::Exists(locationFile) && CFileUtils::Exists(legacyFile))
++      m_strSettingsFileLoad = legacyFile;
++    else
++      m_strSettingsFileLoad = locationFile;
+   }
+ 
+   // Load settings and initialize state
+@@ -639,7 +677,7 @@ void CPeripheral::PersistSettings(bool bExiting /* = false */)
+ void CPeripheral::LoadPersistedSettings(void)
+ {
+   CXBMCTinyXML2 doc;
+-  if (doc.LoadFile(m_strSettingsFile))
++  if (doc.LoadFile(m_strSettingsFileLoad))
+   {
+     const auto* setting = doc.RootElement()->FirstChildElement("setting");
+     while (setting != nullptr)
+diff --git a/xbmc/peripherals/devices/Peripheral.h b/xbmc/peripherals/devices/Peripheral.h
+index 30d4ee5ba72a3..3efad838e31a1 100644
+--- a/xbmc/peripherals/devices/Peripheral.h
++++ b/xbmc/peripherals/devices/Peripheral.h
+@@ -325,8 +325,10 @@ class CPeripheral : public KODI::JOYSTICK::IInputProvider,
+   PeripheralBusType m_mappedBusType;
+   std::string m_strLocation;
+   std::string m_strDeviceName;
+-  std::string m_strSettingsFile;
++  std::string m_strSettingsFile; // settings file to write
++  std::string m_strSettingsFileLoad; // settings file to read
+   std::string m_strFileLocation;
++  std::string m_strPhysicalLocation; // stable physical/topology location
+   int m_iVendorId;
+   std::string m_strVendorId;
+   int m_iProductId;
