@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro"
 PKG_URL="https://github.com/kodi-game/game.libretro/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain tinyxml kodi-platform libretro-common rcheevos"
+PKG_DEPENDS_TARGET="toolchain tinyxml tinyxml ${MEDIACENTER}:host libretro-common rcheevos"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro is a thin wrapper for libretro"
 

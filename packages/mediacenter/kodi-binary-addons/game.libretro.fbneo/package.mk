@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-Non-commercial"
 PKG_SITE="https://github.com/kodi-game/game.libretro.fbneo"
 PKG_URL="https://github.com/kodi-game/game.libretro.fbneo/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-fbneo"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-fbneo"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.fbneo: FinalBurn Neo GameClient for Kodi"
 

@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.vice_xvic"
 PKG_URL="https://github.com/kodi-game/game.libretro.vice_xvic/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-vice_xvic"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-vice_xvic"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.vice_xvic: vice (xvic) emulator for Kodi"
 

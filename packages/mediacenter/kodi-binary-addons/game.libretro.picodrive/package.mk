@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-MAME"
 PKG_SITE="https://github.com/kodi-game/game.libretro.picodrive"
 PKG_URL="https://github.com/kodi-game/game.libretro.picodrive/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-picodrive"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-picodrive"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.picodrive: picodrive for Kodi"
 

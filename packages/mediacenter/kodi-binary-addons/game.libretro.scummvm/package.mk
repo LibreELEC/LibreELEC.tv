@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-3.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.scummvm"
 PKG_URL="https://github.com/kodi-game/game.libretro.scummvm/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-scummvm"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-scummvm"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.scummvm: scummvm for Kodi"
 

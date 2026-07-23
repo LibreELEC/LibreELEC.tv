@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.tgbdual"
 PKG_URL="https://github.com/kodi-game/game.libretro.tgbdual/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-tgbdual"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-tgbdual"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.tgbdual: tgbdual for Kodi"
 

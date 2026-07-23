@@ -8,7 +8,7 @@ PKG_REV="1"
 PKG_LICENSE="LicenseRef-MAME"
 PKG_SITE="https://github.com/kodi-game/game.libretro.mame2010"
 PKG_URL="https://github.com/kodi-game/game.libretro.mame2010/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-mame2010"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-mame2010"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.mame2010: MAME emulator for Kodi"
 

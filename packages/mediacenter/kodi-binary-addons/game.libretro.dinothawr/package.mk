@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-Non-commercial"
 PKG_SITE="https://github.com/kodi-game/game.libretro.dinothawr"
 PKG_URL="https://github.com/kodi-game/game.libretro.dinothawr/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-dinothawr"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-dinothawr"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.dinothawr: dinothawr for Kodi"
 

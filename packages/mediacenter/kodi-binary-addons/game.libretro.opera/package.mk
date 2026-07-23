@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-FreeDO"
 PKG_SITE="https://github.com/kodi-game/game.libretro.opera"
 PKG_URL="https://github.com/kodi-game/game.libretro.opera/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-opera"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-opera"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.opera: Port of 4DO/libfreedo for Kodi."
 

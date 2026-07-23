@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-3.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.bnes"
 PKG_URL="https://github.com/kodi-game/game.libretro.bnes/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-bnes"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-bnes"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.bnes: bNES for Kodi"
 

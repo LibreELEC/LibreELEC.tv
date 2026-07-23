@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.beetle-gba"
 PKG_URL="https://github.com/kodi-game/game.libretro.beetle-gba/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-beetle-gba"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-beetle-gba"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.beetle-gba: Beetle GBA for Kodi"
 

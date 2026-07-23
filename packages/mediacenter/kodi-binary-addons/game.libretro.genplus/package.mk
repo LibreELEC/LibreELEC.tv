@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-Non-commercial"
 PKG_SITE="https://github.com/kodi-game/game.libretro.genplus"
 PKG_URL="https://github.com/kodi-game/game.libretro.genplus/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-genplus"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-genplus"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.genplus: Genesis Plus GX emulator for Kodi"
 

@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-3.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.vecx"
 PKG_URL="https://github.com/kodi-game/game.libretro.vecx/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-vecx"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-vecx"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.vecx: vecx for Kodi"
 

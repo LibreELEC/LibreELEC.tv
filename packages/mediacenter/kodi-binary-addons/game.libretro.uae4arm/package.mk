@@ -9,7 +9,7 @@ PKG_ARCH="arm aarch64"
 PKG_LICENSE="GPL-2.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.uae4arm"
 PKG_URL="https://github.com/kodi-game/game.libretro.uae4arm/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-uae4arm"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-uae4arm"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.uae4arm: uae4arm emulator for Kodi"
 
