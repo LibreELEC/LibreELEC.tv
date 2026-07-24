@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="Zlib"
 PKG_SITE="https://github.com/kodi-game/game.libretro.handy"
 PKG_URL="https://github.com/kodi-game/game.libretro.handy/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-handy"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-handy"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.handy: handy for Kodi"
 

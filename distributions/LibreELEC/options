@@ -197,7 +197,7 @@
 
 # Configure debug groups (space delimited key=value pairs, with each value comma-delimited) and default group when DEBUG=yes
 # Use ! or - prefix to prevent a dependent package from being built with debug. Add + suffix to build dependenencies with debug.
-  DEBUG_GROUPS="kodi+=kodi+,kodi-platform+,p8-platform+,!mesa"
+  DEBUG_GROUPS="kodi+=kodi+,!mesa"
   DEBUG_GROUP_YES="kodi+"
 
 # build with NFS support (mounting nfs shares via the OS) (yes / no)

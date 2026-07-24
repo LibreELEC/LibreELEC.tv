@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="MPL-2.0"
 PKG_SITE="https://github.com/kodi-game/game.libretro.mgba"
 PKG_URL="https://github.com/kodi-game/game.libretro.mgba/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-mgba"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-mgba"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.mgba: mGBA emulator for Kodi"
 

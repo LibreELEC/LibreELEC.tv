@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.prboom"
 PKG_URL="https://github.com/kodi-game/game.libretro.prboom/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-prboom"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-prboom"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.prboom: prboom for Kodi"
 

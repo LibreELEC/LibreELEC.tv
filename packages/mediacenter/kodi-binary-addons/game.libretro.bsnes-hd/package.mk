@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-3.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.bsnes-hd"
 PKG_URL="https://github.com/kodi-game/game.libretro.bsnes-hd/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-bsnes-hd"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-bsnes-hd"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.bsnes-hd: bsnes fork that adds HD video features"
 

@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/kodi-game/game.libretro.mrboom"
 PKG_URL="https://github.com/kodi-game/game.libretro.mrboom/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-mrboom"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-mrboom"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.mrboom: mrboom for Kodi"
 

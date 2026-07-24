@@ -9,7 +9,7 @@ PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.dosbox-pure"
 PKG_URL="https://github.com/kodi-game/game.libretro.dosbox-pure/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain kodi-platform libretro-dosbox-pure"
+PKG_DEPENDS_TARGET="toolchain tinyxml ${MEDIACENTER}:host libretro-dosbox-pure"
 PKG_SECTION=""
 PKG_LONGDESC="game.libretro.dosbox-pure: DOSBox-Pure for Kodi"
 
