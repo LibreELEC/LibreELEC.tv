@@ -18,6 +18,7 @@ PKG_MESON_OPTS_HOST="-Dstemming=false \
                      -Dbash-completion=false \
                      -Dgir=false \
                      -Dsvg-support=false \
+                     -Dwayland=false \
                      -Dzstd-support=false \
                      -Ddocs=false \
                      -Dapidocs=false \
@@ -28,6 +29,7 @@ PKG_MESON_OPTS_TARGET="-Dstemming=false \
                        -Dsystemd=false \
                        -Dgir=false \
                        -Dsvg-support=false \
+                       -Dwayland=false \
                        -Dzstd-support=true \
                        -Ddocs=false \
                        -Dapidocs=false \
