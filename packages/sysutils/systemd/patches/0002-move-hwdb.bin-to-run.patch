@@ -22,15 +22,15 @@ index 72b2f777c8..2d8e2fbb16 100644
          "/usr/lib/systemd/hwdb/hwdb.bin\0"      \
          UDEVLIBEXECDIR "/hwdb.bin\0"
 diff --git a/src/shared/hwdb-util.c b/src/shared/hwdb-util.c
-index b42681a289..96102c6475 100644
+index f6415694e1..6a37caeb39 100644
 --- a/src/shared/hwdb-util.c
 +++ b/src/shared/hwdb-util.c
-@@ -587,7 +587,7 @@ int hwdb_update(const char *root, const char *hwdb_bin_dir, bool strict, bool co
-          * source. If true, then hwdb.bin will be created without the information. systemd-hwdb command
-          * should set the argument false, and 'udevadm hwdb' command should set it true. */
+@@ -599,7 +599,7 @@ int hwdb_update(const char *root, const char *hwdb_bin_dir, bool strict, bool co
+                 path_simplify(root_abs);
+         }
  
--        hwdb_bin = path_join(root, hwdb_bin_dir ?: "/etc/udev", "hwdb.bin");
-+        hwdb_bin = path_join(root, hwdb_bin_dir ?: "/run", "hwdb.bin");
+-        hwdb_bin = path_join(root_abs, hwdb_bin_dir ?: "/etc/udev", "hwdb.bin");
++        hwdb_bin = path_join(root_abs, hwdb_bin_dir ?: "/run", "hwdb.bin");
          if (!hwdb_bin)
                  return -ENOMEM;
  
