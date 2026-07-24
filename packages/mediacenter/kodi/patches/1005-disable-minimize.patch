@@ -8,9 +8,10 @@ Subject: [PATCH] disable minimize
  1 file changed, 1 deletion(-)
 
 diff --git a/xbmc/application/ApplicationMessageHandling.cpp b/xbmc/application/ApplicationMessageHandling.cpp
+index fa034ea..2fcd1c8 100644
 --- a/xbmc/application/ApplicationMessageHandling.cpp
 +++ b/xbmc/application/ApplicationMessageHandling.cpp
-@@ -259,7 +259,6 @@ void CApplicationMessageHandling::OnAppl
+@@ -315,7 +315,6 @@ void CApplicationMessageHandling::OnApplicationMessage(MESSAGING::ThreadMessage*
        break;
  
      case TMSG_MINIMIZE:
@@ -19,4 +20,5 @@ diff --git a/xbmc/application/ApplicationMessageHandling.cpp b/xbmc/application/
  
      case TMSG_EXECUTE_OS:
 -- 
-2.47.1
+2.53.0
+

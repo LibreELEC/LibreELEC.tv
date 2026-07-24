@@ -9,6 +9,7 @@ LibreELEC specific patch - will not be submitted upstream.
  1 file changed, 1 insertion(+)
 
 diff --git a/userdata/RssFeeds.xml b/userdata/RssFeeds.xml
+index 590a7c5..677c375 100644
 --- a/userdata/RssFeeds.xml
 +++ b/userdata/RssFeeds.xml
 @@ -3,6 +3,7 @@
@@ -20,4 +21,5 @@ diff --git a/userdata/RssFeeds.xml b/userdata/RssFeeds.xml
    </set>
  </rssfeeds>
 -- 
-2.47.1
+2.53.0
+

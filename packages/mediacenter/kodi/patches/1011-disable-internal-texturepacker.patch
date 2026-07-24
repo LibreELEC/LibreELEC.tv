@@ -9,9 +9,10 @@ LibreELEC specific patch - will not be submitted upstream.
  1 file changed, 9 deletions(-)
 
 diff --git a/cmake/modules/buildtools/FindTexturePacker.cmake b/cmake/modules/buildtools/FindTexturePacker.cmake
+index 018bc5e..2c5fd30 100644
 --- a/cmake/modules/buildtools/FindTexturePacker.cmake
 +++ b/cmake/modules/buildtools/FindTexturePacker.cmake
-@@ -54,15 +54,6 @@ if(NOT TARGET TexturePacker::TexturePack
+@@ -54,15 +54,6 @@ if(NOT TARGET TexturePacker::TexturePacker::Executable)
        endif()
      endif()
  
@@ -28,4 +29,5 @@ diff --git a/cmake/modules/buildtools/FindTexturePacker.cmake b/cmake/modules/bu
      # and TEXTUREPACKER_EXECUTABLE is not found
      if(HOST_CAN_EXECUTE_TARGET AND NOT TEXTUREPACKER_EXECUTABLE)
 -- 
-2.47.1
+2.53.0
+

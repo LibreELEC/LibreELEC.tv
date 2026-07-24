@@ -91,10 +91,10 @@ index 8f6d71c..03516d6 100644
    CEvent m_playerEvent;
  };
 diff --git a/xbmc/application/ApplicationMessageHandling.cpp b/xbmc/application/ApplicationMessageHandling.cpp
-index 1a701e8..4c54666 100644
+index 2fcd1c8..cb262b3 100644
 --- a/xbmc/application/ApplicationMessageHandling.cpp
 +++ b/xbmc/application/ApplicationMessageHandling.cpp
-@@ -117,12 +117,12 @@ void CApplicationMessageHandling::OnApplicationMessage(MESSAGING::ThreadMessage*
+@@ -121,12 +121,12 @@ void CApplicationMessageHandling::OnApplicationMessage(MESSAGING::ThreadMessage*
    switch (msg)
    {
      case TMSG_POWERDOWN:
@@ -109,7 +109,7 @@ index 1a701e8..4c54666 100644
        break;
  
      case TMSG_SHUTDOWN:
-@@ -143,12 +143,13 @@ void CApplicationMessageHandling::OnApplicationMessage(MESSAGING::ThreadMessage*
+@@ -147,12 +147,13 @@ void CApplicationMessageHandling::OnApplicationMessage(MESSAGING::ThreadMessage*
  
      case TMSG_RESTART:
      case TMSG_RESET:

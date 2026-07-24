@@ -13,18 +13,20 @@ Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
  1 file changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/addons/skin.estuary/xml/Settings.xml b/addons/skin.estuary/xml/Settings.xml
+index 8d51703..28458da 100644
 --- a/addons/skin.estuary/xml/Settings.xml
 +++ b/addons/skin.estuary/xml/Settings.xml
-@@ -56,9 +56,16 @@
+@@ -55,10 +55,17 @@
+ 						<onclick>ActivateWindow(systeminfo)</onclick>
  						<icon>icons/settings/sysinfo.png</icon>
  					</item>
- 					<item>
++					<item>
 +						<label>LibreELEC</label>
 +						<onclick>RunAddon(service.libreelec.settings)</onclick>
 +						<icon>icons/settings/libreelec.png</icon>
 +						<visible>System.AddonIsEnabled(service.libreelec.settings)</visible>
 +					</item>
-+					<item>
+ 					<item>
  						<label>$LOCALIZE[31067]</label>
  						<onclick>ActivateWindow(eventlog)</onclick>
  						<icon>icons/settings/eventlog.png</icon>
@@ -46,4 +48,5 @@ diff --git a/addons/skin.estuary/xml/Settings.xml b/addons/skin.estuary/xml/Sett
  			</control>
  		</control>
 -- 
-2.47.1
+2.53.0
+

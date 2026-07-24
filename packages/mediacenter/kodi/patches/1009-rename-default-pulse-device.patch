@@ -9,9 +9,10 @@ Subject: [PATCH] [PATCH] change pulseaudio default device name to Bluetooth
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
+index 5965c76..a21bd6c 100644
 --- a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
 +++ b/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp
-@@ -510,7 +510,7 @@ static void SinkInfoRequestCallback(pa_c
+@@ -510,7 +510,7 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
      CAEDeviceInfo defaultDevice;
      defaultDevice.m_deviceName = std::string("Default");
      defaultDevice.m_displayName = std::string("Default");
@@ -20,7 +21,7 @@ diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp b/xbmc/cores/AudioEngi
      defaultDevice.m_dataFormats.insert(defaultDevice.m_dataFormats.end(),
                                         defaultDataFormats.begin(), defaultDataFormats.end());
      defaultDevice.m_channels = CAEChannelInfo(AE_CH_LAYOUT_2_0);
-@@ -518,6 +518,8 @@ static void SinkInfoRequestCallback(pa_c
+@@ -518,6 +518,8 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
      defaultDevice.m_deviceType = AE_DEVTYPE_PCM;
      defaultDevice.m_wantsIECPassthrough = true;
      sinkStruct->list->push_back(defaultDevice);
@@ -30,4 +31,5 @@ diff --git a/xbmc/cores/AudioEngine/Sinks/AESinkPULSE.cpp b/xbmc/cores/AudioEngi
    if (i && i->name)
    {
 -- 
-2.47.1
+2.53.0
+
