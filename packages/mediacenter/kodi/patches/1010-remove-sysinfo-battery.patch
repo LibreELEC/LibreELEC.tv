@@ -9,6 +9,7 @@ LibreELEC specific patch - will not be submitted upstream.
  1 file changed, 1 deletion(-)
 
 diff --git a/xbmc/windows/GUIWindowSystemInfo.cpp b/xbmc/windows/GUIWindowSystemInfo.cpp
+index 664e4bd..0559139 100644
 --- a/xbmc/windows/GUIWindowSystemInfo.cpp
 +++ b/xbmc/windows/GUIWindowSystemInfo.cpp
 @@ -124,7 +124,6 @@ void CGUIWindowSystemInfo::FrameMove()
@@ -20,4 +21,5 @@ diff --git a/xbmc/windows/GUIWindowSystemInfo.cpp b/xbmc/windows/GUIWindowSystem
  
    else if (m_section == CONTROL_BT_STORAGE)
 -- 
-2.47.1
+2.53.0
+

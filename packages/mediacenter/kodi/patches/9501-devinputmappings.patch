@@ -9,6 +9,7 @@ LibreELEC specific patch - should be submitted upstream.
  1 file changed, 36 insertions(+), 1 deletion(-)
 
 diff --git a/system/Lircmap.xml b/system/Lircmap.xml
+index a2a220a..5c24c58 100644
 --- a/system/Lircmap.xml
 +++ b/system/Lircmap.xml
 @@ -548,50 +548,85 @@
@@ -99,4 +100,5 @@ diff --git a/system/Lircmap.xml b/system/Lircmap.xml
  		<hash>KEY_NUMERIC_POUND</hash>
  		<red>KEY_RED</red>
 -- 
-2.47.1
+2.53.0
+

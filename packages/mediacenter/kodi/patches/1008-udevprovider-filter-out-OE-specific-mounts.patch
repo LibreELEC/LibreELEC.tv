@@ -8,9 +8,10 @@ Subject: [PATCH] udevprovider: filter out OE specific mounts
  1 file changed, 14 insertions(+)
 
 diff --git a/xbmc/platform/linux/storage/UDevProvider.cpp b/xbmc/platform/linux/storage/UDevProvider.cpp
+index 4ed3081..539b2e5 100644
 --- a/xbmc/platform/linux/storage/UDevProvider.cpp
 +++ b/xbmc/platform/linux/storage/UDevProvider.cpp
-@@ -150,6 +150,20 @@ void CUDevProvider::GetDisks(std::vector
+@@ -150,6 +150,20 @@ void CUDevProvider::GetDisks(std::vector<CMediaSource>& disks, bool removable)
        continue;
      }
  
@@ -32,4 +33,5 @@ diff --git a/xbmc/platform/linux/storage/UDevProvider.cpp b/xbmc/platform/linux/
      const char *bus = udev_device_get_property_value(device, "ID_BUS");
      const char *optical = udev_device_get_property_value(device, "ID_CDROM"); // matches also DVD, Blu-ray
 -- 
-2.47.1
+2.53.0
+

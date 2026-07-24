@@ -9,6 +9,7 @@ Signed-off-by: Matthias Reichl <hias@horus.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/system/keymaps/remote.xml b/system/keymaps/remote.xml
+index be87e08..935ef3d 100644
 --- a/system/keymaps/remote.xml
 +++ b/system/keymaps/remote.xml
 @@ -50,7 +50,7 @@
@@ -21,4 +22,5 @@ diff --git a/system/keymaps/remote.xml b/system/keymaps/remote.xml
        <mymusic>ActivateWindow(Music)</mymusic>
        <mypictures>ActivateWindow(Pictures)</mypictures>
 -- 
-2.47.1
+2.53.0
+

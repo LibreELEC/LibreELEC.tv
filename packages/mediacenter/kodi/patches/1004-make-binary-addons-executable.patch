@@ -11,6 +11,7 @@ credits to vpeter4 for the patch
  1 file changed, 26 insertions(+)
 
 diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
+index c8b928b..641d63a 100644
 --- a/xbmc/addons/Addon.cpp
 +++ b/xbmc/addons/Addon.cpp
 @@ -29,6 +29,10 @@
@@ -54,4 +55,5 @@ diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
  }
  
 -- 
-2.47.1
+2.53.0
+

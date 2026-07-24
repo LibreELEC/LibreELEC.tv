@@ -9,6 +9,7 @@ Backported from upstream kodi.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/system/peripherals.xml b/system/peripherals.xml
+index 9990a21..ab0d14d 100644
 --- a/system/peripherals.xml
 +++ b/system/peripherals.xml
 @@ -18,7 +18,7 @@
@@ -21,4 +22,5 @@ diff --git a/system/peripherals.xml b/system/peripherals.xml
      <setting key="pause_or_stop_playback_on_deactivate" type="enum" value="231" label="36033" order="11" lvalues="231|36044|36045" />
      <setting key="connected_device" type="enum" label="36019" value="36037" lvalues="36037|36038" order="12" />
 -- 
-2.47.1
+2.53.0
+

@@ -11,6 +11,7 @@ Backported from upstream kodi.
  3 files changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f33d421..4cb0f92 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -97,6 +97,7 @@ include(CMakeDependentOption)
@@ -21,7 +22,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  option(VERBOSE            "Enable verbose output?" OFF)
  option(VERBOSE_FIND       "Enable verbose output of library searches only?" OFF)
  option(ENABLE_BLURAY_JAR "Enable building libbluray jar libraries (requires ENABLE_INTERNAL_BLURAY=ON)?" ON)
-@@ -180,6 +181,7 @@ core_find_git_rev(APP_SCMID FULL)
+@@ -183,6 +184,7 @@ core_find_git_rev(APP_SCMID FULL)
  set(AUDIO_BACKENDS_LIST "" CACHE STRING "Available audio backends")
  set(GL_INTERFACES_LIST "" CACHE STRING "Available GL interfaces")
  
@@ -29,7 +30,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  # Dynamically loaded libraries built with the project
  add_custom_target(${APP_NAME_LC}-libraries)
  set(LIBRARY_FILES "" CACHE STRING "" FORCE)
-@@ -636,6 +638,7 @@ if(DOXYGEN_FOUND)
+@@ -637,6 +639,7 @@ if(DOXYGEN_FOUND)
                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/docs/doxygen
                      COMMENT "Generating Doxygen documentation" VERBATIM)
  endif()
@@ -38,9 +39,10 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  # link wrapper
  if(FFMPEG_LINK_EXECUTABLE)
 diff --git a/cmake/scripts/linux/ExtraTargets.cmake b/cmake/scripts/linux/ExtraTargets.cmake
+index 86bb669..a6bf47f 100644
 --- a/cmake/scripts/linux/ExtraTargets.cmake
 +++ b/cmake/scripts/linux/ExtraTargets.cmake
-@@ -42,5 +42,7 @@ if("wayland" IN_LIST CORE_PLATFORM_NAME_
+@@ -42,5 +42,7 @@ if("wayland" IN_LIST CORE_PLATFORM_NAME_LC)
    # Dummy target for dependencies
    add_custom_target(generate-wayland-extra-protocols DEPENDS wayland-extra-protocols.hpp)
  
@@ -50,9 +52,10 @@ diff --git a/cmake/scripts/linux/ExtraTargets.cmake b/cmake/scripts/linux/ExtraT
 +  endif()
  endif()
 diff --git a/cmake/scripts/linux/Install.cmake b/cmake/scripts/linux/Install.cmake
+index 8a6c96f..937fa94 100644
 --- a/cmake/scripts/linux/Install.cmake
 +++ b/cmake/scripts/linux/Install.cmake
-@@ -45,6 +45,7 @@ configure_file(${CMAKE_SOURCE_DIR}/tools
+@@ -45,6 +45,7 @@ configure_file(${CMAKE_SOURCE_DIR}/tools/Linux/kodi.desktop.in
  configure_file(${CMAKE_SOURCE_DIR}/tools/Linux/kodi.metainfo.xml.in
                 ${CORE_BUILD_DIR}/${APP_PACKAGE}.metainfo.xml @ONLY)
  
@@ -69,4 +72,5 @@ diff --git a/cmake/scripts/linux/Install.cmake b/cmake/scripts/linux/Install.cma
  # Install kodi-addon-dev headers
  include(${CMAKE_SOURCE_DIR}/xbmc/addons/AddonBindings.cmake)
 -- 
-2.47.1
+2.53.0
+

@@ -10,9 +10,10 @@ Subject: [PATCH] Use a wrapper to setup service addons
  3 files changed, 47 insertions(+)
 
 diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
+index 641d63a..8003cbd 100644
 --- a/xbmc/addons/Addon.cpp
 +++ b/xbmc/addons/Addon.cpp
-@@ -657,6 +657,37 @@ CAddonVersion CAddon::GetDependencyVersi
+@@ -657,6 +657,37 @@ CAddonVersion CAddon::GetDependencyVersion(const std::string& dependencyID) cons
    return m_addonInfo->DependencyVersion(dependencyID);
  }
  
@@ -50,7 +51,7 @@ diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
  void OnPreInstall(const AddonPtr& addon)
  {
    //Fallback to the pre-install callback in the addon.
-@@ -686,6 +717,8 @@ void OnPostInstall(const AddonPtr& addon
+@@ -686,6 +717,8 @@ void OnPostInstall(const AddonPtr& addon, bool update, bool modal)
      }
      closedir(addonsDir);
    }
@@ -59,7 +60,7 @@ diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
    // OE
  
    addon->OnPostInstall(update, modal);
-@@ -693,6 +726,8 @@ void OnPostInstall(const AddonPtr& addon
+@@ -693,6 +726,8 @@ void OnPostInstall(const AddonPtr& addon, bool update, bool modal)
  
  void OnPreUnInstall(const AddonPtr& addon)
  {
@@ -69,9 +70,10 @@ diff --git a/xbmc/addons/Addon.cpp b/xbmc/addons/Addon.cpp
  }
  
 diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
+index c5028bb..e2dc447 100644
 --- a/xbmc/addons/Addon.h
 +++ b/xbmc/addons/Addon.h
-@@ -31,6 +31,15 @@ void OnPostInstall(const AddonPtr& addon
+@@ -31,6 +31,15 @@ void OnPostInstall(const AddonPtr& addon, bool update, bool modal);
  void OnPreUnInstall(const AddonPtr& addon);
  void OnPostUnInstall(const AddonPtr& addon);
  
@@ -88,6 +90,7 @@ diff --git a/xbmc/addons/Addon.h b/xbmc/addons/Addon.h
  {
  public:
 diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
+index a26b227..b8ae90a 100644
 --- a/xbmc/addons/AddonManager.cpp
 +++ b/xbmc/addons/AddonManager.cpp
 @@ -13,6 +13,7 @@
@@ -98,7 +101,7 @@ diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
  #include "addons/AddonBuilder.h"
  #include "addons/AddonDatabase.h"
  #include "addons/AddonEvents.h"
-@@ -850,6 +851,7 @@ bool CAddonMgr::DisableAddon(const std::
+@@ -857,6 +858,7 @@ bool CAddonMgr::DisableAddon(const std::string& id, AddonDisabledReason disabled
    AddonPtr addon;
    if (GetAddon(id, addon, AddonType::UNKNOWN, OnlyEnabled::CHOICE_NO) && addon != nullptr)
    {
@@ -106,7 +109,7 @@ diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
      auto eventLog = CServiceBroker::GetEventLog();
      if (eventLog)
        eventLog->Add(std::make_shared<CAddonManagementEvent>(addon, 24141));
-@@ -901,6 +903,7 @@ bool CAddonMgr::EnableSingle(const std::
+@@ -908,6 +910,7 @@ bool CAddonMgr::EnableSingle(const std::string& id)
    if (!m_database->EnableAddon(id))
      return false;
    m_disabled.erase(id);
@@ -115,4 +118,5 @@ diff --git a/xbmc/addons/AddonManager.cpp b/xbmc/addons/AddonManager.cpp
    // If enabling a repo add-on without an origin, set its origin to its own id
    if (addon->HasType(AddonType::REPOSITORY) && addon->Origin().empty())
 -- 
-2.47.1
+2.53.0
+
