@@ -1,0 +1,231 @@
+From f146517773a2b05444bc5d6d095ff23b87885234 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 3 Aug 2026 20:36:52 +1000
+Subject: [PATCH] add --exclude-interface to skip interfaces by glob pattern
+
+--interface requires knowing the name of the interface to use, which a
+packager shipping one configuration for many machines does not. The names
+to avoid, on the other hand, are predictable: veth* for the container end
+of a veth pair, docker0 and br-<hex> for Docker bridges, cni-* for CNI.
+
+Add --exclude-interface, and exclude-interfaces in the config file, taking
+glob patterns matched with fnmatch(). Exclusion is applied after the
+include list. Nothing is excluded by default, so a Windows guest reached
+over a bridge or tap is unaffected unless the option is set.
+
+On a machine running containers each container start and stop currently
+brings a WSD, a UDP and an HTTP server up and down on the veth, and the
+HTTP metadata server ends up bound inside every container network, where
+no Windows client can reach it.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ doc/wsddn.8.adoc      | 15 +++++++++++++++
+ installers/wsddn.conf |  7 +++++++
+ src/command_line.cpp  | 37 +++++++++++++++++++++++++++++++++----
+ src/command_line.h    |  1 +
+ src/config.cpp        | 16 ++++++++++++++++
+ src/config.h          |  5 ++---
+ 6 files changed, 74 insertions(+), 7 deletions(-)
+
+diff --git a/doc/wsddn.8.adoc b/doc/wsddn.8.adoc
+index afa5635..da1f8ea 100644
+--- a/doc/wsddn.8.adoc
++++ b/doc/wsddn.8.adoc
+@@ -119,6 +119,16 @@ For interfaces with IPv6 addresses, only link-local addresses will be used.
+ +
+ The equivalent config file option is *interfaces*.
+ 
++*--exclude-interface* _pattern_, *-x* _pattern_::
++
++Network interface to skip, given as a glob pattern such as `veth*`. Pass this option multiple times for
++multiple patterns. Exclusion is applied after *--interface*, so an interface matching any pattern is
++skipped even if it was explicitly included. This is intended for packagers who ship a single
++configuration for many machines and cannot know the name of the real interface, but do know the names
++used by container and virtual networking, such as `veth*`, `docker0` or `br-*`.
+++
++The equivalent config file option is *exclude-interfaces*.
++
+ *--ipv4only*, *-4*::
+ Use only IPv4. By default, both IPv4 and IPv6 are used. This option cannot be combined with *--ipv6only*.
+ +
+@@ -258,6 +268,11 @@ or the list is empty, all suitable detected interfaces will be used. Loop-back i
+ are never used, even when explicitly specified. For interfaces with IPv6 addresses, 
+ only link-local addresses will be used. The equivalent command line option is *--interface*.
+ 
++*exclude-interfaces* = [ "_pattern_", ... ]::
++Interfaces to skip, given as glob patterns. Exclusion is applied after the *interfaces* list, so an
++interface matching any pattern is skipped even if it was explicitly included. The equivalent command
++line option is *--exclude-interface*.
++
+ *log-level* = _number_:: 
+ Same as *--log-level* command line option.
+ 
+diff --git a/installers/wsddn.conf b/installers/wsddn.conf
+index cc39b76..5bda0cc 100644
+--- a/installers/wsddn.conf
++++ b/installers/wsddn.conf
+@@ -23,6 +23,13 @@
+ 
+ #interfaces = ["{SAMPLE_IFACE_NAME}"]
+ 
++# Specify interfaces wsddn will skip, as glob patterns. Exclusion is applied
++# after the list above, so a matching interface is skipped even if it was
++# explicitly included. Useful to keep container and virtual networking out of
++# the way when the name of the real interface is not known in advance.
++
++#exclude-interfaces = ["veth*", "docker0", "br-*"]
++
+ # Restrict communications to the given address family. Valid values 
+ # are "IPv4" or "IPv6" case-insensitive.
+ 
+diff --git a/src/command_line.cpp b/src/command_line.cpp
+index d664c36..f0ae3db 100644
+--- a/src/command_line.cpp
++++ b/src/command_line.cpp
+@@ -61,6 +61,13 @@ static auto addInterface(CommandLine & cmdline, sys_string val) {
+     cmdline.interfaces.emplace_back(val);
+ }
+ 
++static auto addExcludedInterface(CommandLine & cmdline, sys_string val) {
++
++    if (val.empty())
++        throw Parser::ValidationError("interface pattern cannot be empty");
++    cmdline.excludedInterfaces.emplace_back(val);
++}
++
+ static auto setUuid(CommandLine & cmdline, sys_string val) {
+     if (auto maybeUuid = Uuid::from_chars(std::span(val.c_str(), val.storage_size())))
+         cmdline.uuid = *maybeUuid;
+@@ -355,6 +362,13 @@ void CommandLine::parse(int argc, char * argv[], ColorStatus envColorStatus) {
+                handler([this](std::string_view arg) {
+         addInterface(*this, sys_string(arg).trim());
+     }));
++    parser.add(Option("--exclude-interface", "-x").
++               argName("PATTERN").
++               help("interface to skip, a glob pattern such as \"veth*\". Pass this option multiple times "
++                    "for multiple patterns. Applied after --interface").
++               handler([this](std::string_view arg) {
++        addExcludedInterface(*this, sys_string(arg).trim());
++    }));
+     parser.add(Option("--ipv4only", "-4").
+                help("use only IPv4. By default both IPv4 and IPv6 are used.").
+                handler([this](){
+@@ -513,9 +527,9 @@ void CommandLine::parseConfigKey(std::string_view keyName, const toml::node & va
+     
+     //Network options
+     if (keyName == "interfaces"sv) {
+-        
++
+         setConfigValue<toml::array>(!this->interfaces.empty(), keyName, value, [this](const toml::array & val) {
+-            
++
+             for(auto & el : val) {
+                 auto * name = el.as_string();
+                 if (!name) {
+@@ -526,9 +540,24 @@ void CommandLine::parseConfigKey(std::string_view keyName, const toml::node & va
+                 addInterface(*this, sys_string(name->get()).trim());
+             }
+         });
+-        
++
++    } else if (keyName == "exclude-interfaces"sv) {
++
++        setConfigValue<toml::array>(!this->excludedInterfaces.empty(), keyName, value, [this](const toml::array & val) {
++
++            for(auto & el : val) {
++                auto * pattern = el.as_string();
++                if (!pattern) {
++                    auto & source = val.source();
++                    WSDLOG_WARN("{}, line {}, col: {}: interface patterns must be strings, ignoring", *source.path, source.begin.line, source.begin.column);
++                    continue;
++                }
++                addExcludedInterface(*this, sys_string(pattern->get()).trim());
++            }
++        });
++
+     } else if (keyName == "allowed-address-family"sv) {
+-        
++
+         setConfigValue<std::string>(bool(this->allowedAddressFamily), keyName, value, [this](const toml::value<std::string> & val) {
+             setAllowedAddressFamily(*this, sys_string(*val));
+         });
+diff --git a/src/command_line.h b/src/command_line.h
+index 944b14b..cb8c6f5 100644
+--- a/src/command_line.h
++++ b/src/command_line.h
+@@ -12,6 +12,7 @@ struct CommandLine {
+     std::optional<DaemonType> daemonType;
+     
+     std::vector<sys_string> interfaces;
++    std::vector<sys_string> excludedInterfaces;
+     std::optional<AllowedAddressFamily> allowedAddressFamily;
+     std::optional<int> hoplimit;
+     std::optional<uint16_t> sourcePort;
+diff --git a/src/config.cpp b/src/config.cpp
+index 17654f9..0ac5487 100644
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -4,6 +4,8 @@
+ #include "config.h"
+ #include "command_line.h"
+ 
++#include <fnmatch.h>
++
+ Config::Config(const CommandLine & cmdline):
+     m_instanceIdentifier(time(nullptr)),
+     m_pageSize(size_t(ptl::systemConfig(_SC_PAGESIZE).value_or(4096))) {
+@@ -11,6 +13,7 @@ Config::Config(const CommandLine & cmdline):
+     m_hopLimit = cmdline.hoplimit.value_or(1);
+     m_allowedAddressFamily = cmdline.allowedAddressFamily.value_or(BothIPv4AndIPv6);
+     m_interfaceWhitelist.insert(cmdline.interfaces.begin(), cmdline.interfaces.end());
++    m_interfaceExcludePatterns.assign(cmdline.excludedInterfaces.begin(), cmdline.excludedInterfaces.end());
+     m_sourcePort = cmdline.sourcePort.value_or(0);
+ 
+     m_fullHostName = getHostName();
+@@ -102,6 +105,19 @@ Config::Config(const CommandLine & cmdline):
+                 m_metadataDoc ? cmdline.metadataFile->c_str() : "default");
+ }
+ 
++auto Config::isAllowedInterface(const sys_string & name) const -> bool {
++
++    if (!m_interfaceWhitelist.empty() && !m_interfaceWhitelist.contains(name))
++        return false;
++
++    for (auto & pattern: m_interfaceExcludePatterns) {
++        if (fnmatch(pattern.c_str(), name.c_str(), 0) == 0)
++            return false;
++    }
++
++    return true;
++}
++
+ auto Config::getHostName() const -> sys_string {
+     auto size = size_t(ptl::systemConfig(_SC_HOST_NAME_MAX).value_or(_POSIX_HOST_NAME_MAX));
+     sys_string_builder builder;
+diff --git a/src/config.h b/src/config.h
+index 4288cd0..2589512 100644
+--- a/src/config.h
++++ b/src/config.h
+@@ -48,9 +48,7 @@ public:
+     auto enableIPv4() const -> bool                         { return m_allowedAddressFamily != IPv6Only; }
+     auto enableIPv6() const -> bool                         { return m_allowedAddressFamily != IPv4Only; }
+     auto hopLimit() const -> int                            { return m_hopLimit; }
+-    auto isAllowedInterface(const sys_string & name) const -> bool {
+-        return m_interfaceWhitelist.empty() || m_interfaceWhitelist.contains(name);
+-    }
++    auto isAllowedInterface(const sys_string & name) const -> bool;
+     auto sourcePort() const -> uint16_t                     { return m_sourcePort; }
+     
+     auto pageSize() const -> size_t                         { return m_pageSize; }
+@@ -81,6 +79,7 @@ private:
+     AllowedAddressFamily m_allowedAddressFamily = BothIPv4AndIPv6;
+     int m_hopLimit = 1;
+     std::set<sys_string> m_interfaceWhitelist;
++    std::vector<sys_string> m_interfaceExcludePatterns;
+     uint16_t m_sourcePort;
+     
+     size_t m_pageSize;
+-- 
+2.53.0
+
