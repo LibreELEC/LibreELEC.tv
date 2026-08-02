@@ -46,7 +46,7 @@ index 8134add505e0..07a8796b1f47 100644
  	default:
  		return false;
 @@ -422,12 +435,22 @@ dw_hdmi_rockchip_bridge_atomic_check(struct drm_bridge *bridge,
- 	struct drm_atomic_state *state = bridge_state->base.state;
+ 	struct drm_atomic_commit *state = bridge_state->base.state;
  	struct drm_crtc_state *old_crtc_state;
  	struct rockchip_crtc_state *old_state;
 +	struct drm_bridge *next_bridge;
