@@ -1,0 +1,20 @@
+[Unit]
+Description=WS-Discovery Host
+PartOf=smbd.service
+After=network-online.target smbd.service
+Wants=network-online.target
+ConditionPathExists=/run/samba/smb.conf
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/wsddn --systemd --hostname :NETBIOS: --smb-conf=/run/samba/smb.conf --exclude-pattern "veth.*" --exclude-pattern docker0 --exclude-pattern "br-.*"
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+DynamicUser=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=smbd.service
