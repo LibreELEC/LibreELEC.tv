@@ -1,0 +1,23 @@
+melonDS hard-links -lGL on x86, so it cannot be built for a system that only
+provides OpenGL ES. Its OpenGL renderer is desktop-GL only -- Makefile.common
+gates it on HAVE_OPENGL and pulls glsym_gl.c -- so add DISABLE_OPENGL and build
+the software renderer alone.
+
+Submitted upstream: https://github.com/libretro/melonDS/pull/215
+
+diff --git a/Makefile b/Makefile
+--- a/Makefile
++++ b/Makefile
+@@ -80,8 +80,10 @@ ifeq ($(platform), unix)
+    endif
+    HAVE_THREADS=1
+    ifneq ($(filter $(ARCH),x86 x86_64),)
+-     LIBS += -lGL
+-     HAVE_OPENGL=1
++     ifneq ($(DISABLE_OPENGL), 1)
++       LIBS += -lGL
++       HAVE_OPENGL=1
++     endif
+    endif
+    ifeq ($(ARCH),x86_64)
+       JIT_ARCH=x64
