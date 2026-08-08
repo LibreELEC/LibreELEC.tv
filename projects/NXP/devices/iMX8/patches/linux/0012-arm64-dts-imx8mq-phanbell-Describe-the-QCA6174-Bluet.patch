@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 5 Aug 2026 12:00:00 +1000
+Subject: [PATCH] arm64: dts: imx8mq-phanbell: Describe the QCA6174 Bluetooth
+
+The Bluetooth half of the QCA6174 hangs off uart2 with hardware flow
+control and an enable GPIO, and takes its 32.768 kHz sleep clock from the
+PMIC.
+
+hci_qca drives the port at 3 Mbaud. The imx uart cannot reach that from the
+24 MHz default parent because its divider tops out at uartclk/16, so
+reparent UART2 to SYS1_PLL_80M.
+
+The radio's WL_REG_ON powers the Bluetooth side as much as the wifi side,
+which is why it is described as a regulator rather than as something local
+to the PCIe controller.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index 6619314d23d3..a38be09aa1ad 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -454,6 +454,23 @@ &uart1 {
+ 	status = "okay";
+ };
+ 
++&uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart2>;
++	assigned-clocks = <&clk IMX8MQ_CLK_UART2>;
++	assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_80M>;
++	uart-has-rtscts;
++	status = "okay";
++
++	bluetooth {
++		compatible = "qcom,qca6174-bt";
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_bt>;
++		enable-gpios = <&gpio3 6 GPIO_ACTIVE_HIGH>;
++		clocks = <&pmic>;
++	};
++};
++
+ &usdhc1 {
+ 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
+ 	pinctrl-0 = <&pinctrl_usdhc1>;
+@@ -504,6 +521,12 @@ &iomuxc {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_hog>;
+ 
++	pinctrl_bt: btgrp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_NAND_DATA00_GPIO3_IO6		0x19
++		>;
++	};
++
+ 	pinctrl_fec1: fec1grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_ENET_MDC_ENET1_MDC			0x3
+@@ -600,6 +623,15 @@ MX8MQ_IOMUXC_UART1_TXD_UART1_DCE_TX		0x49
+ 		>;
+ 	};
+ 
++	pinctrl_uart2: uart2grp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_UART2_RXD_UART2_DCE_RX		0x49
++			MX8MQ_IOMUXC_UART2_TXD_UART2_DCE_TX		0x49
++			MX8MQ_IOMUXC_UART4_RXD_UART2_DCE_CTS_B		0x49
++			MX8MQ_IOMUXC_UART4_TXD_UART2_DCE_RTS_B		0x49
++		>;
++	};
++
+ 	pinctrl_usdhc1: usdhc1grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_SD1_CLK_USDHC1_CLK			0x83
+-- 
+2.47.1
+

@@ -1,0 +1,46 @@
+From 29b97e0542a825ea957167911de12fb2c2fa3d71 Mon Sep 17 00:00:00 2001
+Message-ID: <29b97e0542a825ea957167911de12fb2c2fa3d71.1786177290.git.rudi@heitbaum.com>
+In-Reply-To: <cover.1786177290.git.rudi@heitbaum.com>
+References: <cover.1786177290.git.rudi@heitbaum.com>
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 3 Aug 2026 02:22:51 +1000
+Subject: [PATCH v2 1/5] arm64: dts: imx8mq-phanbell: Keep the GPU rail on
+
+BUCK3 feeds the GPU rail, and unlike every other regulator on this board
+it is marked neither regulator-always-on nor referenced by any consumer.
+Once a driver for the BD71837 is present the regulator core finds it
+unused and switches it off when it completes initialisation:
+
+  buck3: disabling
+
+which takes the board out about thirty seconds into the boot.
+
+Mark it always-on, matching the other seven bucks and all seven LDOs.
+
+Handing it to the GPU power domain instead, the way imx8mq-librem5.dtsi
+does, describes the hardware better but does not work here: the board
+dies silently the moment anything first uses the GPU, in roughly half of
+boots. With that link removed the same image boots reliably. Whatever
+goes wrong in the domain to regulator sequencing on this platform, a
+rail that is simply never switched avoids it.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index e34045d10a12..c06a787a4013 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -156,6 +156,7 @@ buck3: BUCK3 {
+ 				regulator-min-microvolt = <700000>;
+ 				regulator-max-microvolt = <1300000>;
+ 				regulator-boot-on;
++				regulator-always-on;
+ 				rohm,dvs-run-voltage = <900000>;
+ 			};
+ 
+-- 
+2.53.0
+

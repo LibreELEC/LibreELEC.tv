@@ -1,0 +1,50 @@
+From 0190b6ef209df3e6dc0a9dd2d399a715e5cd1e54 Mon Sep 17 00:00:00 2001
+Message-ID: <0190b6ef209df3e6dc0a9dd2d399a715e5cd1e54.1786177290.git.rudi@heitbaum.com>
+In-Reply-To: <cover.1786177290.git.rudi@heitbaum.com>
+References: <cover.1786177290.git.rudi@heitbaum.com>
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 3 Aug 2026 01:40:49 +1000
+Subject: [PATCH v2 2/5] arm64: dts: imx8mq-phanbell: Do not hardcode a cooling
+ state that may not exist
+
+The cpu_alert1 map asks for cooling states 0 to 2, to exclude the two
+highest operating points. How many operating points exist depends on the
+speed grade: a53_opp_table gates each entry on opp-supported-hw, and a
+grade 3 / segment 0 part gets only two of the four, 1.0GHz and 1.5GHz.
+cpufreq-cpu0 then has max_state 1 and the bind is rejected:
+
+  thermal thermal_zone0: binding cdev cpufreq-cpu0 to trip 3 failed: -22
+
+thermal_bind_cdev_to_trip() returns -EINVAL when upper exceeds
+max_state. The trip is left with no cooling device at all.
+
+Use THERMAL_NO_LIMIT so the map means "all available states" and adapts
+to whatever the part provides. On a device with the full table this is
+still the hotter of the two trips and still allows more throttling than
+cpu_alert0; on a two operating point part the two trips coincide, which
+is the best that can be done there.
+
+cpu_alert0 is unaffected: its upper bound of 1 is valid either way, which
+is why frequency throttling worked at 75C despite this failure.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index c06a787a4013..4ad206f5a9d1 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -101,7 +101,7 @@ map0 {
+ 		map1 {
+ 			trip = <&cpu_alert1>;
+ 			cooling-device =
+-			<&A53_0 0 2>; /* Exclude two highest OPPs */
++			<&A53_0 0 THERMAL_NO_LIMIT>;
+ 		};
+ 
+ 		map4 {
+-- 
+2.53.0
+

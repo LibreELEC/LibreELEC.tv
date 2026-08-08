@@ -1,0 +1,15 @@
+# Atheros QCA6174 (168c:003e) on the Coral Dev Board, reached over pcie0.
+# The part reports no subsystem ids, so board-2.bin cannot match it and
+# ath10k falls back to the generic board.bin - keep the whole directory
+# rather than guessing which files the driver will ask for.
+ath10k/QCA6174/hw3.0/*
+
+# QCA6174 bluetooth, the other half of the same combo part, on uart2.
+# btqca builds the names from the controller version it reads out of the
+# chip (btqca.c:850,944 - "qca/rampatch_%08x.bin" and "qca/nvm_%08x.bin").
+# The chip reports 0x00440302:
+#   Bluetooth: hci0: QCA controller version 0x00440302
+# Do not infer this from the vendor rootfs. It ships the 00130302 pair and
+# a rampatch_tlv_3.2.tlv symlink pointing at it, but that is what the old
+# downstream driver used; mainline asks for a different file.
+qca/*00440302*.bin

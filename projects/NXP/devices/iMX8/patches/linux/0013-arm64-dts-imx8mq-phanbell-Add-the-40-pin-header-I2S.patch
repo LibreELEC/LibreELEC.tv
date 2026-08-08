@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 5 Aug 2026 12:00:00 +1000
+Subject: [PATCH] arm64: dts: imx8mq-phanbell: Add the 40-pin header I2S card
+
+sai1 goes to the 40-pin expansion header as plain I2S with nothing on the
+far side, which is how the vendor kernel exposes it. linux,spdif-dit stands
+in for the far end, so the card is playback only where the vendor's dummy
+codec gave both directions.
+
+The slot width is pinned at 32 bits for the same reason as the analog
+card.
+
+Declare both audio PLL families. fsl_sai only moves its mclk between the
+8 kHz and 11.025 kHz families if the node names them as pll8k and pll11k,
+which fsl_asoc_reparent_pll_clocks() then selects between by requested
+rate. Without them the mclk is stuck at whatever assigned-clock-rates set
+while 44100 is still on the advertised rate list, so ALSA is offered a rate
+the clock cannot produce, does not resample, and hw_params fails:
+44100 * 2 * 32 = 2.8224 MHz, and 24.576 MHz divided by that is 8.707.
+
+The card needs mclk-fs for that to be reached at all: the reparent
+happens in fsl_sai_set_dai_sysclk(), and simple-audio-card only calls
+set_sysclk when a ratio is given.
+
+The cpu dai also needs system-clock-direction-out. Without it
+simple_util_parse_clk() leaves clk_direction at 0, which is
+SND_SOC_CLOCK_IN, and fsl_sai_set_dai_sysclk() opens with
+"if (dir == SND_SOC_CLOCK_IN) return 0". So set_sysclk returns without
+setting the mclk rate and without ever reaching the reparent, silently and
+at every rate.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index a38be09aa1ad..21321d7fd12a 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -106,6 +106,30 @@ simple-audio-card,codec {
+ 			sound-dai = <&rt5645>;
+ 		};
+ 	};
++
++	header_codec: spdif-transmitter {
++		compatible = "linux,spdif-dit";
++		#sound-dai-cells = <0>;
++	};
++
++	sound-header {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "40-pin Header";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,mclk-fs = <256>;
++
++		/* 32 bit slots, for the same reason as the analog card */
++		simple-audio-card,cpu {
++			sound-dai = <&sai1>;
++			system-clock-direction-out;
++			dai-tdm-slot-num = <2>;
++			dai-tdm-slot-width = <32>;
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&header_codec>;
++		};
++	};
+ };
+ 
+ &A53_0 {
+@@ -427,6 +451,27 @@ &pcie1 {
+ 	status = "okay";
+ };
+ 
++&sai1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai1>;
++	/*
++	 * pll8k and pll11k let fsl_sai move the mclk between the two
++	 * audio PLL families, so 44.1 kHz rates work as well as 48 kHz.
++	 */
++	clocks = <&clk IMX8MQ_CLK_SAI1_IPG>,
++		 <&clk IMX8MQ_CLK_SAI1_ROOT>,
++		 <&clk IMX8MQ_CLK_DUMMY>, <&clk IMX8MQ_CLK_DUMMY>,
++		 <&clk IMX8MQ_AUDIO_PLL1_OUT>,
++		 <&clk IMX8MQ_AUDIO_PLL2_OUT>;
++	clock-names = "bus", "mclk1", "mclk2", "mclk3",
++		      "pll8k", "pll11k";
++	assigned-clocks = <&clk IMX8MQ_CLK_SAI1>;
++	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
++	assigned-clock-rates = <24576000>;
++	fsl,sai-mclk-direction-output;
++	status = "okay";
++};
++
+ &sai2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_sai2>;
+@@ -606,6 +651,16 @@ MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3	0x41
+ 		>;
+ 	};
+ 
++	pinctrl_sai1: sai1grp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_SAI1_MCLK_SAI1_MCLK		0xd6
++			MX8MQ_IOMUXC_SAI1_TXFS_SAI1_TX_SYNC		0xd6
++			MX8MQ_IOMUXC_SAI1_TXC_SAI1_TX_BCLK		0xd6
++			MX8MQ_IOMUXC_SAI1_TXD0_SAI1_TX_DATA0		0xd6
++			MX8MQ_IOMUXC_SAI1_RXD0_SAI1_RX_DATA0		0xd6
++		>;
++	};
++
+ 	pinctrl_sai2: sai2grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_SAI2_MCLK_SAI2_MCLK		0xd6
+-- 
+2.47.1
+

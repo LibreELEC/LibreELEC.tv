@@ -1,0 +1,52 @@
+From 53e03c00c4c03c2f73d8012a602fca6031a52dfe Mon Sep 17 00:00:00 2001
+Message-ID: <53e03c00c4c03c2f73d8012a602fca6031a52dfe.1786177290.git.rudi@heitbaum.com>
+In-Reply-To: <cover.1786177290.git.rudi@heitbaum.com>
+References: <cover.1786177290.git.rudi@heitbaum.com>
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 5 Aug 2026 12:00:00 +1000
+Subject: [PATCH v2 4/5] arm64: dts: imx8mq-phanbell: Mux the 32 kHz reference
+ clock pad
+
+Mux GPIO1_IO00 as the ANAMIX 32.768 kHz reference input rather than leave
+it in its GPIO reset function. Nothing claims the pad as a consumer, so it
+goes in a hog group.
+
+The vendor devicetree hogs ten further pins alongside it, none of which has
+a consumer anywhere in the tree. Those only set pad configuration on pins
+the kernel does not otherwise touch, so they are left out.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index 58f7276eb557..2d134eefb765 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -348,6 +348,9 @@ &wdog1 {
+ };
+ 
+ &iomuxc {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_hog>;
++
+ 	pinctrl_fec1: fec1grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_ENET_MDC_ENET1_MDC			0x3
+@@ -374,6 +377,12 @@ MX8MQ_IOMUXC_NAND_CLE_GPIO3_IO5			0x16
+ 		>;
+ 	};
+ 
++	pinctrl_hog: hoggrp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_GPIO1_IO00_ANAMIX_REF_CLK_32K	0x05
++		>;
++	};
++
+ 	pinctrl_i2c1: i2c1grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_I2C1_SCL_I2C1_SCL			0x4000007f
+-- 
+2.53.0
+
