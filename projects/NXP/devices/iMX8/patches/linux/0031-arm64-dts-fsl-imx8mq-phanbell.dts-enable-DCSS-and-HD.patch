@@ -1,12 +1,12 @@
-From d7a46875e8cc330cc3f1082c054ecfb0c1b32727 Mon Sep 17 00:00:00 2001
+From d0a3b4d0fd909db94fd7511776141d512a20be23 Mon Sep 17 00:00:00 2001
 From: Rudi Heitbaum <rudi@heitbaum.com>
 Date: Sun, 29 Sep 2024 21:08:57 +1000
-Subject: [PATCH 3/4] arm64: dts: fsl: imx8mq-phanbell.dts: enable DCSS and
+Subject: [PATCH 31/33] arm64: dts: fsl: imx8mq-phanbell.dts: enable DCSS and
  HDMI
 
 ---
- .../boot/dts/freescale/imx8mq-phanbell.dts    | 31 +++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ .../boot/dts/freescale/imx8mq-phanbell.dts    | 37 +++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
 index 21321d7fd12a..e273a7e51467 100644
@@ -64,5 +64,5 @@ index 21321d7fd12a..e273a7e51467 100644
  	clock-frequency = <400000>;
  	pinctrl-names = "default";
 -- 
-2.43.0
+2.53.0
 
