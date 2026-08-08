@@ -1,0 +1,48 @@
+From 6bcb4386a925a945f51d1e6fb201c9e154e29641 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 10 Aug 2026 11:25:44 +0000
+Subject: [PATCH] drm: bridge: cadence: use system_percpu_wq for the MHDP8501
+ hotplug work
+
+The MHDP8501 hotplug debounce work is queued on system_wq from two places:
+cdns_mhdp8501_irq_thread() on the interrupt, and hotplug_work_func() itself
+when the HPD state read fails and it retries. Since 7.2 system_wq is
+__WQ_DEPRECATED - include/linux/workqueue.h says "use system_percpu_wq, this
+will be removed" - and the workqueue core warns once per call site:
+
+  workqueue: work func hotplug_work_func enqueued on deprecated workqueue.
+  Use system_{percpu|dfl}_wq instead.
+
+Use system_percpu_wq. That is the exact equivalent rather than a behaviour
+change: schedule_delayed_work() now queues there itself.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-core.c
+index e6384d5c8932..986a35f063f3 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-core.c
+@@ -133,7 +133,7 @@ static void hotplug_work_func(struct work_struct *work)
+ 	} else {
+ 		/* HPD state read failed, retry to avoid losing HPD */
+ 		dev_warn(mhdp->dev, "failed to read HPD state, retrying\n");
+-		mod_delayed_work(system_wq, &mhdp->hotplug_work,
++		mod_delayed_work(system_percpu_wq, &mhdp->hotplug_work,
+ 				 msecs_to_jiffies(HOTPLUG_DEBOUNCE_MS));
+ 	}
+ }
+@@ -144,7 +144,7 @@ static irqreturn_t cdns_mhdp8501_irq_thread(int irq, void *data)
+ 
+ 	disable_irq_nosync(irq);
+ 
+-	mod_delayed_work(system_wq, &mhdp->hotplug_work,
++	mod_delayed_work(system_percpu_wq, &mhdp->hotplug_work,
+ 			 msecs_to_jiffies(HOTPLUG_DEBOUNCE_MS));
+ 
+ 	return IRQ_HANDLED;
+-- 
+2.53.0
+

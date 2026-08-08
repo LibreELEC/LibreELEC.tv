@@ -1,13 +1,12 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 93d4bb7fccfe256b635174f99d72729e5245ffa1 Mon Sep 17 00:00:00 2001
 From: Rudi Heitbaum <rudi@heitbaum.com>
 Date: Mon, 3 Aug 2026 14:37:04 +1000
-Subject: [PATCH 26/26] arm64: dts: imx8mq-phanbell: Enable HDMI audio
+Subject: [PATCH 33/33] arm64: dts: imx8mq-phanbell: Enable HDMI audio
 
 sai4 is wired to the HDMI transmitter inside the SoC, so it needs no
 pinmux, only a root clock. Point a simple-audio-card at it and at the
 hdmi-codec the MHDP8501 bridge now registers.
 
-#sound-dai-cells belongs on the bridge itself, so it goes in the SoC
 dtsi. The codec is a platform device with no devicetree node of its
 own, but the ASoC core falls back to the parent's node when matching a
 sound-dai phandle, and the parent is the bridge.
@@ -105,17 +104,17 @@ index e273a7e51467..19cbf5715fdd 100644
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_uart1>;
 diff --git a/arch/arm64/boot/dts/freescale/imx8mq.dtsi b/arch/arm64/boot/dts/freescale/imx8mq.dtsi
-index b28840d8f29b..5fbdf4c629cc 100644
+index 529846213620..34a7c92af01c 100644
 --- a/arch/arm64/boot/dts/freescale/imx8mq.dtsi
 +++ b/arch/arm64/boot/dts/freescale/imx8mq.dtsi
-@@ -1614,6 +1614,7 @@ mhdp: bridge@32c00000 {
+@@ -1606,6 +1606,7 @@ mhdp: bridge@32c00000 {
  				interrupt-names = "plug_in", "plug_out";
  				clocks = <&clk IMX8MQ_CLK_DISP_APB_ROOT>;
- 				phys = <&mdhp_phy>;
+ 				phys = <&mhdp_phy>;
 +				#sound-dai-cells = <0>;
  				status = "disabled";
  
  				ports {
 -- 
-2.47.1
+2.53.0
 
