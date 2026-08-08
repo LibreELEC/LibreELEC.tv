@@ -1,0 +1,72 @@
+From 8ff07ae668d5ae6d9d8b4687c9f02b9e9ec75a57 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 3 Aug 2026 19:50:14 +1000
+Subject: [PATCH] do not look for the account tools when cross compiling
+
+find_program() searches the machine running cmake, so a cross build
+records the build host's copy of useradd and friends and compiles that
+absolute path into the binary. The target may keep the program elsewhere
+or not have it at all - a LibreELEC image has neither useradd nor
+groupadd.
+
+Skip the lookups when CMAKE_CROSSCOMPILING is set, which leaves the
+account creation code compiled out unless the packager supplies the paths
+explicitly with -DUSERADD_PATH= and friends.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ cmake/detect_system.cmake | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/cmake/detect_system.cmake b/cmake/detect_system.cmake
+index ce797fc..3e2fdba 100755
+--- a/cmake/detect_system.cmake
++++ b/cmake/detect_system.cmake
+@@ -88,7 +88,7 @@ check_cxx_source_compiles("
+     }"
+ HAVE_ABI_CXA_THROW)
+ 
+-if (NOT DEFINED USERADD_PATH)
++if (NOT DEFINED USERADD_PATH AND NOT CMAKE_CROSSCOMPILING)
+     find_program(USERADD_PATH useradd PATHS /usr/sbin /bin NO_DEFAULT_PATH)
+     if (USERADD_PATH)
+         message(STATUS "Looking for useradd - found at ${USERADD_PATH}")
+@@ -97,7 +97,7 @@ if (NOT DEFINED USERADD_PATH)
+     endif()
+ endif()
+ 
+-if (NOT DEFINED GROUPADD_PATH)
++if (NOT DEFINED GROUPADD_PATH AND NOT CMAKE_CROSSCOMPILING)
+     find_program(GROUPADD_PATH groupadd PATHS /usr/sbin /bin NO_DEFAULT_PATH)
+     if (GROUPADD_PATH)
+         message(STATUS "Looking for groupadd - found at ${GROUPADD_PATH}")
+@@ -106,7 +106,7 @@ if (NOT DEFINED GROUPADD_PATH)
+     endif()
+ endif()
+ 
+-if (NOT DEFINED PW_PATH)
++if (NOT DEFINED PW_PATH AND NOT CMAKE_CROSSCOMPILING)
+     find_program(PW_PATH pw PATHS /usr/sbin NO_DEFAULT_PATH)
+     if (PW_PATH)
+         message(STATUS "Looking for pw - found at ${PW_PATH}")
+@@ -134,7 +134,7 @@ if (NOT DEFINED IS_ALPINE_LINUX)
+ endif()
+ 
+ if(IS_ALPINE_LINUX)
+-    if (NOT DEFINED ADDUSER_PATH)
++    if (NOT DEFINED ADDUSER_PATH AND NOT CMAKE_CROSSCOMPILING)
+         find_program(ADDUSER_PATH adduser PATHS /usr/sbin NO_DEFAULT_PATH)
+         if (ADDUSER_PATH)
+             message(STATUS "Looking for adduser - found at ${ADDUSER_PATH}")
+@@ -143,7 +143,7 @@ if(IS_ALPINE_LINUX)
+         endif()
+     endif()
+ 
+-    if (NOT DEFINED ADDGROUP_PATH)
++    if (NOT DEFINED ADDGROUP_PATH AND NOT CMAKE_CROSSCOMPILING)
+         find_program(ADDGROUP_PATH addgroup PATHS /usr/sbin NO_DEFAULT_PATH)
+         if (ADDGROUP_PATH)
+             message(STATUS "Looking for addgroup - found at ${ADDGROUP_PATH}")
+-- 
+2.53.0
+

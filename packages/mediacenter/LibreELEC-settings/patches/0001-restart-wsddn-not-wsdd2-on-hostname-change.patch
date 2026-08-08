@@ -1,0 +1,22 @@
+From c7b46183539de5174ae12a2233b9fc36b6940f7f Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi.heitbaum@sparknel-dc.com.au>
+Date: Sun, 2 Aug 2026 17:08:06 +1000
+Subject: [PATCH] restart wsddn not wsdd2 on hostname change
+
+The wsdd2 daemon has been replaced by wsdd-native, whose unit is named
+wsddn. The daemon derives the UUID and the name it reports to Windows
+from the host name, so it still has to be restarted when that changes.
+---
+ resources/lib/hostname.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/resources/lib/hostname.py b/resources/lib/hostname.py
+index e848b0d..5baa461 100644
+--- a/resources/lib/hostname.py
++++ b/resources/lib/hostname.py
+@@ -18,4 +18,4 @@ def set_hostname(hostname):
+         with open(config.HOSTNAME, mode='w', encoding='utf-8') as out_file:
+             out_file.write(f'{hostname}\n')
+         os_tools.execute('systemctl restart network-base')
+-        os_tools.execute('systemctl try-restart avahi-daemon wsdd2')
++        os_tools.execute('systemctl try-restart avahi-daemon wsddn')
