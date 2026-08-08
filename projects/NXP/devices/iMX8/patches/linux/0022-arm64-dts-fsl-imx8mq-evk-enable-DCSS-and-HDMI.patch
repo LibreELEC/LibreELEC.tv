@@ -12,12 +12,12 @@ Signed-off-by: Lucas Stach <l.stach@pengutronix.de>
  1 file changed, 31 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/freescale/imx8mq-evk.dts b/arch/arm64/boot/dts/freescale/imx8mq-evk.dts
-index 7507548cdb16..267e32895aa0 100644
+index e7d87ea..a1e349c 100644
 --- a/arch/arm64/boot/dts/freescale/imx8mq-evk.dts
 +++ b/arch/arm64/boot/dts/freescale/imx8mq-evk.dts
-@@ -139,6 +139,17 @@ sound-hdmi-arc {
- 		spdif-controller = <&spdif2>;
- 		spdif-in;
+@@ -154,6 +154,17 @@ sound-hdmi-arc {
+ 		audio-cpu = <&spdif2>;
+ 		audio-codec = <&hdmi_arc_in>;
  	};
 +
 +	hdmi_connector: connector {
@@ -33,7 +33,7 @@ index 7507548cdb16..267e32895aa0 100644
  };
  
  &A53_0 {
-@@ -226,6 +237,32 @@ wl-reg-on-hog {
+@@ -241,6 +252,32 @@ wl-reg-on-hog {
  	};
  };
  

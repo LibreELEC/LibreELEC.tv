@@ -2742,7 +2742,7 @@ new file mode 100644
 index 0000000000000..98116ef012fa3
 --- /dev/null
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8501-core.c
-@@ -0,0 +1,379 @@
+@@ -0,0 +1,417 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Cadence Display Port Interface (DP) driver
@@ -2881,7 +2881,7 @@ index 0000000000000..98116ef012fa3
 +
 +	disable_irq_nosync(irq);
 +
-+	mod_delayed_work(system_wq, &mhdp->hotplug_work,
++	mod_delayed_work(system_percpu_wq, &mhdp->hotplug_work,
 +			 msecs_to_jiffies(HOTPLUG_DEBOUNCE_MS));
 +
 +	return IRQ_HANDLED;
@@ -2945,6 +2945,31 @@ index 0000000000000..98116ef012fa3
 +	return true;
 +}
 +
++static int cdns_mhdp8501_get_connector_type(struct device *dev)
++{
++	struct device_node *remote;
++	int type;
++
++	remote = of_graph_get_remote_node(dev->of_node, 1, 0);
++	if (!remote) {
++		dev_err(dev, "fail to get remote node\n");
++		return -EINVAL;
++	}
++
++	if (of_device_is_compatible(remote, "hdmi-connector")) {
++		type = DRM_MODE_CONNECTOR_HDMIA;
++	} else if (of_device_is_compatible(remote, "dp-connector")) {
++		type = DRM_MODE_CONNECTOR_DisplayPort;
++	} else {
++		dev_err(dev, "Unknown connector type\n");
++		type = -EINVAL;
++	}
++
++	of_node_put(remote);
++
++	return type;
++}
++
 +static int cdns_mhdp8501_add_bridge(struct cdns_mhdp8501_device *mhdp)
 +{
 +	mhdp->bridge.type = mhdp->connector_type;
@@ -2955,15 +2980,10 @@ index 0000000000000..98116ef012fa3
 +	mhdp->bridge.ops = DRM_BRIDGE_OP_DETECT | DRM_BRIDGE_OP_EDID |
 +			   DRM_BRIDGE_OP_HPD;
 +
++	/* bridge.funcs was set by devm_drm_bridge_alloc() in probe */
 +	if (mhdp->connector_type == DRM_MODE_CONNECTOR_HDMIA) {
-+		mhdp->bridge.funcs = &cdns_hdmi_bridge_funcs;
 +		mhdp->bridge.ops |= DRM_BRIDGE_OP_HDMI | DRM_BRIDGE_OP_HDMI_SPD_INFOFRAME;
 +		mhdp->bridge.ddc = cdns_hdmi_i2c_adapter(mhdp);
-+	} else if (mhdp->connector_type == DRM_MODE_CONNECTOR_DisplayPort) {
-+		mhdp->bridge.funcs = &cdns_dp_bridge_funcs;
-+	} else {
-+		dev_err(mhdp->dev, "Unsupported connector type!\n");
-+		return -EINVAL;
 +	}
 +
 +	drm_bridge_add(&mhdp->bridge);
@@ -2973,18 +2993,36 @@ index 0000000000000..98116ef012fa3
 +
 +static int cdns_mhdp8501_probe(struct platform_device *pdev)
 +{
++	const struct drm_bridge_funcs *funcs;
 +	struct device *dev = &pdev->dev;
 +	struct cdns_mhdp8501_device *mhdp;
 +	struct resource *res;
 +	enum phy_mode phy_mode;
++	int connector_type;
 +	u32 reg;
 +	int ret;
 +
-+	mhdp = devm_kzalloc(dev, sizeof(*mhdp), GFP_KERNEL);
-+	if (!mhdp)
-+		return -ENOMEM;
++	/*
++	 * drm_bridge_add() requires a refcounted bridge, so the container has
++	 * to come from devm_drm_bridge_alloc(). That needs the funcs up front,
++	 * so resolve the connector type before allocating.
++	 */
++	connector_type = cdns_mhdp8501_get_connector_type(dev);
++	if (connector_type < 0)
++		return connector_type;
++
++	if (connector_type == DRM_MODE_CONNECTOR_HDMIA)
++		funcs = &cdns_hdmi_bridge_funcs;
++	else
++		funcs = &cdns_dp_bridge_funcs;
++
++	mhdp = devm_drm_bridge_alloc(dev, struct cdns_mhdp8501_device, bridge,
++				     funcs);
++	if (IS_ERR(mhdp))
++		return PTR_ERR(mhdp);
 +
 +	mhdp->dev = dev;
++	mhdp->connector_type = connector_type;
 +
 +	INIT_DELAYED_WORK(&mhdp->hotplug_work, hotplug_work_func);
 +
@@ -4142,7 +4180,7 @@ index 0000000000000..157b4d44b9e2b
 +}
 +
 +static void cdns_dp_bridge_atomic_disable(struct drm_bridge *bridge,
-+					  struct drm_atomic_state *state)
++					  struct drm_atomic_commit *state)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
 +
@@ -4153,7 +4191,7 @@ index 0000000000000..157b4d44b9e2b
 +}
 +
 +static void cdns_dp_bridge_atomic_enable(struct drm_bridge *bridge,
-+					 struct drm_atomic_state *state)
++					 struct drm_atomic_commit *state)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
 +	struct drm_connector *connector;
@@ -4577,12 +4615,12 @@ index 0000000000000..9556d0929e21d
 +
 +static int reset_pipe(struct drm_crtc *crtc)
 +{
-+	struct drm_atomic_state *state;
++	struct drm_atomic_commit *state;
 +	struct drm_crtc_state *crtc_state;
 +	struct drm_modeset_acquire_ctx ctx;
 +	int ret;
 +
-+	state = drm_atomic_state_alloc(crtc->dev);
++	state = drm_atomic_commit_alloc(crtc->dev);
 +	if (!state)
 +		return -ENOMEM;
 +
@@ -4600,7 +4638,7 @@ index 0000000000000..9556d0929e21d
 +
 +	ret = drm_atomic_commit(state);
 +out:
-+	drm_atomic_state_put(state);
++	drm_atomic_commit_put(state);
 +	drm_modeset_drop_locks(&ctx);
 +	drm_modeset_acquire_fini(&ctx);
 +
@@ -4816,7 +4854,7 @@ index 0000000000000..9556d0929e21d
 +}
 +
 +static void cdns_hdmi_bridge_atomic_disable(struct drm_bridge *bridge,
-+					    struct drm_atomic_state *state)
++					    struct drm_atomic_commit *state)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
 +
@@ -4826,7 +4864,7 @@ index 0000000000000..9556d0929e21d
 +}
 +
 +static void cdns_hdmi_bridge_atomic_enable(struct drm_bridge *bridge,
-+					   struct drm_atomic_state *state)
++					   struct drm_atomic_commit *state)
 +{
 +	struct cdns_mhdp8501_device *mhdp = bridge->driver_private;
 +	struct drm_connector *connector;

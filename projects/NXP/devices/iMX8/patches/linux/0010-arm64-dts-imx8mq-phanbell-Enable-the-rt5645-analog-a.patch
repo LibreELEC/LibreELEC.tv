@@ -1,0 +1,205 @@
+From 7b0c26c6741c64291e03f668ce961c47cbcb0772 Mon Sep 17 00:00:00 2001
+Message-ID: <7b0c26c6741c64291e03f668ce961c47cbcb0772.1786177290.git.rudi@heitbaum.com>
+In-Reply-To: <cover.1786177290.git.rudi@heitbaum.com>
+References: <cover.1786177290.git.rudi@heitbaum.com>
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 5 Aug 2026 12:00:00 +1000
+Subject: [PATCH v2 5/5] arm64: dts: imx8mq-phanbell: Enable the rt5645 analog
+ audio
+
+The board has an rt5645 on i2c3 driving the 3.5 mm headphone jack, its
+microphone and two on-board DMICs, fed by sai2. The vendor kernel drives it
+from a machine driver of its own, so its devicetree carries no widgets or
+routing and the graph is rebuilt here for simple-audio-card. micbias1 is a
+supply, so it is the source of its route rather than the sink.
+
+GPIO5_IO4 carries headphone detect and has to be muxed away from its reset
+function, or both hp-detect-gpios and the codec interrupt point at a pad
+that is still SPDIF_RX. Leaving realtek,jd-mode unset selects the mode in
+which the driver takes jack state from hp-detect-gpios.
+
+Pin the slot width at 32 bits. With none set fsl_sai_hw_params() derives it
+from the sample width, and a 24 bit open then asks for a 2.304 MHz bit
+clock, which is not an even divider of 24.576 MHz, so hw_params returns
+-EINVAL. 32 bit slots give a ratio of 8 and still carry 16 and 24 bit data:
+rt5645_hw_params() only writes a BCLK-to-frame ratio for AIF2, so on AIF1
+the codec ignores the padding bits.
+
+Declare both audio PLL families and system-clock-direction-out, which
+44.1 kHz needs. fsl_sai only reparents its mclk between the 8 kHz and
+11.025 kHz families if the node names them pll8k and pll11k, and
+fsl_sai_set_dai_sysclk() returns immediately unless the direction is out.
+Without either, 44100 stays on the advertised rate list while the mclk
+cannot produce it, and hw_params fails.
+
+AVDD and CPVDD are required by the binding. Both come from ANALOG_1v8,
+which a baseboard DC-DC supplies rather than the PMIC on the SOM, so a
+fixed always-on regulator is the only description available.
+
+Route "Headphone Mic" to IN1P, the pin the jack's sleeve reaches. Without
+it only the micbias supply route exists and the microphone input is not
+connected to anything.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+v2:
+ - add avdd-supply/cpvdd-supply and the fixed regulator they need; the
+   binding requires them, so dtbs_check failed and the driver fell back to
+   dummy regulators
+ - route "Headphone Mic" to IN1P
+ - no clocks property on the cpu dai, deliberately. The fallback in
+   simple_util_parse_clk() picks the DAI node's IPG clock and
+   simple_init_dai() sets it as the system clock once at card init, which
+   is meaningless for the SAI but harmless - hw_params replaces it with
+   rate * mclk-fs before any stream starts. Naming a clock instead makes
+   simple_util_hw_params() call clk_set_rate() on it directly, bypassing
+   fsl_sai_set_mclk_rate() and the PLL reparent, and 44.1 kHz then fails
+   in hw_params. Tested both ways.
+
+ .../boot/dts/freescale/imx8mq-phanbell.dts    | 95 +++++++++++++++++++
+ 1 file changed, 95 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index 2d134eefb765..af4b9d266451 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -37,6 +37,14 @@ reg_usdhc2_vmmc: regulator-usdhc2-vmmc {
+ 		enable-active-high;
+ 	};
+ 
++	reg_audio_1v8: regulator-audio-1v8 {
++		compatible = "regulator-fixed";
++		regulator-name = "BB_1V8";
++		regulator-min-microvolt = <1800000>;
++		regulator-max-microvolt = <1800000>;
++		regulator-always-on;
++	};
++
+ 	fan: gpio-fan {
+ 		compatible = "gpio-fan";
+ 		gpio-fan,speed-map = <0 0>, <8600 1>;
+@@ -46,6 +54,42 @@ fan: gpio-fan {
+ 		pinctrl-0 = <&pinctrl_gpio_fan>;
+ 		status = "okay";
+ 	};
++
++	sound-analog {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "Coral Analog";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&sound_analog_cpu>;
++		simple-audio-card,frame-master = <&sound_analog_cpu>;
++		simple-audio-card,mclk-fs = <256>;
++
++		simple-audio-card,widgets = "Headphone", "Headphone Jack",
++					    "Microphone", "Headphone Mic",
++					    "Microphone", "Internal Mic";
++
++		simple-audio-card,routing = "Headphone Jack", "HPOL",
++					    "Headphone Jack", "HPOR",
++					    "Headphone Mic", "micbias1",
++					    "IN1P", "Headphone Mic",
++					    "DMIC L1", "Internal Mic",
++					    "DMIC R1", "Internal Mic";
++
++		/*
++		 * 32 bit slots regardless of the sample width. sai2 divides its
++		 * 24.576 MHz root by an even integer only, so a 24 bit frame at
++		 * 48 kHz would ask for 2.304 MHz, a ratio of 10.67.
++		 */
++		sound_analog_cpu: simple-audio-card,cpu {
++			sound-dai = <&sai2>;
++			system-clock-direction-out;
++			dai-tdm-slot-num = <2>;
++			dai-tdm-slot-width = <32>;
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&rt5645>;
++		};
++	};
+ };
+ 
+ &A53_0 {
+@@ -272,6 +316,20 @@ &i2c3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_i2c3>;
+ 	status = "okay";
++
++	rt5645: audio-codec@1a {
++		compatible = "realtek,rt5645";
++		reg = <0x1a>;
++		avdd-supply = <&reg_audio_1v8>;
++		cpvdd-supply = <&reg_audio_1v8>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hp_det>;
++		#sound-dai-cells = <0>;
++		interrupt-parent = <&gpio5>;
++		interrupts = <4 IRQ_TYPE_EDGE_BOTH>;
++		hp-detect-gpios = <&gpio5 4 GPIO_ACTIVE_HIGH>;
++		realtek,dmic1-data-pin = <2>;
++	};
+ };
+ 
+ &fec1 {
+@@ -295,6 +353,27 @@ ethphy0: ethernet-phy@0 {
+ 	};
+ };
+ 
++&sai2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_sai2>;
++	/*
++	 * pll8k and pll11k let fsl_sai move the mclk between the two
++	 * audio PLL families, so 44.1 kHz rates work as well as 48 kHz.
++	 */
++	clocks = <&clk IMX8MQ_CLK_SAI2_IPG>,
++		 <&clk IMX8MQ_CLK_SAI2_ROOT>,
++		 <&clk IMX8MQ_CLK_DUMMY>, <&clk IMX8MQ_CLK_DUMMY>,
++		 <&clk IMX8MQ_AUDIO_PLL1_OUT>,
++		 <&clk IMX8MQ_AUDIO_PLL2_OUT>;
++	clock-names = "bus", "mclk1", "mclk2", "mclk3",
++		      "pll8k", "pll11k";
++	assigned-clocks = <&clk IMX8MQ_CLK_SAI2>;
++	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
++	assigned-clock-rates = <24576000>;
++	fsl,sai-mclk-direction-output;
++	status = "okay";
++};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1>;
+@@ -383,6 +462,12 @@ MX8MQ_IOMUXC_GPIO1_IO00_ANAMIX_REF_CLK_32K	0x05
+ 		>;
+ 	};
+ 
++	pinctrl_hp_det: hpdetgrp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_SPDIF_RX_GPIO5_IO4			0xd6
++		>;
++	};
++
+ 	pinctrl_i2c1: i2c1grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_I2C1_SCL_I2C1_SCL			0x4000007f
+@@ -410,6 +495,16 @@ MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3	0x41
+ 		>;
+ 	};
+ 
++	pinctrl_sai2: sai2grp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_SAI2_MCLK_SAI2_MCLK		0xd6
++			MX8MQ_IOMUXC_SAI2_TXFS_SAI2_TX_SYNC		0xd6
++			MX8MQ_IOMUXC_SAI2_TXC_SAI2_TX_BCLK		0xd6
++			MX8MQ_IOMUXC_SAI2_TXD0_SAI2_TX_DATA0		0xd6
++			MX8MQ_IOMUXC_SAI2_RXD0_SAI2_RX_DATA0		0xd6
++		>;
++	};
++
+ 	pinctrl_uart1: uart1grp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_UART1_RXD_UART1_DCE_RX		0x49
+-- 
+2.53.0
+
