@@ -1,0 +1,112 @@
+From 37de103b8f6e970f632a070ef5ddadf0c80e2625 Mon Sep 17 00:00:00 2001
+From: Jiaxing Hu <gahing@gahingwoo.com>
+Date: Thu, 24 Sep 2026 22:21:30 +1200
+Subject: [PATCH 112/213] FROMLIST(v14): pmdomain: rockchip: cycle an optional
+ power-domain reset on power-on
+
+Some Rockchip domains come out of power-on with their bus interface in an
+undefined state. On the RK3576 NPU this shows up as a hang on the first
+register access after the domain is switched on, and pulsing the domain's
+reset at this point clears it.
+
+Take the domain node's reset if it has one, and pulse it between
+releasing idle and restoring QoS. The reset is optional, so domains that
+do not list one are unaffected.
+
+Signed-off-by: Jiaxing Hu <gahing@gahingwoo.com>
+Reviewed-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
+---
+ drivers/pmdomain/rockchip/pm-domains.c | 33 +++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pmdomain/rockchip/pm-domains.c b/drivers/pmdomain/rockchip/pm-domains.c
+index 90d20a982ca9..59bbdc629bd2 100644
+--- a/drivers/pmdomain/rockchip/pm-domains.c
++++ b/drivers/pmdomain/rockchip/pm-domains.c
+@@ -19,6 +19,7 @@
+ #include <linux/of_clk.h>
+ #include <linux/clk.h>
+ #include <linux/delay.h>
++#include <linux/reset.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/mfd/syscon.h>
+@@ -103,6 +104,7 @@ struct rockchip_pm_domain {
+ 	struct clk_bulk_data *clks;
+ 	struct device_node *node;
+ 	struct regulator *supply;
++	struct reset_control *reset;
+ };
+ 
+ struct rockchip_pmu {
+@@ -688,6 +690,21 @@ static int rockchip_pd_power(struct rockchip_pm_domain *pd, bool power_on)
+ 		if (ret < 0)
+ 			goto out;
+ 
++		/*
++		 * Optional: some domains need their reset cycled once power
++		 * is on. This goes BEFORE the settle delay, not after: a
++		 * domain that asks for both is asking to settle before the
++		 * QoS registers answer, and a reset deasserted after the
++		 * delay would leave nothing between it and the QoS writes.
++		 * On RK3576 the reset being cycled is the NPU core's bus
++		 * interface, which is what those writes go through.
++		 */
++		if (pd->reset) {
++			reset_control_assert(pd->reset);
++			usleep_range(10, 20);
++			reset_control_deassert(pd->reset);
++		}
++
+ 		/* Some domains need to settle before the QoS registers answer. */
+ 		if (pd->info->delay_us)
+ 			udelay(pd->info->delay_us);
+@@ -873,6 +890,14 @@ static int rockchip_pm_add_one_domain(struct rockchip_pmu *pmu,
+ 	if (error)
+ 		goto err_put_clocks;
+ 
++	pd->reset = of_reset_control_get_optional_exclusive(node, NULL);
++	if (IS_ERR(pd->reset)) {
++		error = dev_err_probe(pmu->dev, PTR_ERR(pd->reset),
++				      "%pOFn: failed to get reset\n", node);
++		pd->reset = NULL;
++		goto err_unprepare_clocks;
++	}
++
+ 	pd->num_qos = of_count_phandle_with_args(node, "pm_qos",
+ 						 NULL);
+ 
+@@ -943,11 +968,13 @@ static int rockchip_pm_add_one_domain(struct rockchip_pmu *pmu,
+ 	clk_bulk_unprepare(pd->num_clks, pd->clks);
+ err_put_clocks:
+ 	clk_bulk_put(pd->num_clks, pd->clks);
++	reset_control_put(pd->reset);
+ 	return error;
+ }
+ 
+ static void rockchip_pm_remove_one_domain(struct rockchip_pm_domain *pd)
+ {
++	struct reset_control *reset;
+ 	int ret;
+ 
+ 	/*
+@@ -962,11 +989,15 @@ static void rockchip_pm_remove_one_domain(struct rockchip_pm_domain *pd)
+ 	clk_bulk_unprepare(pd->num_clks, pd->clks);
+ 	clk_bulk_put(pd->num_clks, pd->clks);
+ 
+-	/* protect the zeroing of pm->num_clks */
++	/* protect the zeroing of pd->num_clks and pd->reset */
+ 	mutex_lock(&pd->pmu->mutex);
+ 	pd->num_clks = 0;
++	reset = pd->reset;
++	pd->reset = NULL;
+ 	mutex_unlock(&pd->pmu->mutex);
+ 
++	reset_control_put(reset);
++
+ 	/* devm will free our memory */
+ }
+ 
+-- 
+2.43.0
+

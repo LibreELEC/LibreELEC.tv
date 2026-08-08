@@ -1,0 +1,107 @@
+From 2052485401948cf5861bc379fb158ff6039cf649 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Thu, 3 Sep 2026 01:54:08 +0300
+Subject: [PATCH 039/213] FROMLIST(v4): dt-bindings: display: vop2: Add missing
+ reset properties
+
+Document the VOP2 resets corresponding to the AXI, AHB and DCLK_VP0..2
+clocks, which are common to all supported SoCs, plus DCLK_VP3 which is
+provided only on RK3588.
+
+While at it, move 'iommus' in the example up into the expected position
+to keep the properties in alphabetical order.
+
+Reviewed-by: Krzysztof Kozlowski <krzysztof.kozlowski@oss.qualcomm.com>
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ .../display/rockchip/rockchip-vop2.yaml       | 44 ++++++++++++++++++-
+ 1 file changed, 43 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/display/rockchip/rockchip-vop2.yaml b/Documentation/devicetree/bindings/display/rockchip/rockchip-vop2.yaml
+index 93da1fb9adc4..f993cef0323b 100644
+--- a/Documentation/devicetree/bindings/display/rockchip/rockchip-vop2.yaml
++++ b/Documentation/devicetree/bindings/display/rockchip/rockchip-vop2.yaml
+@@ -82,6 +82,20 @@ properties:
+       - {}
+       - {}
+ 
++  resets:
++    minItems: 5
++    maxItems: 6
++
++  reset-names:
++    minItems: 5
++    items:
++      - const: axi
++      - const: ahb
++      - const: dclk_vp0
++      - const: dclk_vp1
++      - const: dclk_vp2
++      - const: dclk_vp3
++
+   rockchip,grf:
+     $ref: /schemas/types.yaml#/definitions/phandle
+     description:
+@@ -148,6 +162,12 @@ allOf:
+         clock-names:
+           maxItems: 5
+ 
++        resets:
++          maxItems: 5
++
++        reset-names:
++          maxItems: 5
++
+         interrupts:
+           maxItems: 1
+ 
+@@ -194,6 +214,12 @@ allOf:
+             - {}
+             - const: pll_hdmiphy0
+ 
++        resets:
++          maxItems: 5
++
++        reset-names:
++          maxItems: 5
++
+         interrupts:
+           minItems: 4
+ 
+@@ -246,6 +272,12 @@ allOf:
+             - const: pll_hdmiphy0
+             - const: pll_hdmiphy1
+ 
++        resets:
++          minItems: 6
++
++        reset-names:
++          minItems: 6
++
+         interrupts:
+           maxItems: 1
+ 
+@@ -289,9 +321,19 @@ examples:
+                               "dclk_vp0",
+                               "dclk_vp1",
+                               "dclk_vp2";
++                iommus = <&vop_mmu>;
+                 power-domains = <&power RK3568_PD_VO>;
++                resets = <&cru SRST_A_VOP>,
++                         <&cru SRST_H_VOP>,
++                         <&cru SRST_VOP0>,
++                         <&cru SRST_VOP1>,
++                         <&cru SRST_VOP2>;
++                reset-names = "axi",
++                              "ahb",
++                              "dclk_vp0",
++                              "dclk_vp1",
++                              "dclk_vp2";
+                 rockchip,grf = <&grf>;
+-                iommus = <&vop_mmu>;
+                 vop_out: ports {
+                     #address-cells = <1>;
+                     #size-cells = <0>;
+-- 
+2.43.0
+

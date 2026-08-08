@@ -1,0 +1,28 @@
+From 914b90f94a1597cbd482c0f1793bfa3259f54d7f Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Fri, 24 Apr 2026 21:10:35 +0000
+Subject: [PATCH 174/213] WIP: drm/rockchip: dw_hdmi: Enable 10-bit output for
+ RK3399
+
+NOTE: enable support for 10-bit RGB output
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+index f211ddbd6f14..40d4af351a04 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -543,6 +543,7 @@ static const struct dw_hdmi_plat_data rk3399_hdmi_drv_data = {
+ 	.phy_config = rockchip_phy_config,
+ 	.phy_data = &rk3399_chip_data,
+ 	.use_drm_infoframe = true,
++	.max_bpc = 10,
+ };
+ 
+ static struct rockchip_hdmi_chip_data rk3568_chip_data = {
+-- 
+2.43.0
+

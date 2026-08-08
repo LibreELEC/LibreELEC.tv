@@ -1,0 +1,51 @@
+From 05834b66a5ce3c59dd2e9dc503b3d4f42d63be1c Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Thu, 3 Sep 2026 01:54:12 +0300
+Subject: [PATCH 043/213] FROMLIST(v5): drm/rockchip: vop2: Avoid division by
+ zero when computing max_dclk
+
+The DCLK reparenting logic in vop2_crtc_atomic_enable() is gated only on
+the presence of an HDMI PHY PLL on the SoC.
+
+This condition is true on any board that wires up an HDMI PHY, even when
+the CRTC is currently driving a non-HDMI output such as DSI or LVDS.
+Those encoders do not set vcstate->output_bpc, so it stays 0, hence the
+subsequent DIV_ROUND_CLOSEST_ULL() then divides by zero.
+
+Note this division happens before the drm_for_each_encoder_mask() loop
+that would establish whether the pipe is actually driven by HDMI, so the
+loop provides no protection.
+
+Default bpc to 8 when it would otherwise be 0.  The resulting max_dclk
+value is a don't-care on the non-HDMI paths that trigger this, since the
+encoder loop will not select the PHY PLL as the DCLK source there.
+
+Fixes: b0362c45c401 ("drm/rockchip: vop2: Check bpc before switching DCLK source")
+Reported-by: Sashiko <sashiko-bot@kernel.org>
+Closes: https://lore.kernel.org/all/20260623203310.9F8C81F000E9@smtp.kernel.org/
+Link: https://lore.kernel.org/all/20260623203310.9F8C81F000E9@smtp.kernel.org/
+Tested-by: Igor Paunovic <royalnet026@gmail.com>
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop2.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index 4bb1985b8726..e9f5d015b645 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -1931,8 +1931,9 @@ static void vop2_crtc_atomic_enable(struct drm_crtc *crtc,
+ 	 * to 4K@60Hz, if available, otherwise keep using the system CRU.
+ 	 */
+ 	if (vop2->pll_hdmiphy0 || vop2->pll_hdmiphy1) {
+-		unsigned long max_dclk = DIV_ROUND_CLOSEST_ULL(VOP2_MAX_DCLK_RATE * 8,
+-							       vcstate->output_bpc);
++		unsigned int bpc = vcstate->output_bpc ?: 8;
++		unsigned long max_dclk = DIV_ROUND_CLOSEST_ULL(VOP2_MAX_DCLK_RATE * 8, bpc);
++
+ 		if (clock <= max_dclk) {
+ 			drm_for_each_encoder_mask(encoder, crtc->dev, crtc_state->encoder_mask) {
+ 				struct rockchip_encoder *rkencoder = to_rockchip_encoder(encoder);
+-- 
+2.43.0
+

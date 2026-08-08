@@ -1,0 +1,90 @@
+From 9c8036565ef61f7a73ad41d07a1d24897b9400fa Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:47 +0300
+Subject: [PATCH 030/213] FROMGIT: drm/display: hdmi-state-helper: Sync SCDC
+ state on hotplug
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+drm_atomic_helper_connector_hdmi_hotplug() does not currently
+synchronize SCDC status on hotplug events, leaving the scrambler state
+potentially inconsistent after (re)connect.
+
+Hook drm_connector_hdmi_sync_scdc() into both the connect and disconnect
+paths, replacing the existing TODOs around missing scrambler handling.
+Note that per .detect_ctx() contract, implementations shall return a
+drm_connector_status value or -EDEADLK, nothing else.  Therefore, handle
+deadlocks and just report any other errors.  For consistency, also
+report the errors from drm_edid_connector_update().
+
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-23-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ .../gpu/drm/display/drm_hdmi_state_helper.c   | 34 +++++++++++++++++--
+ 1 file changed, 31 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 8045b1d17d6e..1e269b203b98 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -1362,12 +1362,29 @@ drm_atomic_helper_connector_hdmi_update(struct drm_connector *connector,
+ 					enum drm_connector_status status)
+ {
+ 	const struct drm_edid *drm_edid;
++	int ret;
+ 
+ 	if (status == connector_status_disconnected) {
+-		// TODO: also handle scramber, HDMI sink disconnected.
++		/*
++		 * .detect_ctx() can only ever return a drm_connector_status or
++		 * -EDEADLK. Handle deadlocks, and report any !EDEADLK error.
++		 */
++		ret = drm_connector_hdmi_sync_scdc(connector, false, ctx);
++		if (ret) {
++			if (ret == -EDEADLK)
++				return ret;
++
++			drm_warn(connector->dev, "Ignored SCDC sync error: %d\n", ret);
++		}
++
+ 		drm_connector_hdmi_audio_plugged_notify(connector, false);
+-		drm_edid_connector_update(connector, NULL);
++
++		ret = drm_edid_connector_update(connector, NULL);
++		if (ret)
++			drm_warn(connector->dev, "Ignored EDID update error: %d\n", ret);
++
+ 		drm_connector_cec_phys_addr_invalidate(connector);
++
+ 		return 0;
+ 	}
+ 
+@@ -1381,7 +1398,18 @@ drm_atomic_helper_connector_hdmi_update(struct drm_connector *connector,
+ 	drm_edid_free(drm_edid);
+ 
+ 	if (status == connector_status_connected) {
+-		// TODO: also handle scramber, HDMI sink is now connected.
++		/*
++		 * .detect_ctx() can only ever return a drm_connector_status or
++		 * -EDEADLK. Handle deadlocks, and report any !EDEADLK error.
++		 */
++		ret = drm_connector_hdmi_sync_scdc(connector, true, ctx);
++		if (ret) {
++			if (ret == -EDEADLK)
++				return ret;
++
++			drm_warn(connector->dev, "Ignored SCDC sync error: %d\n", ret);
++		}
++
+ 		drm_connector_hdmi_audio_plugged_notify(connector, true);
+ 		drm_connector_cec_phys_addr_set(connector);
+ 	}
+-- 
+2.43.0
+

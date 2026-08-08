@@ -1,0 +1,96 @@
+From c676e20b77570529948c2d4c5ad3103dd1cca66b Mon Sep 17 00:00:00 2001
+From: Alex Bee <knaerzche@gmail.com>
+Date: Sun, 11 Oct 2020 17:03:12 +0200
+Subject: [PATCH 191/213] WIP: dt-bindings: media: Add Rockchip IEP binding
+
+Document the Rockchip Image Enhancement Processor used with
+RK3228, RK3288, RK3328, and RK3399 boards.
+
+Signed-off-by: Alex Bee <knaerzche@gmail.com>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../bindings/media/rockchip-iep.yaml          | 72 +++++++++++++++++++
+ 1 file changed, 72 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/media/rockchip-iep.yaml
+
+diff --git a/Documentation/devicetree/bindings/media/rockchip-iep.yaml b/Documentation/devicetree/bindings/media/rockchip-iep.yaml
+new file mode 100644
+index 000000000000..f265619539f9
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/rockchip-iep.yaml
+@@ -0,0 +1,72 @@
++# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/media/rockchip-iep.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Rockchip Image Enhancement Processor (IEP)
++
++description:
++    Rockchip IEP is an image enhancement processor that supports
++    hardware-accelerated YUV deinterlacing, with spatial and
++    temporal sampling noise reduction.
++
++maintainers:
++  - Heiko Stuebner <heiko@sntech.de>
++
++properties:
++  compatible:
++    oneOf:
++      - const: rockchip,rk3228-iep
++      - items:
++          - enum:
++              - rockchip,rk3228-iep
++              - rockchip,rk3288-iep
++              - rockchip,rk3328-iep
++              - rockchip,rk3399-iep
++          - const: rockchip,rk3228-iep
++
++  reg:
++    maxItems: 1
++
++  interrupts:
++    maxItems: 1
++
++  clocks:
++    maxItems: 2
++
++  clock-names:
++    items:
++      - const: axi
++      - const: ahb
++
++  power-domains:
++    maxItems: 1
++
++  iommus:
++    maxItems: 1
++
++required:
++  - compatible
++  - reg
++  - interrupts
++  - clocks
++  - clock-names
++
++additionalProperties: false
++
++examples:
++  - |
++    #include <dt-bindings/clock/rk3228-cru.h>
++    #include <dt-bindings/interrupt-controller/arm-gic.h>
++    #include <dt-bindings/power/rk3228-power.h>
++
++    iep: iep@20070000 {
++        compatible = "rockchip,rk3228-iep";
++        reg = <0x20070000 0x800>;
++        interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
++        clocks = <&cru ACLK_IEP>, <&cru HCLK_IEP>;
++        clock-names = "axi", "ahb";
++        power-domains = <&power RK3228_PD_VIO>;
++        iommus = <&iep_mmu>;
++    };
+-- 
+2.43.0
+

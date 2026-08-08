@@ -1,0 +1,46 @@
+From adf9cf2666881f3d42a047b5cf1eb13880a2487b Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Thu, 10 Sep 2026 09:34:50 -0400
+Subject: [PATCH 092/213] FROMLIST(v2): arm64: dts: rockchip: Rename rk3588
+ HDMI audio cards
+
+Rename the two cards from "hdmi0"/"hdmi1" to "RK3588 HDMI0"/"RK3588
+HDMI1" so they identify the SoC in user-visible ALSA fields and match
+the naming scheme used across the rest of the Rockchip family.
+
+Fixes: b8c6c136971c0 ("arm64: dts: rockchip: Add HDMI audio outputs for rk3588")
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-base.dtsi  | 2 +-
+ arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+index b1a9f221dd07..449242137101 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -376,7 +376,7 @@ hdmi0_sound: hdmi0-sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <128>;
+-		simple-audio-card,name = "hdmi0";
++		simple-audio-card,name = "RK3588 HDMI0";
+ 		status = "disabled";
+ 
+ 		simple-audio-card,codec {
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi
+index b251bb129cdb..2bcf30d8a338 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi
+@@ -11,7 +11,7 @@ hdmi1_sound: hdmi1-sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <128>;
+-		simple-audio-card,name = "hdmi1";
++		simple-audio-card,name = "RK3588 HDMI1";
+ 		status = "disabled";
+ 
+ 		simple-audio-card,codec {
+-- 
+2.43.0
+

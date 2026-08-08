@@ -1,0 +1,55 @@
+From 8cf09c91f3ca65218aa45fcc386b8602cab6954a Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 26 Apr 2026 21:13:25 +0000
+Subject: [PATCH 162/213] WIP: drm/bridge: dw-hdmi: add BT.2020 CSC
+ coefficients
+
+When dw-hdmi converts RGB input to YCbCr output and the selected output
+encoding is BT.2020, it currently falls back to the BT.709 CSC matrix.
+
+Add BT.2020 full and limited range CSC coefficients and select them when
+V4L2_YCBCR_ENC_BT2020 is requested so RGB to YCbCr conversion uses the
+correct color space.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index e2c06363cebc..9f3892f4e9bf 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -95,6 +95,18 @@ static const u16 csc_coeff_rgb_full_to_eitu709_limited[3][4] = {
+ 	{ 0x6a6b, 0x7996, 0x1c00, 0x0200 }
+ };
+ 
++static const u16 csc_coeff_rgb_full_to_bt2020_full[3][4] = {
++	{ 0x2b64, 0x10d0, 0x03cb, 0x0000 },
++	{ 0x6293, 0x2000, 0x7d6e, 0x0200 },
++	{ 0x78f0, 0x7711, 0x2000, 0x0200 }
++};
++
++static const u16 csc_coeff_rgb_full_to_bt2020_limited[3][4] = {
++	{ 0x251e, 0x0e62, 0x033f, 0x0040 },
++	{ 0x6641, 0x2000, 0x7dc0, 0x0200 },
++	{ 0x6bd2, 0x782f, 0x2000, 0x0200 }
++};
++
+ static const u16 csc_coeff_rgb_full_to_rgb_limited[3][4] = {
+ 	{ 0x1b80, 0x0000, 0x0000, 0x0020 },
+ 	{ 0x0000, 0x1b80, 0x0000, 0x0020 },
+@@ -1136,6 +1148,10 @@ static void dw_hdmi_update_csc_coeffs(struct dw_hdmi *hdmi)
+ 			csc_coeff = is_limited_range ?
+ 				    &csc_coeff_rgb_full_to_eitu601_limited :
+ 				    &csc_coeff_rgb_full_to_eitu601_full;
++		else if (hdmi->hdmi_data.enc_out_encoding == V4L2_YCBCR_ENC_BT2020)
++			csc_coeff = is_limited_range ?
++				    &csc_coeff_rgb_full_to_bt2020_limited :
++				    &csc_coeff_rgb_full_to_bt2020_full;
+ 		else
+ 			csc_coeff = is_limited_range ?
+ 				    &csc_coeff_rgb_full_to_eitu709_limited :
+-- 
+2.43.0
+

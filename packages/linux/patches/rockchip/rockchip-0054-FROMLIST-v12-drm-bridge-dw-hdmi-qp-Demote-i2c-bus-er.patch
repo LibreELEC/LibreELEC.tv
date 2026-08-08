@@ -1,0 +1,75 @@
+From 3f5c4ba020c57ab844c093ef69240081b73f63b8 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Mon, 5 Oct 2026 03:38:02 +0300
+Subject: [PATCH 054/213] FROMLIST(v12): drm/bridge: dw-hdmi-qp: Demote i2c bus
+ error messages to debug level
+
+A NACK or timeout on the DDC bus is a normal condition when the sink is
+absent or unpowered.  Some displays keep HPD asserted and the EDID
+EEPROM readable while in standby, but leave the SCDC slave unpowered.
+This results in i2c-related error messages on every boot during
+scrambling setup, even though the condition is handled gracefully and
+the SCDC configuration is restored on the next hotplug event.
+
+Log the i2c bus level failures with dev_dbg_ratelimited() instead,
+matching the silent behaviour of the non-QP dw-hdmi i2c bus algorithm.
+The DDC users already report failures at the appropriate level, e.g. the
+SCDC helpers via drm_scdc_dbg().  This also makes the no-hpd special
+casing of the read path messages redundant, so drop it.
+
+Reported-by: Diederik de Haas <diederik@cknow-tech.com>
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 16 ++++------------
+ 1 file changed, 4 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index 648b52cbfd12..d7e40293e8b2 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -352,22 +352,14 @@ static int dw_hdmi_qp_i2c_read(struct dw_hdmi_qp *hdmi,
+ 
+ 		stat = wait_for_completion_timeout(&i2c->cmp, HZ / 10);
+ 		if (!stat) {
+-			if (hdmi->no_hpd)
+-				dev_dbg_ratelimited(hdmi->dev,
+-						    "i2c read timed out\n");
+-			else
+-				dev_err(hdmi->dev, "i2c read timed out\n");
++			dev_dbg_ratelimited(hdmi->dev, "i2c read timed out\n");
+ 			dw_hdmi_qp_write(hdmi, 0x01, I2CM_CONTROL0);
+ 			return -EAGAIN;
+ 		}
+ 
+ 		/* Check for error condition on the bus */
+ 		if (i2c->stat & I2CM_NACK_RCVD_IRQ) {
+-			if (hdmi->no_hpd)
+-				dev_dbg_ratelimited(hdmi->dev,
+-						    "i2c read error\n");
+-			else
+-				dev_err(hdmi->dev, "i2c read error\n");
++			dev_dbg_ratelimited(hdmi->dev, "i2c read error\n");
+ 			dw_hdmi_qp_write(hdmi, 0x01, I2CM_CONTROL0);
+ 			return -EIO;
+ 		}
+@@ -406,14 +398,14 @@ static int dw_hdmi_qp_i2c_write(struct dw_hdmi_qp *hdmi,
+ 
+ 		stat = wait_for_completion_timeout(&i2c->cmp, HZ / 10);
+ 		if (!stat) {
+-			dev_err(hdmi->dev, "i2c write time out!\n");
++			dev_dbg_ratelimited(hdmi->dev, "i2c write time out!\n");
+ 			dw_hdmi_qp_write(hdmi, 0x01, I2CM_CONTROL0);
+ 			return -EAGAIN;
+ 		}
+ 
+ 		/* Check for error condition on the bus */
+ 		if (i2c->stat & I2CM_NACK_RCVD_IRQ) {
+-			dev_err(hdmi->dev, "i2c write nack!\n");
++			dev_dbg_ratelimited(hdmi->dev, "i2c write nack!\n");
+ 			dw_hdmi_qp_write(hdmi, 0x01, I2CM_CONTROL0);
+ 			return -EIO;
+ 		}
+-- 
+2.43.0
+

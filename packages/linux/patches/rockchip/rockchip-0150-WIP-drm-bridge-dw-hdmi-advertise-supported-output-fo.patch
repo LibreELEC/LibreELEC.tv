@@ -1,0 +1,49 @@
+From 7cdfea8c148e7a2fa06512dcf240f98cce546f72 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 26 Apr 2026 19:49:53 +0000
+Subject: [PATCH 150/213] WIP: drm/bridge: dw-hdmi: advertise supported output
+ formats
+
+Initialize the bridge output capability fields from the platform data
+when probing dw-hdmi.
+
+Set supported_formats so the bridge core can filter encoder output
+formats against what the hardware can pass through, and fall back to
+RGB444 when no format mask is provided. Also derive 4:2:0 support from
+the advertised bridge formats instead of the raw platform data.
+
+While at it, populate the bridge vendor, product and max_bpc fields.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 43f24830ecab..62b5d68ff98a 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -3451,9 +3451,19 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
+ 	hdmi->bridge.ddc = hdmi->ddc;
+ 	hdmi->bridge.of_node = pdev->dev.of_node;
+ 	hdmi->bridge.type = DRM_MODE_CONNECTOR_HDMIA;
++	hdmi->bridge.vendor = "Synopsys";
++	hdmi->bridge.product = "DW HDMI TX";
++	hdmi->bridge.max_bpc = max(plat_data->max_bpc, 8);
++
++	/* Encoder formats can bypass the CSC block and be output as-is */
++	hdmi->bridge.supported_formats = plat_data->supported_formats;
++
++	/* Default format expected from encoder is full range RGB */
++	if (!hdmi->bridge.supported_formats)
++		hdmi->bridge.supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_RGB444);
+ 
+ 	if (hdmi->version >= 0x200a &&
+-	    plat_data->supported_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420))
++	    hdmi->bridge.supported_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420))
+ 		hdmi->bridge.ycbcr_420_allowed = true;
+ 
+ 	memset(&pdevinfo, 0, sizeof(pdevinfo));
+-- 
+2.43.0
+

@@ -1,0 +1,63 @@
+From 8a5ce2b7f9d273de82a61626370b63a2eabaf7c9 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Thu, 3 Sep 2026 01:54:11 +0300
+Subject: [PATCH 042/213] FROMLIST(v4): drm/rockchip: vop2: Send pending event
+ when atomic_enable() fails
+
+vop2_crtc_atomic_flush() stashes the CRTC completion event in vp->event
+and relies on the frame start interrupt (VP_INT_FS_FIELD) to deliver it
+later via drm_crtc_send_vblank_event().  Since atomic_enable() runs
+before atomic_flush(), bailing on an error path makes it skip
+drm_crtc_vblank_on() and leave the video port disabled.  atomic_flush()
+still traps the event in vp->event, but since the port never scans out,
+the frame start interrupt does not fire and the event is not delivered.
+Userspace waiting for the flip completion then blocks indefinitely.
+
+Note the event cannot be flushed from atomic_disable(), as userspace
+waits for the completion before committing the next state, so the
+disable does not arrive and draining it there would deadlock.
+
+Use the newly added vp->enabled flag to detect this in atomic_flush()
+and send the event immediately when the port did not come up, rather
+than deferring it to an interrupt that will never occur.  This also
+avoids the spurious drm_crtc_vblank_get() WARN previously hit on the
+failed enable path, where the vblank is not on.
+
+Fixes: 604be85547ce ("drm/rockchip: Add VOP2 driver")
+Reported-by: Sashiko <sashiko-bot@kernel.org>
+Closes: https://lore.kernel.org/all/20260706194935.AC7601F000E9@smtp.kernel.org/
+Tested-by: Igor Paunovic <royalnet026@gmail.com>
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop2.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index 271c3cba6fb4..4bb1985b8726 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -2083,8 +2083,19 @@ static void vop2_crtc_atomic_flush(struct drm_crtc *crtc,
+ 	spin_lock_irq(&crtc->dev->event_lock);
+ 
+ 	if (crtc->state->event) {
+-		WARN_ON(drm_crtc_vblank_get(crtc));
+-		vp->event = crtc->state->event;
++		/*
++		 * A failed atomic_enable() leaves the video port disabled with
++		 * no scanout, so the frame start interrupt that normally
++		 * delivers vp->event never fires. Send the event right away in
++		 * that case to avoid stalling the flip completion.
++		 */
++		if (vp->enabled) {
++			WARN_ON(drm_crtc_vblank_get(crtc));
++			vp->event = crtc->state->event;
++		} else {
++			drm_crtc_send_vblank_event(crtc, crtc->state->event);
++		}
++
+ 		crtc->state->event = NULL;
+ 	}
+ 
+-- 
+2.43.0
+

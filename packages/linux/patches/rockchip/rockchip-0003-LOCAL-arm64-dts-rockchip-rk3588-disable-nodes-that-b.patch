@@ -1,0 +1,89 @@
+From 10676f410a797774c6c18a8eac0ee9dfc94cfeb8 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sat, 28 Feb 2026 07:33:10 +0000
+Subject: [PATCH 003/213] LOCAL: arm64: dts: rockchip: rk3588: disable nodes
+ that block sync_state()
+
+Disable secondary multi-core video codec nodes (vepu121_1/2/3 and vdec1)
+that the hantro-vpu and rkvdec drivers explicitly reject with "missing
+multi-core support, ignoring this instance". These nodes match a driver
+but probe returns -ENODEV, leaving fw_devlink consumer links unsatisfied
+and permanently blocking the power domain controller's sync_state().
+
+Also remove the hdmi_receiver status="okay" override from the Rock 5B
+board DTS since CONFIG_VIDEO_SYNOPSYS_HDMIRX is not enabled, so the
+node will never probe and similarly blocks sync_state().
+
+With CONFIG_FW_DEVLINK_SYNC_STATE_TIMEOUT unset (strict mode), these
+unprobed consumers prevent sync_state() from ever completing, keeping
+unused power domains energised indefinitely.
+
+NB: This is a hack and will be dropped in the future once multicore
+support has been enabled in the kernel.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-base.dtsi    | 5 +++++
+ arch/arm64/boot/dts/rockchip/rk3588-rock-5b.dtsi | 1 -
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+index 376ad04e0786..6a7cf465793f 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -1294,6 +1294,7 @@ rga3_core1: rga@fdb70000 {
+ 		reset-names = "core", "axi", "ahb";
+ 		power-domains = <&power RK3588_PD_RGA31>;
+ 		iommus = <&rga3_1_mmu>;
++		status = "disabled";
+ 	};
+ 
+ 	rga3_1_mmu: iommu@fdb70f00 {
+@@ -1345,6 +1346,7 @@ vepu121_1: video-codec@fdba4000 {
+ 		clock-names = "aclk", "hclk";
+ 		iommus = <&vepu121_1_mmu>;
+ 		power-domains = <&power RK3588_PD_VDPU>;
++		status = "disabled";
+ 	};
+ 
+ 	vepu121_1_mmu: iommu@fdba4800 {
+@@ -1365,6 +1367,7 @@ vepu121_2: video-codec@fdba8000 {
+ 		clock-names = "aclk", "hclk";
+ 		iommus = <&vepu121_2_mmu>;
+ 		power-domains = <&power RK3588_PD_VDPU>;
++		status = "disabled";
+ 	};
+ 
+ 	vepu121_2_mmu: iommu@fdba8800 {
+@@ -1385,6 +1388,7 @@ vepu121_3: video-codec@fdbac000 {
+ 		clock-names = "aclk", "hclk";
+ 		iommus = <&vepu121_3_mmu>;
+ 		power-domains = <&power RK3588_PD_VDPU>;
++		status = "disabled";
+ 	};
+ 
+ 	vepu121_3_mmu: iommu@fdbac800 {
+@@ -1449,6 +1453,7 @@ vdec1: video-codec@fdc40000 {
+ 			 <&cru SRST_RKVDEC1_CORE>, <&cru SRST_RKVDEC1_HEVC_CA>;
+ 		reset-names = "axi", "ahb", "cabac", "core", "hevc_cabac";
+ 		sram = <&vdec1_sram>;
++		status = "disabled";
+ 	};
+ 
+ 	vdec1_mmu: iommu@fdc40700 {
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-rock-5b.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-rock-5b.dtsi
+index e5c474e4d02a..0559be3b01b1 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-rock-5b.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-rock-5b.dtsi
+@@ -45,7 +45,6 @@ rfkill {
+ 
+ &hdmi_receiver {
+ 	hpd-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
+-	status = "okay";
+ };
+ 
+ &pinctrl {
+-- 
+2.43.0
+

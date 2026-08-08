@@ -1,0 +1,47 @@
+From 8ee5c2be34ac4085bd55bb39bb0b14932c243871 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 12 Oct 2026 14:48:16 +0000
+Subject: [PATCH 212/213] WIP: ASoC: rockchip: rockchip_sai: Keep 32-bit slots
+ when providing the clocks
+
+Since the slot width follows the sample width in non-TDM mode, a 16-bit
+stream from a clock-providing SAI uses 16-bit slots and a 32 fs frame.
+The HDMI transmitter on RK3576 accepts only 64 fs frames from SAI6, so
+16-bit audio on HDMI is silent. Kodi always sends IEC 61937 passthrough
+(AC-3, DTS, TrueHD, DTS-HD MA) as S16_LE, so passthrough is silent while
+LPCM still plays because Kodi sends it in a 32-bit container.
+
+The codec that needed the narrower slots, NAU8822, is the clock provider
+there, and the boards where the SAI provides the clocks worked with 32-bit
+slots before and after that change. Keep the 32-bit slot width when the
+SAI provides the clocks, as it did before, and follow the sample width
+only when the codec provides them.
+
+Fixes: 8a6391ec6693 ("ASoC: rockchip: rockchip_sai: Set slot width for non-TDM mode")
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ sound/soc/rockchip/rockchip_sai.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/rockchip/rockchip_sai.c b/sound/soc/rockchip/rockchip_sai.c
+index 30b5e71d0937..c303732c652d 100644
+--- a/sound/soc/rockchip/rockchip_sai.c
++++ b/sound/soc/rockchip/rockchip_sai.c
+@@ -629,9 +629,11 @@ static int rockchip_sai_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	regmap_update_bits(sai->regmap, reg, SAI_XCR_VDW_MASK | SAI_XCR_CSR_MASK, val);
+ 
+-	if (!sai->is_tdm)
++	if (!sai->is_tdm) {
++		slot_width = sai->is_master_mode ? 32 : params_physical_width(params);
+ 		regmap_update_bits(sai->regmap, reg, SAI_XCR_SBW_MASK,
+-				   SAI_XCR_SBW(params_physical_width(params)));
++				   SAI_XCR_SBW(slot_width));
++	}
+ 
+ 	regmap_read(sai->regmap, reg, &val);
+ 
+-- 
+2.43.0
+

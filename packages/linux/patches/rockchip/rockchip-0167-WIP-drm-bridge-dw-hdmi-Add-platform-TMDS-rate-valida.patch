@@ -1,0 +1,77 @@
+From 51fd6cf5b0f0e3517c3536190952821b86b3ac94 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 11 Oct 2026 15:32:25 +0000
+Subject: [PATCH 167/213] WIP: drm/bridge: dw-hdmi: Add platform TMDS rate
+ validation hook
+
+Allow DW-HDMI platform drivers to validate modes using the computed TMDS
+character rate by adding a tmds_char_rate_valid() callback to platform
+data.
+
+Use the new callback before falling back to the legacy mode_valid() hook
+so platforms can reject modes based on the actual TMDS rate, including
+cases where color depth or format affects the link rate.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+[chewitt: add a max_tmds_char_rate platform limit passed to the bridge,
+ and leave the 340/600 MHz source limits to the core]
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 6 +++++-
+ include/drm/bridge/dw_hdmi.h              | 8 ++++++--
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 300e9143733a..7a412723c748 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2606,7 +2606,10 @@ dw_hdmi_bridge_tmds_char_rate_valid(const struct drm_bridge *bridge,
+ 	struct dw_hdmi *hdmi = bridge->driver_private;
+ 	const struct dw_hdmi_plat_data *pdata = hdmi->plat_data;
+ 
+-	if (pdata->mode_valid)
++	if (pdata->tmds_char_rate_valid)
++		return pdata->tmds_char_rate_valid(hdmi, pdata->priv_data,
++						   mode, tmds_rate);
++	else if (pdata->mode_valid)
+ 		return pdata->mode_valid(hdmi, pdata->priv_data, NULL, mode);
+ 
+ 	return MODE_OK;
+@@ -3080,6 +3083,7 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
+ 			 | DRM_BRIDGE_OP_HDMI_SPD_INFOFRAME;
+ 	hdmi->bridge.supported_hdmi_ver = hdmi->version >= 0x200a && hdmi->ddc ?
+ 					  HDMI_VERSION_2_0 : HDMI_VERSION_1_4;
++	hdmi->bridge.max_tmds_char_rate = plat_data->max_tmds_char_rate;
+ 	hdmi->bridge.interlace_allowed = true;
+ 	hdmi->bridge.ddc = hdmi->ddc;
+ 	hdmi->bridge.of_node = pdev->dev.of_node;
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 7f7a18e5a055..6a1d0213e55d 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -137,10 +137,11 @@ struct dw_hdmi_plat_data {
+ 	unsigned int supported_formats;
+ 	/* Maximum bits per color channel: 8, 10, 12 or 16 */
+ 	unsigned int max_bpc;
++	unsigned long long max_tmds_char_rate;
+ 
+ 	/*
+-	 * Private data passed to all the .mode_valid() and .configure_phy()
+-	 * callback functions.
++	 * Private data passed to all the .mode_valid(), .tmds_char_rate_valid()
++	 * and .configure_phy() callback functions.
+ 	 */
+ 	void *priv_data;
+ 
+@@ -148,6 +149,9 @@ struct dw_hdmi_plat_data {
+ 	enum drm_mode_status (*mode_valid)(struct dw_hdmi *hdmi, void *data,
+ 					   const struct drm_display_info *info,
+ 					   const struct drm_display_mode *mode);
++	enum drm_mode_status (*tmds_char_rate_valid)(struct dw_hdmi *hdmi, void *data,
++						     const struct drm_display_mode *mode,
++						     unsigned long long tmds_rate);
+ 
+ 	/*
+ 	 * priv_audio is specially used for additional audio device to get
+-- 
+2.43.0
+
