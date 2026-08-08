@@ -1,0 +1,88 @@
+From 339c2232d88a21b3492bc9e60d83e20eec454f9a Mon Sep 17 00:00:00 2001
+From: Alexander Stein <alexander.stein@ew.tq-group.com>
+Date: Tue, 19 May 2026 14:42:30 +0000
+Subject: [PATCH 27/33] arm64: dts: imx8mq: Add DCSS + HDMI/DP display pipeline
+
+This adds DCSS + MHDP + MHDP PHY nodes. PHY mode (DP/HDMI) is selected
+by the connector type connected to mhdp port@1 endpoint.
+
+Signed-off-by: Alexander Stein <alexander.stein@ew.tq-group.com>
+Signed-off-by: Laurentiu Palcu <laurentiu.palcu@oss.nxp.com>
+---
+ arch/arm64/boot/dts/freescale/imx8mq.dtsi | 60 +++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq.dtsi b/arch/arm64/boot/dts/freescale/imx8mq.dtsi
+index e60872aeeb49..529846213620 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx8mq.dtsi
+@@ -1598,6 +1598,66 @@ aips4: bus@32c00000 { /* AIPS4 */
+ 			#size-cells = <1>;
+ 			ranges = <0x32c00000 0x32c00000 0x400000>;
+ 
++			mhdp: bridge@32c00000 {
++				compatible = "fsl,imx8mq-mhdp8501-hdmi";
++				reg = <0x32c00000 0x100000>;
++				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
++					     <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "plug_in", "plug_out";
++				clocks = <&clk IMX8MQ_CLK_DISP_APB_ROOT>;
++				phys = <&mhdp_phy>;
++				status = "disabled";
++
++				ports {
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					port@0 {
++						reg = <0>;
++
++						mhdp_in: endpoint {
++							remote-endpoint = <&dcss_out>;
++						};
++					};
++				};
++
++				mhdp_phy: phy {
++					compatible = "fsl,imx8mq-hdptx-phy";
++					#phy-cells = <0>;
++					clocks = <&hdmi_phy_27m>, <&clk IMX8MQ_CLK_DISP_APB_ROOT>;
++					clock-names = "ref", "apb";
++				};
++			};
++
++			dcss: display-controller@32e00000 {
++				compatible = "nxp,imx8mq-dcss";
++				reg = <0x32e00000 0x2d000>, <0x32e2f000 0x1000>;
++				interrupt-parent = <&irqsteer>;
++				interrupts = <6>, <8>, <9>;
++				interrupt-names = "ctxld", "ctxld_kick", "vblank";
++				clocks = <&clk IMX8MQ_CLK_DISP_APB_ROOT>,
++					 <&clk IMX8MQ_CLK_DISP_AXI_ROOT>,
++					 <&clk IMX8MQ_CLK_DISP_RTRM_ROOT>,
++					 <&clk IMX8MQ_VIDEO2_PLL_OUT>,
++					 <&clk IMX8MQ_CLK_DISP_DTRC>;
++				clock-names = "apb", "axi", "rtrm", "pix", "dtrc";
++				assigned-clocks = <&clk IMX8MQ_CLK_DISP_AXI>,
++						  <&clk IMX8MQ_CLK_DISP_RTRM>,
++						  <&clk IMX8MQ_VIDEO2_PLL1_REF_SEL>;
++				assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_800M>,
++							 <&clk IMX8MQ_SYS1_PLL_800M>,
++							 <&clk IMX8MQ_CLK_27M>;
++				assigned-clock-rates = <800000000>,
++						       <400000000>;
++				status = "disabled";
++
++				port {
++					dcss_out: endpoint {
++						remote-endpoint = <&mhdp_in>;
++					};
++				};
++			};
++
+ 			irqsteer: interrupt-controller@32e2d000 {
+ 				compatible = "fsl,imx8m-irqsteer", "fsl,imx-irqsteer";
+ 				reg = <0x32e2d000 0x1000>;
+-- 
+2.53.0
+

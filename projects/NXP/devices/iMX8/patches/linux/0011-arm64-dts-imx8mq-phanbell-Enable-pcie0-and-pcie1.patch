@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Wed, 5 Aug 2026 12:00:00 +1000
+Subject: [PATCH] arm64: dts: imx8mq-phanbell: Enable pcie0 and pcie1
+
+pcie0 carries an Atheros QCA6174 and pcie1 a Google Edge TPU. They take
+their reference clocks from opposite places, which is most of the work
+here.
+
+pcie0 uses the SoC's internal PLL and drives the 100 MHz reference out to
+the endpoint on CLK2_P/N. That output is the pllout_monitor_clk2 gate, so
+the node names it as pcie_bus to hold a reference on it, and points the
+monitor mux and divider at sys_pll1_out_monitor to produce the rate.
+
+pcie1 takes an off-chip oscillator on the pad, named as its extref clock.
+
+WL_REG_ON enables the QCA6174, so it is described as a fixed regulator and
+consumed as pcie0's vpcie-supply. It is marked always-on because the
+Bluetooth half of that combo part sits on uart2 and needs the same enable
+without any reference to this controller.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index af4b9d266451..6619314d23d3 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -55,6 +55,22 @@ fan: gpio-fan {
+ 		status = "okay";
+ 	};
+ 
++	pcie1_refclk: pcie1-refclk {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <100000000>;
++	};
++
++	reg_wlan: regulator-wlan {
++		compatible = "regulator-fixed";
++		regulator-name = "WL_REG_ON";
++		gpio = <&gpio3 11 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_wlan_en>;
++	};
++
+ 	sound-analog {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,name = "Coral Analog";
+@@ -353,6 +369,64 @@ ethphy0: ethernet-phy@0 {
+ 	};
+ };
+ 
++&pcie0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pcie0>;
++	/* This property is deprecated, use reset-gpios from the Root Port node. */
++	reset-gpio = <&gpio3 10 GPIO_ACTIVE_LOW>;
++	/*
++	 * pcie0 takes REF_CLK from the internal PLL, so the SoC drives the
++	 * 100 MHz reference out to the endpoint itself on CLK2_P/N. That output
++	 * is the pllout_monitor_clk2 gate, so name it as pcie_bus to hold a
++	 * reference and keep clk_disable_unused() from switching the endpoint's
++	 * clock off.
++	 */
++	clocks = <&clk IMX8MQ_CLK_PCIE1_ROOT>,
++		 <&clk IMX8MQ_CLK_MON_CLK2_OUT>,
++		 <&clk IMX8MQ_CLK_PCIE1_PHY>,
++		 <&clk IMX8MQ_CLK_PCIE1_AUX>;
++	/*
++	 * The first three entries repeat what imx8mq.dtsi already assigns for
++	 * this controller, because setting the property here replaces it rather
++	 * than adding to it. The last two point the monitor mux at
++	 * sys_pll1_out_monitor and divide it down to the 100 MHz the endpoint
++	 * needs; the divider takes a rate but no parent, so only four parents
++	 * are listed.
++	 */
++	assigned-clocks = <&clk IMX8MQ_CLK_PCIE1_CTRL>,
++			  <&clk IMX8MQ_CLK_PCIE1_PHY>,
++			  <&clk IMX8MQ_CLK_PCIE1_AUX>,
++			  <&clk IMX8MQ_CLK_MON_SEL>,
++			  <&clk IMX8MQ_CLK_MON_SYS_PLL1_DIV>;
++	assigned-clock-parents = <&clk IMX8MQ_SYS2_PLL_250M>,
++				 <&clk IMX8MQ_SYS2_PLL_100M>,
++				 <&clk IMX8MQ_SYS1_PLL_80M>,
++				 <&clk IMX8MQ_CLK_MON_SYS_PLL1_DIV>;
++	assigned-clock-rates = <250000000>, <100000000>, <10000000>,
++			       <0>, <100000000>;
++	fsl,max-link-speed = <1>;
++	vpcie-supply = <&reg_wlan>;
++	vph-supply = <&ldo7>;
++	supports-clkreq;
++	status = "okay";
++};
++
++&pcie1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pcie1>;
++	/* This property is deprecated, use reset-gpios from the Root Port node. */
++	reset-gpio = <&gpio3 18 GPIO_ACTIVE_LOW>;
++	clocks = <&clk IMX8MQ_CLK_PCIE2_ROOT>,
++		 <&pcie1_refclk>,
++		 <&clk IMX8MQ_CLK_PCIE2_PHY>,
++		 <&clk IMX8MQ_CLK_PCIE2_AUX>,
++		 <&pcie1_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
++	vph-supply = <&ldo7>;
++	supports-clkreq;
++	status = "okay";
++};
++
+ &sai2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_sai2>;
+@@ -489,6 +563,20 @@ MX8MQ_IOMUXC_I2C3_SDA_I2C3_SDA			0x4000007f
+ 		>;
+ 	};
+ 
++	pinctrl_pcie0: pcie0grp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_I2C4_SCL_PCIE1_CLKREQ_B		0x76
++			MX8MQ_IOMUXC_NAND_DATA04_GPIO3_IO10		0x16
++		>;
++	};
++
++	pinctrl_pcie1: pcie1grp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_I2C4_SDA_PCIE2_CLKREQ_B		0x76
++			MX8MQ_IOMUXC_NAND_WP_B_GPIO3_IO18		0x19
++		>;
++	};
++
+ 	pinctrl_pmic: pmicirqgrp {
+ 		fsl,pins = <
+ 			MX8MQ_IOMUXC_GPIO1_IO03_GPIO1_IO3	0x41
+@@ -611,4 +699,10 @@ pinctrl_wdog: wdoggrp {
+ 			MX8MQ_IOMUXC_GPIO1_IO02_WDOG1_WDOG_B 0xc6
+ 		>;
+ 	};
++
++	pinctrl_wlan_en: wlanengrp {
++		fsl,pins = <
++			MX8MQ_IOMUXC_NAND_DATA05_GPIO3_IO11		0x16
++		>;
++	};
+ };
+-- 
+2.47.1
+

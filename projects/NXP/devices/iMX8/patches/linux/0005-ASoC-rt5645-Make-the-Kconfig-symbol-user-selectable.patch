@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 2 Aug 2026 22:49:43 +1000
+Subject: [PATCH] ASoC: rt5645: Make the Kconfig symbol user selectable
+
+SND_SOC_RT5645 has no prompt, so it can only be turned on by a machine
+driver that selects it. Every such driver is x86, MediaTek or Rockchip,
+which leaves the codec unreachable on any other platform.
+
+The part has a devicetree binding of its own,
+Documentation/devicetree/bindings/sound/realtek,rt5645.yaml, and nothing
+in the driver is machine specific, so a board that describes it with
+simple-audio-card or audio-graph-card should be able to build it. Today
+there is no configuration in which that is possible.
+
+Give the symbol a prompt, matching SND_SOC_RT5640 immediately above it.
+The machine drivers that select it are unaffected.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ sound/soc/codecs/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 252f683..d43475a 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -1856,7 +1856,7 @@ config SND_SOC_RT5640
+ 	depends on I2C
+ 
+ config SND_SOC_RT5645
+-	tristate
++	tristate "Realtek RT5645/RT5650 Codec"
+ 	depends on I2C
+ 
+ config SND_SOC_RT5651
+-- 
+2.47.1
+

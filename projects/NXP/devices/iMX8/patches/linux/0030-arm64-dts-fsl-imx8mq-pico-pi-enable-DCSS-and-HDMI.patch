@@ -1,16 +1,16 @@
-From 6b9309988072e3b5b7b3900a1254507316eb72cf Mon Sep 17 00:00:00 2001
+From 1a0f89bb302597d91eee86c953cdfa5b65832dcf Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Tue, 9 Mar 2021 10:47:27 -0800
-Subject: [PATCH 2/4] arm64: dts: fsl: imx8mq-pico-pi: enable DCSS and HDMI
+Subject: [PATCH 30/33] arm64: dts: fsl: imx8mq-pico-pi: enable DCSS and HDMI
 
 Adapted for [PATCH v16] Initial support Cadence MHDP8501(HDMI/DP) for i.MX8MQ
 Adapted for [PATCH v19] Initial support Cadence MHDP8501(HDMI/DP) for i.MX8MQ
 ---
- .../boot/dts/freescale/imx8mq-pico-pi.dts     | 31 +++++++++++++++++++
- 1 file changed, 31 insertions(+)
+ .../boot/dts/freescale/imx8mq-pico-pi.dts     | 37 +++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/freescale/imx8mq-pico-pi.dts b/arch/arm64/boot/dts/freescale/imx8mq-pico-pi.dts
-index 89cbec5c41b2..5e2b1a84a85e 100644
+index ec89b5adeb93..75c4ac83f24e 100644
 --- a/arch/arm64/boot/dts/freescale/imx8mq-pico-pi.dts
 +++ b/arch/arm64/boot/dts/freescale/imx8mq-pico-pi.dts
 @@ -54,6 +54,43 @@ ethphy0: ethernet-phy@1 {
@@ -58,5 +58,5 @@ index 89cbec5c41b2..5e2b1a84a85e 100644
  
  &i2c1 {
 -- 
-2.43.0
+2.53.0
 

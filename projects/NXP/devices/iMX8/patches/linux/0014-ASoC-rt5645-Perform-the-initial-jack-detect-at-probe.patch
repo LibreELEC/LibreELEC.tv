@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Thu, 6 Aug 2026 10:00:00 +1000
+Subject: [PATCH] ASoC: rt5645: Perform the initial jack detect at probe
+
+The only initial jack detect is the rt5645_irq(0, rt5645) at the end of
+rt5645_set_jack_detect(). A card described with simple-audio-card has no
+machine driver to call that, so jack state is only ever sampled from an
+edge on hp-detect-gpios.
+
+A headphone already in the socket at boot is therefore never noticed, and
+the card is silent with every mixer control set correctly.
+rt5645_jack_detect() is what force enables the "LDO2" and "Mic Det Power"
+supplies that the "HP amp" widget depends on, and what programs
+RT5645_CHARGE_PUMP away from its reset value, so without it "HP amp"
+cannot power up. Unplugging and replugging the jack is the only way to
+recover.
+
+Do the detect at the end of the component probe when the driver owns a
+hp-detect GPIO and the codec's own jack detect is unused, which is the
+case that has no other trigger. A machine driver calling
+rt5645_set_jack_detect() later just repeats it.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ sound/soc/codecs/rt5645.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/sound/soc/codecs/rt5645.c b/sound/soc/codecs/rt5645.c
+index e9819653b30d..e7e39671a576 100644
+--- a/sound/soc/codecs/rt5645.c
++++ b/sound/soc/codecs/rt5645.c
+@@ -3496,6 +3496,10 @@ static int rt5645_probe(struct snd_soc_component *component)
+ 	if (!rt5645->eq_param)
+ 		return -ENOMEM;
+ 
++	/* no machine driver to call rt5645_set_jack_detect(), so detect here */
++	if (!rt5645->pdata.jd_mode && rt5645->gpiod_hp_det)
++		rt5645_irq(0, rt5645);
++
+ 	return 0;
+ }
+ 
+-- 
+2.47.1
+

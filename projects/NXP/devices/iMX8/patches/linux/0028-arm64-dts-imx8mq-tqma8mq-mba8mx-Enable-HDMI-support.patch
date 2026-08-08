@@ -1,0 +1,89 @@
+From ebba49d816de45ee589625e33cc4bc07fd9799bb Mon Sep 17 00:00:00 2001
+From: Alexander Stein <alexander.stein@ew.tq-group.com>
+Date: Tue, 19 May 2026 14:42:31 +0000
+Subject: [PATCH 28/33] arm64: dts: imx8mq: tqma8mq-mba8mx: Enable HDMI support
+
+Add HDMI connector and connect it to MHDP output. Enable peripherals
+for HDMI output.
+
+Signed-off-by: Alexander Stein <alexander.stein@ew.tq-group.com>
+Signed-off-by: Laurentiu Palcu <laurentiu.palcu@oss.nxp.com>
+---
+ .../dts/freescale/imx8mq-tqma8mq-mba8mx.dts   | 28 +++++++++++++++++++
+ arch/arm64/boot/dts/freescale/mba8mx.dtsi     |  7 +++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts b/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts
+index 761c43db3026..b4bcc1987146 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts
+@@ -53,6 +53,10 @@ &btn2 {
+ 	gpios = <&gpio3 17 GPIO_ACTIVE_LOW>;
+ };
+ 
++&dcss {
++	status = "okay";
++};
++
+ &gpio_leds {
+ 	led3 {
+ 		label = "led3";
+@@ -60,6 +64,16 @@ led3 {
+ 	};
+ };
+ 
++&hdmi_connector {
++	status = "okay";
++
++	port {
++		hdmi_connector_in: endpoint {
++			remote-endpoint = <&mhdp_out>;
++		};
++	};
++};
++
+ &i2c1 {
+ 	expander2: gpio@25 {
+ 		compatible = "nxp,pca9555";
+@@ -91,6 +105,20 @@ &led2 {
+ 	gpios = <&gpio3 16 GPIO_ACTIVE_HIGH>;
+ };
+ 
++&mhdp {
++	status = "okay";
++	ports {
++		port@1 {
++			reg = <1>;
++
++			mhdp_out: endpoint {
++				remote-endpoint = <&hdmi_connector_in>;
++				data-lanes = <0 1 2 3>;
++			};
++		};
++	};
++};
++
+ /* PCIe slot on X36 */
+ &pcie0 {
+ 	reset-gpio = <&expander0 14 GPIO_ACTIVE_LOW>;
+diff --git a/arch/arm64/boot/dts/freescale/mba8mx.dtsi b/arch/arm64/boot/dts/freescale/mba8mx.dtsi
+index c24ae953cbc2..a723547dd71d 100644
+--- a/arch/arm64/boot/dts/freescale/mba8mx.dtsi
++++ b/arch/arm64/boot/dts/freescale/mba8mx.dtsi
+@@ -89,6 +89,13 @@ gpio_delays: gpio-delays {
+ 		gpio-line-names = "LVDS_BRIDGE_EN_1V8";
+ 	};
+ 
++	hdmi_connector: connector {
++		compatible = "hdmi-connector";
++		label = "X11";
++		type = "a";
++		status = "disabled";
++	};
++
+ 	panel: panel-lvds {
+ 		/*
+ 		 * Display is not fixed, so compatible has to be added from
+-- 
+2.53.0
+
