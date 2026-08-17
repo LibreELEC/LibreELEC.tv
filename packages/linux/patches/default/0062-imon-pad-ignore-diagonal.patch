@@ -13,7 +13,7 @@ diff --git a/drivers/media/rc/imon.c b/drivers/media/rc/imon.c
 index 9bb27ba824..7d8f5b1d17 100644
 --- a/drivers/media/rc/imon.c
 +++ b/drivers/media/rc/imon.c
-@@ -1433,6 +1433,17 @@ static void imon_pad_to_keys(struct imon_context *ictx, unsigned char *buf)
+@@ -1437,6 +1437,17 @@ static void imon_pad_to_keys(struct imon_context *ictx, unsigned char *buf)
  				scancode = be32_to_cpu(*((__be32 *)buf));
  			}
  		} else {
