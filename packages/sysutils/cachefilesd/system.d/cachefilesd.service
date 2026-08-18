@@ -1,0 +1,12 @@
+[Unit]
+Description=Local network file caching management daemon
+After=userconfig.service
+ConditionPathExists=/storage/.config/cachefilesd.conf
+ConditionPathIsDirectory=/storage/.cache/fscache
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/cachefilesd -n -f /storage/.config/cachefilesd.conf
+
+[Install]
+WantedBy=multi-user.target
