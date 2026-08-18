@@ -2,7 +2,6 @@
 Description=Local network file caching management daemon
 After=userconfig.service
 ConditionPathExists=/storage/.config/cachefilesd.conf
-ConditionPathIsDirectory=/storage/.cache/fscache
 
 [Service]
 Type=simple
