@@ -1,0 +1,19 @@
+# determines TARGET_CPU, if not forced by user
+  if [ -z "$TARGET_CPU" ]; then
+    TARGET_CPU=riscv64
+  fi
+
+# TARGET_CPU:
+# riscv64
+
+# determine architecture's family
+  TARGET_SUBARCH=riscv64
+  TARGET_VARIANT=rv64gc
+
+  TARGET_GCC_ARCH=${TARGET_SUBARCH/-}
+  TARGET_KERNEL_ARCH=riscv
+
+# setup ARCH specific *FLAGS
+  TARGET_CFLAGS="-march=${TARGET_VARIANT} -mabi=lp64d"
+  TARGET_LDFLAGS=""
+  TARGET_ARCH_GCC_OPTS="--with-arch=${TARGET_VARIANT} --with-abi=lp64d"
