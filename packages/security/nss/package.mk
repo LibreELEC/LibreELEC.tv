@@ -49,7 +49,7 @@ make_target() {
   cd ${PKG_BUILD}/nss
 
   local TARGET_USE_64=""
-  [ "${TARGET_ARCH}" = "x86_64" -o "${TARGET_ARCH}" = "aarch64" ] && TARGET_USE_64="USE_64=1"
+  [ "${TARGET_ARCH}" = "x86_64" -o "${TARGET_ARCH}" = "aarch64" -o "${TARGET_ARCH}" = "riscv64" ] && TARGET_USE_64="USE_64=1"
 
   local TARGET_x86_64=""
   [ "${TARGET_ARCH}" != "x86_64" ] && TARGET_x86_64="NSS_DISABLE_AVX2=1"

@@ -28,7 +28,16 @@ pre_configure_target() {
       GPGERROR_TUPLE=x86_64-unknown-linux-gnu
       GPGERROR_TARGET=linux-gnu
       ;;
+    riscv64)
+      GPGERROR_TUPLE=aarch64-unknown-linux-gnu
+      GPGERROR_TARGET=linux-gnu
+      ;;
   esac
+
+  if [ ! -f "${PKG_BUILD}/src/syscfg/lock-obj-pub.${GPGERROR_TUPLE}.h" ]; then
+    cp ${PKG_BUILD}/src/syscfg/lock-obj-pub.aarch64-unknown-linux-gnu.h ${PKG_BUILD}/src/syscfg/lock-obj-pub.${GPGERROR_TUPLE}.h 2>/dev/null || \
+    cp ${PKG_BUILD}/src/syscfg/lock-obj-pub.linux-gnu.h ${PKG_BUILD}/src/syscfg/lock-obj-pub.${GPGERROR_TUPLE}.h
+  fi
 
   cp ${PKG_BUILD}/src/syscfg/lock-obj-pub.${GPGERROR_TUPLE}.h ${PKG_BUILD}/src/syscfg/lock-obj-pub.${GPGERROR_TARGET}.h
 }
