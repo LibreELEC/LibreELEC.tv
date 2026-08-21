@@ -1,0 +1,528 @@
+Build the GS renderer for OpenGL ES 3.2, so this core can run on a GBM
+image that has no desktop GL -- LibreELEC's default Generic device.
+Enabled with -DHAVE_GLES=ON; the desktop path is untouched without it.
+See the upstream commit message for the full reasoning.
+
+diff --git a/cmake/BuildParameters.cmake b/cmake/BuildParameters.cmake
+index e6423898c..83cb7c6a9 100644
+--- a/cmake/BuildParameters.cmake
++++ b/cmake/BuildParameters.cmake
+@@ -59,6 +59,11 @@ option(CMAKE_BUILD_STRIP "Srip binaries to save a couple of MB (developer option
+ #-------------------------------------------------------------------------------
+ option(DISABLE_ADVANCE_SIMD "Disable advance use of SIMD (SSE2+ & AVX)" OFF)
+ 
++# Build the GS renderer for OpenGL ES 3.2 rather than desktop OpenGL 3.3 core.
++# Needed for targets that have no desktop GL at all -- a GBM/EGL image built
++# with OPENGLES only, which is what LibreELEC's default Generic device is.
++option(HAVE_GLES "Target OpenGL ES instead of desktop OpenGL" OFF)
++
+ # Print if we are cross compiling.
+ if(CMAKE_CROSSCOMPILING)
+     message(STATUS "Cross compilation is enabled.")
+diff --git a/cmake/SearchForStuff.cmake b/cmake/SearchForStuff.cmake
+index 14533ba60..5206743b7 100644
+--- a/cmake/SearchForStuff.cmake
++++ b/cmake/SearchForStuff.cmake
+@@ -14,17 +14,36 @@ find_package(LibLZMA)
+ # Using find_package OpenGL without either setting your opengl preference to GLVND or LEGACY
+ # is deprecated as of cmake 3.11.
+ set(OpenGL_GL_PREFERENCE GLVND)
+-find_package(OpenGL)
+-
+-# No GLX on a GBM/EGL target, which is the only thing FindOpenGL was missing.
+-# libOpenGL exports the same entry points, so link that directly.
+-if(NOT OPENGL_FOUND)
+-    find_library(OPENGL_opengl_LIBRARY NAMES OpenGL)
+-    if(OPENGL_opengl_LIBRARY)
+-        set(OPENGL_FOUND TRUE)
+-        set(OPENGL_LIBRARIES ${OPENGL_opengl_LIBRARY})
+-        set(OPENGL_INCLUDE_DIR "")
+-        message(STATUS "Using ${OPENGL_opengl_LIBRARY} directly: no GLX on this target")
++if(HAVE_GLES)
++    # OpenGL ES target. The GS renderer still builds against the desktop
++    # <GL/gl.h> and <GL/glext.h> for its enums and PFNGL* typedefs -- 274 of the
++    # 292 entry points it uses are resolved through the libretro hardware-render
++    # get_proc_address at runtime, so the headers are there for declarations
++    # only. What does need a library are the GL 1.x calls the header declares as
++    # ordinary functions, and libGLESv2 provides every one of those that this
++    # renderer calls.
++    find_library(GLES_v2_LIBRARY NAMES GLESv2)
++    if(NOT GLES_v2_LIBRARY)
++        message(FATAL_ERROR "HAVE_GLES is set but libGLESv2 was not found")
++    endif()
++    set(OPENGL_FOUND TRUE)
++    set(OPENGL_LIBRARIES ${GLES_v2_LIBRARY})
++    set(OPENGL_INCLUDE_DIR "")
++    add_definitions(-DHAVE_GLES=1)
++    message(STATUS "Building the GS renderer against OpenGL ES: ${GLES_v2_LIBRARY}")
++else()
++    find_package(OpenGL)
++
++    # No GLX on a GBM/EGL target, which is the only thing FindOpenGL was missing.
++    # libOpenGL exports the same entry points, so link that directly.
++    if(NOT OPENGL_FOUND)
++        find_library(OPENGL_opengl_LIBRARY NAMES OpenGL)
++        if(OPENGL_opengl_LIBRARY)
++            set(OPENGL_FOUND TRUE)
++            set(OPENGL_LIBRARIES ${OPENGL_opengl_LIBRARY})
++            set(OPENGL_INCLUDE_DIR "")
++            message(STATUS "Using ${OPENGL_opengl_LIBRARY} directly: no GLX on this target")
++        endif()
+     endif()
+ endif()
+ 
+diff --git a/libretro/main.cpp b/libretro/main.cpp
+index 89699a2a0..ed2ff5149 100644
+--- a/libretro/main.cpp
++++ b/libretro/main.cpp
+@@ -595,11 +595,18 @@ static bool set_hw_render(retro_hw_context_type type)
+ 			break;
+ 
+ 		case RETRO_HW_CONTEXT_OPENGLES3:
++#ifndef HAVE_GLES
++			// On a desktop-GL build, prefer real GL and only fall back to ES.
++			// A GLES build must not do that: it has no desktop GL to fall back
++			// to, and a frontend that accepted the request would hand it a
++			// context the renderer cannot speak.
+ 			if (set_hw_render(RETRO_HW_CONTEXT_OPENGL))
+ 				return true;
+-
++#endif
++			// The GS renderer needs geometry shaders, texture buffers and
++			// image load/store, which is ES 3.2, not 3.0.
+ 			hw_render.version_major = 3;
+-			hw_render.version_minor = 0;
++			hw_render.version_minor = 2;
+ 			break;
+ 
+ 		case RETRO_HW_CONTEXT_NONE:
+@@ -867,7 +874,11 @@ bool retro_load_game(const struct retro_game_info* game)
+ 			option_value(INT_PCSX2_OPT_GAMEPAD_RUMBLE_FORCE, KeyOptionInt::return_type)
+ 			);
+ 
++#ifdef HAVE_GLES
++	retro_hw_context_type context_type = RETRO_HW_CONTEXT_OPENGLES3;
++#else
+ 	retro_hw_context_type context_type = RETRO_HW_CONTEXT_OPENGL;
++#endif
+ 	const char* option_renderer = option_value(STRING_PCSX2_OPT_RENDERER, KeyOptionString::return_type);
+ 	log_cb(RETRO_LOG_INFO, "Renderer option set to: %s\n", option_renderer);
+ 
+@@ -878,8 +889,13 @@ bool retro_load_game(const struct retro_game_info* game)
+ 		if (context_type != RETRO_HW_CONTEXT_NONE && set_hw_render(context_type))
+ 			return true;
+ 
++#ifdef HAVE_GLES
++		context_type = RETRO_HW_CONTEXT_OPENGLES3;
++		log_cb(RETRO_LOG_INFO, "The video driver found is not compatible, switched to OpenGL ES.\n");
++#else
+ 		context_type = RETRO_HW_CONTEXT_OPENGL;
+ 		log_cb(RETRO_LOG_INFO, "The video driver found is not compatible, switched to OpenGL.\n");
++#endif
+ 	}
+ #ifdef _WIN32
+ 	else if (!std::strcmp(option_renderer, "D3D11"))
+diff --git a/pcsx2/GS/GS.cpp b/pcsx2/GS/GS.cpp
+index def8b6915..32e96e618 100644
+--- a/pcsx2/GS/GS.cpp
++++ b/pcsx2/GS/GS.cpp
+@@ -384,7 +384,25 @@ GL_EXT_LOAD_OPT(glTextureBarrier);
+ #ifdef __unix__
+ 			GL_EXT_LOAD(glBlendFuncSeparate);
+ #endif
+-			// Check OpenGL requirements as soon as 
++#ifdef HAVE_GLES
++			// A few of these arrive on ES through an extension rather than as
++			// core, and an extension spells its entry points with the vendor
++			// suffix. The unsuffixed names loaded above come back null there,
++			// so retry with the ES spelling. Everything else this renderer
++			// uses is core in ES 3.2 and keeps the unsuffixed name.
++#define GL_EXT_LOAD_ES(ext, name)                                              \
++			if (!(ext))                                                        \
++				*(void**)&(ext) = (void*)hw_render.get_proc_address(name)
++
++			GL_EXT_LOAD_ES(glBufferStorage,   "glBufferStorageEXT");
++			GL_EXT_LOAD_ES(glClipControl,     "glClipControlEXT");
++			GL_EXT_LOAD_ES(glTextureBarrier,  "glTextureBarrierNV");
++			GL_EXT_LOAD_ES(glClearTexImage,   "glClearTexImageEXT");
++			GL_EXT_LOAD_ES(glClearTexSubImage, "glClearTexSubImageEXT");
++			GL_EXT_LOAD_ES(glCopyImageSubData, "glCopyImageSubDataEXT");
++#undef GL_EXT_LOAD_ES
++#endif
++			// Check OpenGL requirements as soon as
+ 			// possible so we can switch to another
+ 			// renderer/device
+ 			if (!(GLLoader::check_gl_requirements()))
+diff --git a/pcsx2/GS/Renderers/OpenGL/GLLoader.cpp b/pcsx2/GS/Renderers/OpenGL/GLLoader.cpp
+index ca4a884b1..cb02e825a 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GLLoader.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GLLoader.cpp
+@@ -67,7 +67,8 @@ namespace ReplaceGL
+ 
+ }
+ 
+-#ifdef _WIN32
++// Was Windows-only, for Intel iGPUs missing GL_ARB_direct_state_access. OpenGL
++// ES has no DSA at all, so every target that lacks it now shares this path.
+ namespace Emulate_DSA
+ {
+ 	// Texture entry point
+@@ -95,10 +96,17 @@ namespace Emulate_DSA
+ 		glCopyTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, x, y, width, height);
+ 	}
+ 
++#ifndef HAVE_GLES
++	// glGetTexImage does not exist on OpenGL ES; a readback there has to go
++	// through an FBO and glReadPixels. Nothing in the renderer calls this --
++	// it is here only to complete the DSA table -- so rather than write a
++	// readback path with no caller, leave the pointer alone on ES and let the
++	// link fail loudly if one ever appears.
+ 	void APIENTRY GetTexureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void *pixels) {
+ 		BindTextureUnit(7, texture);
+ 		glGetTexImage(GL_TEXTURE_2D, level, format, type, pixels);
+ 	}
++#endif
+ 
+ 	void APIENTRY TextureParameteri (GLuint texture, GLenum pname, GLint param) {
+ 		BindTextureUnit(7, texture);
+@@ -129,14 +137,18 @@ namespace Emulate_DSA
+ 		glTextureStorage2D            = TextureStorage;
+ 		glTextureSubImage2D           = TextureSubImage;
+ 		glCopyTextureSubImage2D       = CopyTextureSubImage;
++#ifndef HAVE_GLES
+ 		glGetTextureImage             = GetTexureImage;
++#endif
+ 		glTextureParameteri           = TextureParameteri;
++		// Defined above but never wired up, so a DSA-less target called through
++		// a null pointer the moment a texture wanted mipmaps.
++		glGenerateTextureMipmap       = GenerateTextureMipmap;
+ 
+ 		glCreateProgramPipelines      = CreateProgramPipelines;
+ 		glCreateSamplers              = CreateSamplers;
+ 	}
+ }
+-#endif
+ 
+ namespace GLLoader {
+ 	bool amd_legacy_buggy_driver                   = false;
+@@ -167,9 +179,68 @@ namespace GLLoader {
+ 	bool found_GL_ARB_gpu_shader5                  = false; /* Require Ivy Bridge */
+ 	bool found_GL_ARB_shader_image_load_store      = false; /* Intel IB. Nvidia/AMD miss Mesa implementation. */
+ 
++#ifdef HAVE_GLES
++	/* Every ARB extension this renderer asks for by name, and how the same
++	 * functionality is spelled on OpenGL ES. Nothing here is reimplemented --
++	 * the entry points come from get_proc_address either way, and the enum
++	 * values are shared. Only the names the driver advertises differ.
++	 *
++	 * An empty alternatives list means the feature is core in ES 3.2, which is
++	 * the context this build asks for, so the check is simply satisfied. */
++	struct gles_alias
++	{
++		const char* arb;
++		const char* alternatives[3];
++	};
++
++	static const gles_alias gles_aliases[] = {
++		{"GL_ARB_separate_shader_objects",   {"GL_EXT_separate_shader_objects", nullptr, nullptr}},
++		{"GL_ARB_shading_language_420pack",  {nullptr, nullptr, nullptr}},
++		{"GL_ARB_texture_storage",           {"GL_EXT_texture_storage", nullptr, nullptr}},
++		{"GL_ARB_buffer_storage",            {"GL_EXT_buffer_storage", nullptr, nullptr}},
++		{"GL_ARB_copy_image",                {"GL_EXT_copy_image", "GL_OES_copy_image", nullptr}},
++		{"GL_ARB_clip_control",              {"GL_EXT_clip_control", nullptr, nullptr}},
++		{"GL_ARB_gpu_shader5",               {"GL_EXT_gpu_shader5", "GL_OES_gpu_shader5", nullptr}},
++		{"GL_ARB_shader_image_load_store",   {nullptr, nullptr, nullptr}},
++		{"GL_ARB_clear_texture",             {"GL_EXT_clear_texture", nullptr, nullptr}},
++		{"GL_ARB_texture_barrier",           {"GL_NV_texture_barrier", nullptr, nullptr}},
++		{"GL_ARB_viewport_array",            {"GL_OES_viewport_array", nullptr, nullptr}},
++		{"GL_ARB_texture_buffer_object",     {"GL_EXT_texture_buffer", "GL_OES_texture_buffer", nullptr}},
++	};
++
++	/* No GLES equivalent exists for direct state access, so it is deliberately
++	 * absent from the table above: the lookup fails, and Emulate_DSA takes
++	 * over. */
++	static bool has_extension(const std::string& ext)
++	{
++		if (GLExtension::Has(ext))
++			return true;
++
++		for (const gles_alias& alias : gles_aliases)
++		{
++			if (ext != alias.arb)
++				continue;
++
++			bool core_in_es32 = true;
++			for (const char* alt : alias.alternatives)
++			{
++				if (!alt)
++					continue;
++				core_in_es32 = false;
++				if (GLExtension::Has(alt))
++					return true;
++			}
++			return core_in_es32;
++		}
++		return false;
++	}
++#else
++	static bool has_extension(const std::string& ext) { return GLExtension::Has(ext); }
++#endif
++
+ 	static bool mandatory(const std::string& ext)
+ 	{
+-		bool found = GLExtension::Has(ext);
++		bool found = has_extension(ext);
+ 		if (!found) /* TODO/FIXME - return error */
+ 			log_cb(RETRO_LOG_ERROR, "ERROR: %s is NOT SUPPORTED\n", ext.c_str());
+ 		return found;
+@@ -177,7 +248,7 @@ namespace GLLoader {
+ 
+ 	static bool optional(const std::string& name)
+ 	{
+-		bool found = GLExtension::Has(name);
++		bool found = has_extension(name);
+ 		if (!found)
+ 			log_cb(RETRO_LOG_WARN, "INFO: %s is NOT SUPPORTED\n", name.c_str());
+ 		return found;
+@@ -236,8 +307,9 @@ namespace GLLoader {
+ 		return true;
+ 	}
+ 
+-	void check_gl_supported_extension(void)
++	bool check_gl_supported_extension(void)
+ 	{
++		bool ok = true;
+ 		GLint i;
+ 		int max_ext = 0;
+ 		glGetIntegerv(GL_NUM_EXTENSIONS, &max_ext);
+@@ -258,22 +330,29 @@ namespace GLLoader {
+ 			/* OpenGL 4.3 */
+ 			mandatory("GL_KHR_debug");
+ 			/* OpenGL 4.4 */
+-			found_GL_ARB_buffer_storage = mandatory("GL_ARB_buffer_storage");
++			found_GL_ARB_buffer_storage = mandatory("GL_ARB_buffer_storage") && glBufferStorage != nullptr;
+ 		}
+ 
+ 
+ 		// Only for HW renderer
+ 		if (GetCurrentRendererType() == GSRendererType::OGL_HW)
+ 		{
+-			mandatory("GL_ARB_copy_image");
+-			mandatory("GL_ARB_clip_control");
++			// Both are called unconditionally further in, so a missing one is
++			// a jump through a null pointer rather than a degraded picture.
++			// Report it and let the caller refuse the renderer.
++			if (!mandatory("GL_ARB_copy_image") || !glCopyImageSubData)
++				ok = false;
++			if (!mandatory("GL_ARB_clip_control") || !glClipControl)
++				ok = false;
+ 		}
+ 
+ #ifdef HAVE_GLES
+ 		/* OpenGL ES */
+ 		{
+-			// Alternative for GL_ARB_buffer_storage 
+-			found_GL_EXT_buffer_storage               = optional("GL_EXT_buffer_storage");
++			// Alternative for GL_ARB_buffer_storage. Its entry point is
++			// glBufferStorageEXT, loaded into the same pointer in GS.cpp, so
++			// the pointer is what decides whether it is usable.
++			found_GL_EXT_buffer_storage               = optional("GL_EXT_buffer_storage") && glBufferStorage != nullptr;
+ 		}
+ #endif
+ 
+@@ -284,7 +363,7 @@ namespace GLLoader {
+ 			/* OpenGL 4.2 */
+ 			found_GL_ARB_shader_image_load_store      = optional("GL_ARB_shader_image_load_store");
+ 			/* OpenGL 4.4 */
+-			found_GL_ARB_clear_texture                = optional("GL_ARB_clear_texture");
++			found_GL_ARB_clear_texture                = optional("GL_ARB_clear_texture") && glClearTexImage != nullptr;
+ 			/* OpenGL 4.5 */
+ 			optional("GL_ARB_direct_state_access");
+ 
+@@ -293,32 +372,46 @@ namespace GLLoader {
+ 			optional("GL_ARB_texture_barrier");
+ 		}
+ 
+-		if (!GLExtension::Has("GL_ARB_viewport_array"))
++		if (!has_extension("GL_ARB_viewport_array"))
+ 		{
+ 			glScissorIndexed   = ReplaceGL::ScissorIndexed;
+ 			glViewportIndexedf = ReplaceGL::ViewportIndexedf;
+ 			log_cb(RETRO_LOG_WARN, "GL_ARB_viewport_array is not supported! Function pointer will be replaced\n");
+ 		}
+ 
+-		if (!GLExtension::Has("GL_ARB_texture_barrier"))
++		// The pointer is checked as well as the extension string: on ES the
++		// barrier arrives via GL_NV_texture_barrier, whose entry point is
++		// glTextureBarrierNV, so the string can be advertised while the
++		// unsuffixed pointer is still null. Calling through it would be a jump
++		// to zero rather than a missing feature.
++		if (!has_extension("GL_ARB_texture_barrier") || !glTextureBarrier)
+ 		{
+ 			glTextureBarrier = ReplaceGL::TextureBarrier;
+ 			log_cb(RETRO_LOG_WARN, "GL_ARB_texture_barrier is not supported! Blending emulation will not be supported\n");
+ 		}
+ 
+-#ifdef _WIN32
+ 		// Thank you Intel for not providing support of basic features on your iGPUs.
+-		if (!GLExtension::Has("GL_ARB_direct_state_access"))
++		// OpenGL ES has no direct state access at all, so this is the normal
++		// path there rather than a workaround for one vendor.
++		if (!has_extension("GL_ARB_direct_state_access"))
+ 			Emulate_DSA::Init();
+-#endif
++
++		return ok;
+ 	}
+ 
+ 	bool check_gl_requirements(void)
+ 	{
++		// ES tops out at 3.2, and 3.2 is where geometry shaders, texture
++		// buffers and image load/store all became core -- everything this
++		// renderer needs beyond ES 3.0.
++#ifdef HAVE_GLES
++		if (!check_gl_version(3, 2))
++			return false;
++#else
+ 		if (!check_gl_version(3, 3))
+ 			return false;
++#endif
+ 
+-		check_gl_supported_extension();
+-		return true;
++		return check_gl_supported_extension();
+ 	}
+ }
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
+index 3b9bb0956..39df56b60 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSDeviceOGL.cpp
+@@ -635,7 +635,11 @@ static const char tfx_fs_glsl_shader_raw[] =
+ "// 2/ do the full depth (current depth writes are disabled)\n"
+ "// 3/ restore the depth buffer for 2nd pass\n"
+ "// Of course, it is likely too costly.\n"
+-"#if PS_DATE == 1 || PS_DATE == 2\n"
++"// PS_ZCLAMP writes gl_FragDepth further down, and ESSL rejects a depth write\n"
++"// under early_fragment_tests outright. Desktop drivers quietly turn early-Z\n"
++"// off in that case, so excluding it here costs nothing and is the same\n"
++"// behaviour either way.\n"
++"#if (PS_DATE == 1 || PS_DATE == 2) && !PS_ZCLAMP\n"
+ "layout(early_fragment_tests) in;\n"
+ "#endif\n"
+ "\n"
+@@ -678,7 +682,7 @@ static const char tfx_fs_glsl_shader_raw[] =
+ "\n"
+ "    return textureLod(TextureSampler, uv, lod);\n"
+ "#else\n"
+-"    return textureLod(TextureSampler, uv, 0); // No lod\n"
++"    return textureLod(TextureSampler, uv, 0.0); // No lod\n"
+ "#endif\n"
+ "\n"
+ "#endif\n"
+@@ -1182,7 +1186,7 @@ static const char tfx_fs_glsl_shader_raw[] =
+ "    #if PS_DITHER == 2\n"
+ "    ivec2 fpos = ivec2(gl_FragCoord.xy);\n"
+ "    #else\n"
+-"    ivec2 fpos = ivec2(gl_FragCoord.xy / ScalingFactor.x);\n"
++"    ivec2 fpos = ivec2(gl_FragCoord.xy / float(ScalingFactor.x));\n"
+ "    #endif\n"
+ "    C.rgb += DitherMatrix[fpos.y&3][fpos.x&3];\n"
+ "#endif\n"
+@@ -1590,7 +1594,7 @@ static const char tfx_vgs_glsl_shader_raw[] =
+ "    // Potentially there is faster math\n"
+ "    vec2 line_vector = normalize(rt_p.xy - lt_p.xy);\n"
+ "    vec2 line_normal = vec2(line_vector.y, -line_vector.x);\n"
+-"    vec2 line_width  = (line_normal * PointSize) / 2;\n"
++"    vec2 line_width  = (line_normal * PointSize) / 2.0;\n"
+ "\n"
+ "    lt_p.xy -= line_width;\n"
+ "    rt_p.xy -= line_width;\n"
+@@ -1928,10 +1932,19 @@ bool GSDeviceOGL::Create()
+ 	// rasterization configuration
+ 	// ****************************************************************
+ 	{
++#ifndef HAVE_GLES
++		// OpenGL ES has no glPolygonMode and no extension for it. GL_FILL is
++		// the only mode it rasterises, so asking for it there is asking for
++		// the state ES is already in.
+ 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
++#endif
+ 		glDisable(GL_CULL_FACE);
+ 		glEnable(GL_SCISSOR_TEST);
++#ifndef HAVE_GLES
++		// GL_MULTISAMPLE is likewise desktop-only; ES multisamples per the
++		// framebuffer's own configuration.
+ 		glDisable(GL_MULTISAMPLE);
++#endif
+ 		glDisable(GL_DITHER); // Honestly I don't know!
+ 	}
+ 
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp
+index 091eecf6f..4b67f8a8d 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp
+@@ -247,6 +247,44 @@ void GSShaderOGL::BindPipeline(GLuint pipe)
+ std::string GSShaderOGL::GenGlslHeader(const std::string& entry, GLenum type, const std::string& macro)
+ {
+ 	std::string header;
++#ifdef HAVE_GLES
++	// ESSL 3.20 has as core what the desktop header asks for by extension:
++	// layout binding qualifiers (420pack), separate shader objects, and image
++	// load/store. It has no defaults for precision, though, and every sampler
++	// and image type used anywhere in these shaders needs one declared or the
++	// compiler stops at the declaration.
++	header = "#version 320 es\n";
++
++	// #extension has to precede every non-preprocessor token, so it goes ahead
++	// of the precision declarations below rather than next to the stage
++	// defines. Both of these are things desktop GLSL 330 simply has:
++	//
++	//  - the fragment shader uses layout(index = 1) for dual-source blending,
++	//    which ESSL puts behind EXT_blend_func_extended;
++	//  - gl_PointSize is not a member of gl_PerVertex on ES unless
++	//    EXT_geometry_point_size says so, and the common header redeclares the
++	//    block with it in, so the geometry shader is rejected without this.
++	//
++	// Both are silent failures otherwise: nothing here checks
++	// GL_COMPILE_STATUS, so a rejected shader just renders white.
++	if (type == GL_FRAGMENT_SHADER)
++		header += "#extension GL_EXT_blend_func_extended : require\n";
++	if (type == GL_GEOMETRY_SHADER)
++		header += "#extension GL_EXT_geometry_point_size : require\n";
++
++	header += "precision highp float;\n";
++	header += "precision highp int;\n";
++	header += "precision highp sampler2D;\n";
++	header += "precision highp sampler2DArray;\n";
++	header += "precision highp isampler2D;\n";
++	header += "precision highp usampler2D;\n";
++	header += "precision highp samplerBuffer;\n";
++	header += "precision highp image2D;\n";
++	header += "precision highp iimage2D;\n";
++	header += "precision highp uimage2D;\n";
++	if (!GLLoader::found_GL_ARB_shader_image_load_store)
++		header += "#define DISABLE_GL42_image\n";
++#else
+ 	header = "#version 330 core\n";
+ 	// Need GL version 420
+ 	header += "#extension GL_ARB_shading_language_420pack: require\n";
+@@ -258,6 +296,7 @@ std::string GSShaderOGL::GenGlslHeader(const std::string& entry, GLenum type, co
+ 	} else {
+ 		header += "#define DISABLE_GL42_image\n";
+ 	}
++#endif
+ 	if (GLLoader::vendor_id_amd || GLLoader::vendor_id_intel)
+ 		header += "#define BROKEN_DRIVER as_usual\n";
+ 
+@@ -265,7 +304,11 @@ std::string GSShaderOGL::GenGlslHeader(const std::string& entry, GLenum type, co
+ 	// AMD/nvidia define it to 0
+ 	// intel window don't define it
+ 	// intel linux refuse to define it
++#ifdef HAVE_GLES
++	header += "#define pGL_ES 1\n";
++#else
+ 	header += "#define pGL_ES 0\n";
++#endif
+ 
+ 	// Allow to puts several shader in 1 files
+ 	switch (type) {
