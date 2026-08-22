@@ -36,6 +36,13 @@ case "${LINUX}" in
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="default rockchip"
     ;;
+  mediatek)
+    PKG_VERSION="00b5f937ab02ee6def025787c8fb07c6ef544ab2" # 6.19-rc4 + Collabora + Armbian patches
+    PKG_SHA256="bc4ff021a917fc7bf0dc845817d3a8cefe50416d7d00e5d4fd6906e9a3ae2483"
+    PKG_URL="https://github.com/rpardini/linux/archive/${PKG_VERSION}.tar.gz"
+    PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
+    PKG_PATCH_DIRS="default" # soon to be added: mediatek
+    ;;
   *)
     PKG_VERSION="7.1.2"
     PKG_SHA256="37198c93727be247c9fb5309bb86cd5e496c61e5322cd8c4eca9476bb0b5883f"
