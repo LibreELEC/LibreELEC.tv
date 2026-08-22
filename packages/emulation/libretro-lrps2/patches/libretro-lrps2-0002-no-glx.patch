@@ -1,0 +1,37 @@
+CMake's FindOpenGL will not report OpenGL as found under the GLVND preference
+unless it locates both libOpenGL and libGLX. A GBM image has no GLX at all --
+the sysroot carries libOpenGL.so and libGLdispatch.so and nothing else -- so
+the configure step ends at "Could NOT find OpenGL (missing: OPENGL_glx_LIBRARY)"
+and the GS renderer is linked without any GL library.
+
+The core needs GL entry points, not GLX. Most of them -- 274 of the 292 it uses
+-- come from the libretro hardware-render get_proc_address at runtime and need
+nothing at link time. The remaining 18 are the GL 1.x calls <GL/gl.h> declares
+as ordinary functions (glEnable, glClear, glDrawArrays, glReadPixels and the
+like), and those do have to resolve against a library. So when FindOpenGL fails
+but libOpenGL is present, use it.
+
+diff --git a/cmake/SearchForStuff.cmake b/cmake/SearchForStuff.cmake
+index da6eba91e..14533ba60 100644
+--- a/cmake/SearchForStuff.cmake
++++ b/cmake/SearchForStuff.cmake
+@@ -15,6 +15,19 @@ find_package(LibLZMA)
+ # is deprecated as of cmake 3.11.
+ set(OpenGL_GL_PREFERENCE GLVND)
+ find_package(OpenGL)
++
++# No GLX on a GBM/EGL target, which is the only thing FindOpenGL was missing.
++# libOpenGL exports the same entry points, so link that directly.
++if(NOT OPENGL_FOUND)
++    find_library(OPENGL_opengl_LIBRARY NAMES OpenGL)
++    if(OPENGL_opengl_LIBRARY)
++        set(OPENGL_FOUND TRUE)
++        set(OPENGL_LIBRARIES ${OPENGL_opengl_LIBRARY})
++        set(OPENGL_INCLUDE_DIR "")
++        message(STATUS "Using ${OPENGL_opengl_LIBRARY} directly: no GLX on this target")
++    endif()
++endif()
++
+ find_package(PNG)
+ set(wxWidgets_FOUND 1)
+ set(wxWidgets_USE_FILE 3rdparty/wxwidgets3.0/UsewxWidgets.cmake)

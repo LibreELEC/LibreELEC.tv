@@ -1,0 +1,30 @@
+Two headers this 2020-vintage tree got transitively and no longer does: gcc 13
+stopped pulling <string> in through <mutex>, and <system_error> in through
+<thread>. Without them the build stops at "field 'm_filename' has incomplete
+type 'std::string'" and "'system_error' in namespace 'std' does not name a
+type", both in the physical-drive CDVD reader.
+
+diff --git a/pcsx2/CDVD/CDVDdiscReader.h b/pcsx2/CDVD/CDVDdiscReader.h
+index ecc0e29f9..71ea4c732 100644
+--- a/pcsx2/CDVD/CDVDdiscReader.h
++++ b/pcsx2/CDVD/CDVDdiscReader.h
+@@ -23,6 +23,7 @@
+ #endif
+ 
+ #include <mutex>
++#include <string>
+ #include <array>
+ #include <memory> /* for unique_ptr */
+ #include <vector>
+diff --git a/pcsx2/CDVD/CDVDdiscThread.cpp b/pcsx2/CDVD/CDVDdiscThread.cpp
+index 3619b8205..296891125 100644
+--- a/pcsx2/CDVD/CDVDdiscThread.cpp
++++ b/pcsx2/CDVD/CDVDdiscThread.cpp
+@@ -21,6 +21,7 @@
+ #include <limits>
+ #include <queue>
+ #include <cstring> /* memcpy */
++#include <system_error>
+ #include <thread>
+ 
+ const u32 sectors_per_read = 16;

@@ -1,0 +1,36 @@
+Only libaio.a is installed, and its objects carry .symver directives, so every
+libaio symbol in the archive is versioned. Linking that archive into a shared
+object fails with
+
+  ld.gold: error: symbol io_getevents has undefined version LIBAIO_0.4
+
+because the version node those symbols name only exists in the shared libaio
+that is never built here. Any package that links libaio into a .so hits this --
+libretro-lrps2 is the first.
+
+Symbol versioning has no meaning inside a static archive: it exists so that a
+shared library can keep old callers working, and there are none to keep. So
+emit a plain global alias for the current entry points and drop the 0.1 compat
+aliases entirely. Consumers that link an executable (mariadb, samba, stress-ng)
+are unaffected -- they resolve the same unversioned names.
+
+diff --git a/src/syscall.h b/src/syscall.h
+--- a/src/syscall.h
++++ b/src/syscall.h
+@@ -5,11 +5,13 @@
+ #define _SYMSTR(str)	#str
+ #define SYMSTR(str)	_SYMSTR(str)
+ 
+-#define SYMVER(compat_sym, orig_sym, ver_sym)	\
+-	__asm__(".symver " SYMSTR(compat_sym) "," SYMSTR(orig_sym) "@LIBAIO_" SYMSTR(ver_sym));
++/* Static-only build: a versioned symbol in an archive names a version node
++ * that no shared object here defines, and the link fails as soon as the
++ * archive is pulled into a .so. Alias instead of versioning. */
++#define SYMVER(compat_sym, orig_sym, ver_sym)
+ 
+ #define DEFSYMVER(compat_sym, orig_sym, ver_sym)	\
+-	__asm__(".symver " SYMSTR(compat_sym) "," SYMSTR(orig_sym) "@@LIBAIO_" SYMSTR(ver_sym));
++	__asm__(".globl " SYMSTR(orig_sym) "\n\t.set " SYMSTR(orig_sym) "," SYMSTR(compat_sym));
+ 
+ #if defined(__i386__)
+ #include "syscall-i386.h"
