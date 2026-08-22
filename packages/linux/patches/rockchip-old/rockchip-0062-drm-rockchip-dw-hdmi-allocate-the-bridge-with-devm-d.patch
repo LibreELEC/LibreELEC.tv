@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 22 Aug 2026 22:15:00 +1000
+Subject: [PATCH] drm/rockchip: dw-hdmi: allocate the bridge with
+ devm_drm_bridge_alloc
+
+WIP/1000 "drm/rockchip: dw-hdmi: add bridge and switch to
+drm_bridge_funcs" embeds a struct drm_bridge in struct rockchip_hdmi and
+sets bridge.funcs by hand, but the container is still obtained with
+devm_kzalloc(). Bridges are reference counted now and have to come from
+devm_drm_bridge_alloc(), which is what sets ->container and takes the
+first reference.
+
+Because neither is initialised, every boot logs:
+
+  [drm] DRM bridge corrupted or not allocated by devm_drm_bridge_alloc()
+  refcount_t: addition on 0; use-after-free.
+  WARNING: lib/refcount.c:25 at refcount_warn_saturate
+   drm_bridge_attach
+   dw_hdmi_rockchip_bind
+
+and then, when the first bind defers and unwinds, the matching:
+
+  refcount_t: underflow; use-after-free.
+  WARNING: lib/refcount.c:28 at refcount_warn_saturate
+   drm_bridge_put
+   drm_bridge_detach
+   drm_encoder_cleanup
+
+Allocate the container with devm_drm_bridge_alloc() and drop the manual
+funcs assignment, which the allocator now does.
+
+Tested on a Radxa ROCK Pi N10 (rk3399pro): the three warnings are gone.
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -750,9 +750,10 @@
+ 	if (!np)
+ 		return -ENODEV;
+ 
+-	hdmi = devm_kzalloc(&pdev->dev, sizeof(*hdmi), GFP_KERNEL);
+-	if (!hdmi)
+-		return -ENOMEM;
++	hdmi = devm_drm_bridge_alloc(&pdev->dev, struct rockchip_hdmi, bridge,
++					     &dw_hdmi_rockchip_bridge_funcs);
++	if (IS_ERR(hdmi))
++		return PTR_ERR(hdmi);
+ 
+ 	match = of_match_node(dw_hdmi_rockchip_dt_ids, np);
+ 	plat_data = devm_kmemdup(&pdev->dev, match->data,
+@@ -816,7 +817,6 @@
+ 		goto err_disable_clk;
+ 	}
+ 
+-	hdmi->bridge.funcs = &dw_hdmi_rockchip_bridge_funcs;
+ 	drm_bridge_attach(encoder, &hdmi->bridge, NULL, 0);
+ 
+ 	platform_set_drvdata(pdev, hdmi);
+-- 
+2.53.0
