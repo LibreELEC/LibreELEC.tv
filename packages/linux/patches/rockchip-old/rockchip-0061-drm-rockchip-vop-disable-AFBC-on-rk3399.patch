@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 22 Aug 2026 21:30:00 +1000
+Subject: [PATCH] drm/rockchip: vop: disable AFBC on rk3399
+
+Kodi is unusable on rk3399 because the vop advertises AFBC on win0.
+
+Two independent failures follow from it. The AFBC decoder is programmed
+with hreg_block_split hardcoded to 0, and without SPLIT mode it cannot
+sustain a 3840 wide scanout, so a 4K desktop is displayed as a black
+screen. Nothing rejects it: vop_plane_atomic_check() validates the AFBC
+format, the source offset and the rotation, but not the width, so the
+atomic commit succeeds and the picture is simply lost.
+
+Separately, win0 is the only plane that can scan out AFBC and its zpos
+is fixed at 0. A compositor that needs a gui layer above a video layer
+therefore has to place the gui on win1, which is linear only, so no
+valid plane pair exists and hardware video playback cannot be set up at
+all. On Kodi this ends in "Cannot find a Video Plane ... together with a
+Gui Plane ...", a fallback to a GLES path that does not accept
+drm_prime, and no video.
+
+Both disappear when the gui buffer is linear. Stop advertising the
+modifier until SPLIT mode is implemented and the plane pairing has a
+solution.
+
+Tested on a Radxa ROCK Pi N10 (rk3399pro) with a 4K display: the desktop
+is displayed and hardware decoded video plays.
+---
+ drivers/gpu/drm/rockchip/rockchip_vop_reg.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+@@ -78,7 +78,13 @@
+ };
+ 
+ static const uint64_t format_modifiers_win_full_afbc[] = {
+-	ROCKCHIP_AFBC_MOD,
++	/*
++	 * AFBC is disabled: the decoder is driven without SPLIT mode
++	 * (hreg_block_split is hardcoded to 0), which cannot sustain a
++	 * 4K scanout, and win0 is the only AFBC capable plane while its
++	 * zpos is fixed at 0, so a compositor needing an overlay above
++	 * the video layer can never pair it with a second plane.
++	 */
+ 	DRM_FORMAT_MOD_LINEAR,
+ 	DRM_FORMAT_MOD_INVALID,
+ };
+-- 
+2.53.0
