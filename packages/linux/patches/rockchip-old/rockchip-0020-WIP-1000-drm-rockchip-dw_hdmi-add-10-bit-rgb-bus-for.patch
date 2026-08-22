@@ -56,7 +56,7 @@ index a50218412fb0..8134add505e0 100644
  				     struct drm_connector_state *conn_state)
  {
  	struct rockchip_crtc_state *s = to_rockchip_crtc_state(crtc_state);
-+	struct drm_atomic_state *state = bridge_state->base.state;
++	struct drm_atomic_commit *state = bridge_state->base.state;
 +	struct drm_crtc_state *old_crtc_state;
 +	struct rockchip_crtc_state *old_state;
 +	u32 format = bridge_state->output_bus_cfg.format;

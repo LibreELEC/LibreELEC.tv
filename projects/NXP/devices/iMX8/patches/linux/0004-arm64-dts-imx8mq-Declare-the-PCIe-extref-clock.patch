@@ -1,0 +1,148 @@
+From 0196c618465490603b7b1f438bf231bd48a24de0 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 2 Aug 2026 15:00:04 +1000
+Subject: [PATCH] arm64: dts: imx8mq: Declare the PCIe extref clock
+
+Boards feeding PCIe REF_CLK from an off-chip oscillator described it as
+the "pcie_bus" clock, which the driver never looks up by name and which
+therefore selects nothing. The oscillator was used only because the
+driver forced IMX8MQ_GPR_PCIE_REF_USE_PAD unconditionally.
+
+Now that the selection follows the "extref" clock, name the oscillator
+explicitly on every board that depends on it so the behaviour is
+unchanged. The "pcie_bus" entries are left alone.
+
+Endpoint nodes are not touched: they are all disabled and use a separate
+binding.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ arch/arm64/boot/dts/freescale/imx8mq-evk.dts              | 8 ++++++--
+ .../boot/dts/freescale/imx8mq-kontron-pitx-imx8m.dts      | 8 ++++++--
+ arch/arm64/boot/dts/freescale/imx8mq-mnt-reform2.dts      | 4 +++-
+ arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts   | 8 ++++++--
+ arch/arm64/boot/dts/freescale/imx8mq-zii-ultra.dtsi       | 8 ++++++--
+ 5 files changed, 27 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-evk.dts b/arch/arm64/boot/dts/freescale/imx8mq-evk.dts
+index e7d87ea..3dc0047 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-evk.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-evk.dts
+@@ -374,7 +374,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE1_ROOT>,
+ 		 <&pcie0_refclk>,
+ 		 <&clk IMX8MQ_CLK_PCIE1_PHY>,
+-		 <&clk IMX8MQ_CLK_PCIE1_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE1_AUX>,
++		 <&pcie0_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	vph-supply = <&vgen5_reg>;
+ 	supports-clkreq;
+ 	status = "okay";
+@@ -402,7 +404,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE2_ROOT>,
+ 		 <&pcie0_refclk>,
+ 		 <&clk IMX8MQ_CLK_PCIE2_PHY>,
+-		 <&clk IMX8MQ_CLK_PCIE2_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE2_AUX>,
++		 <&pcie0_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	vpcie-supply = <&reg_pcie1>;
+ 	vpcie3v3aux-supply = <&reg_pcie1>;
+ 	vph-supply = <&vgen5_reg>;
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-kontron-pitx-imx8m.dts b/arch/arm64/boot/dts/freescale/imx8mq-kontron-pitx-imx8m.dts
+index d8cf1f2..8cf6a64 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-kontron-pitx-imx8m.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-kontron-pitx-imx8m.dts
+@@ -247,7 +247,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE1_ROOT>,
+ 		 <&pcie0_refclk>,
+ 		 <&clk IMX8MQ_CLK_PCIE1_PHY>,
+-		 <&clk IMX8MQ_CLK_PCIE1_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE1_AUX>,
++		 <&pcie0_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	status = "okay";
+ };
+ 
+@@ -256,7 +258,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE2_ROOT>,
+ 		 <&pcie1_refclk>,
+ 		 <&clk IMX8MQ_CLK_PCIE2_PHY>,
+-		 <&clk IMX8MQ_CLK_PCIE2_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE2_AUX>,
++		 <&pcie1_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	fsl,max-link-speed = <1>;
+ 	status = "okay";
+ };
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-mnt-reform2.dts b/arch/arm64/boot/dts/freescale/imx8mq-mnt-reform2.dts
+index 3ae3824..bf931d2 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-mnt-reform2.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-mnt-reform2.dts
+@@ -199,7 +199,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE2_ROOT>,
+ 		 <&pcie1_refclk>,
+ 		 <&clk IMX8MQ_CLK_PCIE2_PHY>,
+-		 <&clk IMX8MQ_CLK_PCIE2_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE2_AUX>,
++		 <&pcie1_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	status = "okay";
+ };
+ 
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts b/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts
+index 0165f3a..761c43d 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-tqma8mq-mba8mx.dts
+@@ -97,7 +97,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE1_ROOT>,
+ 		 <&pcieclk 3>,
+ 		 <&pcieclk 2>,
+-		 <&clk IMX8MQ_CLK_PCIE1_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE1_AUX>,
++		 <&pcieclk 3>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	status = "okay";
+ };
+ 
+@@ -109,7 +111,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE2_ROOT>,
+ 		 <&pcieclk 1>,
+ 		 <&pcieclk 0>,
+-		 <&clk IMX8MQ_CLK_PCIE2_AUX>;
++		 <&clk IMX8MQ_CLK_PCIE2_AUX>,
++		 <&pcieclk 1>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	status = "okay";
+ };
+ 
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-zii-ultra.dtsi b/arch/arm64/boot/dts/freescale/imx8mq-zii-ultra.dtsi
+index c7bbba4..31db96a 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-zii-ultra.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx8mq-zii-ultra.dtsi
+@@ -551,7 +551,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE1_ROOT>,
+ 	         <&pcie0_refclk>,
+ 	         <&clk IMX8MQ_CLK_PCIE1_PHY>,
+-	         <&clk IMX8MQ_CLK_PCIE1_AUX>;
++	         <&clk IMX8MQ_CLK_PCIE1_AUX>,
++	         <&pcie0_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	vph-supply = <&vgen5_reg>;
+ 	status = "okay";
+ };
+@@ -563,7 +565,9 @@
+ 	clocks = <&clk IMX8MQ_CLK_PCIE2_ROOT>,
+ 	         <&pcie1_refclk>,
+ 	         <&clk IMX8MQ_CLK_PCIE2_PHY>,
+-	         <&clk IMX8MQ_CLK_PCIE2_AUX>;
++	         <&clk IMX8MQ_CLK_PCIE2_AUX>,
++	         <&pcie1_refclk>;
++	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_aux", "extref";
+ 	vph-supply = <&vgen5_reg>;
+ 	status = "okay";
+ };
+-- 
+2.47.1
+

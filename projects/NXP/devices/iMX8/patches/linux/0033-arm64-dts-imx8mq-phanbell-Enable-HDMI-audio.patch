@@ -1,0 +1,120 @@
+From 93d4bb7fccfe256b635174f99d72729e5245ffa1 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Mon, 3 Aug 2026 14:37:04 +1000
+Subject: [PATCH 33/33] arm64: dts: imx8mq-phanbell: Enable HDMI audio
+
+sai4 is wired to the HDMI transmitter inside the SoC, so it needs no
+pinmux, only a root clock. Point a simple-audio-card at it and at the
+hdmi-codec the MHDP8501 bridge now registers.
+
+dtsi. The codec is a platform device with no devicetree node of its
+own, but the ASoC core falls back to the parent's node when matching a
+sound-dai phandle, and the parent is the bridge.
+
+The root clock is the same 24.576 MHz from AUDIO_PLL1 that sai2 uses
+for the analog card, which covers the 48 kHz family.
+
+Declare both audio PLL families. fsl_sai only moves its mclk between the
+8 kHz and 11.025 kHz families if the node names them as pll8k and pll11k,
+which fsl_asoc_reparent_pll_clocks() then selects between by requested
+rate. Without them the mclk is stuck at whatever assigned-clock-rates set
+while 44100 is still on the advertised rate list, so ALSA is offered a rate
+the clock cannot produce, does not resample, and hw_params fails:
+44100 * 2 * 32 = 2.8224 MHz, and 24.576 MHz divided by that is 8.707.
+
+The card needs mclk-fs for that to be reached at all: the reparent
+happens in fsl_sai_set_dai_sysclk(), and simple-audio-card only calls
+set_sysclk when a ratio is given.
+
+The cpu dai also needs system-clock-direction-out. Without it
+simple_util_parse_clk() leaves clk_direction at 0, which is
+SND_SOC_CLOCK_IN, and fsl_sai_set_dai_sysclk() opens with
+"if (dir == SND_SOC_CLOCK_IN) return 0". So set_sysclk returns without
+setting the mclk rate and without ever reaching the reparent, silently and
+at every rate.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ .../boot/dts/freescale/imx8mq-phanbell.dts    | 46 +++++++++++++++++++
+ arch/arm64/boot/dts/freescale/imx8mq.dtsi     |  1 +
+ 2 files changed, 47 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+index e273a7e51467..19cbf5715fdd 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mq-phanbell.dts
+@@ -131,6 +131,33 @@ simple-audio-card,codec {
+ 		};
+ 	};
+ 
++	sound-hdmi {
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "Coral HDMI";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,bitclock-master = <&sound_hdmi_cpu>;
++		simple-audio-card,frame-master = <&sound_hdmi_cpu>;
++		simple-audio-card,mclk-fs = <256>;
++
++		/*
++		 * 32 bit slots regardless of the sample width. sai4 divides its
++		 * 24.576 MHz root by an even integer only, and 24 bit samples
++		 * would ask it for 48000 * 2 * 24 = 2.304 MHz, a ratio of 10.67.
++		 * 32 bit slots give 3.072 MHz, a ratio of 8, and match the
++		 * transmission width the bridge programs.
++		 */
++		sound_hdmi_cpu: simple-audio-card,cpu {
++			sound-dai = <&sai4>;
++			system-clock-direction-out;
++			dai-tdm-slot-num = <2>;
++			dai-tdm-slot-width = <32>;
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&mhdp>;
++		};
++	};
++
+ 	hdmi_connector: connector {
+ 		compatible = "hdmi-connector";
+ 		label = "X11";
+@@ -530,6 +557,25 @@ &sai2 {
+ 	status = "okay";
+ };
+ 
++/* sai4 is wired to the HDMI transmitter inside the SoC, so it has no pinmux */
++&sai4 {
++	/*
++	 * pll8k and pll11k let fsl_sai move the mclk between the two
++	 * audio PLL families, so 44.1 kHz rates work as well as 48 kHz.
++	 */
++	clocks = <&clk IMX8MQ_CLK_SAI4_IPG>,
++		 <&clk IMX8MQ_CLK_SAI4_ROOT>,
++		 <&clk IMX8MQ_CLK_DUMMY>, <&clk IMX8MQ_CLK_DUMMY>,
++		 <&clk IMX8MQ_AUDIO_PLL1_OUT>,
++		 <&clk IMX8MQ_AUDIO_PLL2_OUT>;
++	clock-names = "bus", "mclk1", "mclk2", "mclk3",
++		      "pll8k", "pll11k";
++	assigned-clocks = <&clk IMX8MQ_CLK_SAI4>;
++	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
++	assigned-clock-rates = <24576000>;
++	status = "okay";
++};
++
+ &uart1 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1>;
+diff --git a/arch/arm64/boot/dts/freescale/imx8mq.dtsi b/arch/arm64/boot/dts/freescale/imx8mq.dtsi
+index 529846213620..34a7c92af01c 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mq.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx8mq.dtsi
+@@ -1606,6 +1606,7 @@ mhdp: bridge@32c00000 {
+ 				interrupt-names = "plug_in", "plug_out";
+ 				clocks = <&clk IMX8MQ_CLK_DISP_APB_ROOT>;
+ 				phys = <&mhdp_phy>;
++				#sound-dai-cells = <0>;
+ 				status = "disabled";
+ 
+ 				ports {
+-- 
+2.53.0
+

@@ -1,0 +1,50 @@
+From 651fbf295d6bc8724f6f080ed475768370b00544 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 2 Aug 2026 14:58:57 +1000
+Subject: [PATCH] dt-bindings: pci: fsl,imx6q-pcie: Add extref clock for
+ i.MX8MQ
+
+i.MX8MQ can drive PCIe REF_CLK either from the internal PLL or from an
+off-chip oscillator. Allow an optional fifth "extref" clock to describe
+the latter, matching the name already used for i.MX95.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.yaml | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.yaml b/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.yaml
+index e8b8131..8fb0c91 100644
+--- a/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.yaml
++++ b/Documentation/devicetree/bindings/pci/fsl,imx6q-pcie.yaml
+@@ -46,7 +46,8 @@ properties:
+       - description: PCIe PHY clock.
+       - description: Additional required clock entry for imx6sx-pcie,
+            imx6sx-pcie-ep, imx8mq-pcie, imx8mq-pcie-ep.
+-      - description: PCIe internal reference clock.
++      - description: PCIe internal reference clock for imx95-pcie, or the
++          external reference clock for imx8mq-pcie.
+       - description: PCIe additional external reference clock.
+ 
+   clock-names:
+@@ -173,13 +174,16 @@ allOf:
+     then:
+       properties:
+         clocks:
+-          maxItems: 4
++          minItems: 4
++          maxItems: 5
+         clock-names:
++          minItems: 4
+           items:
+             - const: pcie
+             - const: pcie_bus
+             - const: pcie_phy
+             - const: pcie_aux
++            - const: extref  # Optional
+ 
+   - if:
+       properties:
+-- 
+2.47.1
+

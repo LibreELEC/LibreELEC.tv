@@ -1,0 +1,36 @@
+From 35feb45cc9666d2976906a2914e8e703edb72586 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 2 Aug 2026 15:59:59 +1000
+Subject: [PATCH] PCI: imx6: Avoid dereferencing a NULL clock name
+
+of_clk_bulk_get() leaves clk_bulk_data::id as NULL for every clock that
+has no matching entry in "clock-names", which is legal: a node may list
+more "clocks" phandles than it names. The extref scan dereferences that
+id unconditionally, so such a node oopses during probe.
+
+Check clk_bulk_data::id before dereferencing it.
+
+Fixes: d8574ce57d76 ("PCI: imx6: Add external reference clock input mode support")
+Cc: stable@vger.kernel.org
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ drivers/pci/controller/dwc/pci-imx6.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pci/controller/dwc/pci-imx6.c b/drivers/pci/controller/dwc/pci-imx6.c
+index 98e1db7..9a9efc2 100644
+--- a/drivers/pci/controller/dwc/pci-imx6.c
++++ b/drivers/pci/controller/dwc/pci-imx6.c
+@@ -1831,7 +1831,8 @@ static int imx_pcie_probe(struct platform_device *pdev)
+ 		return dev_err_probe(dev, imx_pcie->num_clks,
+ 				     "failed to get clocks\n");
+ 	for (i = 0; i < imx_pcie->num_clks; i++)
+-		if (strncmp(imx_pcie->clks[i].id, "extref", 6) == 0)
++		if (imx_pcie->clks[i].id &&
++		    strncmp(imx_pcie->clks[i].id, "extref", 6) == 0)
+ 			imx_pcie->enable_ext_refclk = true;
+ 
+ 	if (imx_check_flag(imx_pcie, IMX_PCIE_FLAG_HAS_PHYDRV)) {
+-- 
+2.47.1
+

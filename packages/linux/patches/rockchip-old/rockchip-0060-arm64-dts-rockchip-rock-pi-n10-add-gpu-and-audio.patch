@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 22 Aug 2026 17:50:00 +1000
+Subject: [PATCH] arm64: dts: rockchip: rock-pi-n10: add gpu and audio
+
+The upstream Radxa ROCK Pi N10 board file is a bare stub, so the Mali
+GPU, both i2s controllers and the es8316 codec are all left disabled and
+the board comes up with no GL and no audio at all.
+
+The A72 cluster is also left without a cpu-supply, because vdd_cpu_b is
+a tcs4526 on i2c0 that no in-tree file describes, so the big cores
+cannot scale.
+
+Describe both tcs4526 regulators, give the A72 cores and the GPU their
+supplies, and wire the two sound cards the vendor kernel provides:
+i2s0 to the es8316 on i2c4 for analog, and i2s2 to hdmi_sound.
+
+Values are taken from the vendor 4.4 BSP device tree read off the
+hardware. The regulators are tcs4526 (chip id 0) and not tcs4525 -
+see 5eee5eced95f ("regulator: fan53555: add tcs4526"), which was
+itself tested on this board.
+
+Note tcs,tcs4526 is accepted by the fan53555 driver but is not yet
+listed in fcs,fan53555.yaml, so dtbs_check will flag it until the
+binding is updated.
+--- 
+ arch/arm64/boot/dts/rockchip/rk3399pro-rock-pi-n10.dts | 123 ++++++++++++++++++
+ 1 file changed, 123 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399pro-rock-pi-n10.dts b/arch/arm64/boot/dts/rockchip/rk3399pro-rock-pi-n10.dts
+--- a/arch/arm64/boot/dts/rockchip/rk3399pro-rock-pi-n10.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3399pro-rock-pi-n10.dts
+@@ -19,3 +19,126 @@
+ 		stdout-path = "serial2:1500000n8";
+ 	};
+ };
++
++/ {
++	sound: sound {
++		compatible = "audio-graph-card";
++		label = "Analog";
++		dais = <&i2s0_p0>;
++	};
++};
++
++&cpu_b0 {
++	cpu-supply = <&vdd_cpu_b>;
++};
++
++&cpu_b1 {
++	cpu-supply = <&vdd_cpu_b>;
++};
++
++&gpu {
++	mali-supply = <&vdd_gpu>;
++	status = "okay";
++};
++
++&hdmi_sound {
++	status = "okay";
++};
++
++&i2c0 {
++	vdd_gpu: regulator@10 {
++		compatible = "tcs,tcs4526";
++		reg = <0x10>;
++		fcs,suspend-voltage-selector = <1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&vsel2_gpio>;
++		regulator-name = "vdd_gpu";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <735000>;
++		regulator-max-microvolt = <1400000>;
++		regulator-ramp-delay = <1000>;
++		vin-supply = <&vcc5v0_sys>;
++		vsel-gpios = <&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
++
++		regulator-state-mem {
++			regulator-off-in-suspend;
++		};
++	};
++
++	vdd_cpu_b: regulator@1c {
++		compatible = "tcs,tcs4526";
++		reg = <0x1c>;
++		fcs,suspend-voltage-selector = <1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&vsel1_gpio>;
++		regulator-name = "vdd_cpu_b";
++		regulator-always-on;
++		regulator-boot-on;
++		regulator-min-microvolt = <712500>;
++		regulator-max-microvolt = <1500000>;
++		regulator-ramp-delay = <2300>;
++		vin-supply = <&vcc5v0_sys>;
++		vsel-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
++
++		regulator-state-mem {
++			regulator-off-in-suspend;
++		};
++	};
++};
++
++&i2c4 {
++	i2c-scl-rising-time-ns = <300>;
++	i2c-scl-falling-time-ns = <15>;
++	status = "okay";
++
++	es8316: codec@11 {
++		compatible = "everest,es8316";
++		reg = <0x11>;
++		clocks = <&cru SCLK_I2S_8CH_OUT>;
++		clock-names = "mclk";
++		#sound-dai-cells = <0>;
++
++		port {
++			es8316_p0_0: endpoint {
++				remote-endpoint = <&i2s0_p0_0>;
++			};
++		};
++	};
++};
++
++&i2s0 {
++	pinctrl-0 = <&i2s0_2ch_bus>;
++	pinctrl-1 = <&i2s0_2ch_bus_bclk_off>;
++	rockchip,capture-channels = <2>;
++	rockchip,playback-channels = <2>;
++	status = "okay";
++
++	i2s0_p0: port {
++		i2s0_p0_0: endpoint {
++			dai-format = "i2s";
++			mclk-fs = <256>;
++			remote-endpoint = <&es8316_p0_0>;
++		};
++	};
++};
++
++&i2s2 {
++	status = "okay";
++};
++
++&io_domains {
++	audio-supply = <&vcca_1v8>;
++};
++
++&pinctrl {
++	vsel {
++		vsel1_gpio: vsel1 {
++			rockchip,pins = <1 RK_PC1 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++
++		vsel2_gpio: vsel2 {
++			rockchip,pins = <1 RK_PB6 RK_FUNC_GPIO &pcfg_pull_down>;
++		};
++	};
++};

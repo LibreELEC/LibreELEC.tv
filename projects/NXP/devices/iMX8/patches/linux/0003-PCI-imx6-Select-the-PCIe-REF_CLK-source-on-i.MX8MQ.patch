@@ -1,0 +1,51 @@
+From 3a4f1a06648aee11526efbd155e5d5b2bb440351 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 2 Aug 2026 21:15:00 +1000
+Subject: [PATCH] PCI: imx6: Select the PCIe REF_CLK source on i.MX8MQ
+
+i.MX8MQ has two PCIe REF_CLK sources: an off-chip oscillator and the
+internal PLL. The driver unconditionally selected the oscillator, which
+is what the
+
+	/* TODO: This code assumes external oscillator is being used */
+
+comment refers to. Boards wiring an oscillator to the pad describe it as
+the "pcie_bus" clock, but nothing in the driver looks that clock up by
+name, so it does not select anything.
+
+Reuse the generic enable_ext_refclk flag, set when an "extref" clock is
+supplied, to select between the two, as is already done for i.MX95 in
+commit d8574ce57d76 ("PCI: imx6: Add external reference clock input mode
+support").
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ drivers/pci/controller/dwc/pci-imx6.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/controller/dwc/pci-imx6.c b/drivers/pci/controller/dwc/pci-imx6.c
+index 9a9efc2..5248ed0 100644
+--- a/drivers/pci/controller/dwc/pci-imx6.c
++++ b/drivers/pci/controller/dwc/pci-imx6.c
+@@ -445,11 +445,16 @@ static int pcie_phy_write(struct imx_pcie *imx_pcie, int addr, u16 data)
+ 
+ static int imx8mq_pcie_init_phy(struct imx_pcie *imx_pcie)
+ {
+-	/* TODO: This code assumes external oscillator is being used */
++	bool ext = imx_pcie->enable_ext_refclk;
++
++	/*
++	 * Select the off-chip oscillator as REF_CLK when an "extref" clock is
++	 * supplied, otherwise fall back to the internal PLL.
++	 */
+ 	regmap_update_bits(imx_pcie->iomuxc_gpr,
+ 			   imx_pcie_grp_offset(imx_pcie),
+ 			   IMX8MQ_GPR_PCIE_REF_USE_PAD,
+-			   IMX8MQ_GPR_PCIE_REF_USE_PAD);
++			   ext ? IMX8MQ_GPR_PCIE_REF_USE_PAD : 0);
+ 	/*
+ 	 * Per the datasheet, the PCIE_VPH is suggested to be 1.8V.  If the
+ 	 * PCIE_VPH is supplied by 3.3V, the VREG_BYPASS should be cleared
+-- 
+2.47.1
+
