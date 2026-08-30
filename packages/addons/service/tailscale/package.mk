@@ -3,7 +3,7 @@
 
 PKG_NAME="tailscale"
 PKG_VERSION="1.102.3"
-PKG_REV="7"
+PKG_REV="8"
 PKG_ARCH="any"
 PKG_LICENSE="BSD-3-Clause"
 PKG_SITE="https://tailscale.com"
