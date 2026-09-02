@@ -2,8 +2,8 @@
 # Copyright (C) 2025-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="hyperhdr-lunasvg"
-PKG_VERSION="610b8bf5148a27489b4e3344b4f5617b81be38c7"
-PKG_SHA256="b71a1abf80cebf909da1b0e9bc86b8e10d0281851202785ecf04761229da8275"
+PKG_VERSION="83c58df8103dc7dca423dfd824992af94d49bed6"
+PKG_SHA256="37f051e6f95ca53d4d17aebb548eaea14536de87edaf105073260d5e5f6ffd1a"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/sammycage/lunasvg"
 PKG_URL="https://github.com/sammycage/lunasvg/archive/${PKG_VERSION}.tar.gz"
