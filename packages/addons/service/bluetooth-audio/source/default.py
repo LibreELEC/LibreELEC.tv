@@ -40,7 +40,7 @@ class KodiFunctions(object):
       __addon__.setSetting('audiodevice', self.audiodevice)
     else:
       self.audiodevice = __addon__.getSetting('audiodevice')
-    self.pulsedevice = 'PULSE:Default'
+    self.pulsedevice = 'PULSE:Default|Bluetooth Audio (PULSEAUDIO)'
 
     xbmc.log('%s: setting default audio device "%s" on start' % (__addonid__, self.audiodevice), xbmc.LOGINFO)
     self.select_default()
