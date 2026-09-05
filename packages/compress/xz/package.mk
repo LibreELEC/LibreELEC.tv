@@ -10,12 +10,9 @@ PKG_SITE="https://tukaani.org/xz/"
 PKG_URL="https://github.com/tukaani-project/xz/releases/download/v${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="autotools:host gcc:host"
 PKG_LONGDESC="A free general-purpose data compression software with high compression ratio."
-PKG_BUILD_FLAGS="+pic -sysroot"
 PKG_TOOLCHAIN="configure"
 
-PKG_CONFIGURE_OPTS_TARGET="--enable-static \
-                           --disable-shared \
-                           --disable-doc \
+PKG_CONFIGURE_OPTS_TARGET="--disable-doc \
                            --disable-lzmadec \
                            --disable-lzmainfo \
                            --disable-lzma-links \
