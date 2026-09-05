@@ -5,10 +5,15 @@
 
 SOCKET="/run/tailscale/tailscaled.sock"
 TAILSCALE="/storage/.kodi/addons/service.tailscale/bin/tailscale"
+RESOLVCONF="/storage/.kodi/addons/service.tailscale/bin/resolvconf"
 
 if [ -S "$SOCKET" ]; then
   $TAILSCALE --socket="$SOCKET" down 2>/dev/null
 fi
+
+# Restore ConnMan's resolver even if tailscaled could not clean up its DNS
+# configuration itself.
+"$RESOLVCONF" --libreelec-restore
 
 # Clean up manual NAT and forwarding rules
 iptables -D FORWARD -i tailscale0 -j ACCEPT 2>/dev/null

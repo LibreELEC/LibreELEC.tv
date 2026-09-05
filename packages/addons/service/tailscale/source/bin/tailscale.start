@@ -8,10 +8,17 @@ oe_setup_addon service.tailscale
 
 TAILSCALED="$ADDON_DIR/bin/tailscaled"
 TAILSCALE="$ADDON_DIR/bin/tailscale"
+RESOLVCONF="$ADDON_DIR/bin/resolvconf"
 STATE_DIR="/storage/.cache/tailscale"
 SOCKET="/run/tailscale/tailscaled.sock"
 
 mkdir -p "$STATE_DIR" "$(dirname $SOCKET)"
+
+# LibreELEC keeps its writable resolver configuration under /run. Present a
+# resolvconf-managed file before tailscaled starts so it uses the bundled
+# adapter instead of trying to replace files in the read-only /etc directory.
+"$RESOLVCONF" --libreelec-prepare
+export PATH="$ADDON_DIR/bin:$PATH"
 
 # Enable IP forwarding (required for exit node and subnet routing)
 if [ "$ts_exit_node" = "true" ] || [ "$ts_subnet_routes" = "true" ]; then
