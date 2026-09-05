@@ -8,7 +8,7 @@ PKG_LICENSE="LGPL-2.0-or-later"
 PKG_SITE="https://github.com/ostreedev/ostree"
 PKG_URL="https://github.com/ostreedev/ostree/releases/download/v${PKG_VERSION}/libostree-${PKG_VERSION}.tar.xz"
 PKG_DEPENDS_TARGET="toolchain curl e2fsprogs fuse3 glib gpgme libassuan libgpg-error libarchive xz zlib"
-PKG_DEPENDS_CONFIG="gpgme libassuan xz"
+PKG_DEPENDS_CONFIG="gpgme libassuan"
 PKG_LONGDESC="Operating system and container binary deployment and upgrades"
 PKG_BUILD_FLAGS="-sysroot"
 
