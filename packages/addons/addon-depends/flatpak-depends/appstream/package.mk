@@ -9,7 +9,7 @@ PKG_SITE="https://github.com/ximion/appstream"
 PKG_URL="https://github.com/ximion/appstream/archive/v${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_HOST="toolchain:host curl:host itstool:host libfyaml:host libxml2:host libxmlb:host"
 PKG_DEPENDS_TARGET="toolchain appstream:host curl glib libfyaml libxml2 libxmlb xz zstd"
-PKG_DEPENDS_CONFIG="libfyaml libxmlb xz"
+PKG_DEPENDS_CONFIG="libfyaml libxmlb"
 PKG_LONGDESC="Tools and libraries to work with AppStream metadata"
 PKG_BUILD_FLAGS="-sysroot"
 
