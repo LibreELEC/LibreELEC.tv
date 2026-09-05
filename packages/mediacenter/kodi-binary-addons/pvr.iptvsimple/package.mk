@@ -17,6 +17,3 @@ PKG_LONGDESC="pvr.iptvsimple"
 
 PKG_IS_ADDON="yes"
 PKG_ADDON_TYPE="xbmc.pvrclient"
-
-PKG_CMAKE_OPTS_TARGET="-DLZMA_INCLUDE_DIRS=$(get_install_dir xz)/usr/include \
-                       -DLZMA_LIBRARIES=$(get_install_dir xz)/usr/lib/liblzma.a"
