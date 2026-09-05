@@ -9,7 +9,6 @@ PKG_SITE="https://github.com/hughsie/libxmlb"
 PKG_URL="https://github.com/hughsie/libxmlb/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_HOST="toolchain:host glib:host"
 PKG_DEPENDS_TARGET="toolchain glib Python3 xz zstd"
-PKG_DEPENDS_CONFIG="xz"
 PKG_LONGDESC="A library to help create and query binary XML blobs"
 PKG_BUILD_FLAGS="+pic:host +pic -sysroot"
 
