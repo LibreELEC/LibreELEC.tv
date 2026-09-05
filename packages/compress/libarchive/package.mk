@@ -12,7 +12,7 @@ PKG_DEPENDS_TARGET="cmake:host gcc:host bzip2 lz4 lzo openssl pcre2 xz zlib zstd
 PKG_LONGDESC="A multi-format archive and compression library."
 
 PKG_CMAKE_OPTS_TARGET="-DCMAKE_POSITION_INDEPENDENT_CODE=1 \
-                       -DBUILD_SHARED_LIBS=OFF \
+                       -DBUILD_SHARED_LIBS=ON \
                        -DENABLE_ACL=ON \
                        -DENABLE_BZip2=ON \
                        -DENABLE_CAT=OFF \
@@ -29,8 +29,6 @@ PKG_CMAKE_OPTS_TARGET="-DCMAKE_POSITION_INDEPENDENT_CODE=1 \
                        -DENABLE_LIBXML2=OFF \
                        -DENABLE_LZ4=ON \
                        -DENABLE_LZMA=ON \
-                       -DLIBLZMA_INCLUDE_DIR=$(get_install_dir xz)/usr/include \
-                       -DLIBLZMA_LIBRARY=$(get_install_dir xz)/usr/lib/liblzma.a \
                        -DENABLE_LZO=ON \
                        -DENABLE_MBEDTLS=OFF \
                        -DENABLE_NETTLE=OFF \

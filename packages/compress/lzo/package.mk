@@ -14,7 +14,7 @@ PKG_LONGDESC="A data compression library which is suitable for data de-/compress
 PKG_BUILD_FLAGS="+pic"
 
 PKG_CMAKE_OPTS_HOST="-DENABLE_SHARED=OFF -DENABLE_STATIC=ON"
-PKG_CMAKE_OPTS_TARGET="-DENABLE_SHARED=OFF -DENABLE_STATIC=ON"
+PKG_CMAKE_OPTS_TARGET="-DENABLE_SHARED=ON -DENABLE_STATIC=OFF"
 
 post_makeinstall_target() {
   rm -rf ${INSTALL}/usr/libexec
