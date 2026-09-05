@@ -16,6 +16,3 @@ PKG_LONGDESC="vfs.libarchive"
 
 PKG_IS_ADDON="yes"
 PKG_ADDON_TYPE="kodi.vfs"
-
-PKG_CMAKE_OPTS_TARGET="-DLIBLZMA_INCLUDE_DIR=$(get_install_dir xz)/usr/include \
-                       -DLIBLZMA_LIBRARY=$(get_install_dir xz)/usr/lib/liblzma.a"
