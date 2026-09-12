@@ -36,6 +36,15 @@ case "${LINUX}" in
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="default rockchip"
     ;;
+  variscite)
+    # Variscite linux-imx 6.6.144-var-lts-next (donor SD kernel)
+    PKG_VERSION="2365567b4cffbd021b9180644bda4df50f619b5f"
+    PKG_SHA256="15d840fb63d05cd2acd38f3830157e24d8a959e7e629051944e706c8cfd5b148"
+    PKG_URL="https://github.com/varigit/linux-imx/archive/${PKG_VERSION}.tar.gz"
+    PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
+    PKG_SOURCE_DIR="linux-imx-${PKG_VERSION}"
+    PKG_PATCH_DIRS="variscite"
+    ;;
   *)
     PKG_VERSION="7.2.3"
     PKG_SHA256="8ba259e8e7b13ec6ef0941c8a39ad90b24bd4a4d6c0010ba6bafb794550ecd03"
@@ -56,6 +65,12 @@ if [ -n "${KERNEL_TOOLCHAIN}" ]; then
   HEADERS_ARCH=${TARGET_ARCH}
 else
   PKG_DEPENDS_TARGET+=" toolchain"
+fi
+
+# Device options cannot set PKG_BUILD_PERF: reset_pkg_vars unsets it first.
+# Host rustc has no aarch64-unknown-linux-gnu std, so skip userspace perf here.
+if [ "${DEVICE}" = "VAR-DART-IMX8MP" ]; then
+  PKG_BUILD_PERF="no"
 fi
 
 if [ "${PKG_BUILD_PERF}" != "no" ] && grep -q ^CONFIG_PERF_EVENTS= ${PKG_KERNEL_CFG_FILE}; then

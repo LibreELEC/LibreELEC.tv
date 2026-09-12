@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
+
+# i.MX8MP: ATF + LPDDR4 training firmware. Do not copy i.MX8MQ Cadence HDMI.
+
+[ -n "$ATF_PLATFORM" ] && cp -av $(get_install_dir atf)/usr/share/bootloader/bl31.bin .
+
+cp -av $(get_build_dir firmware-imx)/firmware/ddr/synopsys/lpddr4*.bin $(get_build_dir $BOOTLOADER)/
