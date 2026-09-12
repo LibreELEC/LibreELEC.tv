@@ -3,7 +3,7 @@
 
 PKG_NAME="system-tools"
 PKG_VERSION="1.0"
-PKG_REV="20"
+PKG_REV="21"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-only"
 PKG_SITE="https://libreelec.tv"
