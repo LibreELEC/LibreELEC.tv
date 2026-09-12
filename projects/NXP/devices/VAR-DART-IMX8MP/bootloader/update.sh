@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
-# Overlay A: never rewrite Variscite flash.bin on eMMC/SD boot partitions.
+# Overlay / live update: never rewrite Variscite imx-boot on SD or eMMC
+# boot partitions. eMMC boot0 is programmed only by UUU (scripts/uuu.auto).
 
 [ -z "$SYSTEM_ROOT" ] && SYSTEM_ROOT=""
 [ -z "$BOOT_ROOT" ] && BOOT_ROOT="/flash"

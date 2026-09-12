@@ -1,10 +1,9 @@
 # Variscite DART-MX8MP on DT8MCustomBoard
 
-Simplistic multiboot of LibreELEC components
-- keep the Variscite scarthgap bootloader, kernel, DTB, and firmware on 
-  the SD card. 
-- LibreELEC userspace is dropped beside them and selected 
-  by `/boot/boot.scr`. eMMC stays the recovery image.
+Two install paths share the same kernel (`LINUX=variscite`) and vendor U-Boot:
+
+- **SD overlay** (`make system`): Yocto `/boot` stays; LE is `/boot/libreelec` + `boot.scr`. eMMC can stay the Yocto recovery image (do not flash boot0 from the overlay).
+- **eMMC UUU** (`make image`): native FAT `/flash` + ext4 `STORAGE`. UUU writes vendor `imx-boot` to eMMC boot0 and replaces the Yocto eMMC image.
 
 ## What is running (SD boot)
 
@@ -29,7 +28,8 @@ plain `make system` does **not** rebuild the kodi package when that file
 changes (the install stamp ignores `devices/$DEVICE/kodi`). The hook
 patches `image/system` after packages and before squashfs.
 
-From `LibreELEC.tv` (not a full disk image — do not use `make image` yet):
+SD overlay (`make system`) and eMMC UUU image (`make image`) are both
+supported. Overlay does not flash eMMC boot0. UUU does.
 
 ```
 PROJECT=NXP DEVICE=VAR-DART-IMX8MP ARCH=aarch64 UBOOT_SYSTEM=imx8mp-var-dart make system
@@ -62,7 +62,7 @@ LE KERNEL when that file exists. SYSTEM must include `firmware-imx`
 
 *** HW support is ATM minor, expect no Bluetooth/WiFI/etc..., adding later.
 
-## Install from the build host
+## Install from the build host - SD overlay
 
 `make system` writes the full overlay set under `target/` with the same prefix:
 
@@ -90,9 +90,6 @@ That copies KERNEL, SYSTEM, INITRD, DTB, and `boot.scr`, then fixes
 `loadbootscript` to `scriptaddr`. Then reboot. If SD fails to boot, remove
 the card (or dip-switch to eMMC).
 
-Raw SD access on the PC is only needed later, if we repartition into a FAT
-`/flash` + ext4 STORAGE layout. It is not needed for this overlay.
-
 ## Troubleshooting
 
 As this is the first version with LibreELEC initrd/system, one might run into boot/system troubles.
@@ -102,4 +99,49 @@ One way of doing it, stop in booloader mode:
 run ramsize_check; run prepare_mcore; run mmcargs; run loadimage; run loadfdt
 booti ${loadaddr} - ${fdt_addr_r}
 ```
+
+## eMMC UUU image (native LibreELEC)
+
+FAT `/flash` (label `LIBREELEC`) + ext4 `STORAGE`. Vendor **imx-boot**
+goes to eMMC boot0. Kernel is still `LINUX=variscite`. This **replaces**
+the Yocto eMMC image. Keep the SD overlay as recovery.
+
+1. Drop Variscite `imx-boot` in `vendor/imx-boot/` (see that README, or
+   `scripts/dump-imx-boot.sh root@BOARD`).
+2. Build the disk image:
+
+```
+PROJECT=NXP DEVICE=VAR-DART-IMX8MP ARCH=aarch64 UBOOT_SYSTEM=imx8mp-var-dart make image
+projects/NXP/devices/VAR-DART-IMX8MP/scripts/pack-uuu-bundle.sh
+```
+
+3. Dip-switch to SD boot, **remove the SD card**, USB OTG, power on.
+4. `cd target/uuu-emmc && sudo uuu uuu.auto`
+5. Dip-switch to eMMC, reboot.
+
+`SYSTEM_PART_START=32768` (16 MiB) so Variscite env at `0x700000` is not
+inside FAT. Do **not** `saveenv` over SDP: this BSP's env device is SD
+(`CONFIG_SYS_MMC_ENV_DEV=1`), and UUU runs with no SD card. The pack
+script writes `uboot.env` into the image at `0x700000` instead.
+`boot-emmc.cmd` also relocates itself to `scriptaddr` so a default env
+still works. If a previous UUU run failed only on `saveenv`:
+
+```
+cd target/uuu-emmc && sudo uuu uuu-env.auto
+```
+
+Or from an eMMC U-Boot prompt (saveenv works once the ROM booted eMMC):
+
+```
+setenv loadbootscript 'load mmc ${mmcdev}:${mmcpart} ${scriptaddr} ${bootdir}/${bsp_script}'
+setenv bootscript 'echo Running bootscript from mmc ...; source ${scriptaddr}'
+setenv bootcmd 'run bsp_bootcmd'
+saveenv
+```
+
+If env loaded but autoboot ran `boota mmc2`, `bootcmd` was missing from the
+env blob and Fastboot filled in the Android default. Set `bootcmd` as above
+(or `run bsp_bootcmd` to test without saving).
+
+`scripts/verify-le-image.sh` checks labels, `/flash` files, and the env hole.
 

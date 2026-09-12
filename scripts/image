@@ -254,7 +254,8 @@ chmod 0644 ${TARGET_IMG}/${IMAGE_NAME}.kernel
 # Used to apply files Kodi's install stamp does not hash (e.g. kodi/appliance.xml).
 if find_file_path scripts/pre-squash.sh; then
   echo "Running ${FOUND_PATH}"
-  "${FOUND_PATH}"
+  INSTALL="${INSTALL:-${BUILD}/image/system}" BUILD="${BUILD}" ROOT="${ROOT}" \
+    "${FOUND_PATH}"
 fi
 
 # Set mksquashfs options for each compression method

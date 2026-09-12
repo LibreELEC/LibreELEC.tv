@@ -1,0 +1,33 @@
+uuu_version 1.4.149
+
+# LibreELEC VAR-DART-IMX8MP eMMC: vendor imx-boot + native LE image.
+# Board: SD boot switch, no SD card, USB OTG. Then: sudo uuu uuu.auto
+# After it finishes, dip-switch to eMMC and reboot.
+#
+# Files next to this script (see pack-uuu-bundle.sh):
+#   imx-boot   Variscite flash.bin (not built by LibreELEC)
+#   image.img  make image output, uncompressed
+
+# i.MX8MP ROM: SDPS stream. SDP is skipped if the ROM does not use it.
+SDPS: boot -f imx-boot
+SDP: boot -f imx-boot
+
+# Wait for the SDP-loaded U-Boot fastboot gadget.
+FB: ucmd if env exists emmc_dev; then ; else setenv emmc_dev 2; fi;
+FB: ucmd setenv fastboot_dev mmc
+FB: ucmd setenv mmcdev ${emmc_dev}
+FB: ucmd mmc dev ${emmc_dev}
+
+# boot0: vendor imx-boot. "bootloader" is the NXP/Variscite fastboot alias.
+FB: flash bootloader imx-boot
+FB: ucmd if env exists emmc_ack; then ; else setenv emmc_ack 1; fi;
+FB: ucmd mmc partconf ${emmc_dev} ${emmc_ack} 1 0
+
+# User area: FAT LIBREELEC + ext4 STORAGE (starts at 16 MiB).
+# pack-uuu-bundle.sh puts uboot.env at 0x700000 inside image.img.
+FB: flash -raw2sparse all image.img
+
+# Do not saveenv here. SDP boot has no SD, and this BSP's
+# CONFIG_SYS_MMC_ENV_DEV is 1 (SD), so saveenv fails after a good flash.
+
+FB: done

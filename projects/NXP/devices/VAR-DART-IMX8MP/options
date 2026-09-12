@@ -42,4 +42,8 @@
     # Host has no rpcgen (rpcsvc-proto). Re-enable when that tool is installed.
     NFS_SUPPORT="no"
 
+    # Variscite env is at raw 0x700000 (7 MiB). Distro default start (4 MiB)
+    # would put that env inside FAT. 16 MiB leaves the env in the gap.
+    SYSTEM_PART_START="32768"
+
     ADDON_PROJECT="ARMv8"

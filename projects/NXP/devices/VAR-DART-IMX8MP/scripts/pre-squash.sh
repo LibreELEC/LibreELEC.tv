@@ -9,9 +9,10 @@ set -euo pipefail
 
 DEVICE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 LE_ROOT="${ROOT:-$(cd "${DEVICE_DIR}/../../../.." && pwd)}"
+BUILD="${BUILD:-${LE_ROOT}/build.LibreELEC-VAR-DART-IMX8MP.aarch64-13.0-devel}"
 DEVICE_APPLIANCE="${DEVICE_DIR}/kodi/appliance.xml"
 MERGE="${LE_ROOT}/packages/mediacenter/kodi/scripts/xml_merge.py"
-IMG_ROOT="${INSTALL:-${BUILD:+${BUILD}/image/system}}"
+IMG_ROOT="${INSTALL:-${BUILD}/image/system}"
 APPLIANCE="${IMG_ROOT}/usr/share/kodi/system/settings/appliance.xml"
 
 if [[ ! -f "${DEVICE_APPLIANCE}" ]]; then
