@@ -250,6 +250,13 @@ rm -rf ${TARGET_IMG}/${IMAGE_NAME}.kernel
 cp -PR $(get_install_dir linux)/.image/${KERNEL_TARGET} ${TARGET_IMG}/${IMAGE_NAME}.kernel
 chmod 0644 ${TARGET_IMG}/${IMAGE_NAME}.kernel
 
+# Optional device hook after packages + filesystem overlay, before squashfs.
+# Used to apply files Kodi's install stamp does not hash (e.g. kodi/appliance.xml).
+if find_file_path scripts/pre-squash.sh; then
+  echo "Running ${FOUND_PATH}"
+  "${FOUND_PATH}"
+fi
+
 # Set mksquashfs options for each compression method
 if [ -z "${SQUASHFS_COMPRESSION_OPTION}" ]; then
   if [ "${SQUASHFS_COMPRESSION:-gzip}" = "gzip" ]; then
@@ -271,6 +278,12 @@ rm -rf ${FAKEROOT_SCRIPT}
 
 # Set permissions
 chmod 0644 ${TARGET_IMG}/${IMAGE_NAME}.system
+
+# Optional device overlay artifacts (DTB, boot.scr) next to .kernel/.system
+if find_file_path scripts/stage-overlay.sh; then
+  echo "Running ${FOUND_PATH}"
+  "${FOUND_PATH}"
+fi
 
 if [ "${1}" = "release" ] || [ "${1}" = "mkimage" ] || [ "${1}" = "noobs" ]; then
 

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
+
+# Option A overlay does not write a disk image. Kept for a later make image.
+
+if [ -f "$RELEASE_DIR/3rdparty/bootloader/flash.bin" ]; then
+  echo "Writing flash.bin to $(basename $DISK)"
+  dd if="$RELEASE_DIR/3rdparty/bootloader/flash.bin" of="$DISK" bs=1024 seek=32 conv=fsync,notrunc >"$SAVE_ERROR" 2>&1 || show_error
+fi

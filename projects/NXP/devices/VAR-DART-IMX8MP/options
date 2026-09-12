@@ -1,0 +1,45 @@
+################################################################################
+# Variscite DART-MX8MP on DT8MCustomBoard
+# Uses vendor kernel/bootloader; these defaults are for a later LE image.
+################################################################################
+
+  case $TARGET_ARCH in
+      aarch64)
+        TARGET_CPU="cortex-a53"
+        TARGET_CPU_FLAGS="+crc+crypto+fp+simd"
+        ;;
+      arm)
+        TARGET_KERNEL_ARCH="arm64"
+        TARGET_FLOAT="hard"
+        TARGET_CPU="cortex-a53"
+        TARGET_CPU_FLAGS="+crc"
+        TARGET_FPU="crypto-neon-fp-armv8"
+        ;;
+    esac
+
+  # Variscite linux-imx (same tree as the SD Yocto donor), built
+  # for LE/Kodi (etnaviv, no galcore). Yocto keeps /boot/Image.gz.
+    LINUX="variscite"
+    KERNEL_TARGET="Image"
+
+    EXTRA_CMDLINE="console=ttymxc0,115200 console=tty0 clk-imx8mp.mcore_booted cma=704M cma_name=linux,cma"
+
+    DEBUG_TTY="/dev/ttymxc0"
+
+    ATF_PLATFORM="imx8mp"
+    UBOOT_FIRMWARE="atf firmware-imx"
+    UBOOT_TARGET="flash.bin"
+
+    GRAPHIC_DRIVERS="etnaviv"
+
+    # U-Boot is a stub here, so firmware-imx is not pulled in via flash.bin.
+    # XCVR (HDMI eARC/SPDIF) and VPU blobs live in that package.
+    FIRMWARE="${FIRMWARE} firmware-imx"
+
+    # Vendor 6.6.144 has squashfs zlib, not zstd. NXP project default is zstd.
+    SQUASHFS_COMPRESSION="gzip"
+
+    # Host has no rpcgen (rpcsvc-proto). Re-enable when that tool is installed.
+    NFS_SUPPORT="no"
+
+    ADDON_PROJECT="ARMv8"
