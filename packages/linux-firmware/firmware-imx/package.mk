@@ -14,8 +14,12 @@ PKG_LONGDESC="firmware-imx: Freescale IMX firmware such as for the VPU"
 PKG_TOOLCHAIN="manual"
 
 unpack() {
-  cd $(dirname ${PKG_BUILD})
-  sh ${SOURCES}/${PKG_NAME}/${PKG_NAME}-${PKG_VERSION}.bin --auto-accept
+  # Subshell: do not leave cwd off ${ROOT}. calculate_stamp runs sha256sum on
+  # paths relative to ROOT (e.g. packages/linux-firmware/firmware-imx/package.mk).
+  (
+    cd "$(dirname "${PKG_BUILD}")"
+    sh "${SOURCES}/${PKG_NAME}/${PKG_NAME}-${PKG_VERSION}.bin" --auto-accept
+  )
 }
 
 makeinstall_target() {

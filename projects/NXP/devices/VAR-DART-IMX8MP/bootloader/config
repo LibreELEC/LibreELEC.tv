@@ -1,1 +1,5 @@
 # CONFIG_EFI_LOADER is not set
+# OP-TEE comes from optee-os (tee.bin in the FIT). Keep defconfig
+# CONFIG_TEE / CONFIG_OPTEE / CONFIG_OPTEE_LIB.
+# Do not set CONFIG_IMX_CONFIG. flash.bin is assembled by imx-mkimage
+# iMX8M (SOC=iMX8MP flash_evk), not U-Boot in-tree imx8mimage.

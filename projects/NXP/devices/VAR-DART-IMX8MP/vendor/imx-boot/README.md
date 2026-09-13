@@ -1,37 +1,25 @@
-# Vendor imx-boot (do not build U-Boot)
+# imx-boot / flash.bin
 
-UUU and eMMC boot need the **Variscite** `imx-boot` already on this board
-(`2024.04-lf_v2024.04_6.6.52-2.2.2_var01`). Mainline U-Boot has no
-`imx8mp_var_dart_defconfig` that matches this SOM. The LibreELEC u-boot
-package stays a stub.
-
-Place the binary here as `imx-boot` (or `flash.bin`). It is gitignored.
-
-## From the Yocto deploy directory
+Primary path is a **source build** via Variscite [imx-mkimage](https://github.com/varigit/imx-mkimage/tree/lf-6.18.20_2.0.0_var01/iMX8M)
+`iMX8M/` (`SOC=iMX8MP flash_evk`):
 
 ```
-cp tmp/deploy/images/imx8mp-var-dart/imx-boot \
-   projects/NXP/devices/VAR-DART-IMX8MP/vendor/imx-boot/imx-boot
+PROJECT=NXP DEVICE=VAR-DART-IMX8MP ARCH=aarch64 UBOOT_SYSTEM=imx8mp-var-dart \
+  ./scripts/build u-boot
 ```
 
-Use the same scarthgap / `lf_v2024.04` tree that produced the SD card.
+Inputs:
 
-## Dump from the running board (SD user area, offset 32 KiB)
+- `sigysmund/uboot-imx` (`imx8mp_var_dart_defconfig`) → `u-boot.bin`, `u-boot-nodtb.bin`, `spl/u-boot-spl.bin`, DTB
+- LE `atf` (`PLAT=imx8mp`, `SPD=opteed`, UART1 / `0x30860000`) → `bl31.bin`
+- NXP `imx-optee-os` (`PLATFORM=imx-mx8mpevk`, 4 GiB, UART1) → `tee.bin`
+- NXP `firmware-imx` LPDDR4 `_202006` training bins (not installed into SYSTEM)
 
-```
-projects/NXP/devices/VAR-DART-IMX8MP/scripts/dump-imx-boot.sh root@192.168.1.16
-```
+Output: `build.*/u-boot-*/flash.bin`. `pack-uuu-bundle.sh` prefers that file.
 
-That is `dd if=/dev/mmcblk1 bs=1k skip=32 count=4096`.
+A blob in this directory is only an emergency fallback and is gitignored.
 
-## Dump from eMMC boot0
+Do **not** use `iMX8QX/` (SCU + AHAB + `scfw_tcm.bin`). That is i.MX8QuadXPlus.
 
-Only if this board’s recovery image was written to the boot partition:
-
-```
-IMX_BOOT_SRC=emmc-boot0 \
-  projects/NXP/devices/VAR-DART-IMX8MP/scripts/dump-imx-boot.sh root@192.168.1.16
-```
-
-Wrong DRAM/SKU `imx-boot` will fail SDP or hang after `mmc partconf`.
-Use a blob from **this** SOM.
+NXP HDMI/XCVR/VPU/codec firmware stays in `firmware-imx` on SYSTEM. Those are
+required to load the HW; they are not a substitute for building U-Boot.

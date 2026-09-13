@@ -9,9 +9,15 @@ LE_ROOT="${ROOT:-$(cd "${DEVICE_DIR}/../../../.." && pwd)}"
 TARGET_IMG="${TARGET_IMG:-${LE_ROOT}/target}"
 BUNDLE="${BUNDLE:-${TARGET_IMG}/uuu-emmc}"
 VENDOR_IMX="${DEVICE_DIR}/vendor/imx-boot"
+UBOOT_FLASH="$(ls -dt \
+  "${LE_ROOT}"/build.LibreELEC-VAR-DART-IMX8MP.*/build/u-boot-*/flash.bin \
+  "${LE_ROOT}"/build.LibreELEC-VAR-DART-IMX8MP.*/u-boot-*/flash.bin \
+  2>/dev/null | head -1 || true)"
 
 IMX=""
-if [ -s "${VENDOR_IMX}/imx-boot" ]; then
+if [ -n "${UBOOT_FLASH}" ] && [ -s "${UBOOT_FLASH}" ]; then
+  IMX="${UBOOT_FLASH}"
+elif [ -s "${VENDOR_IMX}/imx-boot" ]; then
   IMX="${VENDOR_IMX}/imx-boot"
 elif [ -s "${VENDOR_IMX}/imx-boot-sd.bin" ]; then
   IMX="${VENDOR_IMX}/imx-boot-sd.bin"
@@ -19,7 +25,7 @@ elif [ -s "${VENDOR_IMX}/flash.bin" ]; then
   IMX="${VENDOR_IMX}/flash.bin"
 fi
 if [ -z "${IMX}" ]; then
-  echo "missing vendor imx-boot (see ${VENDOR_IMX}/README.md)" >&2
+  echo "missing flash.bin — build u-boot (or drop a blob in ${VENDOR_IMX})" >&2
   exit 1
 fi
 
@@ -43,6 +49,7 @@ rm -rf "${BUNDLE}"
 mkdir -p "${BUNDLE}"
 cp -a "${IMX}" "${BUNDLE}/imx-boot"
 cp -a "${DEVICE_DIR}/scripts/uuu.auto" "${BUNDLE}/uuu.auto"
+cp -a "${DEVICE_DIR}/scripts/uuu-boot.auto" "${BUNDLE}/uuu-boot.auto"
 cp -a "${DEVICE_DIR}/scripts/uuu-env.auto" "${BUNDLE}/uuu-env.auto"
 
 if [[ "${IMG}" == *.gz ]]; then
@@ -66,10 +73,10 @@ LibreELEC VAR-DART-IMX8MP UUU eMMC bundle
 
 1. Dip-switch to SD boot, remove the SD card, connect USB OTG.
 2. Power on. Host should see an NXP SDP device.
-3. sudo uuu uuu.auto
+3. First test: sudo uuu uuu-boot.auto  (boot0 only; keeps FAT/STORAGE)
+   Full reflash: sudo uuu uuu.auto
 4. Dip-switch to eMMC and reboot.
 
-This replaces the Yocto eMMC image, including boot0.
 SD overlay (or a Yocto SD) is the recovery path.
 
 If a previous run failed only on saveenv, flash just the env:
@@ -79,6 +86,6 @@ imx-boot: ${IMX}
 image:    ${IMG}
 EOF
 
-chmod 0644 "${BUNDLE}/imx-boot" "${BUNDLE}/image.img" "${BUNDLE}/uuu.auto" "${BUNDLE}/uuu-env.auto" "${BUNDLE}/uboot.env"
+chmod 0644 "${BUNDLE}/imx-boot" "${BUNDLE}/image.img" "${BUNDLE}/uuu.auto" "${BUNDLE}/uuu-boot.auto" "${BUNDLE}/uuu-env.auto" "${BUNDLE}/uboot.env"
 echo "UUU bundle: ${BUNDLE}"
 ls -lh "${BUNDLE}"

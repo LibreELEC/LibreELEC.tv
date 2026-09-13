@@ -27,13 +27,14 @@
     DEBUG_TTY="/dev/ttymxc0"
 
     ATF_PLATFORM="imx8mp"
-    UBOOT_FIRMWARE="atf firmware-imx"
+    # flash.bin: U-Boot binaries + ATF + LPDDR4, assembled by imx-mkimage
+    # iMX8M (SOC=iMX8MP flash_evk). Not iMX8QX. Not in-tree imx8mimage.
+    UBOOT_FIRMWARE="atf optee-os firmware-imx imx-mkimage"
     UBOOT_TARGET="flash.bin"
 
     GRAPHIC_DRIVERS="etnaviv"
 
-    # U-Boot is a stub here, so firmware-imx is not pulled in via flash.bin.
-    # XCVR (HDMI eARC/SPDIF) and VPU blobs live in that package.
+    # firmware-imx: VPU/XCVR/EASRC in SYSTEM, and LPDDR4 training for flash.bin.
     FIRMWARE="${FIRMWARE} firmware-imx"
 
     # Vendor 6.6.144 has squashfs zlib, not zstd. NXP project default is zstd.
