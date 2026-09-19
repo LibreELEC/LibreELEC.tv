@@ -12,7 +12,7 @@ Signed-off-by: Thomas Petazzoni <thomas.petazzoni@bootlin.com>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/configure.ac b/configure.ac
-index 4d701c0..2afc91e 100644
+index fb58692..8e049f7 100644
 --- a/configure.ac
 +++ b/configure.ac
 @@ -95,6 +95,12 @@ AC_DEFUN([PY_CHECK_EMSCRIPTEN_PORT], [
@@ -28,7 +28,7 @@ index 4d701c0..2afc91e 100644
  AC_SUBST([BASECPPFLAGS])
  if test "$srcdir" != . -a "$srcdir" != "$(pwd)"; then
      # If we're building out-of-tree, we need to make sure the following
-@@ -7886,12 +7892,6 @@ fi
+@@ -8092,12 +8098,6 @@ fi
  AC_SUBST([_PYTHREAD_NAME_MAXLEN])
  
  
