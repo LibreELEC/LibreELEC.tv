@@ -279,6 +279,18 @@ devices = \
         'config' : 'pico-imx8mq_defconfig'
       },
     },
+    'iMX8MP' : {
+      'imx8mp-var-dart' : {
+        'dtb' : 'imx8mp-var-dart-dt8mcustomboard.dtb',
+        'config' : 'imx8mp_var_dart_defconfig'
+      },
+    },
+    'VAR-DART-IMX8MP' : {
+      'imx8mp-var-dart' : {
+        'dtb' : 'imx8mp-var-dart-dt8mcustomboard.dtb',
+        'config' : 'imx8mp_var_dart_defconfig'
+      },
+    },
   },
   'Qualcomm': {
     'Dragonboard': {

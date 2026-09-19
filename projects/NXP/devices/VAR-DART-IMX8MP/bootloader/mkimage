@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Sourced from scripts/mkimage (mcopy/mmd aliases, IMG_TMP, RELEASE_DIR).
+# Populate FAT /flash. Do not write imx-boot into the user-area image;
+# UUU programs vendor imx-boot to eMMC boot0.
+
+DEVICE_BOOTLOADER="${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/bootloader"
+DEVICE_DIR="${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}"
+
+find_mkimage() {
+  if [ -n "${TOOLCHAIN}" ] && [ -x "${TOOLCHAIN}/bin/mkimage" ]; then
+    echo "${TOOLCHAIN}/bin/mkimage"
+  elif command -v mkimage >/dev/null; then
+    command -v mkimage
+  fi
+}
+
+U_MKIMAGE="$(find_mkimage)"
+if [ -z "${U_MKIMAGE}" ]; then
+  echo "image: mkimage not found (u-boot-tools)" >"${SAVE_ERROR}"
+  show_error
+fi
+
+if [ ! -f "${DEVICE_BOOTLOADER}/boot-emmc.cmd" ]; then
+  echo "image: missing ${DEVICE_BOOTLOADER}/boot-emmc.cmd" >"${SAVE_ERROR}"
+  show_error
+fi
+
+echo "image: generating eMMC boot.scr from boot-emmc.cmd..."
+"${U_MKIMAGE}" -A arm64 -O linux -T script -C none \
+  -n "VAR-DART-IMX8MP eMMC" \
+  -d "${DEVICE_BOOTLOADER}/boot-emmc.cmd" \
+  "${IMG_TMP}/boot.scr" >"${SAVE_ERROR}" 2>&1 || show_error
+
+# BSP default is ${bootdir}/${bsp_script} => /boot/boot.scr
+mmd boot >"${SAVE_ERROR}" 2>&1 || show_error
+mcopy "${IMG_TMP}/boot.scr" ::/boot.scr >"${SAVE_ERROR}" 2>&1 || show_error
+mcopy "${IMG_TMP}/boot.scr" ::/boot/boot.scr >"${SAVE_ERROR}" 2>&1 || show_error
+
+INITRD=""
+if [ -n "${IMAGE_NAME}" ] && [ -f "${TARGET_IMG}/${IMAGE_NAME}.initrd" ]; then
+  INITRD="${TARGET_IMG}/${IMAGE_NAME}.initrd"
+elif [ -f "${DEVICE_DIR}/vendor/INITRD" ]; then
+  INITRD="${DEVICE_DIR}/vendor/INITRD"
+fi
+
+if [ -z "${INITRD}" ]; then
+  echo "image: packing INITRD..."
+  "${DEVICE_DIR}/scripts/pack-initrd.sh" "${IMG_TMP}/INITRD" >"${SAVE_ERROR}" 2>&1 || show_error
+  INITRD="${IMG_TMP}/INITRD"
+fi
+
+echo "image: copying INITRD to /flash..."
+mcopy "${INITRD}" ::/INITRD >"${SAVE_ERROR}" 2>&1 || show_error
