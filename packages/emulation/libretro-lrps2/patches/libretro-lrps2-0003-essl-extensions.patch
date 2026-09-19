@@ -1,0 +1,66 @@
+From 6b8a58d285d2820d210dab71835eaf82b4291129 Mon Sep 17 00:00:00 2001
+From: Chris <chris.dixon.78.burnbridge@gmail.com>
+Date: Fri, 21 Aug 2026 12:21:10 +0100
+Subject: [PATCH 3/3] GS: request the two ESSL extensions the shaders actually
+ need
+
+The port loaded, negotiated an ES 3.2 context and ran the emulator -- it read
+the disc and identified the game -- but drew a solid white frame. Nothing in
+GSShaderOGL checks GL_COMPILE_STATUS or GL_LINK_STATUS, so two shaders were
+being rejected by the driver in complete silence and the renderer carried on
+with programs that were never built.
+
+glslangValidator had passed all seven stages, which is why this was missed:
+it is more permissive than Mesa's ESSL front end. Compiling the same sources
+through glCompileShader on a real ES 3.2 context reports what it would not:
+
+  tfx.glsl      index layout qualifier requires EXT_blend_func_extended
+  tfx_vgs.glsl  redeclaration of gl_PerVertex must be a subset of the
+                built-in members of gl_PerVertex
+
+Both are things desktop GLSL 330 simply has. Dual-source blending uses
+layout(index = 1), which ESSL puts behind EXT_blend_func_extended. And
+gl_PointSize is not a member of gl_PerVertex on ES unless
+EXT_geometry_point_size says it is, while the common header redeclares the
+block with it in for the geometry stage.
+
+Both extensions are requested per stage, and they go ahead of the precision
+declarations because #extension has to precede every non-preprocessor token.
+
+With this, SSX boots and renders through the ES path.
+---
+ pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp b/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp
+index bdf576260..4b67f8a8d 100644
+--- a/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp
++++ b/pcsx2/GS/Renderers/OpenGL/GSShaderOGL.cpp
+@@ -254,6 +254,24 @@ std::string GSShaderOGL::GenGlslHeader(const std::string& entry, GLenum type, co
+ 	// and image type used anywhere in these shaders needs one declared or the
+ 	// compiler stops at the declaration.
+ 	header = "#version 320 es\n";
++
++	// #extension has to precede every non-preprocessor token, so it goes ahead
++	// of the precision declarations below rather than next to the stage
++	// defines. Both of these are things desktop GLSL 330 simply has:
++	//
++	//  - the fragment shader uses layout(index = 1) for dual-source blending,
++	//    which ESSL puts behind EXT_blend_func_extended;
++	//  - gl_PointSize is not a member of gl_PerVertex on ES unless
++	//    EXT_geometry_point_size says so, and the common header redeclares the
++	//    block with it in, so the geometry shader is rejected without this.
++	//
++	// Both are silent failures otherwise: nothing here checks
++	// GL_COMPILE_STATUS, so a rejected shader just renders white.
++	if (type == GL_FRAGMENT_SHADER)
++		header += "#extension GL_EXT_blend_func_extended : require\n";
++	if (type == GL_GEOMETRY_SHADER)
++		header += "#extension GL_EXT_geometry_point_size : require\n";
++
+ 	header += "precision highp float;\n";
+ 	header += "precision highp int;\n";
+ 	header += "precision highp sampler2D;\n";
+-- 
+2.53.0
+
