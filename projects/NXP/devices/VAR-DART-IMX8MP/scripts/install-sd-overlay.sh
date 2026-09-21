@@ -3,6 +3,7 @@
 # Install the LE overlay onto a live Variscite SD root.
 # Copies KERNEL, SYSTEM, INITRD, DTB, and boot.scr, then fixes scriptaddr.
 # Does not touch eMMC boot partitions or overwrite /boot/Image.gz.
+# Overlay /storage is tmpfs on purpose. Persistent Kodi data is the eMMC image.
 
 set -euo pipefail
 
@@ -59,4 +60,5 @@ ls -l /boot/boot.scr /boot/Image.gz /boot/libreelec'
 
 echo
 echo "Done. Next reboot uses LibreELEC KERNEL + SYSTEM (Yocto Image.gz left in place)."
+echo "Overlay /storage is tmpfs. Persistent settings need the eMMC image."
 echo "Recovery: unplug SD (or boot eMMC). boot.scr is only on the SD /boot."

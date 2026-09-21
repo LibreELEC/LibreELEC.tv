@@ -50,6 +50,8 @@ else
   run loadfdt
 fi
 
+# disk= mounts the ext4 STORAGE partition (p2). make image rewrites
+# LABEL=STORAGE to UUID=<this image> so initramfs does not tmpfs /storage.
 setenv bootargs ${mcore_clk} console=${console} console=tty0 boot=LABEL=LIBREELEC disk=LABEL=STORAGE ${cma_size} cma_name=linux,cma clk-imx8mp.mcore_booted systemd.debug_shell=ttymxc0
 echo "bootargs=${bootargs}"
 booti ${loadaddr} ${initrd_addr}:${initrd_size} ${fdt_addr}

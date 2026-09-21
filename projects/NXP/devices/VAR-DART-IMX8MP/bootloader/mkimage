@@ -25,10 +25,22 @@ if [ ! -f "${DEVICE_BOOTLOADER}/boot-emmc.cmd" ]; then
   show_error
 fi
 
+# Bake the STORAGE UUID from this image into boot.scr so initramfs
+# mounts the ext4 p2, not tmpfs and not the SYSTEM squashfs.
+BOOT_CMD_SRC="${DEVICE_BOOTLOADER}/boot-emmc.cmd"
+BOOT_CMD_USE="${IMG_TMP}/boot-emmc.cmd"
+if [ -n "${UUID_STORAGE}" ]; then
+  echo "image: eMMC boot.scr disk=UUID=${UUID_STORAGE}"
+  sed "s|disk=LABEL=STORAGE|disk=UUID=${UUID_STORAGE}|g" \
+    "${BOOT_CMD_SRC}" >"${BOOT_CMD_USE}"
+else
+  cp "${BOOT_CMD_SRC}" "${BOOT_CMD_USE}"
+fi
+
 echo "image: generating eMMC boot.scr from boot-emmc.cmd..."
 "${U_MKIMAGE}" -A arm64 -O linux -T script -C none \
   -n "VAR-DART-IMX8MP eMMC" \
-  -d "${DEVICE_BOOTLOADER}/boot-emmc.cmd" \
+  -d "${BOOT_CMD_USE}" \
   "${IMG_TMP}/boot.scr" >"${SAVE_ERROR}" 2>&1 || show_error
 
 # BSP default is ${bootdir}/${bsp_script} => /boot/boot.scr
@@ -51,3 +63,8 @@ fi
 
 echo "image: copying INITRD to /flash..."
 mcopy "${INITRD}" ::/INITRD >"${SAVE_ERROR}" 2>&1 || show_error
+
+if [ -f "${DEVICE_BOOTLOADER}/mount-storage.sh" ]; then
+  echo "image: copying mount-storage.sh to /flash..."
+  mcopy "${DEVICE_BOOTLOADER}/mount-storage.sh" ::/mount-storage.sh >"${SAVE_ERROR}" 2>&1 || show_error
+fi

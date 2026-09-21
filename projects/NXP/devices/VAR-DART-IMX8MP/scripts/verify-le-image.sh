@@ -71,7 +71,7 @@ fail=0
 MNT="$(mktemp -d)"
 trap 'umount "${MNT}" 2>/dev/null || true; rmdir "${MNT}"; losetup -d "${LOOP}"' EXIT
 mount -o ro "${P1}" "${MNT}"
-for f in KERNEL SYSTEM INITRD boot.scr boot/boot.scr imx8mp-var-dart-dt8mcustomboard.dtb; do
+for f in KERNEL SYSTEM INITRD boot.scr boot/boot.scr imx8mp-var-dart-dt8mcustomboard.dtb mount-storage.sh; do
   if [ ! -e "${MNT}/${f}" ]; then
     echo "FAIL: missing /flash/${f}"
     fail=1

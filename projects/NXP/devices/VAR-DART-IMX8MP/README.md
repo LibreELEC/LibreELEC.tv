@@ -95,6 +95,11 @@ missing.
 /boot/libreelec/imx8mp-var-dart-dt8mcustomboard.dtb  # LE DTB (LVDS off)
 ```
 
+Overlay `/storage` is **tmpfs** on purpose (recovery path). Persistent
+Kodi data is the eMMC image: FAT `LIBREELEC` + ext4 **`STORAGE`**
+(`disk=UUID=…`, not the SYSTEM squashfs). First boot resizes p2 to the
+rest of the eMMC.
+
 Two kernels on purpose. Yocto keeps `Image.gz`. LibreELEC uses
 `linux-imx` `6.6-2.2.x-imx_var01` @ `2365567b4cff`. The LE DTB retargets
 `gpu_3d`/`gpu_2d` to `vivante,gc` (etnaviv), disables unused LVDS, and

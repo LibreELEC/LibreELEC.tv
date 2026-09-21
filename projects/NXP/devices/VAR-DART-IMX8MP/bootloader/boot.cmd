@@ -37,6 +37,7 @@ if test -e mmc ${mmcdev}:${mmcpart} ${le_dir}/SYSTEM && test -e mmc ${mmcdev}:${
     run loadfdt
   fi
 
+  # Overlay: no disk=. initramfs uses tmpfs for /storage (recovery path).
   setenv bootargs ${mcore_clk} console=${console} boot=/dev/mmcblk${mmcblk}p${mmcpart} SYSTEM_IMAGE=boot/libreelec/SYSTEM ${cma_size} cma_name=linux,cma systemd.debug_shell=ttymxc0
   echo "bootargs=${bootargs}"
   booti ${loadaddr} ${initrd_addr}:${initrd_size} ${fdt_addr}

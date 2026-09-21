@@ -93,6 +93,7 @@ LibreELEC overlay upload set (${IMAGE_NAME})
   ${IMAGE_NAME}.boot.scr -> /boot/boot.scr
 
 Do not overwrite /boot/Image.gz (Yocto kernel).
+Overlay /storage is tmpfs. Persistent Kodi data is the eMMC STORAGE partition.
 Install: projects/NXP/devices/VAR-DART-IMX8MP/scripts/install-sd-overlay.sh
 EOF
 
