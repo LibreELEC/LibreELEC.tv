@@ -494,6 +494,10 @@ devices = \
         'config': 'nanopi-m5-rk3576_defconfig',
         'dtb': ''
       },
+      'nanopi-r76s': {
+        'config': 'nanopi-r76s-rk3576_defconfig',
+        'dtb': ''
+      },
       'roc-pc': {
         'config': 'roc-pc-rk3576_defconfig',
         'dtb': ''
