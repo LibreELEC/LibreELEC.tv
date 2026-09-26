@@ -15,12 +15,3 @@ PKG_SHORTDESC="inputstream.adaptive"
 PKG_LONGDESC="inputstream.adaptive"
 
 PKG_IS_ADDON="yes"
-
-addon() {
-  install_binary_addon ${PKG_ADDON_ID}
-
-  if [ "${ARCH}" = "aarch64" ]; then
-    mkdir -p ${ADDON_BUILD}/${PKG_ADDON_ID}
-    cp -P ${PKG_BUILD}/.${TARGET_NAME}/lib/cdm_aarch64/libcdm_aarch64_loader.so ${ADDON_BUILD}/${PKG_ADDON_ID}
-  fi
-}
