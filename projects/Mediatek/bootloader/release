@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
+
+echo "This is Mediatek/bootloader/install file"
+
+SRCDIR="${BUILD}"/image/system/usr/share/bootloader
+DSTDIR="${RELEASE_DIR}"/3rdparty/bootloader
+
+mkdir -pv "${DSTDIR}"
+
+cp -av "${SRCDIR}"/*.dtb "${DSTDIR}"
