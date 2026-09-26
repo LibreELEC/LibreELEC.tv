@@ -8,6 +8,9 @@ ATTRS{name}=="eventlircd", GOTO="end"
 # don't change settings of rc remotes
 SUBSYSTEMS=="rc", GOTO="end"
 
+# only devices with EV_REP (bit 20 of capabilities/ev) accept a repeat setting
+ATTRS{capabilities/ev}!="*[13579bdf]?????", GOTO="end"
+
 # set default repeat delay to 500ms like rc remotes
 RUN+="/usr/bin/evrepeat -d 500 $devnode"
 
