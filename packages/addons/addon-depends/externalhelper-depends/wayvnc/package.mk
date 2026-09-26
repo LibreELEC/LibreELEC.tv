@@ -2,8 +2,8 @@
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="wayvnc"
-PKG_VERSION="0.10.1"
-PKG_SHA256="1dcb54f58d1637995bfb59c17709efca7833bae41f31b33eb47e608668a89d66"
+PKG_VERSION="0.10.2"
+PKG_SHA256="a85c6556a249b631551213f1e0fc20861458aea381996fd30a11fea431a465f9"
 PKG_LICENSE="ISC"
 PKG_SITE="https://github.com/any1/wayvnc"
 PKG_URL="https://github.com/any1/wayvnc/archive/v${PKG_VERSION}.tar.gz"
