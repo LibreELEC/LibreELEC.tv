@@ -61,3 +61,6 @@ index ef1ea10..7833ae4 100644
      // Endpoints for the filter graph.
      iavfltio->name       = av_strdup("out");
      iavfltio->filter_ctx = self->oavfltctx;
+-- 
+2.53.0
+
