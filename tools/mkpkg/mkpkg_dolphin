@@ -1,0 +1,99 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
+
+# Dolphin keeps its dependencies as git submodules under Externals/, and a
+# GitHub archive contains none of them. Most can be satisfied by system
+# libraries, but twelve cannot: some are pulled in with a bare
+# add_subdirectory() and have no find_package path at all, and the rest are
+# libraries LibreELEC does not ship. Either way CMake needs the directory to
+# exist before it runs.
+#
+# So this produces one tarball with those twelve already in place, which the
+# libretro-dolphin package consumes like any other versioned source.
+#
+# Usage: ./mkpkg_dolphin [commit]
+
+set -e
+
+GIT_URL="https://github.com/libretro/dolphin.git"
+GIT_DIR="dolphin.git"
+
+# Submodules a Linux libretro build reaches and cannot get any other way.
+#
+# The first six have no system-library option in Dolphin's CMake: cpp-ipc,
+# cpp-optparse, imgui, implot, tinygltf and watcher are added with a bare
+# add_subdirectory(), so USE_SYSTEM_LIBS cannot substitute for them.
+#
+# The last six are ordinary libraries with a find_package path, but LibreELEC
+# does not package them, so the bundled copy is what gets built.
+#
+# Everything else Dolphin needs -- bzip2, curl, glslang, hidapi, libusb, lz4,
+# pugixml, zlib, zstd -- comes from LibreELEC, and the remaining submodules are
+# gated out on this configuration: Qt, SDL and mGBA by ENABLE_QT/ENABLE_SDL,
+# rcheevos by USE_RETRO_ACHIEVEMENTS, miniupnpc by USE_UPNP, spirv_cross by
+# WIN32/APPLE, and wil, FFmpeg-bin, gtest and libadrenotools by platform.
+SUBMODULES="\
+  Externals/cpp-ipc/cpp-ipc \
+  Externals/cpp-optparse/cpp-optparse \
+  Externals/imgui/imgui \
+  Externals/implot/implot \
+  Externals/tinygltf/tinygltf \
+  Externals/watcher/watcher \
+  Externals/enet/enet \
+  Externals/fmt/fmt \
+  Externals/libspng/libspng \
+  Externals/minizip-ng/minizip-ng \
+  Externals/SFML/SFML \
+  Externals/xxhash/xxHash \
+"
+
+echo "getting sources..."
+if [ ! -d "${GIT_DIR}" ]; then
+  git clone "${GIT_URL}" "${GIT_DIR}"
+fi
+
+cd "${GIT_DIR}"
+git fetch
+if [ $# -eq 1 ]; then
+  git checkout "$1"
+else
+  git checkout origin/master
+fi
+GIT_REV=$(git log -n1 --format=%H)
+
+echo "getting submodules..."
+# Named rather than --recursive: the full set pulls Qt and a prebuilt FFmpeg,
+# which this configuration never compiles and which dwarf everything else.
+for module in ${SUBMODULES}; do
+  # A submodule that has been renamed or dropped upstream must stop the build
+  # here, rather than produce a tarball that fails at CMake time
+  if ! git ls-tree "${GIT_REV}" "${module}" | grep -q .; then
+    echo "error: ${module} is not a submodule of ${GIT_REV}" >&2
+    exit 1
+  fi
+  git submodule update --init --depth=1 "${module}"
+done
+cd ..
+
+# Named for the LibreELEC package rather than for Dolphin, so the tarball
+# unpacks straight into the directory the buildsystem expects
+PKG_DIR="libretro-dolphin-${GIT_REV}"
+
+echo "copying sources..."
+rm -rf "${PKG_DIR}"
+mkdir -p "${PKG_DIR}"
+# Excluding the git metadata keeps the tarball to the sources themselves, and
+# leaves nothing that could later be mistaken for a working checkout
+(cd "${GIT_DIR}" && tar cf - --exclude-vcs .) | (cd "${PKG_DIR}" && tar xf -)
+
+echo "packing sources..."
+tar cJf "${PKG_DIR}.tar.xz" "${PKG_DIR}"
+
+echo "remove temporary sourcedir..."
+rm -rf "${PKG_DIR}"
+
+echo
+echo "${PKG_DIR}.tar.xz"
+sha256sum "${PKG_DIR}.tar.xz"
