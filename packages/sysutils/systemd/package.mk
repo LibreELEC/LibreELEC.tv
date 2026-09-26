@@ -122,6 +122,7 @@ post_makeinstall_target() {
   safe_remove ${INSTALL}/usr/lib/systemd/user
   safe_remove ${INSTALL}/usr/lib/tmpfiles.d/etc.conf
   safe_remove ${INSTALL}/usr/lib/tmpfiles.d/home.conf
+  safe_remove ${INSTALL}/usr/lib/tmpfiles.d/root.conf
   safe_remove ${INSTALL}/usr/share/factory
 
   # remove Network adapter renaming rule, this is confusing
