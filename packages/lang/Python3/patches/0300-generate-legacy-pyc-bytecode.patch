@@ -23,7 +23,7 @@ https://www.python.org/dev/peps/pep-3147/#case-4-legacy-pyc-files-and-source-les
  1 file changed, 5 insertions(+)
 
 diff --git a/Lib/py_compile.py b/Lib/py_compile.py
-index 43d8ec9..b85b940 100644
+index 7ca4791..ed4b6ab 100644
 --- a/Lib/py_compile.py
 +++ b/Lib/py_compile.py
 @@ -121,6 +121,11 @@ def compile(file, cfile=None, dfile=None, doraise=False, optimize=-1,
