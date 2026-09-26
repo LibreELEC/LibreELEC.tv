@@ -2,8 +2,8 @@
 # Copyright (C) 2024-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="cifs-utils"
-PKG_VERSION="7.7"
-PKG_SHA256="2f8aae9aa5ddd73fbaf4d61e2e5e19ef54124cbf2810b626820050e7bd2f6606"
+PKG_VERSION="7.8"
+PKG_SHA256="b5321d3ff848d361c129aeec4ec8431642582b7036cb8a2a403667d5909d4172"
 PKG_LICENSE="GPL-3.0-or-later"
 PKG_SITE="https://wiki.samba.org/index.php/LinuxCIFS_utils"
 PKG_URL="https://download.samba.org/pub/linux-cifs/cifs-utils/cifs-utils-${PKG_VERSION}.tar.bz2"

@@ -23,10 +23,10 @@ Signed-off-by: Khem Raj <raj.khem@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/gdbserver/linux-low.cc b/gdbserver/linux-low.cc
-index 8b8614f6ed4..e71e6667c51 100644
+index f1be62225e2..fba02ba582b 100644
 --- a/gdbserver/linux-low.cc
 +++ b/gdbserver/linux-low.cc
-@@ -5532,7 +5532,7 @@
+@@ -5565,7 +5565,7 @@ linux_process_target::request_interrupt ()
  {
    /* Send a SIGINT to the process group.  This acts just like the user
       typed a ^C on the controlling terminal.  */
@@ -36,5 +36,5 @@ index 8b8614f6ed4..e71e6667c51 100644
      warning (_("Sending SIGINT to process group of pid %ld failed: %s"),
  	     signal_pid, safe_strerror (errno));
 -- 
-2.25.1
+2.53.0
 
