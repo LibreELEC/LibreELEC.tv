@@ -8,7 +8,7 @@ Subject: [PATCH] dvb scan path
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/input/mpegts/scanfile.c b/src/input/mpegts/scanfile.c
-index 8a16c44ff..05725a90b 100644
+index df8a8fbb6..6397dd359 100644
 --- a/src/input/mpegts/scanfile.c
 +++ b/src/input/mpegts/scanfile.c
 @@ -922,7 +922,7 @@ scanfile_init ( const char *muxconf_path, int lock )
@@ -21,5 +21,5 @@ index 8a16c44ff..05725a90b 100644
  
    if (!initialized) {
 -- 
-2.51.0
+2.53.0
 

@@ -90,3 +90,6 @@ index 6e5d1e3..2706df7 100644
          self->channel_layouts = codec->ch_layouts;
  #else
          self->channel_layouts = codec->channel_layouts;
+-- 
+2.53.0
+
