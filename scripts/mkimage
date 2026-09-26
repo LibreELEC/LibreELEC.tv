@@ -90,20 +90,17 @@ STORAGE_PART_COUNT=$((${STORAGE_PART_END} - ${STORAGE_PART_START} + 1))
 sync
 dd if="${DISK}" of="${IMG_TMP}/part2.ext4" bs=512 count=0 seek="${STORAGE_PART_COUNT}" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
 
+# create resize mark
+echo "image: creating filesystem for part2..."
+mkdir "${IMG_TMP}/part2.fs"
+touch "${IMG_TMP}/part2.fs/.please_resize_me"
+
 # create filesystem on part2
 echo "image: creating filesystem on part2..."
-mke2fs -F -q -t ext4 -O ^orphan_file -m 0 "${IMG_TMP}/part2.ext4"
+mke2fs -F -q -t ext4 -O ^orphan_file -m 0 -d "${IMG_TMP}/part2.fs" "${IMG_TMP}/part2.ext4"
 tune2fs -L "${DISTRO_DISKLABEL}" -U ${UUID_STORAGE} "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 e2fsck -n "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 sync
-
-# add resize mark
-mkdir "${IMG_TMP}/part2.fs"
-touch "${IMG_TMP}/part2.fs/.please_resize_me"
-echo "image: populating filesystem on part2..."
-populatefs -U -d "${IMG_TMP}/part2.fs" "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
-sync
-e2fsck -n "${IMG_TMP}/part2.ext4" >"${SAVE_ERROR}" 2>&1 || show_error
 
 # merge part2 into disk image
 echo "image: merging part2 into disk image..."
