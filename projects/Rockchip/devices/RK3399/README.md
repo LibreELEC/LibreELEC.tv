@@ -8,6 +8,7 @@ This is a SoC device for RK3399
 * `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=khadas-edge make image`
 * `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=nanopc-t4 make image`
 * `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=nanopi-m4 make image`
+* `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=nanopi-m4-2gb make image`
 * `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=orangepi make image`
 * `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=rock960 make image`
 * `PROJECT=Rockchip DEVICE=RK3399 ARCH=aarch64 UBOOT_SYSTEM=rock-pi-4 make image`
