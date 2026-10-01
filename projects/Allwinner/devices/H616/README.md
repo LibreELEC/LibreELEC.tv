@@ -8,7 +8,6 @@ and deinterlace, audio hub and HDMI audio, second Ethernet MAC).
 * `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=orangepi-zero2 make image`
 * `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=orangepi-zero2w make image`
 * `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=orangepi-zero3 make image`
-* `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=tanix-tx1 make image`
 * `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=transpeed-8k618-t make image`
 * `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=x96-mate make image`
 * `PROJECT=Allwinner DEVICE=H616 ARCH=aarch64 UBOOT_SYSTEM=x96q make image`

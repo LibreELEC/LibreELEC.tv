@@ -8,8 +8,8 @@ allwinner,sun8i-a83t-hdmi-audio machine driver binding, matching the
 other sun4i/sun8i/sun50i SoCs: the CPU DAI is the audio hub's HDMI I2S
 output (audio-cpu = <&ahub 1>). Leave the card disabled for boards to
 opt in, and enable it (plus the audio hub) on every board that already
-has HDMI enabled: Tanix TX1, X96 Mate, Orange Pi Zero2, Orange Pi
-Zero3, Transpeed 8K618-T and YuzukiHD Chameleon.
+has HDMI enabled: X96 Mate, Orange Pi Zero2, Orange Pi Zero3, Transpeed
+8K618-T and YuzukiHD Chameleon.
 
 Generalizes the X96-Mate-only version of this topology (previously
 gated behind "DO NOT MERGE" pending the H616 display pipeline, now
@@ -17,41 +17,14 @@ landed) into shared SoC-level DT.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- arch/arm64/boot/dts/allwinner/sun50i-h313-tanix-tx1.dts   | 8 ++++++++
  .../boot/dts/allwinner/sun50i-h616-orangepi-zero2.dts     | 8 ++++++++
  arch/arm64/boot/dts/allwinner/sun50i-h616-x96-mate.dts    | 8 ++++++++
  arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi            | 8 ++++++++
  .../boot/dts/allwinner/sun50i-h618-orangepi-zero3.dts     | 8 ++++++++
  .../boot/dts/allwinner/sun50i-h618-transpeed-8k618-t.dts  | 8 ++++++++
  .../boot/dts/allwinner/sun50i-h618-yuzukihd-chameleon.dts | 8 ++++++++
- 7 files changed, 56 insertions(+)
+ 6 files changed, 48 insertions(+)
 
-diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h313-tanix-tx1.dts b/arch/arm64/boot/dts/allwinner/sun50i-h313-tanix-tx1.dts
-index af479489216c..48037269ce52 100644
---- a/arch/arm64/boot/dts/allwinner/sun50i-h313-tanix-tx1.dts
-+++ b/arch/arm64/boot/dts/allwinner/sun50i-h313-tanix-tx1.dts
-@@ -77,6 +77,10 @@ reg_vcc5v: vcc5v {
- 	};
- };
- 
-+&ahub {
-+	status = "okay";
-+};
-+
- &codec {
- 	allwinner,audio-routing = "Line Out", "LINEOUT";
- 	status = "okay";
-@@ -110,6 +114,10 @@ hdmi_out_con: endpoint {
- 	};
- };
- 
-+&hdmi_sound {
-+	status = "okay";
-+};
-+
- &ir {
- 	status = "okay";
- };
 diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h616-orangepi-zero2.dts b/arch/arm64/boot/dts/allwinner/sun50i-h616-orangepi-zero2.dts
 index 0d30c072fbd5..15cd47eb13a1 100644
 --- a/arch/arm64/boot/dts/allwinner/sun50i-h616-orangepi-zero2.dts
@@ -79,10 +52,10 @@ index 0d30c072fbd5..15cd47eb13a1 100644
  	vmmc-supply = <&reg_dcdce>;
  };
 diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h616-x96-mate.dts b/arch/arm64/boot/dts/allwinner/sun50i-h616-x96-mate.dts
-index 3207f888b949..8e7f9304df37 100644
+index cac704821fd7..0787bf86bd79 100644
 --- a/arch/arm64/boot/dts/allwinner/sun50i-h616-x96-mate.dts
 +++ b/arch/arm64/boot/dts/allwinner/sun50i-h616-x96-mate.dts
-@@ -45,6 +45,10 @@ reg_vcc5v: vcc5v {
+@@ -44,6 +44,10 @@ reg_vcc5v: vcc5v {
  	};
  };
  
@@ -93,7 +66,7 @@ index 3207f888b949..8e7f9304df37 100644
  &codec {
  	allwinner,audio-routing = "Line Out", "LINEOUT";
  	status = "okay";
-@@ -93,6 +97,10 @@ hdmi_out_con: endpoint {
+@@ -81,6 +85,10 @@ hdmi_out_con: endpoint {
  	};
  };
  
@@ -105,7 +78,7 @@ index 3207f888b949..8e7f9304df37 100644
  	status = "okay";
  };
 diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi b/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi
-index 8db3f599abc8..c61306380697 100644
+index cf7123630e9e..0df90b38fcd8 100644
 --- a/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi
 +++ b/arch/arm64/boot/dts/allwinner/sun50i-h616.dtsi
 @@ -103,6 +103,13 @@ de: display-engine {
@@ -122,7 +95,7 @@ index 8db3f599abc8..c61306380697 100644
  	reserved-memory {
  		#address-cells = <2>;
  		#size-cells = <2>;
-@@ -1166,6 +1173,7 @@ ohci3: usb@5311400 {
+@@ -1139,6 +1146,7 @@ ohci3: usb@5311400 {
  		};
  
  		hdmi: hdmi@6000000 {
