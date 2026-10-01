@@ -2,8 +2,8 @@
 # Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="dt-overlays"
-PKG_VERSION="4352d87db6e85d285673359e80cce87d5e025c64"
-PKG_SHA256="754a0c37a41f8e5d9d179eb1df40b84eb48c0a505a37e39fed5f1ceb35e8e120"
+PKG_VERSION="3668156f36bf9409ccad0f82014e8b48d257c620"
+PKG_SHA256="42a0708a26af8526e8a93dc43478cf040c4be3f2b28fa7b2794478ef1fd2d1d5"
 PKG_LICENSE="GPL-2.0-or-later OR MIT"
 PKG_SITE="https://github.com/LibreELEC/dt-overlays"
 PKG_URL="https://github.com/LibreELEC/dt-overlays/archive/${PKG_VERSION}.tar.gz"
