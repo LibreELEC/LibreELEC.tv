@@ -17,10 +17,10 @@ Signed-off-by: Adam Duskett <adam.duskett@amarulasolutions.com>
  2 files changed, 8 insertions(+)
 
 diff --git a/Makefile.pre.in b/Makefile.pre.in
-index 526d500..4149141 100644
+index 8008a96..3686be5 100644
 --- a/Makefile.pre.in
 +++ b/Makefile.pre.in
-@@ -2820,6 +2820,7 @@ libinstall:	all $(srcdir)/Modules/xxmodule.c
+@@ -2900,6 +2900,7 @@ libinstall:	all $(srcdir)/Modules/xxmodule.c
  		patch --force --reject-file "$(abs_builddir)/app-store-compliance.rej" --strip 2 --directory "$(DESTDIR)$(LIBDEST)" --input "$(abs_srcdir)/$(APP_STORE_COMPLIANCE_PATCH)" || true ; \
  	fi
  	@ # Build PYC files for the 3 optimization levels (0, 1, 2)
@@ -28,7 +28,7 @@ index 526d500..4149141 100644
  	-PYTHONPATH=$(DESTDIR)$(LIBDEST) $(RUNSHARED) \
  		$(PYTHON_FOR_BUILD) -Wi $(DESTDIR)$(LIBDEST)/compileall.py \
  		-o 0 -o 1 -o 2 $(COMPILEALL_OPTS) -d $(LIBDEST) -f \
-@@ -2829,6 +2830,7 @@ libinstall:	all $(srcdir)/Modules/xxmodule.c
+@@ -2909,6 +2910,7 @@ libinstall:	all $(srcdir)/Modules/xxmodule.c
  		$(PYTHON_FOR_BUILD) -Wi $(DESTDIR)$(LIBDEST)/compileall.py \
  		-o 0 -o 1 -o 2 $(COMPILEALL_OPTS) -d $(LIBDEST)/site-packages -f \
  		-x badsyntax $(DESTDIR)$(LIBDEST)/site-packages
@@ -37,10 +37,10 @@ index 526d500..4149141 100644
  # bpo-21536: Misc/python-config.sh is generated in the build directory
  # from $(srcdir)Misc/python-config.sh.in.
 diff --git a/configure.ac b/configure.ac
-index 967d34d..4f5f640 100644
+index ed8b53d..c2c18ee 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1533,6 +1533,12 @@ fi
+@@ -1567,6 +1567,12 @@ fi
  
  AC_MSG_CHECKING([LDLIBRARY])
  
