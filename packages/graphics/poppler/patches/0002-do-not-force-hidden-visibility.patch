@@ -1,0 +1,23 @@
+From: LibreELEC
+Subject: [PATCH] do not force hidden visibility
+
+Poppler forces hidden visibility and hidden inline functions on itself,
+which suits the shared library it normally is. Built static and linked
+into the vfs.pdf add-on, the linker then refuses the inlined std::string
+members it emitted as hidden.
+
+These are plain set() calls, so they shadow anything passed with -D and
+have to be removed rather than overridden.
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -53,9 +53,6 @@
+ set(CMAKE_C_STANDARD 17)
+ set(CMAKE_C_EXTENSIONS OFF)
+ set(CMAKE_LINK_DEPENDS_NO_SHARED TRUE)
+-set(CMAKE_C_VISIBILITY_PRESET hidden)
+-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+-set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+ set(CMAKE_VERIFY_INTERFACE_HEADER_SETS ON)
+ 
+ 
