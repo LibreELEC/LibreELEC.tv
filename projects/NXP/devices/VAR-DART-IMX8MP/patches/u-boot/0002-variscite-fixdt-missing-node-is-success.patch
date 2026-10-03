@@ -1,0 +1,26 @@
+Variscite board_fix_fdt deletes Sonata-only gpio@22 when the carrier
+EEPROM is DT8M/legacy. The U-Boot control DTB is the Linux 3.x
+imx8mp-var-dart-dt8mcustomboard blob, which never has that node.
+var_delete_dt_node returned FDT_ERR_NOTFOUND, vendor_board_fix_fdt
+treated it as fatal, and initcall hang after "DRAM:".
+
+A missing optional node is already the desired state.
+
+--- a/board/variscite/common/fixdt.c
++++ b/board/variscite/common/fixdt.c
+@@ -12,11 +12,15 @@ int var_delete_dt_node(const char *node_name, const char *parent_node_path, void
+ 	int node_offset, parent_node_offset;
+ 
+ 	parent_node_offset = fdt_path_offset(fdt_blob, parent_node_path);
++	if (parent_node_offset == -FDT_ERR_NOTFOUND)
++		return 0;
+ 	if (parent_node_offset < 0)
+ 		return parent_node_offset;
+ 
+ 	node_offset = fdt_subnode_offset(fdt_blob, parent_node_offset, node_name);
++	if (node_offset == -FDT_ERR_NOTFOUND)
++		return 0;
+ 	if (node_offset < 0)
+ 		return node_offset;
+ 
+ 	return fdt_del_node(fdt_blob, node_offset);
