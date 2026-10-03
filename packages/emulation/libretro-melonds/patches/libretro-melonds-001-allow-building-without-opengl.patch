@@ -1,0 +1,43 @@
+From fab810727440ceb6587ca228fb783d2ae53c6dea Mon Sep 17 00:00:00 2001
+From: Chris <meischris39@hotmail.com>
+Date: Fri, 7 Aug 2026 15:12:07 +0100
+Subject: [PATCH] Makefile: let platform=unix build without OpenGL
+
+The unix platform links -lGL and sets HAVE_OPENGL=1 unconditionally on x86 and
+x86_64, so the core cannot be built for a system that provides only OpenGL ES.
+There is no GLES fallback to reach for either: Makefile.common gates the
+renderer on HAVE_OPENGL and compiles glsym_gl.c, and the HAVE_OPENGLES3 the
+platform table sets for the ARM boards is never read by anything.
+
+Add DISABLE_OPENGL so those systems can build the software renderer, which is
+what they would end up using in any case:
+
+  make platform=unix DISABLE_OPENGL=1
+
+A separate variable rather than HAVE_OPENGL=0, because HAVE_OPENGL is
+initialised to 0 at the top of this file and so is already 0 when the platform
+block is evaluated. Default behaviour is unchanged.
+---
+ Makefile | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 1e7c7cf..6d79be7 100644
+--- a/Makefile
++++ b/Makefile
+@@ -79,8 +79,10 @@ ifeq ($(platform), unix)
+    endif
+    HAVE_THREADS=1
+    ifneq ($(filter $(ARCH),x86 x86_64),)
+-     LIBS += -lGL
+-     HAVE_OPENGL=1
++     ifneq ($(DISABLE_OPENGL), 1)
++       LIBS += -lGL
++       HAVE_OPENGL=1
++     endif
+    endif
+    ifeq ($(ARCH),x86_64)
+       JIT_ARCH=x64
+-- 
+2.53.0
+
