@@ -12,10 +12,10 @@ PKG_LONGDESC="melonDS is a Nintendo DS emulator, focused on accuracy and perform
 PKG_TOOLCHAIN="make"
 
 PKG_LIBNAME="melonds_libretro.so"
-PKG_LIBPATH="${PKG_LIBNAME}"
+PKG_LIBPATH="../${PKG_LIBNAME}"
 PKG_LIBVAR="MELONDS_LIB"
 
-PKG_MAKE_OPTS_TARGET="platform=unix"
+PKG_MAKE_OPTS_TARGET="-C ../ platform=unix"
 
 
 if build_with_debug; then
@@ -33,12 +33,6 @@ if [ "${OPENGL_SUPPORT}" = "yes" ]; then
 else
   PKG_MAKE_OPTS_TARGET+=" DISABLE_OPENGL=1"
 fi
-
-post_unpack() {
-  # melonDS ships a CMakeLists.txt for its standalone build. Its presence makes
-  # the build run out of tree, where the libretro Makefile is not.
-  rm -f ${PKG_BUILD}/CMakeLists.txt
-}
 
 pre_make_target() {
   # The core's assembly sources carry no .note.GNU-stack, so the linker marks
