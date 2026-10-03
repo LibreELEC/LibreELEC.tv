@@ -62,7 +62,10 @@ PKG_CONFIGURE_OPTS_TARGET="--without-ada \
                            --enable-sigwinch \
                            --cache-file=config.cache"
 
-PKG_CONFIGURE_OPTS_HOST="--enable-termcap \
+PKG_CONFIGURE_OPTS_HOST="--without-ada \
+                         --without-cxx \
+                         --without-cxx-binding \
+                         --enable-termcap \
                          --with-termlib \
                          --with-shared \
                          --enable-pc-files \
