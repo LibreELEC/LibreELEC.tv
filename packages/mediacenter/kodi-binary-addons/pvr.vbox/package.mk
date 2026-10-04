@@ -5,7 +5,7 @@
 PKG_NAME="pvr.vbox"
 PKG_VERSION="22.2.5-Piers"
 PKG_SHA256="ee82a2dd9e01b91c0c095555aa0e257fc2754349060250d636715452b7ca9e4a"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-pvr/pvr.vbox"

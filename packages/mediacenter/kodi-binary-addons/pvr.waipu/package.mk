@@ -4,7 +4,7 @@
 PKG_NAME="pvr.waipu"
 PKG_VERSION="22.10.0-Piers"
 PKG_SHA256="9e7e71df13dd3f6d01a8899ec2da794d7a5d0c080cd6fefc0279fccaf612a29b"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/flubshi/pvr.waipu"

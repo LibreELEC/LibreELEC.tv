@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.beetle-pce"
 PKG_VERSION="1.29.0.35-Omega"
 PKG_SHA256="855f8a7610688eb6dda3f4e732a85129089ca69a1031a9e72c07ac98951d191b"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.beetle-pce"

@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.gsf"
 PKG_VERSION="22.0.3-Piers"
 PKG_SHA256="a06d0fb2cbe28f44b0c495bf2d02451b8ae40ac6c01a38c46be880dc0a836bd6"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/xbmc/audiodecoder.gsf"

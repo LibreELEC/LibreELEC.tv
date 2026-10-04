@@ -5,7 +5,7 @@
 PKG_NAME="pvr.filmon"
 PKG_VERSION="22.2.5-Piers"
 PKG_SHA256="4003e6c76c0e3b08becfdfa66606d2c8d56c6e89a713c32226c5216ed69e407b"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-pvr/pvr.filmon"
