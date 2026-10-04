@@ -3,7 +3,7 @@
 
 PKG_NAME="terminal.foot"
 PKG_VERSION="0.0.1"
-PKG_REV="2"
+PKG_REV="0"
 PKG_LICENSE="MIT"
 PKG_SITE="https://libreelec.tv"
 PKG_URL=""

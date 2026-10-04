@@ -4,7 +4,7 @@
 PKG_NAME="hyperhdr"
 PKG_VERSION="22.0.0.0"
 PKG_SHA256="5da97008eaa9bfcd051adec695bdde584fe8c91c5295ce67e8d86d423027c5b1"
-PKG_REV="4"
+PKG_REV="0"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/awawa-dev/HyperHDR"
 PKG_URL="https://github.com/awawa-dev/HyperHDR/archive/v${PKG_VERSION}.tar.gz"
