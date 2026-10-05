@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.mame2003_plus"
 PKG_VERSION="0.0.1.98-Omega"
 PKG_SHA256="af97344208060fc2a59fb22612aa5ad6476e9f0ca18c63f30b248019dd07bc6d"
-PKG_REV="1"
+PKG_REV="2"
 PKG_LICENSE="LicenseRef-MAME"
 PKG_SITE="https://github.com/kodi-game/game.libretro.mame2003_plus"
 PKG_URL="https://github.com/kodi-game/game.libretro.mame2003_plus/archive/${PKG_VERSION}.tar.gz"

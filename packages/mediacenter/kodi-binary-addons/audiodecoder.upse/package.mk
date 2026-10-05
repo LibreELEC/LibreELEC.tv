@@ -5,7 +5,7 @@
 PKG_NAME="audiodecoder.upse"
 PKG_VERSION="22.0.3-Piers"
 PKG_SHA256="4d21c306026c5add2e16ad0d2e5ba7f58b3d95cea77adfb2787aa2d0d25b2635"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/xbmc/audiodecoder.upse"

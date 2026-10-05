@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.cannonball"
 PKG_VERSION="0.0.1.40-Omega"
 PKG_SHA256="2a02b908783313856a2adbebcbf1825ec76be2b9cdd26135f6616fe270e75fde"
-PKG_REV="2"
+PKG_REV="3"
 PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-Non-commercial"
 PKG_SITE="https://github.com/kodi-game/game.libretro.cannonball"

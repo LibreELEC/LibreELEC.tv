@@ -4,7 +4,7 @@
 PKG_NAME="pvr.octonet"
 PKG_VERSION="22.2.1-Piers"
 PKG_SHA256="f2ba368d6066198691ca1b5d53bf94ba2288dadc2051ecb5be9013e9ca9a9012"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/DigitalDevices/pvr.octonet"
