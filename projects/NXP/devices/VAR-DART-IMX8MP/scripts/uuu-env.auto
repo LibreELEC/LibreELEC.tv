@@ -1,0 +1,23 @@
+uuu_version 1.4.149
+
+# Write only the U-Boot env (scriptaddr loadbootscript) to eMMC user
+# 0x700000. Use after a UUU run that already flashed boot0 + image
+# but failed on saveenv (SDP has no SD; CONFIG_SYS_MMC_ENV_DEV=1).
+#
+# Board: SD boot switch, no SD card, USB OTG. Files: imx-boot, uboot.env
+#   sudo uuu uuu-env.auto
+
+SDPS: boot -f imx-boot
+SDP: boot -f imx-boot
+
+FB: ucmd if env exists emmc_dev; then ; else setenv emmc_dev 2; fi;
+FB: ucmd setenv fastboot_dev mmc
+FB: ucmd setenv mmcdev ${emmc_dev}
+FB: ucmd mmc dev ${emmc_dev} 0
+
+# 0x700000 / 512 = 0x3800; ENV_SIZE 0x4000 / 512 = 0x20
+FB: ucmd setenv fastboot_buffer 0x42800000
+FB: download -f uboot.env
+FB: ucmd mmc write 0x42800000 0x3800 0x20
+
+FB: done
