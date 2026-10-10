@@ -19,6 +19,7 @@ PKG_LIBVAR="SCUMMVM_LIB"
 PKG_MAKE_OPTS_TARGET="all"
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_TAG= GIT_HASH=${PKG_VERSION:0:7}"
   CXXFLAGS+=" -DHAVE_POSIX_MEMALIGN=1"
 
   # use the system faad2

@@ -15,6 +15,10 @@ PKG_LIBNAME="vice_xplus4_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="VICE-XPLUS4_LIB"
 
+pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
+}
+
 make_target() {
   make EMUTYPE=xplus4
 }

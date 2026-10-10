@@ -18,6 +18,7 @@ PKG_LIBVAR="DOSBOX_LIB"
 PKG_MAKE_OPTS_TARGET="-f Makefile.libretro"
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
   CXXFLAGS+=" -std=gnu++11"
 }
 

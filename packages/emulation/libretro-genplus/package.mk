@@ -22,6 +22,7 @@ if [ "${ARCH}" = "aarch64" ]; then
 fi
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
   if [ "${ARCH}" = "arm" -o "${ARCH}" = "aarch64" ]; then
     CFLAGS+=" -DALIGN_LONG"
   fi

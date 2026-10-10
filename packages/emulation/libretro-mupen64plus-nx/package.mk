@@ -58,6 +58,10 @@ if [ -n "${PLATFORM}" ]; then
   PKG_MAKE_OPTS_TARGET+=" platform=${PLATFORM}"
 fi
 
+pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
+}
+
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}

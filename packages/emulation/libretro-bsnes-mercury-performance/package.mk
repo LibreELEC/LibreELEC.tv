@@ -18,6 +18,7 @@ PKG_LIBVAR="BSNES-MERCURY-PERFORMANCE_LIB"
 PKG_MAKE_OPTS_TARGET="ui=target-libretro profile=performance"
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
   PKG_MAKE_OPTS_TARGET+=" compiler=${CXX}"
 }
 

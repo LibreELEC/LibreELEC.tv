@@ -17,6 +17,10 @@ PKG_LIBVAR="VBAM_LIB"
 
 PKG_MAKE_OPTS_TARGET="-C ../src/libretro/"
 
+pre_make_target() {
+  MAKEFLAGS+=" CURRENT_COMMIT=${PKG_VERSION:0:7}"
+}
+
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}

@@ -16,6 +16,7 @@ PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="BSNES2014-PERFORMANCE_LIB"
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
   if [ "${ARCH}" = "aarch64" ]; then
     LDFLAGS+=" -lgcc"
   fi
