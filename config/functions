@@ -1186,6 +1186,26 @@ calculate_stamp() {
   echo "${data}" | sha256sum | cut -d" " -f1
 }
 
+# print a key for the cross compiler: a hash of the files and patches of the
+# packages that make up gcc and the assembler, and of the options gcc is
+# configured with for the target. Headers need not be part of it, as ccache
+# hashes what each compile includes.
+get_toolchain_key() {
+  local pkg dirs=""
+
+  for pkg in binutils gcc gmp mpfr mpc; do
+    dirs+=" $(get_pkg_directory "${pkg}") ${PROJECT_DIR}/${PROJECT}/patches/${pkg}"
+    dirs+=" ${PROJECT_DIR}/${PROJECT}/packages/${pkg}"
+    [ -n "${DEVICE}" ] && dirs+=" ${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/patches/${pkg}"
+  done
+
+  {
+    find -L ${dirs} -type f -not -name '.*' 2>/dev/null | sed "s|^${ROOT}/||" | LC_ALL=C sort -u |
+      (cd "${ROOT}" && xargs sha256sum)
+    echo "${TARGET_NAME} ${TARGET_ARCH_GCC_OPTS}"
+  } | sha256sum | cut -c1-16
+}
+
 target_has_feature() {
   listcontains "$TARGET_FEATURES" "$1"
 }

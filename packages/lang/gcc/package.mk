@@ -85,22 +85,21 @@ PKG_CONFIGURE_OPTS_HOST="${GCC_COMMON_CONFIGURE_OPTS} \
                          --enable-clocale=gnu \
                          ${TARGET_ARCH_GCC_OPTS}"
 
+# ccache identifies a compiler by the mtime and size of its driver, which do
+# not change when a patch to gcc or binutils changes what cc1 or as produce, so
+# the wrappers name the compiler by the toolchain key instead
 post_makeinstall_bootstrap() {
   GCC_VERSION=$(${TOOLCHAIN}/bin/${TARGET_NAME}-gcc -dumpversion)
-  DATE="0401$(echo ${GCC_VERSION} | sed 's/\./0/g')"
   CROSS_CC=${TARGET_PREFIX}gcc-${GCC_VERSION}
 
   rm -f ${TARGET_PREFIX}gcc
 
   cat >${TARGET_PREFIX}gcc <<EOF
 #!/bin/sh
-${TOOLCHAIN}/bin/ccache ${CROSS_CC} "\$@"
+CCACHE_COMPILERCHECK="string:$(get_toolchain_key)" ${TOOLCHAIN}/bin/ccache ${CROSS_CC} "\$@"
 EOF
 
   chmod +x ${TARGET_PREFIX}gcc
-
-  # To avoid cache trashing
-  touch -c -t ${DATE} ${CROSS_CC}
 
   # install lto plugin for binutils
   mkdir -p ${TOOLCHAIN}/lib/bfd-plugins
@@ -126,33 +125,27 @@ post_makeinstall_host() {
   cp -PR ${TARGET_NAME}/libstdc++-v3/src/.libs/libstdc++.so* ${SYSROOT_PREFIX}/usr/lib
 
   GCC_VERSION=$(${TOOLCHAIN}/bin/${TARGET_NAME}-gcc -dumpversion)
-  DATE="0501$(echo ${GCC_VERSION} | sed 's/\./0/g')"
   CROSS_CC=${TARGET_PREFIX}gcc-${GCC_VERSION}
   CROSS_CXX=${TARGET_PREFIX}g++-${GCC_VERSION}
+  local key="$(get_toolchain_key)"
 
   rm -f ${TARGET_PREFIX}gcc
 
   cat >${TARGET_PREFIX}gcc <<EOF
 #!/bin/sh
-${TOOLCHAIN}/bin/ccache ${CROSS_CC} "\$@"
+CCACHE_COMPILERCHECK="string:${key}" ${TOOLCHAIN}/bin/ccache ${CROSS_CC} "\$@"
 EOF
 
   chmod +x ${TARGET_PREFIX}gcc
-
-  # To avoid cache trashing
-  touch -c -t ${DATE} ${CROSS_CC}
 
   [ ! -f "${CROSS_CXX}" ] && mv ${TARGET_PREFIX}g++ ${CROSS_CXX}
 
   cat >${TARGET_PREFIX}g++ <<EOF
 #!/bin/sh
-${TOOLCHAIN}/bin/ccache ${CROSS_CXX} "\$@"
+CCACHE_COMPILERCHECK="string:${key}" ${TOOLCHAIN}/bin/ccache ${CROSS_CXX} "\$@"
 EOF
 
   chmod +x ${TARGET_PREFIX}g++
-
-  # To avoid cache trashing
-  touch -c -t ${DATE} ${CROSS_CXX}
 
   # install lto plugin for binutils
   mkdir -p ${TOOLCHAIN}/lib/bfd-plugins
