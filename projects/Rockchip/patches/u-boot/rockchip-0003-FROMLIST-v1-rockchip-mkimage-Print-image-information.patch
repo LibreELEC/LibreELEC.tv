@@ -1,8 +1,8 @@
-From 7c25ad8af1ead5230dac5b63168296ae9781a265 Mon Sep 17 00:00:00 2001
+From 1a6688d2e693f142791f93e6566fb459255843fb Mon Sep 17 00:00:00 2001
 From: Jonas Karlman <jonas@kwiboo.se>
-Date: Wed, 29 Jan 2025 22:36:28 +0000
-Subject: [PATCH 10/15] rockchip: mkimage: Print image information for all
- embedded images
+Date: Mon, 13 Jul 2026 14:02:43 +0400
+Subject: [PATCH 3/8] FROMLIST(v1): rockchip: mkimage: Print image information
+ for all embedded images
 
 The v2 image format can embed up to 4 data files compared to the two
 init and boot data files using the older image format.
@@ -28,15 +28,16 @@ Example for older image format:
   Boot Data: 112640 @ 0x5800
 
 Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+Signed-off-by: Alexey Charkov <alchark@flipper.net>
 ---
  tools/rkcommon.c | 41 +++++++++++++++++++++++++++++++----------
  1 file changed, 31 insertions(+), 10 deletions(-)
 
 diff --git a/tools/rkcommon.c b/tools/rkcommon.c
-index 39e8364ccef..5b0d6862a9a 100644
+index 034896d57f8..fe0afc5629b 100644
 --- a/tools/rkcommon.c
 +++ b/tools/rkcommon.c
-@@ -349,8 +349,6 @@ static void rkcommon_set_header0_v2(void *buf, struct image_tool_params *params)
+@@ -350,8 +350,6 @@ static void rkcommon_set_header0_v2(void *buf, struct image_tool_params *params)
  	uint8_t *image_ptr = NULL;
  	int i;
  
@@ -45,7 +46,7 @@ index 39e8364ccef..5b0d6862a9a 100644
  	memset(buf, '\0', RK_INIT_OFFSET * RK_BLK_SIZE);
  	hdr->magic = cpu_to_le32(RK_MAGIC_V2);
  	hdr->boot_flag = cpu_to_le32(HASH_SHA256);
-@@ -504,6 +502,29 @@ int rkcommon_verify_header(unsigned char *buf, int size,
+@@ -505,6 +503,29 @@ int rkcommon_verify_header(unsigned char *buf, int size,
  	return -ENOENT;
  }
  
@@ -75,7 +76,7 @@ index 39e8364ccef..5b0d6862a9a 100644
  void rkcommon_print_header(const void *buf, struct image_tool_params *params)
  {
  	struct header0_info header0;
-@@ -520,8 +541,7 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
+@@ -521,8 +542,7 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
  			return;
  		}
  
@@ -85,7 +86,7 @@ index 39e8364ccef..5b0d6862a9a 100644
  	} else {
  		ret = rkcommon_parse_header(buf, &header0, &spl_info);
  
-@@ -539,15 +559,16 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
+@@ -540,15 +560,16 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
  		boot_size = le16_to_cpu(header0.init_boot_size) * RK_BLK_SIZE -
  			    init_size;
  

@@ -1,7 +1,7 @@
-From ff49d5eedc11a7d36ea81c7258c8e40f9c27c6d7 Mon Sep 17 00:00:00 2001
+From e8f0f0d75b224e429b6dd36bbb35effd4af01b58 Mon Sep 17 00:00:00 2001
 From: Alex Bee <knaerzche@gmail.com>
 Date: Mon, 31 Oct 2022 17:13:47 +0100
-Subject: [PATCH 01/15] KNAERZCHE: rockchip: rk3288: Pick SD card as first boot
+Subject: [PATCH 1/8] LOCAL: rockchip: rk3288: Pick SD card as first boot
  device
 
 In order to be able to boot from SD card at SPL level, always check

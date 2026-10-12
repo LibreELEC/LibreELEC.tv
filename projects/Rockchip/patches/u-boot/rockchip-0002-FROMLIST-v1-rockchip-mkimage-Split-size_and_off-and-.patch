@@ -1,7 +1,7 @@
-From af4c1ac4045c488934645010138cee178342e648 Mon Sep 17 00:00:00 2001
+From 6a8b8620c4cc9946289ff8274cf2bd492ff2f2a2 Mon Sep 17 00:00:00 2001
 From: Jonas Karlman <jonas@kwiboo.se>
-Date: Wed, 29 Jan 2025 22:36:27 +0000
-Subject: [PATCH 09/15] rockchip: mkimage: Split size_and_off and
+Date: Mon, 13 Jul 2026 14:02:42 +0400
+Subject: [PATCH 2/8] FROMLIST(v1): rockchip: mkimage: Split size_and_off and
  size_and_nimage
 
 Split 32-bit size_and_off and size_and_nimage fields of the v2 image
@@ -12,12 +12,13 @@ parameter and size based on the offset to the hash field to fix using a
 single init data file and no boot data file for the v2 image format.
 
 Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+Signed-off-by: Alexey Charkov <alchark@flipper.net>
 ---
  tools/rkcommon.c | 44 ++++++++++++++++++++++++--------------------
  1 file changed, 24 insertions(+), 20 deletions(-)
 
 diff --git a/tools/rkcommon.c b/tools/rkcommon.c
-index e7e78ef7e5b..39e8364ccef 100644
+index b39777fc060..034896d57f8 100644
 --- a/tools/rkcommon.c
 +++ b/tools/rkcommon.c
 @@ -34,15 +34,16 @@ enum hash_type {
@@ -65,7 +66,7 @@ index e7e78ef7e5b..39e8364ccef 100644
  	uint32_t boot_flag;
  	uint8_t reserved1[104];
  	struct image_entry images[4];
-@@ -350,17 +352,18 @@ static void rkcommon_set_header0_v2(void *buf, struct image_tool_params *params)
+@@ -351,17 +353,18 @@ static void rkcommon_set_header0_v2(void *buf, struct image_tool_params *params)
  	printf("Image Type:   Rockchip %s boot image\n",
  		rkcommon_get_spl_hdr(params));
  	memset(buf, '\0', RK_INIT_OFFSET * RK_BLK_SIZE);
@@ -88,7 +89,7 @@ index e7e78ef7e5b..39e8364ccef 100644
  		hdr->images[i].address = 0xFFFFFFFF;
  		hdr->images[i].counter = cpu_to_le32(i + 1);
  		image_ptr = buf + sector_offset * RK_BLK_SIZE;
-@@ -369,6 +372,8 @@ static void rkcommon_set_header0_v2(void *buf, struct image_tool_params *params)
+@@ -370,6 +373,8 @@ static void rkcommon_set_header0_v2(void *buf, struct image_tool_params *params)
  		sector_offset = sector_offset + image_sector_count;
  	}
  
@@ -97,7 +98,7 @@ index e7e78ef7e5b..39e8364ccef 100644
  	do_sha256_hash(buf, (void *)hdr->hash - buf, hdr->hash);
  }
  
-@@ -515,10 +520,8 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
+@@ -516,10 +521,8 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
  			return;
  		}
  
@@ -110,7 +111,7 @@ index e7e78ef7e5b..39e8364ccef 100644
  	} else {
  		ret = rkcommon_parse_header(buf, &header0, &spl_info);
  
-@@ -532,8 +535,9 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
+@@ -533,8 +536,9 @@ void rkcommon_print_header(const void *buf, struct image_tool_params *params)
  		}
  
  		image_type = ret;
