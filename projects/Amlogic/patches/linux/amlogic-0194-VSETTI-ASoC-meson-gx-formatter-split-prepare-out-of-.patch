@@ -1,0 +1,56 @@
+From 996a0f0ec4e79306bf13bc73eb01d1ec94182d15 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 30 Sep 2026 18:12:12 +0200
+Subject: [PATCH 194/267] VSETTI: ASoC: meson: gx-formatter: split prepare out
+ of gx_formatter_enable()
+
+Move the formatter prepare step to its own helper. No functional change.
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ sound/soc/meson/gx-formatter.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/sound/soc/meson/gx-formatter.c b/sound/soc/meson/gx-formatter.c
+index 6b4155f9f05e..4b217066ee4a 100644
+--- a/sound/soc/meson/gx-formatter.c
++++ b/sound/soc/meson/gx-formatter.c
+@@ -18,6 +18,17 @@ struct gx_formatter {
+ 	struct regmap *map;
+ };
+ 
++static int gx_formatter_prepare(struct gx_formatter *formatter)
++{
++	/* Setup the stream parameter in the formatter */
++	if (!formatter->drv->ops->prepare)
++		return 0;
++
++	return formatter->drv->ops->prepare(formatter->map,
++					    formatter->drv->quirks,
++					    formatter->stream);
++}
++
+ static int gx_formatter_enable(struct gx_formatter *formatter)
+ {
+ 	int ret;
+@@ -26,14 +37,9 @@ static int gx_formatter_enable(struct gx_formatter *formatter)
+ 	if (formatter->enabled)
+ 		return 0;
+ 
+-	/* Setup the stream parameter in the formatter */
+-	if (formatter->drv->ops->prepare) {
+-		ret = formatter->drv->ops->prepare(formatter->map,
+-					   formatter->drv->quirks,
+-					   formatter->stream);
+-		if (ret)
+-			return ret;
+-	}
++	ret = gx_formatter_prepare(formatter);
++	if (ret)
++		return ret;
+ 
+ 	/* Finally, actually enable the formatter */
+ 	if (formatter->drv->ops->enable)
+-- 
+2.43.0
+

@@ -1,0 +1,33 @@
+From 6b60413d7beb61d5b100b828c11646e1f02b128e Mon Sep 17 00:00:00 2001
+From: Carlo Caione <ccaione@baylibre.com>
+Date: Thu, 22 Oct 2026 22:10:33 +0200
+Subject: [PATCH 127/267] FROMLIST(v1): clk: meson: g12a: fix ENCP clock
+ selection
+
+The ENCP clock uses ENCT's settings by mistake. Change the selector
+from bits [23:20] to [27:24].
+
+See the S905D3 datasheet 0.2, Table 6-109.
+
+Fixes: 085a4ea93d54 ("clk: meson: g12a: add peripheral clock controller")
+Signed-off-by: Carlo Caione <ccaione@baylibre.com>
+---
+ drivers/clk/meson/g12a.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/meson/g12a.c b/drivers/clk/meson/g12a.c
+index d0d4c7b6dc82..fdf41572be84 100644
+--- a/drivers/clk/meson/g12a.c
++++ b/drivers/clk/meson/g12a.c
+@@ -3666,7 +3666,7 @@ static struct clk_regmap g12a_cts_encp_sel = {
+ 	.data = &(struct clk_regmap_mux_data){
+ 		.offset = HHI_VID_CLK_DIV,
+ 		.mask = 0xf,
+-		.shift = 20,
++		.shift = 24,
+ 		.table = g12a_cts_parents_val_table,
+ 	},
+ 	.hw.init = &(struct clk_init_data){
+-- 
+2.43.0
+

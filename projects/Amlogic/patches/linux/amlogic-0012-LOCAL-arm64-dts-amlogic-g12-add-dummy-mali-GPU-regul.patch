@@ -1,7 +1,7 @@
-From f8d13a3fd29363cf6c9d693d913f618c85b0e57b Mon Sep 17 00:00:00 2001
+From 0be3f48775e3b685e7fbdea22ee576cb5b717e62 Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Mon, 22 Jun 2026 16:56:15 +0000
-Subject: [PATCH 012/210] LOCAL: arm64: dts: amlogic: g12: add dummy mali GPU
+Subject: [PATCH 012/267] LOCAL: arm64: dts: amlogic: g12: add dummy mali GPU
  regulator
 
 The Mali-G31/G52 GPU OPP table specifies an operating voltage so the

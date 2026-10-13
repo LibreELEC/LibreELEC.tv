@@ -1,0 +1,103 @@
+From 41c1941223b1a4f8ef302e139e15f6b393624041 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Sun, 18 Oct 2026 12:18:04 +0200
+Subject: [PATCH 112/267] FROMLIST(v5): arm64: dts: amlogic: gx: add AUDIN node
+
+AUDIN provides audio input support to Amlogic GXBB/GXL SoCs.
+
+What's missing after this to get capture support working is to connect a
+capture capable codec to the SoC. For example to test these changes an
+NXP SGTL5000 chip has been connected to an OdroidC2 (GXBB) board using a
+custom hat board.
+
+The following additions/overlay are required on top of
+'amlogic/meson-gxbb-odroidc2.dts' to make that hat board to work:
+
+    &sound {
+            audio-routing = "AUDIN I2S Formatter", "AIU I2S Encoder Capture";
+
+            dai-link-1 {
+                    codec-1 {
+                            sound-dai = <&sgtl5000>;
+                    };
+            };
+
+            dai-link-3 {
+                    sound-dai = <&audin 0>;
+            };
+    };
+
+    &audin {
+            status = "okay";
+    };
+
+Then, from userspace:
+
+    $ amixer sset 'AUDIN FIFO0 SRC SEL' 'I2S'
+    $ arecord -l  # find the "FIFO Capture" device
+    $ arecord -D hw:0,<N> -f S16_LE -r 48000 -c 2 /tmp/in.wav
+
+Reviewed-by: Jerome Brunet <jbrunet@baylibre.com>
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ arch/arm64/boot/dts/amlogic/meson-gx.dtsi   | 9 +++++++++
+ arch/arm64/boot/dts/amlogic/meson-gxbb.dtsi | 5 +++++
+ arch/arm64/boot/dts/amlogic/meson-gxl.dtsi  | 6 ++++++
+ 3 files changed, 20 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/amlogic/meson-gx.dtsi b/arch/arm64/boot/dts/amlogic/meson-gx.dtsi
+index c308805e8914..ff0b9ffec72d 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-gx.dtsi
++++ b/arch/arm64/boot/dts/amlogic/meson-gx.dtsi
+@@ -440,6 +440,15 @@ watchdog@98d0 {
+ 				reg = <0x0 0x098d0 0x0 0x10>;
+ 				clocks = <&xtal>;
+ 			};
++
++			audin: audio-controller@a000 {
++				compatible = "amlogic,gxbb-audin";
++				reg = <0x0 0xa000 0x0 0x148>;
++				interrupts = <GIC_SPI 7 IRQ_TYPE_EDGE_RISING>;
++				sound-name-prefix = "AUDIN";
++				#sound-dai-cells = <1>;
++				status = "disabled";
++			};
+ 		};
+ 
+ 		gic: interrupt-controller@c4301000 {
+diff --git a/arch/arm64/boot/dts/amlogic/meson-gxbb.dtsi b/arch/arm64/boot/dts/amlogic/meson-gxbb.dtsi
+index a9c830a570cc..8f3c7ca06a3c 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-gxbb.dtsi
++++ b/arch/arm64/boot/dts/amlogic/meson-gxbb.dtsi
+@@ -84,6 +84,11 @@ &aiu {
+ 	resets = <&reset RESET_AIU>;
+ };
+ 
++&audin {
++	clocks = <&clkc CLKID_I2S_SPDIF>;
++	resets = <&reset RESET_AUDIN>;
++};
++
+ &aobus {
+ 	pinctrl_aobus: pinctrl@14 {
+ 		compatible = "amlogic,meson-gxbb-aobus-pinctrl";
+diff --git a/arch/arm64/boot/dts/amlogic/meson-gxl.dtsi b/arch/arm64/boot/dts/amlogic/meson-gxl.dtsi
+index d5e0f72892f8..de213c0b63a3 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-gxl.dtsi
++++ b/arch/arm64/boot/dts/amlogic/meson-gxl.dtsi
+@@ -100,6 +100,12 @@ &aiu {
+ 	resets = <&reset RESET_AIU>;
+ };
+ 
++&audin {
++	compatible = "amlogic,gxl-audin", "amlogic,gxbb-audin";
++	clocks = <&clkc CLKID_I2S_SPDIF>;
++	resets = <&reset RESET_AUDIN>;
++};
++
+ &apb {
+ 	usb2_phy0: phy@78000 {
+ 		compatible = "amlogic,meson-gxl-usb2-phy";
+-- 
+2.43.0
+

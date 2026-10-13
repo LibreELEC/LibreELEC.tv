@@ -1,0 +1,53 @@
+From 5252a7d0a960dcf1ea2620357a51bee2d207a993 Mon Sep 17 00:00:00 2001
+From: Andreas Baierl <ichgeh@imkreisrum.de>
+Date: Fri, 6 Nov 2026 18:06:51 +0100
+Subject: [PATCH 184/267] fixup! media: amlogic: amvdec: add H.264 decoding
+
+media: amlogic: amvdec: h264: abort on an unexpected status of a frame
+
+The threaded interrupt handler aborts on an unexpected firmware status
+only for field pictures. For frame pictures the status is ignored, but
+the firmware waits for an action, so the job never finishes and the
+decoder hangs until userspace stops the queues.
+
+This happens with a damaged access unit, e.g. with lost slices after a
+reception error: the firmware runs out of input before the picture is
+complete and reports SEARCH_BUFEMPTY (0x22). The whole access unit is
+fed at once, so no more input arrives for the picture.
+
+Abort on an unexpected status of frame pictures too, like HEVC and VP9
+do for any status they don't handle.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Andreas Baierl <ichgeh@imkreisrum.de>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/media/platform/amlogic/amvdec/codec_h264.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/amlogic/amvdec/codec_h264.c b/drivers/media/platform/amlogic/amvdec/codec_h264.c
+index f96e5c7dc966..62321b6506e7 100644
+--- a/drivers/media/platform/amlogic/amvdec/codec_h264.c
++++ b/drivers/media/platform/amlogic/amvdec/codec_h264.c
+@@ -1908,9 +1908,15 @@ static irqreturn_t codec_h264_threaded_isr(struct amvdec_session *sess)
+ 				h264->multi_done_pending = true;
+ 				schedule_work(&sess->esparser_queue_work);
+ 			}
+-		} else if (h264->multi_field_picture) {
+-			dev_err_ratelimited(core->dev_dec, "h264 field: unexpected status=%#x phase=%u\n",
+-					    status, READ_ONCE(h264->multi_field_phase));
++		} else {
++			/*
++			 * Any other status (e.g. the firmware ran out of input on a
++			 * damaged access unit) waits for an action, which isn't sent.
++			 * Abort, otherwise the job never finishes.
++			 */
++			dev_err_ratelimited(core->dev_dec, "h264 multi: unexpected status=%#x field=%u phase=%u\n",
++					    status, h264->multi_field_picture,
++					    READ_ONCE(h264->multi_field_phase));
+ 			codec_h264_multi_abort(sess);
+ 		}
+ 		return IRQ_HANDLED;
+-- 
+2.43.0
+

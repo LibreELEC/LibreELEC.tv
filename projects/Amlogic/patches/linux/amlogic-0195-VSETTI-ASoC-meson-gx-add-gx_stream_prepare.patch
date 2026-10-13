@@ -1,0 +1,116 @@
+From dcb1bb8d60806d2f3eae1161c8191a3f664f0bd8 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 30 Sep 2026 18:12:30 +0200
+Subject: [PATCH 195/267] VSETTI: ASoC: meson: gx: add gx_stream_prepare()
+
+Add gx_stream_prepare() to program the attached formatters, and call it
+from the aiu-encoder-i2s prepare so the formatter is set up before the
+FIFO starts.
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+Suggested-by: Christian Hewitt <christianshewitt@gmail.com>
+[chewitt: use spin_lock_irq(), ts->lock is a spinlock after
+ "ASoC: meson: gx-formatter: change stream lock from mutex to spinlock"]
+---
+ sound/soc/meson/aiu-encoder-i2s.c | 18 +++++++++---------
+ sound/soc/meson/gx-formatter.c    | 24 ++++++++++++++++++++++++
+ sound/soc/meson/gx-interface.h    |  2 ++
+ 3 files changed, 35 insertions(+), 9 deletions(-)
+
+diff --git a/sound/soc/meson/aiu-encoder-i2s.c b/sound/soc/meson/aiu-encoder-i2s.c
+index 70ea39c77b32..f52823d357cc 100644
+--- a/sound/soc/meson/aiu-encoder-i2s.c
++++ b/sound/soc/meson/aiu-encoder-i2s.c
+@@ -201,18 +201,17 @@ static int aiu_encoder_i2s_prepare(struct snd_pcm_substream *substream,
+ 	struct snd_soc_component *component = dai->component;
+ 	int ret;
+ 
+-	if (ts->clk_enabled)
+-		return 0;
+-
+-	ret = clk_prepare_enable(ts->iface->mclk);
+-	if (ret)
+-		return ret;
++	if (!ts->clk_enabled) {
++		ret = clk_prepare_enable(ts->iface->mclk);
++		if (ret)
++			return ret;
+ 
+-	ts->clk_enabled = true;
++		ts->clk_enabled = true;
+ 
+-	aiu_encoder_i2s_divider_enable(component, true);
++		aiu_encoder_i2s_divider_enable(component, true);
++	}
+ 
+-	return 0;
++	return gx_stream_prepare(ts);
+ }
+ 
+ static int aiu_encoder_i2s_hw_free(struct snd_pcm_substream *substream,
+@@ -231,6 +230,7 @@ static int aiu_encoder_i2s_hw_free(struct snd_pcm_substream *substream,
+ 		ts->clk_enabled = false;
+ 	}
+ 
++	ts->prepared = false;
+ 	ts->channels = 0;
+ 	ts->width = 0;
+ 	ts->physical_width = 0;
+diff --git a/sound/soc/meson/gx-formatter.c b/sound/soc/meson/gx-formatter.c
+index 4b217066ee4a..9641994fe020 100644
+--- a/sound/soc/meson/gx-formatter.c
++++ b/sound/soc/meson/gx-formatter.c
+@@ -215,6 +215,30 @@ int gx_formatter_create(struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(gx_formatter_create);
+ 
++int gx_stream_prepare(struct gx_stream *ts)
++{
++	struct gx_formatter *formatter;
++	int ret = 0;
++
++	spin_lock_irq(&ts->lock);
++
++	/* Prepare all the formatters attached to the stream */
++	list_for_each_entry(formatter, &ts->formatter_list, list) {
++		ret = gx_formatter_prepare(formatter);
++		if (ret) {
++			pr_err("failed to prepare formatter\n");
++			goto out;
++		}
++	}
++
++	ts->prepared = true;
++
++out:
++	spin_unlock_irq(&ts->lock);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(gx_stream_prepare);
++
+ int gx_stream_start(struct gx_stream *ts)
+ {
+ 	struct gx_formatter *formatter;
+diff --git a/sound/soc/meson/gx-interface.h b/sound/soc/meson/gx-interface.h
+index a6a5cc9e7af0..64f06d2bfe39 100644
+--- a/sound/soc/meson/gx-interface.h
++++ b/sound/soc/meson/gx-interface.h
+@@ -29,6 +29,7 @@ struct gx_stream {
+ 	unsigned int channels;
+ 	unsigned int width;
+ 	unsigned int physical_width;
++	bool prepared;
+ 	bool ready;
+ 
+ 	/* For continuous clock tracking */
+@@ -37,6 +38,7 @@ struct gx_stream {
+ 
+ struct gx_stream *gx_stream_alloc(struct gx_iface *iface);
+ void gx_stream_free(struct gx_stream *ts);
++int gx_stream_prepare(struct gx_stream *ts);
+ int gx_stream_start(struct gx_stream *ts);
+ void gx_stream_stop(struct gx_stream *ts);
+ 
+-- 
+2.43.0
+

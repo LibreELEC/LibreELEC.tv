@@ -1,0 +1,1503 @@
+From 74782d76a21bdf4b2d736fa6b4cd127bd46556e1 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 10 Nov 2026 11:26:45 +0000
+Subject: [PATCH 266/267] media: amlogic: amvdec: add VC-1 decoding
+
+Add stateless VC-1 (Simple, Main and Advanced profile) decoding up to
+1920x1088 on VDEC_1 for GXBB to SM1 with the open amrisc-vdec VC-1
+firmware (amrisc/amrisc_vc1.bin).
+
+Send each picture, or each field of a field pair, as one command block
+built from the controls, with the input copied to a window of its own,
+and restart the processor for every command. Complete a picture that
+fails or times out with an error and reload the firmware.
+
+Range-reduced and resized (RESPIC) pictures are refused.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../media/platform/amlogic/amvdec/Makefile    |    1 +
+ .../media/platform/amlogic/amvdec/amvdec.c    |   66 +
+ .../media/platform/amlogic/amvdec/amvdec_1.c  |   11 +
+ .../media/platform/amlogic/amvdec/amvdec_1.h  |    2 +
+ .../platform/amlogic/amvdec/amvdec_helpers.c  |    3 +-
+ .../platform/amlogic/amvdec/amvdec_platform.c |  108 ++
+ .../media/platform/amlogic/amvdec/codec_vc1.c | 1062 +++++++++++++++++
+ .../media/platform/amlogic/amvdec/codec_vc1.h |   13 +
+ .../media/platform/amlogic/amvdec/esparser.c  |   17 +
+ 9 files changed, 1282 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/media/platform/amlogic/amvdec/codec_vc1.c
+ create mode 100644 drivers/media/platform/amlogic/amvdec/codec_vc1.h
+
+diff --git a/drivers/media/platform/amlogic/amvdec/Makefile b/drivers/media/platform/amlogic/amvdec/Makefile
+index 80f434da4427..7a5ad35c29dd 100644
+--- a/drivers/media/platform/amlogic/amvdec/Makefile
++++ b/drivers/media/platform/amlogic/amvdec/Makefile
+@@ -4,6 +4,7 @@
+ meson-amvdec-objs = esparser.o amvdec.o amvdec_helpers.o amvdec_platform.o
+ meson-amvdec-objs += amvdec_1.o amvdec_hevc.o
+ meson-amvdec-objs += codec_mpeg12.o
++meson-amvdec-objs += codec_vc1.o
+ meson-amvdec-objs += codec_h264.o codec_hevc_common.o codec_vp9.o codec_hevc.o
+ meson-amvdec-objs += amvdec_tee.o
+ 
+diff --git a/drivers/media/platform/amlogic/amvdec/amvdec.c b/drivers/media/platform/amlogic/amvdec/amvdec.c
+index 49bc877a6302..55f3d7c26cb9 100644
+--- a/drivers/media/platform/amlogic/amvdec/amvdec.c
++++ b/drivers/media/platform/amlogic/amvdec/amvdec.c
+@@ -1076,6 +1076,34 @@ static const struct v4l2_ctrl_ops vdec_mpeg2_ctrl_ops = {
+ 	.try_ctrl = vdec_mpeg2_try_ctrl,
+ };
+ 
++static int vdec_vc1_try_ctrl(struct v4l2_ctrl *ctrl)
++{
++	const struct v4l2_ctrl_vc1_sequence *seq = ctrl->p_new.p_vc1_sequence;
++	const struct amvdec_format *fmt =
++		vdec_format_by_pixfmt(vdec_ctrl_session(ctrl)->core,
++				      V4L2_PIX_FMT_VC1_SLICE);
++
++	u32 profile = seq->profile == V4L2_VC1_PROFILE_ADVANCED ?
++		      V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED : seq->profile;
++
++	if (ctrl->id != V4L2_CID_STATELESS_VC1_SEQUENCE)
++		return 0;
++	if (!fmt || seq->profile == V4L2_VC1_PROFILE_COMPLEX ||
++	    !(fmt->profiles & BIT(profile)) ||
++	    seq->max_coded_width > fmt->max_width ||
++	    seq->max_coded_height > fmt->max_height)
++		return -EINVAL;
++	/* Pre-release Simple/Main streams */
++	if (seq->profile != V4L2_VC1_PROFILE_ADVANCED &&
++	    !(seq->flags & V4L2_VC1_SEQUENCE_FLAG_RES_RTM))
++		return -EINVAL;
++	return 0;
++}
++
++static const struct v4l2_ctrl_ops vdec_vc1_ctrl_ops = {
++	.try_ctrl = vdec_vc1_try_ctrl,
++};
++
+ static int vdec_vp9_try_ctrl(struct v4l2_ctrl *ctrl)
+ {
+ 	const struct v4l2_ctrl_vp9_frame *frame = ctrl->p_new.p_vp9_frame;
+@@ -1128,6 +1156,19 @@ static const struct v4l2_ctrl_mpeg2_sequence vdec_mpeg2_sequence_default = {
+ 	.chroma_format = 1,
+ };
+ 
++static const struct v4l2_ctrl_vc1_sequence vdec_vc1_sequence_default = {
++	.profile = V4L2_VC1_PROFILE_ADVANCED,
++	.level = 3,
++	.colordiff_format = 1,
++	.max_coded_width = 1920,
++	.max_coded_height = 1088,
++};
++
++static const struct v4l2_ctrl_vc1_entrypoint_header vdec_vc1_entrypoint_default = {
++	.coded_width = 1920,
++	.coded_height = 1088,
++};
++
+ static const struct v4l2_ctrl_vp9_frame vdec_vp9_frame_default = {
+ 	.flags = V4L2_VP9_FRAME_FLAG_X_SUBSAMPLING |
+ 		 V4L2_VP9_FRAME_FLAG_Y_SUBSAMPLING,
+@@ -1219,6 +1260,31 @@ static int vdec_init_ctrls(struct amvdec_session *sess)
+ 					     &mpeg2_ctrls[i], NULL);
+ 	}
+ 
++	if (vdec_format_by_pixfmt(sess->core, V4L2_PIX_FMT_VC1_SLICE)) {
++		static const struct v4l2_ctrl_config vc1_ctrls[] = {
++			{
++				.id = V4L2_CID_STATELESS_VC1_SEQUENCE,
++				.ops = &vdec_vc1_ctrl_ops,
++				.p_def.p_const = &vdec_vc1_sequence_default,
++			}, {
++				.id = V4L2_CID_STATELESS_VC1_ENTRYPOINT_HEADER,
++				.p_def.p_const = &vdec_vc1_entrypoint_default,
++			}, {
++				.id = V4L2_CID_STATELESS_VC1_PICTURE_LAYER,
++			}, {
++				.id = V4L2_CID_STATELESS_VC1_BITPLANES,
++			}, {
++				.id = V4L2_CID_STATELESS_VC1_SLICE_PARAMS,
++				.flags = V4L2_CTRL_FLAG_DYNAMIC_ARRAY,
++				.dims = { 128 },
++			},
++		};
++		unsigned int i;
++
++		for (i = 0; i < ARRAY_SIZE(vc1_ctrls); i++)
++			v4l2_ctrl_new_custom(ctrl_handler, &vc1_ctrls[i], NULL);
++	}
++
+ 	if (vdec_format_by_pixfmt(sess->core, V4L2_PIX_FMT_HEVC_SLICE)) {
+ 		static const struct v4l2_ctrl_config hevc_ctrls[] = {
+ 			{
+diff --git a/drivers/media/platform/amlogic/amvdec/amvdec_1.c b/drivers/media/platform/amlogic/amvdec/amvdec_1.c
+index c730aa55bac0..321d54195d5b 100644
+--- a/drivers/media/platform/amlogic/amvdec/amvdec_1.c
++++ b/drivers/media/platform/amlogic/amvdec/amvdec_1.c
+@@ -213,6 +213,16 @@ amvdec_1_load_firmware(struct amvdec_session *sess, const char *fwname)
+ 	return ret;
+ }
+ 
++/* Scrub the engines after a failed picture and load the firmware again. */
++int meson_amvdec_1_reload(struct amvdec_session *sess)
++{
++	struct amvdec_core *core = sess->core;
++
++	amvdec_1_stop_armrisc(core);
++	amvdec_1_quiesce_reset(core);
++	return amvdec_1_load_firmware(sess, sess->fmt_out->firmware_path);
++}
++
+ static int amvdec_1_stbuf_power_up(struct amvdec_session *sess)
+ {
+ 	struct amvdec_core *core = sess->core;
+@@ -409,6 +419,7 @@ static int amvdec_1_start(struct amvdec_session *sess)
+ 	 * and decoder context.
+ 	 */
+ 	if (sess->fmt_out->pixfmt != V4L2_PIX_FMT_MPEG2_SLICE &&
++	    sess->fmt_out->pixfmt != V4L2_PIX_FMT_VC1_SLICE &&
+ 	    !codec_ops->direct_input) {
+ 		meson_amvdec_write_dos(core, MPSR, 1);
+ 		usleep_range(10, 20);
+diff --git a/drivers/media/platform/amlogic/amvdec/amvdec_1.h b/drivers/media/platform/amlogic/amvdec/amvdec_1.h
+index 41af6006a6aa..48f0772f16e9 100644
+--- a/drivers/media/platform/amlogic/amvdec/amvdec_1.h
++++ b/drivers/media/platform/amlogic/amvdec/amvdec_1.h
+@@ -13,4 +13,6 @@
+ 
+ extern struct amvdec_ops meson_amvdec_1_ops;
+ 
++int meson_amvdec_1_reload(struct amvdec_session *sess);
++
+ #endif
+diff --git a/drivers/media/platform/amlogic/amvdec/amvdec_helpers.c b/drivers/media/platform/amlogic/amvdec/amvdec_helpers.c
+index daacca0ec3b6..524892acdd6c 100644
+--- a/drivers/media/platform/amlogic/amvdec/amvdec_helpers.c
++++ b/drivers/media/platform/amlogic/amvdec/amvdec_helpers.c
+@@ -802,7 +802,8 @@ bool meson_amvdec_request_jobs(struct amvdec_session *sess)
+ {
+ 	return sess->fmt_out->pixfmt == V4L2_PIX_FMT_HEVC_SLICE ||
+ 	       sess->fmt_out->pixfmt == V4L2_PIX_FMT_VP9_FRAME ||
+-	       sess->fmt_out->pixfmt == V4L2_PIX_FMT_MPEG2_SLICE;
++	       sess->fmt_out->pixfmt == V4L2_PIX_FMT_MPEG2_SLICE ||
++	       sess->fmt_out->pixfmt == V4L2_PIX_FMT_VC1_SLICE;
+ }
+ 
+ int meson_amvdec_request_begin(struct amvdec_session *sess, struct vb2_v4l2_buffer *src)
+diff --git a/drivers/media/platform/amlogic/amvdec/amvdec_platform.c b/drivers/media/platform/amlogic/amvdec/amvdec_platform.c
+index f32f89c863b6..b17203086c43 100644
+--- a/drivers/media/platform/amlogic/amvdec/amvdec_platform.c
++++ b/drivers/media/platform/amlogic/amvdec/amvdec_platform.c
+@@ -13,6 +13,7 @@
+ #include "amvdec_1.h"
+ #include "amvdec_hevc.h"
+ #include "codec_mpeg12.h"
++#include "codec_vc1.h"
+ #include "codec_h264.h"
+ #include "codec_hevc.h"
+ #include "codec_vp9.h"
+@@ -22,6 +23,10 @@
+ 	BIT(V4L2_MPEG_VIDEO_H264_PROFILE_MAIN) | \
+ 	BIT(V4L2_MPEG_VIDEO_H264_PROFILE_HIGH))
+ 
++#define AMVDEC_VC1_PROFILES (BIT(V4L2_MPEG_VIDEO_VC1_PROFILE_SIMPLE) | \
++	BIT(V4L2_MPEG_VIDEO_VC1_PROFILE_MAIN) | \
++	BIT(V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED))
++
+ static const struct amvdec_format amvdec_formats_gxbb[] = {
+ 	{
+ 		.pixfmt = V4L2_PIX_FMT_H264_SLICE,
+@@ -68,6 +73,23 @@ static const struct amvdec_format amvdec_formats_gxbb[] = {
+ 		.firmware_path = "meson/vdec/gxl_mpeg12_multi.bin",
+ 		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
+ 		.flags = V4L2_FMT_FLAG_COMPRESSED,
++	}, {
++		.pixfmt = V4L2_PIX_FMT_VC1_SLICE,
++		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VC1_PROFILE,
++		.default_profile = V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED,
++		.level_ctrl = V4L2_CID_MPEG_VIDEO_VC1_LEVEL,
++		.default_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.profiles = AMVDEC_VC1_PROFILES,
++		.max_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.min_buffers = 4,
++		.max_buffers = 24,
++		.max_width = 1920,
++		.max_height = 1088,
++		.vdec_ops = &meson_amvdec_1_ops,
++		.codec_ops = &meson_amvdec_codec_vc1_ops,
++		.firmware_path = "amrisc/amrisc_vc1.bin",
++		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
++		.flags = V4L2_FMT_FLAG_COMPRESSED,
+ 	},
+ };
+ 
+@@ -117,6 +139,23 @@ static const struct amvdec_format amvdec_formats_gxl[] = {
+ 		.firmware_path = "meson/vdec/gxl_mpeg12_multi.bin",
+ 		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
+ 		.flags = V4L2_FMT_FLAG_COMPRESSED,
++	}, {
++		.pixfmt = V4L2_PIX_FMT_VC1_SLICE,
++		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VC1_PROFILE,
++		.default_profile = V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED,
++		.level_ctrl = V4L2_CID_MPEG_VIDEO_VC1_LEVEL,
++		.default_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.profiles = AMVDEC_VC1_PROFILES,
++		.max_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.min_buffers = 4,
++		.max_buffers = 24,
++		.max_width = 1920,
++		.max_height = 1088,
++		.vdec_ops = &meson_amvdec_1_ops,
++		.codec_ops = &meson_amvdec_codec_vc1_ops,
++		.firmware_path = "amrisc/amrisc_vc1.bin",
++		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
++		.flags = V4L2_FMT_FLAG_COMPRESSED,
+ 	}, {
+ 		.pixfmt = V4L2_PIX_FMT_VP9_FRAME,
+ 		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VP9_PROFILE,
+@@ -182,6 +221,23 @@ static const struct amvdec_format amvdec_formats_gxlx[] = {
+ 		.firmware_path = "meson/vdec/gxl_mpeg12_multi.bin",
+ 		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
+ 		.flags = V4L2_FMT_FLAG_COMPRESSED,
++	}, {
++		.pixfmt = V4L2_PIX_FMT_VC1_SLICE,
++		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VC1_PROFILE,
++		.default_profile = V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED,
++		.level_ctrl = V4L2_CID_MPEG_VIDEO_VC1_LEVEL,
++		.default_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.profiles = AMVDEC_VC1_PROFILES,
++		.max_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.min_buffers = 4,
++		.max_buffers = 24,
++		.max_width = 1920,
++		.max_height = 1088,
++		.vdec_ops = &meson_amvdec_1_ops,
++		.codec_ops = &meson_amvdec_codec_vc1_ops,
++		.firmware_path = "amrisc/amrisc_vc1.bin",
++		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
++		.flags = V4L2_FMT_FLAG_COMPRESSED,
+ 	},
+ };
+ 
+@@ -232,6 +288,23 @@ static const struct amvdec_format amvdec_formats_gxm[] = {
+ 		.firmware_path = "meson/vdec/gxl_mpeg12_multi.bin",
+ 		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
+ 		.flags = V4L2_FMT_FLAG_COMPRESSED,
++	}, {
++		.pixfmt = V4L2_PIX_FMT_VC1_SLICE,
++		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VC1_PROFILE,
++		.default_profile = V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED,
++		.level_ctrl = V4L2_CID_MPEG_VIDEO_VC1_LEVEL,
++		.default_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.profiles = AMVDEC_VC1_PROFILES,
++		.max_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.min_buffers = 4,
++		.max_buffers = 24,
++		.max_width = 1920,
++		.max_height = 1088,
++		.vdec_ops = &meson_amvdec_1_ops,
++		.codec_ops = &meson_amvdec_codec_vc1_ops,
++		.firmware_path = "amrisc/amrisc_vc1.bin",
++		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
++		.flags = V4L2_FMT_FLAG_COMPRESSED,
+ 	}, {
+ 		.pixfmt = V4L2_PIX_FMT_VP9_FRAME,
+ 		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VP9_PROFILE,
+@@ -298,6 +371,23 @@ static const struct amvdec_format amvdec_formats_g12a[] = {
+ 		.firmware_path = "meson/vdec/gxl_mpeg12_multi.bin",
+ 		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
+ 		.flags = V4L2_FMT_FLAG_COMPRESSED,
++	}, {
++		.pixfmt = V4L2_PIX_FMT_VC1_SLICE,
++		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VC1_PROFILE,
++		.default_profile = V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED,
++		.level_ctrl = V4L2_CID_MPEG_VIDEO_VC1_LEVEL,
++		.default_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.profiles = AMVDEC_VC1_PROFILES,
++		.max_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.min_buffers = 4,
++		.max_buffers = 24,
++		.max_width = 1920,
++		.max_height = 1088,
++		.vdec_ops = &meson_amvdec_1_ops,
++		.codec_ops = &meson_amvdec_codec_vc1_ops,
++		.firmware_path = "amrisc/amrisc_vc1.bin",
++		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
++		.flags = V4L2_FMT_FLAG_COMPRESSED,
+ 	}, {
+ 		.pixfmt = V4L2_PIX_FMT_VP9_FRAME,
+ 		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VP9_PROFILE,
+@@ -365,6 +455,23 @@ static const struct amvdec_format amvdec_formats_sm1[] = {
+ 		.firmware_path = "meson/vdec/gxl_mpeg12_multi.bin",
+ 		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
+ 		.flags = V4L2_FMT_FLAG_COMPRESSED,
++	}, {
++		.pixfmt = V4L2_PIX_FMT_VC1_SLICE,
++		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VC1_PROFILE,
++		.default_profile = V4L2_MPEG_VIDEO_VC1_PROFILE_ADVANCED,
++		.level_ctrl = V4L2_CID_MPEG_VIDEO_VC1_LEVEL,
++		.default_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.profiles = AMVDEC_VC1_PROFILES,
++		.max_level = V4L2_MPEG_VIDEO_VC1_LEVEL_3,
++		.min_buffers = 4,
++		.max_buffers = 24,
++		.max_width = 1920,
++		.max_height = 1088,
++		.vdec_ops = &meson_amvdec_1_ops,
++		.codec_ops = &meson_amvdec_codec_vc1_ops,
++		.firmware_path = "amrisc/amrisc_vc1.bin",
++		.pixfmts_cap = { V4L2_PIX_FMT_NV12M, 0 },
++		.flags = V4L2_FMT_FLAG_COMPRESSED,
+ 	}, {
+ 		.pixfmt = V4L2_PIX_FMT_VP9_FRAME,
+ 		.profile_ctrl = V4L2_CID_MPEG_VIDEO_VP9_PROFILE,
+@@ -495,6 +602,7 @@ const struct amvdec_platform meson_amvdec_platform_s4 = {
+ 	.revision = AMVDEC_REVISION_S4,
+ };
+ 
++MODULE_FIRMWARE("amrisc/amrisc_vc1.bin");
+ MODULE_FIRMWARE("meson/vdec/g12a_h264_multi.bin");
+ MODULE_FIRMWARE("meson/vdec/g12a_hevc_mmu.bin");
+ MODULE_FIRMWARE("meson/vdec/g12a_vp9.bin");
+diff --git a/drivers/media/platform/amlogic/amvdec/codec_vc1.c b/drivers/media/platform/amlogic/amvdec/codec_vc1.c
+new file mode 100644
+index 000000000000..c5cfb541cea4
+--- /dev/null
++++ b/drivers/media/platform/amlogic/amvdec/codec_vc1.c
+@@ -0,0 +1,1062 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * VC-1 request decoding with the amrisc-vdec VC-1 firmware.
++ *
++ * Every picture, or every field of a field pair, is one command of the
++ * firmware's picture decode protocol (PDP/1): a block in DDR describing the
++ * picture and its buffers, an input window holding the picture's data, and
++ * a processor restart. The firmware keeps nothing between commands.
++ *
++ * The parameter block follows the amrisc-vdec driver by Gus Bourg
++ * (github.com/gusbourg/amrisc-vdec, docs/abi/params-vc1.md).
++ */
++
++#include <linux/delay.h>
++#include <linux/iopoll.h>
++#include <linux/of.h>
++#include <linux/unaligned.h>
++#include <media/v4l2-mem2mem.h>
++#include <media/videobuf2-dma-contig.h>
++
++#include "codec_vc1.h"
++#include "dos_regs.h"
++#include "amvdec_1.h"
++#include "amvdec_helpers.h"
++
++#define PDP_DOORBELL		AV_SCRATCH_0
++#define PDP_BLOCK		AV_SCRATCH_1
++#define PDP_STATE		AV_SCRATCH_2
++#define PDP_RESULT		AV_SCRATCH_3
++#define PDP_PROGRESS		AV_SCRATCH_4
++#define PDP_IDENT		AV_SCRATCH_5
++#define PDP_FEATURES		AV_SCRATCH_6
++
++#define PDP_IDENT_VC1		0x50445410
++#define PDP_FEATURES_VC1	0x102
++#define PDP_STATE_READY		1
++#define PDP_STATE_DONE		3
++
++/* Command block header words */
++#define PDP_MAGIC		0x31504450
++#define PDP_RECORD_MAGIC	0x31525350
++#define PDP_PROTOCOL		0x00010000
++#define PDP_CODEC_VC1		4
++#define PDP_DECODE		1
++#define PDP_FLAG_RESULT		BIT(0)
++
++#define VC1_BLOCK_SIZE		2048
++#define VC1_RESULT_OFFSET	VC1_BLOCK_SIZE
++#define VC1_RESULT_SIZE		256
++#define VC1_WORKSPACE_SIZE	0xa0000
++#define VC1_WORKSPACE_ALIGN	SZ_64K
++#define VC1_MOTION_SIZE		SZ_64K
++#define VC1_PLANE_REGION	0x1000
++#define VC1_PLANES_SIZE		(3 * VC1_PLANE_REGION)
++#define VC1_MAX_SLICES		128
++#define VC1_TAIL		1024
++#define VC1_NONE		0xffffffff
++#define VC1_TIMEOUT_MS		1000
++
++/* Buffer roles and kinds */
++#define VC1_ROLE_DESTINATION	1
++#define VC1_ROLE_REFERENCE	2
++#define VC1_ROLE_MOTION		3
++#define VC1_ROLE_WORKSPACE	4
++#define VC1_ROLE_PLANES		11
++#define VC1_KIND_NV12		BIT(0)
++#define VC1_KIND_OPAQUE		BIT(8)
++
++/* Parameter block words */
++#define W_PROFILE		1
++#define W_PTYPE			12
++#define W_FCM			13
++#define W_STRUCTURE		14
++#define W_TFF			15
++#define W_SECOND		16
++#define W_PQUANT		18
++#define W_HALFQP		19
++#define W_CONDOVER		27
++#define W_OVERLAP		10
++#define W_BITPLANE		66
++#define W_BITPLANE_OFFSET	73
++#define W_BITPLANE_BUFFER	80
++#define W_DESTINATION		81
++#define W_FORWARD		82
++#define W_BACKWARD		83
++#define W_MOTION_WRITE		84
++#define W_MOTION_READ		85
++#define W_WORKSPACE		86
++#define W_SLICE_COUNT		123
++#define W_SLICE_TABLE		124
++
++struct codec_vc1_buf {
++	u32 role, kind, addr0, addr1, length, stride, width, height, canvas, aux;
++};
++
++struct codec_vc1 {
++	struct amvdec_session *sess;
++
++	/* The command block, then the result record */
++	void *block_vaddr;
++	dma_addr_t block_paddr;
++	void *ws_vaddr;
++	dma_addr_t ws_paddr;
++	void *planes_vaddr;
++	dma_addr_t planes_paddr;
++	/* The motion store of a B picture whose backward anchor has none */
++	void *zero_vaddr;
++	dma_addr_t zero_paddr;
++	void *input_vaddr;
++	dma_addr_t input_paddr;
++	u32 input_size;
++	void *grey_vaddr;
++	dma_addr_t grey_paddr;
++	size_t grey_size;
++	u32 grey_spec;
++
++	/* Per CAPTURE buffer: canvases and the motion store of an anchor */
++	u32 canvas_spec[VB2_MAX_FRAME];
++	void *mv_vaddr[VB2_MAX_FRAME];
++	dma_addr_t mv_paddr[VB2_MAX_FRAME];
++
++	/* The picture being built */
++	u32 w[128];
++	u32 slices[VC1_MAX_SLICES - 1][2];
++	u32 columns, rows, plane_region, plane_bytes;
++	u32 picture_offset, stream_length, write_offset, window_size;
++	struct codec_vc1_buf bufs[6];
++	u32 nbufs;
++
++	/* The overlap condition, PQUANT and HALFQP of the latest I/BI picture */
++	u32 history[3];
++	u32 history_next[3];
++	bool intra;
++
++	u16 seq;
++	bool recover;
++	atomic_t busy;
++	struct delayed_work timeout;
++};
++
++static u32 codec_vc1_soc(struct amvdec_core *core)
++{
++	switch (core->platform->revision) {
++	case AMVDEC_REVISION_GXBB:
++		return 1;
++	case AMVDEC_REVISION_GXL:
++		return 2;
++	case AMVDEC_REVISION_GXLX:
++		return 3;
++	case AMVDEC_REVISION_GXM:
++		return 4;
++	case AMVDEC_REVISION_G12A:
++		return of_machine_is_compatible("amlogic,g12b") ? 6 : 5;
++	case AMVDEC_REVISION_SM1:
++		return 7;
++	default:
++		return 0;
++	}
++}
++
++static void *codec_vc1_alloc(struct amvdec_core *core, size_t size,
++			     dma_addr_t *paddr, u32 align)
++{
++	void *vaddr = dma_alloc_coherent(core->dev, size, paddr, GFP_KERNEL);
++
++	if (vaddr && (!IS_ALIGNED(*paddr, align) || *paddr > U32_MAX - size)) {
++		dma_free_coherent(core->dev, size, vaddr, *paddr);
++		return NULL;
++	}
++	if (vaddr)
++		memset(vaddr, 0, size);
++	return vaddr;
++}
++
++static void codec_vc1_timeout(struct work_struct *work);
++
++static int codec_vc1_start(struct amvdec_session *sess)
++{
++	struct amvdec_core *core = sess->core;
++	struct codec_vc1 *m;
++
++	m = kzalloc_obj(*m);
++	if (!m)
++		return -ENOMEM;
++	m->sess = sess;
++	INIT_DELAYED_WORK(&m->timeout, codec_vc1_timeout);
++	m->block_vaddr = codec_vc1_alloc(core, VC1_BLOCK_SIZE + VC1_RESULT_SIZE,
++					 &m->block_paddr, 64);
++	m->ws_vaddr = codec_vc1_alloc(core, VC1_WORKSPACE_SIZE, &m->ws_paddr,
++				      VC1_WORKSPACE_ALIGN);
++	m->planes_vaddr = codec_vc1_alloc(core, VC1_PLANES_SIZE,
++					  &m->planes_paddr, 64);
++	m->zero_vaddr = codec_vc1_alloc(core, VC1_MOTION_SIZE, &m->zero_paddr,
++					SZ_4K);
++	sess->priv = m;
++	if (!m->block_vaddr || !m->ws_vaddr || !m->planes_vaddr ||
++	    !m->zero_vaddr)
++		return -ENOMEM;
++	return 0;
++}
++
++static void codec_vc1_free(struct amvdec_core *core, size_t size,
++			   void *vaddr, dma_addr_t paddr)
++{
++	if (vaddr)
++		dma_free_coherent(core->dev, size, vaddr, paddr);
++}
++
++static int codec_vc1_stop(struct amvdec_session *sess)
++{
++	struct amvdec_core *core = sess->core;
++	struct codec_vc1 *m = sess->priv;
++	unsigned int i;
++
++	if (!m)
++		return 0;
++	cancel_delayed_work_sync(&m->timeout);
++	codec_vc1_free(core, VC1_BLOCK_SIZE + VC1_RESULT_SIZE, m->block_vaddr,
++		       m->block_paddr);
++	codec_vc1_free(core, VC1_WORKSPACE_SIZE, m->ws_vaddr, m->ws_paddr);
++	codec_vc1_free(core, VC1_PLANES_SIZE, m->planes_vaddr, m->planes_paddr);
++	codec_vc1_free(core, VC1_MOTION_SIZE, m->zero_vaddr, m->zero_paddr);
++	codec_vc1_free(core, m->input_size, m->input_vaddr, m->input_paddr);
++	codec_vc1_free(core, m->grey_size, m->grey_vaddr, m->grey_paddr);
++	for (i = 0; i < VB2_MAX_FRAME; i++)
++		codec_vc1_free(core, VC1_MOTION_SIZE, m->mv_vaddr[i],
++			       m->mv_paddr[i]);
++	kfree(m);
++	sess->priv = NULL;
++	return 0;
++}
++
++/* params-vc1.md 2.6: macroblock geometry of the picture */
++static int codec_vc1_geometry(struct codec_vc1 *m, u32 width, u32 height,
++			      u32 fcm, bool second)
++{
++	u32 frame_rows;
++
++	if (!width || width > 1920 || !height || height > 1088)
++		return -EINVAL;
++	m->columns = (width + 15) >> 4;
++	frame_rows = (height + 15) >> 4;
++	m->rows = fcm == V4L2_VC1_FCM_FIELD_INTERLACE ?
++		  ((height >> 1) + 15) >> 4 : frame_rows;
++	m->plane_region = ALIGN(16 * m->rows, 64);
++	if (64 * m->columns * frame_rows > 0x90000 ||
++	    (second ? 0x8000 : 0) + 8 * m->columns * m->rows > VC1_MOTION_SIZE ||
++	    m->plane_region > VC1_PLANE_REGION)
++		return -ERANGE;
++	return 0;
++}
++
++/* params-vc1.md 4: the input window, counted on the unescaped stream */
++static int codec_vc1_window(struct codec_vc1 *m, const u8 *data, u32 bytes,
++			    bool advanced, bool second, u32 data_bit_offset)
++{
++	u32 payload = 0, unescaped, i;
++
++	m->picture_offset = advanced ? 8 : 12;
++	if (bytes > SZ_256M)
++		return -ERANGE;
++	if (advanced) {
++		if (bytes < 4 || data[0] || data[1] || data[2] != 1 ||
++		    data[3] != (second ? 0x0c : 0x0d))
++			return -EINVAL;
++		payload = 4;
++	}
++	unescaped = bytes - payload;
++	for (i = payload; advanced && i + 3 < bytes;) {
++		const u8 *zero = memchr(data + i, 0, bytes - 3 - i);
++
++		if (!zero)
++			break;
++		i = zero - data;
++		if (!data[i + 1] && data[i + 2] == 3 && data[i + 3] <= 3) {
++			unescaped--;
++			i += 3;
++		} else {
++			i++;
++		}
++	}
++	if ((u64)data_bit_offset > (u64)unescaped * 8)
++		return -EINVAL;
++	m->stream_length = m->picture_offset + bytes + 4;
++	m->write_offset = round_down(m->stream_length + VC1_TAIL, 8);
++	m->window_size = ALIGN(m->stream_length + VC1_TAIL + 8, 8);
++	return 0;
++}
++
++static const u8 vc1_bfraction[V4L2_VC1_BFRACTION_NUM][2] = {
++	{ 1, 2 }, { 1, 3 }, { 2, 3 }, { 1, 4 }, { 3, 4 },
++	{ 1, 5 }, { 2, 5 }, { 3, 5 }, { 4, 5 }, { 1, 6 }, { 5, 6 },
++	{ 1, 7 }, { 2, 7 }, { 3, 7 }, { 4, 7 }, { 5, 7 }, { 6, 7 },
++	{ 1, 8 }, { 3, 8 }, { 5, 8 }, { 7, 8 },
++};
++
++/* params-vc1.md 2: the parameter block of one picture or field */
++static int codec_vc1_params(struct codec_vc1 *m,
++			    const struct v4l2_ctrl_vc1_sequence *seq,
++			    const struct v4l2_ctrl_vc1_entrypoint_header *ep,
++			    const struct v4l2_ctrl_vc1_picture_layer *pic,
++			    const struct v4l2_ctrl_vc1_slice_params *slice,
++			    u32 nslices, const u8 *data, u32 bytes)
++{
++	bool advanced = seq->profile == V4L2_VC1_PROFILE_ADVANCED;
++	bool intra = pic->ptype == V4L2_VC1_PICTURE_TYPE_I ||
++		     pic->ptype == V4L2_VC1_PICTURE_TYPE_BI;
++	bool field = pic->fcm == V4L2_VC1_FCM_FIELD_INTERLACE;
++	bool second = pic->flags & V4L2_VC1_PICTURE_LAYER_FLAG_SECOND_FIELD;
++	bool overlap = ep->flags & V4L2_VC1_ENTRYPOINT_HEADER_FLAG_OVERLAP;
++	u32 flags = pic->flags, required = 0, order[3] = { 5, 6, 3 };
++	u32 *w = m->w;
++	u32 i, end = 0, row = 0;
++	int ret;
++
++	if (seq->profile == V4L2_VC1_PROFILE_COMPLEX ||
++	    seq->profile > V4L2_VC1_PROFILE_ADVANCED ||
++	    seq->colordiff_format != 1 ||
++	    (!advanced && !(seq->flags & V4L2_VC1_SEQUENCE_FLAG_RES_RTM)) ||
++	    pic->respic || (flags & V4L2_VC1_PICTURE_LAYER_FLAG_RANGEREDFRM) ||
++	    pic->ptype > V4L2_VC1_PICTURE_TYPE_BI)
++		return -EOPNOTSUPP;
++	if (pic->fcm > V4L2_VC1_FCM_FIELD_INTERLACE || (pic->fcm && !advanced) ||
++	    (second && !field) || !pic->pqindex || pic->pqindex > 31 ||
++	    !pic->pquant || pic->pquant > 31 || pic->mvmode > 4 ||
++	    pic->bfraction >= V4L2_VC1_BFRACTION_NUM || !nslices ||
++	    nslices > VC1_MAX_SLICES || (!advanced && nslices != 1) ||
++	    (pic->raw_coding_flags & pic->bitplane_flags))
++		return -EINVAL;
++
++	ret = codec_vc1_geometry(m, ep->coded_width, ep->coded_height,
++				 pic->fcm, second);
++	if (!ret)
++		ret = codec_vc1_window(m, data, bytes, advanced, second,
++				       pic->data_bit_offset);
++	if (ret)
++		return ret;
++
++	if (intra && advanced) {
++		required = V4L2_VC1_BITPLANE_FLAG_ACPRED;
++		if (pic->fcm == V4L2_VC1_FCM_FRAME_INTERLACE)
++			required |= V4L2_VC1_BITPLANE_FLAG_FIELDTX;
++		if (overlap && pic->pquant <= 8 && pic->condover == 2)
++			required |= V4L2_VC1_BITPLANE_FLAG_OVERFLAGS;
++	}
++	if (!intra) {
++		u32 mode = pic->mvmode == 4 ? pic->mvmode2 : pic->mvmode;
++
++		required = V4L2_VC1_BITPLANE_FLAG_SKIPMB;
++		order[0] = pic->ptype == V4L2_VC1_PICTURE_TYPE_P ? 0 : 1;
++		order[1] = 2;
++		order[2] = 3;
++		if (pic->ptype == V4L2_VC1_PICTURE_TYPE_B)
++			required |= V4L2_VC1_BITPLANE_FLAG_DIRECTMB;
++		else if (!pic->fcm && mode == 3)
++			required |= V4L2_VC1_BITPLANE_FLAG_MVTYPEMB;
++		if (field) {
++			required = pic->ptype == V4L2_VC1_PICTURE_TYPE_B ?
++				   V4L2_VC1_BITPLANE_FLAG_FORWARDMB : 0;
++			order[0] = 4;
++		}
++	}
++	if ((pic->raw_coding_flags | pic->bitplane_flags) != required)
++		return -EINVAL;
++
++	memset(w, 0, sizeof(m->w));
++	w[0] = 1;
++	w[1] = seq->profile;
++	w[2] = ep->coded_width;
++	w[3] = ep->coded_height;
++	w[4] = ep->quantizer;
++	w[5] = ep->dquant;
++	/* LOOPFILTER, FASTUVMC, EXTENDED_MV, VSTRANSFORM, OVERLAP */
++	for (i = 0; i < 5; i++)
++		w[6 + i] = !!(ep->flags & (0x10U << i));
++	w[11] = pic->fcm &&
++		!!(ep->flags & V4L2_VC1_ENTRYPOINT_HEADER_FLAG_EXTENDED_DMV);
++	w[W_PTYPE] = pic->ptype;
++	w[W_FCM] = pic->fcm;
++	w[W_TFF] = pic->fcm && !!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_TFF);
++	w[W_SECOND] = second;
++	w[W_STRUCTURE] = field ? (w[W_TFF] != second ? 1 : 2) : 0;
++	w[56] = field && pic->ptype != V4L2_VC1_PICTURE_TYPE_B ? pic->refdist : 0;
++	w[17] = pic->pqindex;
++	w[W_PQUANT] = pic->pquant;
++	w[W_HALFQP] = !!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_HALFQP);
++	w[20] = !!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_PQUANTIZER);
++	if (advanced || !intra) {
++		w[21] = !!(pic->vopdquant.flags & 1);
++		w[22] = pic->vopdquant.dqprofile;
++		w[23] = pic->vopdquant.dqsbedge;
++		w[24] = pic->vopdquant.dqdbedge;
++		w[25] = !!(pic->vopdquant.flags & 2);
++		w[26] = pic->vopdquant.altpquant;
++		if (overlap && pic->pquant <= 8)
++			w[W_CONDOVER] = pic->condover;
++	}
++	w[28] = pic->transacfrm;
++	w[29] = pic->transacfrm2;
++	w[30] = !!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_TRANSDCTAB);
++
++	if (!intra) {
++		const struct v4l2_vc1_reference *refs[] = {
++			&pic->forward_ref, &pic->backward_ref,
++		};
++		u32 ref, parity, pair;
++
++		w[29] = 0;
++		w[31] = pic->cbptab;
++		w[32] = pic->mvtab;
++		w[38] = !!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_TTMBF);
++		w[39] = w[38] ? pic->ttfrm : 0;
++		w[40] = w[8] ? pic->mvrange : 0;
++		w[41] = w[11] ? pic->dmvrange : 0;
++		w[42] = pic->fcm == V4L2_VC1_FCM_FRAME_INTERLACE ? 0 : pic->mvmode;
++		w[43] = pic->fcm != V4L2_VC1_FCM_FRAME_INTERLACE &&
++			pic->mvmode == 4 ? pic->mvmode2 : 0;
++		if (pic->fcm) {
++			bool fourmv = flags & V4L2_VC1_PICTURE_LAYER_FLAG_4MVSWITCH;
++
++			w[31] = 0;
++			w[32] = 0;
++			w[33] = pic->icbptab;
++			w[34] = pic->imvtab;
++			w[35] = pic->mbmodetab;
++			w[36] = pic->twomvbptab;
++			w[37] = pic->ptype == V4L2_VC1_PICTURE_TYPE_B || fourmv ?
++				pic->fourmvbptab : 0;
++			w[44] = pic->ptype == V4L2_VC1_PICTURE_TYPE_P && fourmv;
++			w[45] = pic->ptype == V4L2_VC1_PICTURE_TYPE_P &&
++				!!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_INTCOMP);
++			if (field) {
++				w[36] = 0;
++				w[37] = pic->mvmode == 3 ||
++					(pic->mvmode == 4 && pic->mvmode2 == 3) ?
++					pic->fourmvbptab : 0;
++				w[44] = 0;
++				w[45] = 0;
++				w[54] = pic->ptype == V4L2_VC1_PICTURE_TYPE_B ||
++					!!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_NUMREF);
++				w[55] = pic->ptype == V4L2_VC1_PICTURE_TYPE_P &&
++					!w[54] &&
++					!!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_REFFIELD);
++			}
++		}
++		if (pic->ptype == V4L2_VC1_PICTURE_TYPE_B) {
++			if ((field && pic->mvmode > 3) ||
++			    (!pic->fcm && pic->mvmode > 1))
++				return -EINVAL;
++			w[52] = vc1_bfraction[pic->bfraction][0];
++			w[53] = vc1_bfraction[pic->bfraction][1];
++			w[57] = field ? pic->backward_ref.refdist : 0;
++		} else if ((pic->fcm != V4L2_VC1_FCM_FRAME_INTERLACE &&
++			    pic->mvmode == 4) || w[45]) {
++			w[47] = pic->lumscale;
++			w[48] = pic->lumshift;
++			if (field) {
++				w[46] = pic->intcompfield;
++				if (!pic->intcompfield) {
++					w[49] = pic->lumscale2;
++					w[50] = pic->lumshift2;
++				}
++			}
++		}
++		for (i = 0; i < 3; i++)
++			w[63 + i] = m->history[i];
++		for (ref = 0; ref < (pic->ptype == V4L2_VC1_PICTURE_TYPE_B ? 2 : 1);
++		     ref++) {
++			const struct v4l2_vc1_reference *r = refs[ref];
++
++			if (r->fcm > V4L2_VC1_FCM_FIELD_INTERLACE)
++				return -EINVAL;
++			w[59 + 2 * ref] = r->fcm;
++			w[60 + 2 * ref] = !!(r->flags & 1);
++			for (parity = 0; parity < 2; parity++) {
++				if (r->num_intcomp[parity] > V4L2_VC1_REFERENCE_NUM_INTCOMP)
++					return -EINVAL;
++				w[87 + 2 * ref + parity] = r->num_intcomp[parity];
++				for (pair = 0; pair < r->num_intcomp[parity]; pair++) {
++					const struct v4l2_vc1_intcomp *ic =
++						&r->intcomp[parity][pair];
++					u32 n = 91 + 16 * ref + 8 * parity + 2 * pair;
++
++					w[n] = ic->lumscale & 63;
++					w[n + 1] = ic->lumshift & 63;
++				}
++			}
++		}
++	}
++	w[51] = !!(flags & V4L2_VC1_PICTURE_LAYER_FLAG_RNDCTRL);
++
++	/* The engine's plane slots: ACPRED, OVERFLAGS, FIELDTX or MV planes */
++	m->plane_bytes = 0;
++	for (i = 0; i < 3; i++) {
++		u32 plane = order[i];
++
++		if (pic->raw_coding_flags & BIT(plane))
++			w[W_BITPLANE + plane] = 1;
++		if (pic->bitplane_flags & BIT(plane)) {
++			w[W_BITPLANE + plane] = 2;
++			w[W_BITPLANE_OFFSET + plane] = m->plane_bytes;
++			m->plane_bytes += m->plane_region;
++		}
++	}
++	for (i = W_BITPLANE_BUFFER; i <= W_WORKSPACE; i++)
++		w[i] = VC1_NONE;
++
++	/* The slice table: every slice after the first */
++	for (i = 0; i < nslices; i++) {
++		const struct v4l2_ctrl_vc1_slice_params *s = &slice[i];
++		u32 prefix = advanced ? 4 : 0;
++		u32 slice_row = s->slice_addr;
++
++		if (i && second) {
++			if (slice_row < m->rows)
++				return -EINVAL;
++			slice_row -= m->rows;
++		}
++		if (s->offset != end || s->offset > bytes || !s->size ||
++		    s->size > bytes - s->offset || s->size < prefix ||
++		    s->data_bit_offset > 8U * (s->size - prefix) ||
++		    s->data_bit_offset > 65535)
++			return -EINVAL;
++		if (!i) {
++			if (slice_row || s->data_bit_offset != pic->data_bit_offset)
++				return -EINVAL;
++		} else {
++			const u8 *bdu = data + s->offset;
++
++			if (bdu[0] || bdu[1] || bdu[2] != 1 || bdu[3] != 0x0b ||
++			    slice_row <= row || slice_row >= m->rows)
++				return -EINVAL;
++			m->slices[i - 1][0] = slice_row;
++			m->slices[i - 1][1] = s->data_bit_offset;
++		}
++		row = slice_row;
++		end = s->offset + s->size;
++	}
++	if (end != bytes)
++		return -EINVAL;
++	w[W_SLICE_COUNT] = nslices;
++	w[W_SLICE_TABLE] = nslices > 1 ? 512 : 0;
++
++	/* Words 63-65 of later P/B pictures come from the latest I/BI picture */
++	m->intra = intra;
++	if (intra) {
++		m->history_next[0] = advanced ?
++			(pic->pquant > 8 ? w[W_OVERLAP] :
++			 w[W_OVERLAP] ? w[W_CONDOVER] : 0) :
++			w[W_OVERLAP] && pic->pquant >= 9;
++		m->history_next[1] = pic->pquant;
++		m->history_next[2] = w[W_HALFQP];
++	}
++	return 0;
++}
++
++/* params-vc1.md 2.3: raster bits become 16-byte macroblock rows */
++static void codec_vc1_plane(struct codec_vc1 *m, const u8 *src, u8 *dst)
++{
++	u32 x, y;
++
++	for (y = 0; y < m->rows; y++) {
++		u8 row[16] = { 0 };
++
++		for (x = 0; x < m->columns; x++) {
++			u32 n = y * m->columns + x;
++
++			if (src[n / 8] & BIT(n & 7))
++				row[x / 8] |= BIT(x & 7);
++		}
++		memcpy(dst + 16 * y, row, sizeof(row));
++	}
++	memset(dst + 16 * m->rows, 0, m->plane_region - 16 * m->rows);
++}
++
++static void codec_vc1_planes(struct codec_vc1 *m,
++			     const struct v4l2_ctrl_vc1_bitplanes *bp)
++{
++	const u8 *src[] = {
++		bp->mvtypemb, bp->directmb, bp->skipmb, bp->fieldtx,
++		bp->forwardmb, bp->acpred, bp->overflags,
++	};
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(src); i++)
++		if (m->w[W_BITPLANE + i] == 2)
++			codec_vc1_plane(m, src[i], (u8 *)m->planes_vaddr +
++					m->w[W_BITPLANE_OFFSET + i]);
++}
++
++static int codec_vc1_input(struct codec_vc1 *m, const u8 *data, u32 bytes)
++{
++	struct amvdec_core *core = m->sess->core;
++	u8 *in;
++	u32 marker;
++
++	if (m->input_size < m->window_size) {
++		codec_vc1_free(core, m->input_size, m->input_vaddr,
++			       m->input_paddr);
++		m->input_size = ALIGN(m->window_size, SZ_64K);
++		m->input_vaddr = codec_vc1_alloc(core, m->input_size,
++						 &m->input_paddr, 8);
++		if (!m->input_vaddr) {
++			m->input_size = 0;
++			return -ENOMEM;
++		}
++	}
++	in = m->input_vaddr;
++	memset(in, 0, m->picture_offset);
++	/* Simple/Main: the lead-in carries a frame start code */
++	if (m->picture_offset == 12) {
++		in[10] = 1;
++		in[11] = 0x0d;
++	}
++	memcpy(in + m->picture_offset, data, bytes);
++	marker = m->picture_offset + bytes;
++	memset(in + marker, 0, m->window_size - marker);
++	in[marker + 2] = 1;
++	in[marker + 3] = 0x0a;
++	return 0;
++}
++
++static int codec_vc1_canvas(struct amvdec_session *sess, struct vb2_buffer *vb,
++			    u32 *spec)
++{
++	struct codec_vc1 *m = sess->priv;
++	int ret;
++
++	ret = meson_amvdec_canvas_nv12m_spec(sess, vb, ALIGN(sess->width, 64),
++					     ALIGN(sess->height, 32),
++					     &m->canvas_spec[vb->index]);
++	if (!ret)
++		*spec = m->canvas_spec[vb->index];
++	return ret;
++}
++
++static int codec_vc1_grey(struct amvdec_session *sess, u32 *spec)
++{
++	struct codec_vc1 *m = sess->priv;
++	struct amvdec_core *core = sess->core;
++	u32 width = ALIGN(sess->width, 64);
++	u32 height = ALIGN(sess->height, 32);
++	size_t size = width * height * 3 / 2;
++	int ret;
++
++	if (m->grey_vaddr && m->grey_size != size) {
++		codec_vc1_free(core, m->grey_size, m->grey_vaddr, m->grey_paddr);
++		m->grey_vaddr = NULL;
++	}
++	if (!m->grey_vaddr) {
++		m->grey_vaddr = codec_vc1_alloc(core, size, &m->grey_paddr, 8);
++		if (!m->grey_vaddr)
++			return -ENOMEM;
++		m->grey_size = size;
++		memset(m->grey_vaddr, 0x80, size);
++	}
++	ret = meson_amvdec_canvas_nv12_spec(sess, m->grey_paddr,
++					    m->grey_paddr + width * height,
++					    width, height, &m->grey_spec);
++	if (!ret)
++		*spec = m->grey_spec;
++	return ret;
++}
++
++static u32 codec_vc1_add(struct codec_vc1 *m, u32 role, u32 addr0,
++			 u32 length, u32 aux)
++{
++	m->bufs[m->nbufs] = (struct codec_vc1_buf) {
++		.role = role, .kind = VC1_KIND_OPAQUE, .addr0 = addr0,
++		.length = length, .canvas = VC1_NONE, .aux = aux,
++	};
++	return m->nbufs++;
++}
++
++static int codec_vc1_add_picture(struct codec_vc1 *m, u32 role, u32 aux,
++				 dma_addr_t y, dma_addr_t uv, u32 canvas)
++{
++	struct amvdec_session *sess = m->sess;
++	u32 stride = ALIGN(sess->width, 64);
++	u32 height = ALIGN(sess->height, 32);
++
++	m->bufs[m->nbufs] = (struct codec_vc1_buf) {
++		.role = role, .kind = VC1_KIND_NV12, .addr0 = y, .addr1 = uv,
++		.length = stride * height * 3 / 2, .stride = stride,
++		.width = sess->width, .height = height, .canvas = canvas,
++		.aux = aux,
++	};
++	return m->nbufs++;
++}
++
++static struct vb2_buffer *codec_vc1_find(struct amvdec_session *sess, u64 ts)
++{
++	struct vb2_buffer *vb;
++
++	vb = vb2_find_buffer(v4l2_m2m_get_dst_vq(sess->m2m_ctx), ts);
++	if (vb == &sess->request_job.dst->vb2_buf)
++		return NULL;
++	return vb;
++}
++
++static int codec_vc1_motion(struct codec_vc1 *m, u32 index)
++{
++	if (m->mv_vaddr[index])
++		return 0;
++	m->mv_vaddr[index] = codec_vc1_alloc(m->sess->core, VC1_MOTION_SIZE,
++					     &m->mv_paddr[index], SZ_4K);
++	return m->mv_vaddr[index] ? 0 : -ENOMEM;
++}
++
++/* params-vc1.md 3: the destination, references and stores */
++static int codec_vc1_buffers(struct codec_vc1 *m,
++			     const struct v4l2_ctrl_vc1_picture_layer *pic)
++{
++	struct amvdec_session *sess = m->sess;
++	struct vb2_buffer *dst = &sess->request_job.dst->vb2_buf;
++	struct vb2_buffer *ref[2] = {};
++	u32 *w = m->w;
++	u32 spec, i, nrefs;
++	int ret;
++
++	m->nbufs = 0;
++	ret = codec_vc1_canvas(sess, dst, &spec);
++	if (ret)
++		return ret;
++	w[W_DESTINATION] = codec_vc1_add_picture(m, VC1_ROLE_DESTINATION, 0,
++				vb2_dma_contig_plane_dma_addr(dst, 0),
++				vb2_dma_contig_plane_dma_addr(dst, 1), spec);
++	w[W_WORKSPACE] = codec_vc1_add(m, VC1_ROLE_WORKSPACE, m->ws_paddr,
++				       VC1_WORKSPACE_SIZE, 0);
++	if (pic->ptype == V4L2_VC1_PICTURE_TYPE_I ||
++	    pic->ptype == V4L2_VC1_PICTURE_TYPE_P) {
++		ret = codec_vc1_motion(m, dst->index);
++		if (ret)
++			return ret;
++		w[W_MOTION_WRITE] = codec_vc1_add(m, VC1_ROLE_MOTION,
++						  m->mv_paddr[dst->index],
++						  VC1_MOTION_SIZE, 1);
++	}
++	if (m->plane_bytes)
++		w[W_BITPLANE_BUFFER] = codec_vc1_add(m, VC1_ROLE_PLANES,
++						     m->planes_paddr,
++						     VC1_PLANES_SIZE, 0);
++
++	nrefs = pic->ptype == V4L2_VC1_PICTURE_TYPE_B ? 2 :
++		pic->ptype == V4L2_VC1_PICTURE_TYPE_P ? 1 : 0;
++	for (i = 0; i < nrefs; i++) {
++		ref[i] = codec_vc1_find(sess, i ? pic->backward_ref_ts :
++						  pic->forward_ref_ts);
++		if (ref[i]) {
++			ret = codec_vc1_canvas(sess, ref[i], &spec);
++			if (!ret)
++				w[W_FORWARD + i] = codec_vc1_add_picture(m,
++					VC1_ROLE_REFERENCE, i + 1,
++					vb2_dma_contig_plane_dma_addr(ref[i], 0),
++					vb2_dma_contig_plane_dma_addr(ref[i], 1),
++					spec);
++		} else {
++			/* Never decoded in this session: predict from grey */
++			u32 size = ALIGN(sess->width, 64) * ALIGN(sess->height, 32);
++
++			ret = codec_vc1_grey(sess, &spec);
++			if (!ret)
++				w[W_FORWARD + i] = codec_vc1_add_picture(m,
++					VC1_ROLE_REFERENCE, i + 1, m->grey_paddr,
++					m->grey_paddr + size, spec);
++		}
++		if (ret)
++			return ret;
++	}
++	if (pic->ptype == V4L2_VC1_PICTURE_TYPE_B) {
++		bool zero = !ref[1] || !m->mv_vaddr[ref[1]->index] ||
++			    pic->backward_ref.ptype[0] == V4L2_VC1_PICTURE_TYPE_SKIPPED;
++
++		w[W_MOTION_READ] = codec_vc1_add(m, VC1_ROLE_MOTION,
++				zero ? m->zero_paddr : m->mv_paddr[ref[1]->index],
++				VC1_MOTION_SIZE, 2);
++	}
++	return 0;
++}
++
++static void codec_vc1_put(u8 *block, u32 word, u32 value)
++{
++	put_unaligned_le32(value, block + 4 * word);
++}
++
++/* abi/CONTROL-INTERFACE.md 4.4: header, parameters, slices, buffer table */
++static void codec_vc1_block(struct codec_vc1 *m, u32 stream_bit_offset,
++			    bool advanced)
++{
++	u8 *block = m->block_vaddr;
++	u32 nslices = m->w[W_SLICE_COUNT];
++	u32 table = ALIGN(640 + 8 * (nslices - 1), 64);
++	u32 i, j;
++
++	memset(block, 0, VC1_BLOCK_SIZE + VC1_RESULT_SIZE);
++	codec_vc1_put(block, 0, PDP_MAGIC);
++	codec_vc1_put(block, 1, PDP_PROTOCOL);
++	codec_vc1_put(block, 2, PDP_CODEC_VC1);
++	codec_vc1_put(block, 3, m->seq);
++	codec_vc1_put(block, 4, table + 64 * m->nbufs);
++	codec_vc1_put(block, 5, PDP_DECODE);
++	codec_vc1_put(block, 6, PDP_FLAG_RESULT);
++	codec_vc1_put(block, 7, m->block_paddr + VC1_RESULT_OFFSET);
++	codec_vc1_put(block, 10, 128);
++	codec_vc1_put(block, 11, 512 + 8 * (nslices - 1));
++	codec_vc1_put(block, 12, 1);
++	codec_vc1_put(block, 13, table);
++	codec_vc1_put(block, 14, m->nbufs);
++	codec_vc1_put(block, 15, m->input_paddr);
++	codec_vc1_put(block, 16, m->stream_length);
++	codec_vc1_put(block, 17, stream_bit_offset);
++	codec_vc1_put(block, 18, advanced ? 3 : 1);
++	codec_vc1_put(block, 19, codec_vc1_soc(m->sess->core));
++
++	for (i = 0; i < ARRAY_SIZE(m->w); i++)
++		codec_vc1_put(block + 128, i, m->w[i]);
++	for (i = 0; i + 1 < nslices; i++)
++		for (j = 0; j < 2; j++)
++			codec_vc1_put(block + 640, 2 * i + j, m->slices[i][j]);
++	for (i = 0; i < m->nbufs; i++) {
++		const struct codec_vc1_buf *b = &m->bufs[i];
++		u8 *e = block + table + 64 * i;
++
++		codec_vc1_put(e, 0, b->role);
++		codec_vc1_put(e, 1, b->kind);
++		codec_vc1_put(e, 2, b->addr0);
++		codec_vc1_put(e, 3, b->addr1);
++		codec_vc1_put(e, 5, b->length);
++		codec_vc1_put(e, 6, b->stride);
++		codec_vc1_put(e, 7, b->stride);
++		codec_vc1_put(e, 8, b->width);
++		codec_vc1_put(e, 9, b->height);
++		codec_vc1_put(e, 10, b->canvas);
++		codec_vc1_put(e, 11, i);
++		codec_vc1_put(e, 12, b->aux);
++	}
++}
++
++static void codec_vc1_halt(struct amvdec_core *core)
++{
++	u32 val;
++
++	meson_amvdec_write_dos(core, MPSR, 0);
++	meson_amvdec_write_dos(core, CPSR, 0);
++	readl_poll_timeout(core->dos_base + IMEM_DMA_CTRL, val,
++			   !(val & BIT(15)), 2, 10000);
++	readl_poll_timeout(core->dos_base + LMEM_DMA_CTRL, val,
++			   !(val & BIT(15)), 2, 10000);
++}
++
++/* spec 15.10: the per-command host sequence */
++static int codec_vc1_run(struct codec_vc1 *m)
++{
++	struct amvdec_session *sess = m->sess;
++	struct amvdec_core *core = sess->core;
++	u32 start = m->input_paddr, val;
++	int ret;
++
++	codec_vc1_halt(core);
++	if (m->recover) {
++		ret = meson_amvdec_1_reload(sess);
++		if (ret)
++			return ret;
++		m->recover = false;
++	}
++
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_CONTROL, 0);
++	meson_amvdec_write_dos(core, DOS_SW_RESET0, BIT(5) | BIT(4) | BIT(3));
++	meson_amvdec_write_dos(core, DOS_SW_RESET0, 0);
++	meson_amvdec_write_dos(core, POWER_CTL_VLD, BIT(4));
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_START_PTR, start);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_END_PTR,
++			       start + m->window_size - 8);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_CURR_PTR, start);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_CONTROL, 1);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_CONTROL, 0);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_BUF_CNTL, 2);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_RP, start);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_WP, start + m->write_offset);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_BUF_CNTL, 3);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_BUF_CNTL, 2);
++	meson_amvdec_write_dos(core, VLD_MEM_VIFIFO_CONTROL,
++			       (0x11 << 16) | BIT(10) | (7 << 3));
++	meson_amvdec_write_dos(core, VIFF_BIT_CNT, m->stream_length * 8);
++
++	meson_amvdec_write_dos(core, PSCALE_CTRL, 0);
++	val = meson_amvdec_read_dos(core, MDEC_PIC_DC_CTRL);
++	val = (val | BIT(17)) & ~(BIT(16) | BIT(30));
++	meson_amvdec_write_dos(core, MDEC_PIC_DC_CTRL, val);
++
++	dma_wmb();
++	meson_amvdec_write_dos(core, PDP_BLOCK, m->block_paddr);
++	meson_amvdec_write_dos_bits(core, VLD_MEM_VIFIFO_CONTROL, 6);
++	meson_amvdec_write_dos(core, PDP_DOORBELL, 0);
++	meson_amvdec_write_dos(core, DOS_SW_RESET0, BIT(12) | BIT(11));
++	meson_amvdec_write_dos(core, DOS_SW_RESET0, 0);
++	meson_amvdec_read_dos(core, DOS_SW_RESET0);
++	meson_amvdec_write_dos(core, MPSR, 1);
++
++	ret = readl_poll_timeout_atomic(core->dos_base + PDP_STATE, val,
++					val == PDP_STATE_READY, 0, 50);
++	if (ret)
++		ret = readl_poll_timeout(core->dos_base + PDP_STATE, val,
++					 val == PDP_STATE_READY, 2, 10000);
++	if (ret)
++		return ret;
++	if (meson_amvdec_read_dos(core, PDP_IDENT) != PDP_IDENT_VC1 ||
++	    meson_amvdec_read_dos(core, PDP_FEATURES) != PDP_FEATURES_VC1) {
++		dev_err(core->dev, "VC-1 firmware ident %08x features %08x\n",
++			meson_amvdec_read_dos(core, PDP_IDENT),
++			meson_amvdec_read_dos(core, PDP_FEATURES));
++		return -EPROTO;
++	}
++
++	meson_amvdec_write_dos(core, ASSIST_MBOX1_CLR_REG, 1);
++	meson_amvdec_write_dos(core, ASSIST_MBOX1_MASK, 1);
++	atomic_set(&m->busy, 1);
++	schedule_delayed_work(&m->timeout, msecs_to_jiffies(VC1_TIMEOUT_MS));
++	meson_amvdec_write_dos(core, PDP_DOORBELL, m->seq);
++	return 0;
++}
++
++/*
++ * Decode one picture or field. The CAPTURE buffer of the request is the
++ * destination; the references are found by their timestamps.
++ */
++int meson_amvdec_codec_vc1_feed(struct amvdec_session *sess,
++				struct vb2_buffer *vb)
++{
++	struct codec_vc1 *m = sess->priv;
++	struct amvdec_core *core = sess->core;
++	const struct v4l2_ctrl_vc1_sequence *seq;
++	const struct v4l2_ctrl_vc1_entrypoint_header *ep;
++	const struct v4l2_ctrl_vc1_picture_layer *pic;
++	const struct v4l2_ctrl_vc1_bitplanes *bp;
++	struct v4l2_ctrl *ctrl, *slices;
++	u32 bytes = vb2_get_plane_payload(vb, 0);
++	const u8 *data = vb2_plane_vaddr(vb, 0);
++	int ret;
++
++	if (!m || !data || !bytes || !sess->request_job.dst)
++		return -EINVAL;
++
++	ctrl = v4l2_ctrl_find(&sess->ctrl_handler, V4L2_CID_STATELESS_VC1_SEQUENCE);
++	seq = ctrl->p_cur.p_vc1_sequence;
++	ctrl = v4l2_ctrl_find(&sess->ctrl_handler,
++			      V4L2_CID_STATELESS_VC1_ENTRYPOINT_HEADER);
++	ep = ctrl->p_cur.p_vc1_entrypoint_header;
++	ctrl = v4l2_ctrl_find(&sess->ctrl_handler,
++			      V4L2_CID_STATELESS_VC1_PICTURE_LAYER);
++	pic = ctrl->p_cur.p_vc1_picture_layer;
++	ctrl = v4l2_ctrl_find(&sess->ctrl_handler, V4L2_CID_STATELESS_VC1_BITPLANES);
++	bp = ctrl->p_cur.p_vc1_bitplanes;
++	slices = v4l2_ctrl_find(&sess->ctrl_handler,
++				V4L2_CID_STATELESS_VC1_SLICE_PARAMS);
++
++	if (DIV_ROUND_UP(ep->coded_width, 16) > DIV_ROUND_UP(sess->width, 16) ||
++	    DIV_ROUND_UP(ep->coded_height, 16) > DIV_ROUND_UP(sess->height, 16))
++		return -EINVAL;
++
++	ret = codec_vc1_params(m, seq, ep, pic, slices->p_cur.p_vc1_slice_params,
++			       slices->elems, data, bytes);
++	if (ret) {
++		dev_dbg(core->dev, "vc1: picture refused: %d\n", ret);
++		return ret;
++	}
++	ret = codec_vc1_buffers(m, pic);
++	if (!ret)
++		ret = codec_vc1_input(m, data, bytes);
++	if (ret)
++		return ret;
++	codec_vc1_planes(m, bp);
++
++	m->seq = m->seq == U16_MAX ? 1 : m->seq + 1;
++	codec_vc1_block(m, pic->data_bit_offset,
++			seq->profile == V4L2_VC1_PROFILE_ADVANCED);
++
++	dev_dbg(core->dev, "vc1: seq=%u type=%u fcm=%u second=%u slices=%u bytes=%u dst=%u\n",
++		m->seq, pic->ptype, pic->fcm, m->w[W_SECOND],
++		m->w[W_SLICE_COUNT], bytes, sess->request_job.dst->vb2_buf.index);
++
++	ret = codec_vc1_run(m);
++	if (ret) {
++		dev_err(core->dev, "vc1: firmware restart failed: %d\n", ret);
++		m->recover = true;
++	}
++	return ret;
++}
++
++static void codec_vc1_done(struct codec_vc1 *m, bool error)
++{
++	struct amvdec_session *sess = m->sess;
++
++	if (error)
++		sess->request_job.error = true;
++	else if (m->intra)
++		memcpy(m->history, m->history_next, sizeof(m->history));
++	meson_amvdec_request_signal(sess, sess->request_job.dst);
++}
++
++static void codec_vc1_timeout(struct work_struct *work)
++{
++	struct codec_vc1 *m = container_of(to_delayed_work(work),
++					   struct codec_vc1, timeout);
++	struct amvdec_core *core = m->sess->core;
++
++	if (!atomic_xchg(&m->busy, 0))
++		return;
++	dev_warn(core->dev, "vc1: picture %u timed out, state %x result %x\n",
++		 m->seq, meson_amvdec_read_dos(core, PDP_STATE),
++		 meson_amvdec_read_dos(core, PDP_RESULT));
++	codec_vc1_halt(core);
++	m->recover = true;
++	codec_vc1_done(m, true);
++}
++
++static irqreturn_t codec_vc1_isr(struct amvdec_session *sess)
++{
++	return IRQ_WAKE_THREAD;
++}
++
++static irqreturn_t codec_vc1_threaded_isr(struct amvdec_session *sess)
++{
++	struct codec_vc1 *m = sess->priv;
++	struct amvdec_core *core = sess->core;
++	const u8 *rec;
++	u32 state, result, units, code;
++	bool ok;
++
++	meson_amvdec_write_dos(core, ASSIST_MBOX1_CLR_REG, 1);
++	if (!m || !atomic_xchg(&m->busy, 0))
++		return IRQ_HANDLED;
++	cancel_delayed_work(&m->timeout);
++
++	dma_rmb();
++	rec = (const u8 *)m->block_vaddr + VC1_RESULT_OFFSET;
++	state = meson_amvdec_read_dos(core, PDP_STATE);
++	result = meson_amvdec_read_dos(core, PDP_RESULT);
++	units = get_unaligned_le32(rec + 12);
++	code = get_unaligned_le32(rec + 8);
++	ok = state == PDP_STATE_DONE && result == (u32)m->seq << 16 &&
++	     get_unaligned_le32(rec) == PDP_RECORD_MAGIC &&
++	     get_unaligned_le32(rec + 4) == m->seq && !code &&
++	     units == m->columns * m->rows;
++	if (!ok) {
++		dev_dbg(core->dev,
++			"vc1: picture %u failed: state %u result %08x code %#x units %u stage %u detail %u error_unit %d\n",
++			m->seq, state, result, code, units,
++			get_unaligned_le32(rec + 24), get_unaligned_le32(rec + 28),
++			(int)get_unaligned_le32(rec + 20));
++		m->recover = true;
++	}
++	codec_vc1_done(m, !ok);
++	return IRQ_HANDLED;
++}
++
++struct amvdec_codec_ops meson_amvdec_codec_vc1_ops = {
++	.start = codec_vc1_start,
++	.stop = codec_vc1_stop,
++	.isr = codec_vc1_isr,
++	.threaded_isr = codec_vc1_threaded_isr,
++};
+diff --git a/drivers/media/platform/amlogic/amvdec/codec_vc1.h b/drivers/media/platform/amlogic/amvdec/codec_vc1.h
+new file mode 100644
+index 000000000000..0ba4a78f5546
+--- /dev/null
++++ b/drivers/media/platform/amlogic/amvdec/codec_vc1.h
+@@ -0,0 +1,13 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++
++#ifndef __MESON_AMVDEC_CODEC_VC1_H_
++#define __MESON_AMVDEC_CODEC_VC1_H_
++
++#include "amvdec.h"
++
++extern struct amvdec_codec_ops meson_amvdec_codec_vc1_ops;
++
++int meson_amvdec_codec_vc1_feed(struct amvdec_session *sess,
++				struct vb2_buffer *vb);
++
++#endif
+diff --git a/drivers/media/platform/amlogic/amvdec/esparser.c b/drivers/media/platform/amlogic/amvdec/esparser.c
+index fb64516c2114..0c3bfe0a98d0 100644
+--- a/drivers/media/platform/amlogic/amvdec/esparser.c
++++ b/drivers/media/platform/amlogic/amvdec/esparser.c
+@@ -26,6 +26,7 @@
+ #include "codec_hevc_synth.h"
+ #include "codec_mpeg12.h"
+ #include "codec_mpeg12_synth.h"
++#include "codec_vc1.h"
+ #include "codec_h264.h"
+ #include "codec_hevc.h"
+ #include "codec_vp9.h"
+@@ -355,6 +356,7 @@ esparser_queue(struct amvdec_session *sess, struct vb2_v4l2_buffer *vbuf)
+ 	u16 mpeg2_tref = 0;
+ 	bool mpeg2_second = false;
+ 	bool mpeg2_job = false;
++	bool vc1_job = false;
+ 
+ 	BUILD_BUG_ON(sizeof(f->headers) < H264_SYNTH_MAX_HEADERS ||
+ 		     sizeof(f->headers) < MPEG12_SYNTH_MAX_HEADERS);
+@@ -678,6 +680,8 @@ esparser_queue(struct amvdec_session *sess, struct vb2_v4l2_buffer *vbuf)
+ 		dev_dbg(core->dev,
+ 			"MPEG2 synthesized %d header bytes, coding_type=%u\n",
+ 			hdrs_len, f->mpeg2_pic.picture_coding_type);
++	} else if (sess->fmt_out->pixfmt == V4L2_PIX_FMT_VC1_SLICE) {
++		vc1_job = true;
+ 	} else {
+ 		u8 *vaddr = vb2_plane_vaddr(vb, 0);
+ 		u32 plane_size = vb2_plane_size(vb, 0);
+@@ -908,6 +912,19 @@ esparser_queue(struct amvdec_session *sess, struct vb2_v4l2_buffer *vbuf)
+ 		}
+ 	}
+ 	v4l2_m2m_buf_copy_metadata(vbuf, sess->request_job.dst);
++	if (vc1_job) {
++		/* The VLD reads a copy of this buffer; nothing goes through the parser. */
++		sess->request_job.credit = true;
++		atomic_inc(&sess->esparser_queued_bufs);
++		ret = meson_amvdec_codec_vc1_feed(sess, vb);
++		if (ret) {
++			sess->request_job.credit = false;
++			atomic_dec(&sess->esparser_queued_bufs);
++			esparser_src_error(sess, vbuf);
++			return ret;
++		}
++		return 0;
++	}
+ 	if (mpeg2_job) {
+ 		/* The VLD reads this buffer directly; nothing goes
+ 		 * through the parser FIFO.
+-- 
+2.43.0
+

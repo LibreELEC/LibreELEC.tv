@@ -1,0 +1,39 @@
+From dc999552ee00722374728a21bfbee4b9322d0f08 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Adri=C3=A1n=20Larumbe?= <adrian.larumbe@collabora.com>
+Date: Thu, 20 Aug 2026 15:04:48 +0100
+Subject: [PATCH 014/267] FROMGIT(7.4): drm/panfrost: Prevent division by 0
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When updating and debug-printing devfreq stats, in the very unlikely
+off-chance that total device time is less than 100 ns, division by 0
+would happen. Fix the divisor when relevant and rearrange operands.
+
+Reported-by: Claude <noreply@anthropic.com>
+Closes: https://gitlab.freedesktop.org/panfrost/linux/-/work_items/88
+Fixes: f3ba91228e8e ("drm/panfrost: Add initial panfrost driver")
+Reviewed-by: Steven Price <steven.price@arm.com>
+Reviewed-by: Boris Brezillon <boris.brezillon@collabora.com>
+Link: https://patch.msgid.link/20260820-b4-panfrost-fixes-v1-2-1b2c2376f4bc@collabora.com
+Signed-off-by: Adrián Larumbe <adrian.larumbe@collabora.com>
+---
+ drivers/gpu/drm/panfrost/panfrost_devfreq.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_devfreq.c b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
+index b51c30778811..0fe81d259274 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_devfreq.c
++++ b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
+@@ -78,7 +78,7 @@ static int panfrost_devfreq_get_dev_status(struct device *dev,
+ 
+ 	dev_dbg(pfdev->base.dev, "busy %lu total %lu %lu %% freq %lu MHz\n",
+ 		status->busy_time, status->total_time,
+-		status->busy_time / (status->total_time / 100),
++		status->busy_time * 100 / MAX(status->total_time, 1),
+ 		status->current_frequency / 1000 / 1000);
+ 
+ 	return 0;
+-- 
+2.43.0
+

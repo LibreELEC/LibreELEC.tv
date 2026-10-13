@@ -1,0 +1,62 @@
+From 88d9fbc2c1ffbecde2f37330a4036ed03fb006eb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Adri=C3=A1n=20Larumbe?= <adrian.larumbe@collabora.com>
+Date: Mon, 12 Oct 2026 15:47:56 +0100
+Subject: [PATCH 021/267] FROMGIT(7.4): drm/panfrost: Skip NULL checks for
+ clock enable/disabling
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The clk_* API can deal with NULL clock objects, so we can do away with NULL
+checks in client code.
+
+Reviewed-by: Boris Brezillon <boris.brezillon@collabora.com>
+Reviewed-by: Steven Price <steven.price@arm.com>
+Link: https://patch.msgid.link/20261012-claude-fixes-v15-4-bc0a6c498553@collabora.com
+Signed-off-by: Adrián Larumbe <adrian.larumbe@collabora.com>
+---
+ drivers/gpu/drm/panfrost/panfrost_device.c | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.c b/drivers/gpu/drm/panfrost/panfrost_device.c
+index 5bf528f41278..b3a53504bd01 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.c
++++ b/drivers/gpu/drm/panfrost/panfrost_device.c
+@@ -510,11 +510,9 @@ static int panfrost_device_resume(struct device *dev)
+ 		if (ret)
+ 			goto err_clk;
+ 
+-		if (pfdev->bus_clock) {
+-			ret = clk_enable(pfdev->bus_clock);
+-			if (ret)
+-				goto err_bus_clk;
+-		}
++		ret = clk_enable(pfdev->bus_clock);
++		if (ret)
++			goto err_bus_clk;
+ 	}
+ 
+ 	ret = pm_runtime_force_resume(dev);
+@@ -524,7 +522,7 @@ static int panfrost_device_resume(struct device *dev)
+ 	return 0;
+ 
+ err_resume:
+-	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS) && pfdev->bus_clock)
++	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS))
+ 		clk_disable(pfdev->bus_clock);
+ err_bus_clk:
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS))
+@@ -545,9 +543,7 @@ static int panfrost_device_suspend(struct device *dev)
+ 		return ret;
+ 
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS)) {
+-		if (pfdev->bus_clock)
+-			clk_disable(pfdev->bus_clock);
+-
++		clk_disable(pfdev->bus_clock);
+ 		clk_disable(pfdev->clock);
+ 	}
+ 
+-- 
+2.43.0
+

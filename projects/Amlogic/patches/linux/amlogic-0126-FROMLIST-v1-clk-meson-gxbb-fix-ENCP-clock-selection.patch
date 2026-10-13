@@ -1,0 +1,33 @@
+From aab1230da235d44ebe40d0fe2e8e3cc9cb87fb0b Mon Sep 17 00:00:00 2001
+From: Carlo Caione <ccaione@baylibre.com>
+Date: Thu, 22 Oct 2026 22:10:32 +0200
+Subject: [PATCH 126/267] FROMLIST(v1): clk: meson: gxbb: fix ENCP clock
+ selection
+
+The ENCP clock uses ENCT's settings by mistake. Change the selector
+from bits [23:20] to [27:24].
+
+See the S905X datasheet revision 0.2, page 70.
+
+Fixes: a8080f247bcd ("clk: meson-gxbb: Add video clocks")
+Signed-off-by: Carlo Caione <ccaione@baylibre.com>
+---
+ drivers/clk/meson/gxbb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/meson/gxbb.c b/drivers/clk/meson/gxbb.c
+index 7a7b104182ff..b483164955b9 100644
+--- a/drivers/clk/meson/gxbb.c
++++ b/drivers/clk/meson/gxbb.c
+@@ -2370,7 +2370,7 @@ static struct clk_regmap gxbb_cts_encp_sel = {
+ 	.data = &(struct clk_regmap_mux_data){
+ 		.offset = HHI_VID_CLK_DIV,
+ 		.mask = 0xf,
+-		.shift = 20,
++		.shift = 24,
+ 		.table = gxbb_cts_parents_val_table,
+ 	},
+ 	.hw.init = &(struct clk_init_data){
+-- 
+2.43.0
+

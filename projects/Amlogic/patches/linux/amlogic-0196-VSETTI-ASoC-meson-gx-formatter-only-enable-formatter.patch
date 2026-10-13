@@ -1,0 +1,102 @@
+From b00144c3a661d2b71ff04e9bbf2e8b3aee28c4d8 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 30 Sep 2026 18:12:46 +0200
+Subject: [PATCH 196/267] VSETTI: ASoC: meson: gx-formatter: only enable
+ formatters in gx_stream_start()
+
+Formatters are now programmed by gx_stream_prepare(), so stop preparing
+them again on start. Formatters attached after the stream is prepared
+are prepared on attach.
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ sound/soc/meson/gx-formatter.c | 38 ++++++++++++----------------------
+ 1 file changed, 13 insertions(+), 25 deletions(-)
+
+diff --git a/sound/soc/meson/gx-formatter.c b/sound/soc/meson/gx-formatter.c
+index 9641994fe020..f84a007459c2 100644
+--- a/sound/soc/meson/gx-formatter.c
++++ b/sound/soc/meson/gx-formatter.c
+@@ -29,25 +29,16 @@ static int gx_formatter_prepare(struct gx_formatter *formatter)
+ 					    formatter->stream);
+ }
+ 
+-static int gx_formatter_enable(struct gx_formatter *formatter)
++static void gx_formatter_enable(struct gx_formatter *formatter)
+ {
+-	int ret;
+-
+ 	/* Do nothing if the formatter is already enabled */
+ 	if (formatter->enabled)
+-		return 0;
+-
+-	ret = gx_formatter_prepare(formatter);
+-	if (ret)
+-		return ret;
++		return;
+ 
+-	/* Finally, actually enable the formatter */
+ 	if (formatter->drv->ops->enable)
+ 		formatter->drv->ops->enable(formatter->map);
+ 
+ 	formatter->enabled = true;
+-
+-	return 0;
+ }
+ 
+ static void gx_formatter_disable(struct gx_formatter *formatter)
+@@ -69,15 +60,19 @@ static int gx_formatter_attach(struct gx_formatter *formatter)
+ 
+ 	spin_lock_irq(&ts->lock);
+ 
+-	/* Catch up if the stream is already running when we attach */
+-	if (ts->ready) {
+-		ret = gx_formatter_enable(formatter);
++	/* Catch up if the stream is already prepared when we attach */
++	if (ts->prepared) {
++		ret = gx_formatter_prepare(formatter);
+ 		if (ret) {
+-			pr_err("failed to enable formatter\n");
++			pr_err("failed to prepare formatter\n");
+ 			goto out;
+ 		}
+ 	}
+ 
++	/* Catch up if the stream is already running when we attach */
++	if (ts->ready)
++		gx_formatter_enable(formatter);
++
+ 	list_add_tail(&formatter->list, &ts->formatter_list);
+ out:
+ 	spin_unlock_irq(&ts->lock);
+@@ -243,24 +238,17 @@ int gx_stream_start(struct gx_stream *ts)
+ {
+ 	struct gx_formatter *formatter;
+ 	unsigned long irq_flags;
+-	int ret = 0;
+ 
+ 	spin_lock_irqsave(&ts->lock, irq_flags);
+ 
+ 	/* Start all the formatters attached to the stream */
+-	list_for_each_entry(formatter, &ts->formatter_list, list) {
+-		ret = gx_formatter_enable(formatter);
+-		if (ret) {
+-			pr_err("failed to enable formatter\n");
+-			goto out;
+-		}
+-	}
++	list_for_each_entry(formatter, &ts->formatter_list, list)
++		gx_formatter_enable(formatter);
+ 
+ 	ts->ready = true;
+ 
+-out:
+ 	spin_unlock_irqrestore(&ts->lock, irq_flags);
+-	return ret;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(gx_stream_start);
+ 
+-- 
+2.43.0
+

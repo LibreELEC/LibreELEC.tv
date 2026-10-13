@@ -1,0 +1,46 @@
+From e9883309e4854a75e8971789e3f1cb100a91b934 Mon Sep 17 00:00:00 2001
+From: Igor Velkov <iav@iav.lv>
+Date: Fri, 9 Oct 2026 17:02:59 +0000
+Subject: [PATCH 132/267] FROMLIST(v3): mmc: meson-gx: report busy from DAT0
+ alone
+
+meson_mmc_card_busy() reports busy only while DAT0..3 are all low. A
+busy card drives DAT0 low and leaves DAT1..3 to the pull-ups, and the
+callback is defined as "Check if the card is pulling dat[0] low". So a
+busy card is reported free, and the core, which prefers card_busy over
+CMD13 in mmc_busy_cb(), stops polling after CMD6 and erase at once. The
+controller hides this on R1b commands, where it waits for busy itself.
+Once max_busy_timeout is reported, the core sends the longer waits, the
+120 s BKOPS and 240 s sanitize switches among them, as R1 and has only
+the polling left.
+
+Look at DAT0 only, as sdhci_card_busy() does. The checks around the
+voltage switch in mmc_set_uhs_voltage() still hold: the card drives
+DAT0..3 low together after CMD11 and keeps them low together on
+failure.
+
+Fixes: 186cd8b7f586 ("mmc: meson-gx: implement card_busy callback")
+Assisted-by: LLM
+Signed-off-by: Igor Velkov <iav@iav.lv>
+---
+ drivers/mmc/host/meson-gx-mmc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/meson-gx-mmc.c b/drivers/mmc/host/meson-gx-mmc.c
+index 5f32be777a2f..36302c0e9c33 100644
+--- a/drivers/mmc/host/meson-gx-mmc.c
++++ b/drivers/mmc/host/meson-gx-mmc.c
+@@ -1094,8 +1094,8 @@ static int meson_mmc_card_busy(struct mmc_host *mmc)
+ 
+ 	regval = readl(host->regs + SD_EMMC_STATUS);
+ 
+-	/* We are only interrested in lines 0 to 3, so mask the other ones */
+-	return !(FIELD_GET(STATUS_DATI, regval) & 0xf);
++	/* The card signals busy on DAT0 alone. */
++	return !(FIELD_GET(STATUS_DATI, regval) & BIT(0));
+ }
+ 
+ static int meson_mmc_voltage_switch(struct mmc_host *mmc, struct mmc_ios *ios)
+-- 
+2.43.0
+

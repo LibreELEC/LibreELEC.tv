@@ -1,0 +1,36 @@
+From 5f6d1ff6b265931bc51761e2ef8330f40405b058 Mon Sep 17 00:00:00 2001
+From: Gus Bourg <gus@bourg.net>
+Date: Wed, 2 Sep 2026 17:30:00 -0700
+Subject: [PATCH 151/267] drm/display: bridge_connector: restore the max bpc
+ default
+
+drm_bridge_connector_create_state() leaves max_requested_bpc at 0, a
+value userspace cannot set because the max bpc property range starts at
+8. Downstream bridges then refuse every deep color format.
+
+Initialise max_requested_bpc to the maximum of the max bpc property,
+which is the default drm_connector_attach_max_bpc_property() applies.
+
+Signed-off-by: Gus Bourg <gus@bourg.net>
+---
+ drivers/gpu/drm/display/drm_bridge_connector.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/display/drm_bridge_connector.c b/drivers/gpu/drm/display/drm_bridge_connector.c
+index 707d7143e475..7181d4c13213 100644
+--- a/drivers/gpu/drm/display/drm_bridge_connector.c
++++ b/drivers/gpu/drm/display/drm_bridge_connector.c
+@@ -236,6 +236,10 @@ drm_bridge_connector_create_state(struct drm_connector *connector)
+ 	if (IS_ERR(conn_state))
+ 		return conn_state;
+ 
++	if (connector->max_bpc_property)
++		conn_state->max_requested_bpc =
++			connector->max_bpc_property->values[1];
++
+ 	if (bridge_connector->bridge_hdmi)
+ 		__drm_atomic_helper_connector_hdmi_state_init(connector,
+ 							      conn_state);
+-- 
+2.43.0
+

@@ -1,7 +1,7 @@
-From d6054559ef2c4a5a53a6c671d2a07ebd03f281ac Mon Sep 17 00:00:00 2001
+From 97619be6a0c864505376c27f06c2ff791b5c54df Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Sat, 10 Oct 2026 08:47:45 +0000
-Subject: [PATCH 003/210] LOCAL: set meson-s4 cma pool to 384MB
+Subject: [PATCH 003/267] LOCAL: set meson-s4 cma pool to 384MB
 
 This change sets the CMA pool to 384MB for vdec use
 
