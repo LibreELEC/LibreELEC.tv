@@ -1,0 +1,46 @@
+From 65b7245e5d67214c4990e1c429f20668f99b0d91 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 26 Apr 2026 23:38:08 +0000
+Subject: [PATCH 152/213] WIP: drm/bridge: dw-hdmi: always negotiate output bus
+ formats
+
+When dw-hdmi is the first or only bridge in the encoder chain,
+dw_hdmi_bridge_atomic_get_output_bus_fmts() returns
+MEDIA_BUS_FMT_FIXED and skips normal bus format negotiation.
+
+That causes both enc_in_bus_format and enc_out_bus_format to fall back
+to RGB888_1X24 later in the pipeline, instead of using a negotiated
+format supported by the bridge and sink. As a result, the CSC block can
+be configured from the wrong bus format.
+
+Remove the special case and always let dw-hdmi advertise and negotiate
+concrete output bus formats.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 9 ---------
+ 1 file changed, 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index b2d8f61d0999..8ab40e8241a7 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2633,15 +2633,6 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+ 	if (!output_fmts)
+ 		return NULL;
+ 
+-	/* If dw-hdmi is the first or only bridge, avoid negociating with ourselves */
+-	if (list_is_singular(&bridge->encoder->bridge_chain) ||
+-	    list_is_first(&bridge->chain_node, &bridge->encoder->bridge_chain)) {
+-		*num_output_fmts = 1;
+-		output_fmts[0] = MEDIA_BUS_FMT_FIXED;
+-
+-		return output_fmts;
+-	}
+-
+ 	/*
+ 	 * If the current mode enforces 4:2:0, force the output bus format
+ 	 * to 4:2:0 and do not add the YUV422/444/RGB formats
+-- 
+2.43.0
+

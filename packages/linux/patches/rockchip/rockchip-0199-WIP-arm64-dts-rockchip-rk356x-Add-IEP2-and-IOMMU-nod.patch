@@ -1,0 +1,54 @@
+From 1b417306a63f076c73b9d3545d4ac1d99d6964f5 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Fri, 20 Feb 2026 05:28:43 +0000
+Subject: [PATCH 199/213] WIP: arm64: dts: rockchip: rk356x: Add IEP2 and IOMMU
+ nodes
+
+Add the IEP2 image enhancement processor at 0xfdef0000 and its
+companion IOMMU at 0xfdef0800 for RK3568/RK3566 SoCs. The IEP2
+provides hardware-accelerated YUV deinterlacing and shares the
+RK3568_PD_RGA power domain with the RGA block.
+
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk356x-base.dtsi | 24 +++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi b/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
+index a776b32c828e..025d88849ed9 100644
+--- a/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
+@@ -651,6 +651,30 @@ vepu_mmu: iommu@fdee0800 {
+ 		#iommu-cells = <0>;
+ 	};
+ 
++	iep2: iep@fdef0000 {
++		compatible = "rockchip,rk3568-iep2";
++		reg = <0x0 0xfdef0000 0x0 0x500>;
++		interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru ACLK_IEP>, <&cru HCLK_IEP>,
++			 <&cru CLK_IEP_CORE>;
++		clock-names = "aclk", "hclk", "sclk";
++		iommus = <&iep2_mmu>;
++		power-domains = <&power RK3568_PD_RGA>;
++		resets = <&cru SRST_A_IEP>, <&cru SRST_H_IEP>,
++			 <&cru SRST_IEP_CORE>;
++		reset-names = "axi", "ahb", "core";
++	};
++
++	iep2_mmu: iommu@fdef0800 {
++		compatible = "rockchip,rk3568-iommu";
++		reg = <0x0 0xfdef0800 0x0 0x40>;
++		interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru ACLK_IEP>, <&cru HCLK_IEP>;
++		clock-names = "aclk", "iface";
++		power-domains = <&power RK3568_PD_RGA>;
++		#iommu-cells = <0>;
++	};
++
+ 	vdec: video-codec@fdf80100 {
+ 		compatible = "rockchip,rk3568-vdec";
+ 		reg = <0x0 0xfdf80200 0x0 0x500>,
+-- 
+2.43.0
+

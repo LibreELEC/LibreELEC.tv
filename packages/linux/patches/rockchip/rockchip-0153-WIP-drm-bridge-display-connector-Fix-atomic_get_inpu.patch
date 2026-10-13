@@ -1,0 +1,127 @@
+From 895e86a32302231e61327a15b4dc4f05e2f79f73 Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Tue, 25 Jun 2024 15:20:49 +0530
+Subject: [PATCH 153/213] WIP: drm/bridge: display-connector: Fix
+ atomic_get_input_bus_fmt hook
+
+The display-connector acts as a pass-through bridge. To truly reflect
+that, this bridge should accept the same input format, as it expects to
+output. That in turn should be the same as what the preceding bridge has
+to output.
+
+While the get_output_fmt hook does exactly that by calling the same hook
+of the previous bridge, the get_input_fmt hook should simply propagate
+the expected output format as its required input format.
+
+Let's say bridge(n) converts YUV bus format to RGB before transmitting
+the video signals. B is supposed to be RGB and A is YUV. The
+get_input_fmt hook of bridge(n) should receive RGB as its expected
+output format for it to select YUV as its required input format.
+
+Moreover, since the display-connector is a pass-through bridge, X and Y
+should both be RGB as well.
+
+    +-------------+            +-------------+
+A   |             |   B    X   |             |   Y
+--->|  Bridge(n)  +--->    --->| Display     +--->
+    |             |            | Connector   |
+    |             |            |             |
+    +-------------+            +-------------+
+
+But that's not what's happening at the moment.
+
+The core will call get_output_fmt hook of display-connector, which will
+call the same hook of bridge(n). Y will get set to RGB because B is RGB.
+
+Now the core will call get_input_fmt hook of display-connector with Y =
+RGB as its expected output format. This hook will in turn call the
+get_input_fmt hook of bridge(n), with expected output as RGB. This hook
+will then return YUV as its required input format, which will set X =
+YUV.
+
+This is where things get off the track. The core will then call
+bridge(n)'s get_input_fmt hook but this time the expected output will
+have changed to X = YUV, instead of what ideally should have been X =
+RGB. We don't know how bridge(n)'s input format requirement will change
+now that its expected output format isn't RGB but YUV.
+
+Ideally, formats Y, X, B need to be the same and the get_input_fmt hook
+for bridge(n) should be called with these as its expected output format.
+Calling that hook twice can potentially change the expected output
+format - which can then change the required input format again, or it
+might just throw an -ENOTSUPP error.
+
+While many bridges don't utilize these APIs, or in a lot of cases A and
+B are same anyway, it is not the biggest problem, but one that should be
+fixed anyway.
+
+Fix this.
+
+Fixes: 7cd70656d128 ("drm/bridge: display-connector: implement bus fmts callbacks")
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/display-connector.c | 40 +---------------------
+ 1 file changed, 1 insertion(+), 39 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/display-connector.c b/drivers/gpu/drm/bridge/display-connector.c
+index eb3412ec30a0..511716cd7cc3 100644
+--- a/drivers/gpu/drm/bridge/display-connector.c
++++ b/drivers/gpu/drm/bridge/display-connector.c
+@@ -175,44 +175,6 @@ static u32 *display_connector_get_output_bus_fmts(struct drm_bridge *bridge,
+ 							      num_output_fmts);
+ }
+ 
+-/*
+- * Since this bridge is tied to the connector, it acts like a passthrough,
+- * so concerning the input bus formats, either pass the bus formats from the
+- * previous bridge or MEDIA_BUS_FMT_FIXED (like select_bus_fmt_recursive())
+- * when atomic_get_input_bus_fmts is not supported.
+- * This supports negotiation if the bridge chain has all bits in place.
+- */
+-static u32 *display_connector_get_input_bus_fmts(struct drm_bridge *bridge,
+-					struct drm_bridge_state *bridge_state,
+-					struct drm_crtc_state *crtc_state,
+-					struct drm_connector_state *conn_state,
+-					u32 output_fmt,
+-					unsigned int *num_input_fmts)
+-{
+-	struct drm_bridge *prev_bridge __free(drm_bridge_put) = drm_bridge_get_prev_bridge(bridge);
+-	struct drm_bridge_state *prev_bridge_state;
+-
+-	if (!prev_bridge || !prev_bridge->funcs->atomic_get_input_bus_fmts) {
+-		u32 *in_bus_fmts;
+-
+-		*num_input_fmts = 1;
+-		in_bus_fmts = kmalloc_obj(*in_bus_fmts);
+-		if (!in_bus_fmts)
+-			return NULL;
+-
+-		in_bus_fmts[0] = MEDIA_BUS_FMT_FIXED;
+-
+-		return in_bus_fmts;
+-	}
+-
+-	prev_bridge_state = drm_atomic_get_new_bridge_state(crtc_state->state,
+-							    prev_bridge);
+-
+-	return prev_bridge->funcs->atomic_get_input_bus_fmts(prev_bridge, prev_bridge_state,
+-							     crtc_state, conn_state, output_fmt,
+-							     num_input_fmts);
+-}
+-
+ static const struct drm_bridge_funcs display_connector_bridge_funcs = {
+ 	.attach = display_connector_attach,
+ 	.destroy = display_connector_destroy,
+@@ -221,7 +183,7 @@ static const struct drm_bridge_funcs display_connector_bridge_funcs = {
+ 	.hpd_disable = display_connector_hpd_disable,
+ 	.edid_read = display_connector_edid_read,
+ 	.atomic_get_output_bus_fmts = display_connector_get_output_bus_fmts,
+-	.atomic_get_input_bus_fmts = display_connector_get_input_bus_fmts,
++	.atomic_get_input_bus_fmts = drm_atomic_helper_bridge_propagate_bus_fmt,
+ 	.atomic_duplicate_state = drm_atomic_helper_bridge_duplicate_state,
+ 	.atomic_destroy_state = drm_atomic_helper_bridge_destroy_state,
+ 	.atomic_create_state = drm_atomic_helper_bridge_create_state,
+-- 
+2.43.0
+

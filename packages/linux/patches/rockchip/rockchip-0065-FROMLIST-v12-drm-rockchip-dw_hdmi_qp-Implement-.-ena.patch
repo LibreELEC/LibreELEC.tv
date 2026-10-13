@@ -1,0 +1,213 @@
+From cdc3d4d68b99a93d0cd0c364f87646aee5bd0f52 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Mon, 5 Oct 2026 03:38:13 +0300
+Subject: [PATCH 065/213] FROMLIST(v12): drm/rockchip: dw_hdmi_qp: Implement
+ .{enable,disable}_hpd() PHY ops
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Implement .enable_hpd() and .disable_hpd() phy ops for RK3576 and RK3588
+SoCs, used by the corresponding bridge callbacks for HPD activation
+control.
+
+Consolidate the interrupt clear-and-unmask sequence into enable_hpd()
+and the mask-only operation into disable_hpd(), replacing the open-coded
+register writes in the interrupt handlers and io_init().
+
+The .setup_hpd() phy op, which was previously called from
+dw_hdmi_qp_init_hw(), is no longer needed and its users are removed.
+
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ .../gpu/drm/rockchip/dw_hdmi_qp-rockchip.c    | 78 +++++++++----------
+ 1 file changed, 38 insertions(+), 40 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index 94e5d21db95f..32586b9686c2 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -285,7 +285,7 @@ dw_hdmi_qp_rk3588_read_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
+ 	return val ? connector_status_connected : connector_status_disconnected;
+ }
+ 
+-static void dw_hdmi_qp_rk3588_setup_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
++static void dw_hdmi_qp_rk3588_enable_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
+ {
+ 	struct rockchip_hdmi_qp *hdmi = (struct rockchip_hdmi_qp *)data;
+ 	u32 val;
+@@ -300,11 +300,25 @@ static void dw_hdmi_qp_rk3588_setup_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
+ 	regmap_write(hdmi->regmap, RK3588_GRF_SOC_CON2, val);
+ }
+ 
++static void dw_hdmi_qp_rk3588_disable_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
++{
++	struct rockchip_hdmi_qp *hdmi = (struct rockchip_hdmi_qp *)data;
++	u32 val;
++
++	if (hdmi->port_id)
++		val = FIELD_PREP_WM16(RK3588_HDMI1_HPD_INT_MSK, 1);
++	else
++		val = FIELD_PREP_WM16(RK3588_HDMI0_HPD_INT_MSK, 1);
++
++	regmap_write(hdmi->regmap, RK3588_GRF_SOC_CON2, val);
++}
++
+ static const struct dw_hdmi_qp_phy_ops rk3588_hdmi_phy_ops = {
+ 	.init		= dw_hdmi_qp_rk3588_phy_init,
+ 	.disable	= dw_hdmi_qp_rk3588_phy_disable,
+ 	.read_hpd	= dw_hdmi_qp_rk3588_read_hpd,
+-	.setup_hpd	= dw_hdmi_qp_rk3588_setup_hpd,
++	.enable_hpd	= dw_hdmi_qp_rk3588_enable_hpd,
++	.disable_hpd	= dw_hdmi_qp_rk3588_disable_hpd,
+ };
+ 
+ static enum drm_connector_status
+@@ -319,7 +333,7 @@ dw_hdmi_qp_rk3576_read_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
+ 		connector_status_connected : connector_status_disconnected;
+ }
+ 
+-static void dw_hdmi_qp_rk3576_setup_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
++static void dw_hdmi_qp_rk3576_enable_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
+ {
+ 	struct rockchip_hdmi_qp *hdmi = (struct rockchip_hdmi_qp *)data;
+ 	u32 val;
+@@ -328,14 +342,22 @@ static void dw_hdmi_qp_rk3576_setup_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
+ 	       FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_MSK, 0));
+ 
+ 	regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0, val);
+-	regmap_write(hdmi->regmap, 0xa404, 0xffff0102);
++}
++
++static void dw_hdmi_qp_rk3576_disable_hpd(struct dw_hdmi_qp *dw_hdmi, void *data)
++{
++	struct rockchip_hdmi_qp *hdmi = (struct rockchip_hdmi_qp *)data;
++
++	regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0,
++		     FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_MSK, 1));
+ }
+ 
+ static const struct dw_hdmi_qp_phy_ops rk3576_hdmi_phy_ops = {
+ 	.init		= dw_hdmi_qp_rk3588_phy_init,
+ 	.disable	= dw_hdmi_qp_rk3588_phy_disable,
+ 	.read_hpd	= dw_hdmi_qp_rk3576_read_hpd,
+-	.setup_hpd	= dw_hdmi_qp_rk3576_setup_hpd,
++	.enable_hpd	= dw_hdmi_qp_rk3576_enable_hpd,
++	.disable_hpd	= dw_hdmi_qp_rk3576_disable_hpd,
+ };
+ 
+ static void dw_hdmi_qp_rk3588_hpd_work(struct work_struct *work)
+@@ -356,13 +378,12 @@ static void dw_hdmi_qp_rk3588_hpd_work(struct work_struct *work)
+ static irqreturn_t dw_hdmi_qp_rk3576_hardirq(int irq, void *dev_id)
+ {
+ 	struct rockchip_hdmi_qp *hdmi = dev_id;
+-	u32 intr_stat, val;
++	u32 intr_stat;
+ 
+ 	regmap_read(hdmi->regmap, RK3576_IOC_HDMI_HPD_STATUS, &intr_stat);
+-	if (intr_stat & RK3576_HDMI_OHPD_INT) {
+-		val = FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_MSK, 1);
+ 
+-		regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0, val);
++	if (intr_stat & RK3576_HDMI_OHPD_INT) {
++		dw_hdmi_qp_rk3576_disable_hpd(NULL, hdmi);
+ 		return IRQ_WAKE_THREAD;
+ 	}
+ 
+@@ -372,15 +393,11 @@ static irqreturn_t dw_hdmi_qp_rk3576_hardirq(int irq, void *dev_id)
+ static irqreturn_t dw_hdmi_qp_rk3576_irq(int irq, void *dev_id)
+ {
+ 	struct rockchip_hdmi_qp *hdmi = dev_id;
+-	u32 val;
+ 
+-	val = FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_CLR, 1);
+-	regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0, val);
+ 	mod_delayed_work(system_percpu_wq, &hdmi->hpd_work,
+ 			 msecs_to_jiffies(HOTPLUG_DEBOUNCE_MS));
+ 
+-	val = FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_MSK, 0);
+-	regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0, val);
++	dw_hdmi_qp_rk3576_enable_hpd(NULL, hdmi);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -388,18 +405,14 @@ static irqreturn_t dw_hdmi_qp_rk3576_irq(int irq, void *dev_id)
+ static irqreturn_t dw_hdmi_qp_rk3588_hardirq(int irq, void *dev_id)
+ {
+ 	struct rockchip_hdmi_qp *hdmi = dev_id;
+-	u32 intr_stat, val;
++	u32 intr_stat;
+ 
+ 	regmap_read(hdmi->regmap, RK3588_GRF_SOC_STATUS1, &intr_stat);
+ 
+ 	intr_stat &= hdmi->port_id ? RK3588_HDMI1_OHPD_INT : RK3588_HDMI0_OHPD_INT;
+ 
+ 	if (intr_stat) {
+-		if (hdmi->port_id)
+-			val = FIELD_PREP_WM16(RK3588_HDMI1_HPD_INT_MSK, 1);
+-		else
+-			val = FIELD_PREP_WM16(RK3588_HDMI0_HPD_INT_MSK, 1);
+-		regmap_write(hdmi->regmap, RK3588_GRF_SOC_CON2, val);
++		dw_hdmi_qp_rk3588_disable_hpd(NULL, hdmi);
+ 		return IRQ_WAKE_THREAD;
+ 	}
+ 
+@@ -409,22 +422,11 @@ static irqreturn_t dw_hdmi_qp_rk3588_hardirq(int irq, void *dev_id)
+ static irqreturn_t dw_hdmi_qp_rk3588_irq(int irq, void *dev_id)
+ {
+ 	struct rockchip_hdmi_qp *hdmi = dev_id;
+-	u32 val;
+-
+-	if (hdmi->port_id)
+-		val = FIELD_PREP_WM16(RK3588_HDMI1_HPD_INT_CLR, 1);
+-	else
+-		val = FIELD_PREP_WM16(RK3588_HDMI0_HPD_INT_CLR, 1);
+-	regmap_write(hdmi->regmap, RK3588_GRF_SOC_CON2, val);
+ 
+ 	mod_delayed_work(system_percpu_wq, &hdmi->hpd_work,
+ 			 msecs_to_jiffies(HOTPLUG_DEBOUNCE_MS));
+ 
+-	if (hdmi->port_id)
+-		val |= FIELD_PREP_WM16(RK3588_HDMI1_HPD_INT_MSK, 0);
+-	else
+-		val |= FIELD_PREP_WM16(RK3588_HDMI0_HPD_INT_MSK, 0);
+-	regmap_write(hdmi->regmap, RK3588_GRF_SOC_CON2, val);
++	dw_hdmi_qp_rk3588_enable_hpd(NULL, hdmi);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -437,11 +439,11 @@ static void dw_hdmi_qp_rk3576_io_init(struct rockchip_hdmi_qp *hdmi)
+ 	      FIELD_PREP_WM16(RK3576_SDAIN_MASK, 1) |
+ 	      FIELD_PREP_WM16(RK3576_HDMI_GRANT_SEL, 1) |
+ 	      FIELD_PREP_WM16(RK3576_I2S_SEL_MASK, 1);
+-
+ 	regmap_write(hdmi->vo_regmap, RK3576_VO0_GRF_SOC_CON14, val);
+ 
+-	val = FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_MSK, 1);
+-	regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0, val);
++	regmap_write(hdmi->regmap, 0xa404, 0xffff0102);
++
++	dw_hdmi_qp_rk3576_disable_hpd(NULL, hdmi);
+ }
+ 
+ static void dw_hdmi_qp_rk3588_io_init(struct rockchip_hdmi_qp *hdmi)
+@@ -466,11 +468,7 @@ static void dw_hdmi_qp_rk3588_io_init(struct rockchip_hdmi_qp *hdmi)
+ 		val = FIELD_PREP_WM16(RK3588_HDMI0_GRANT_SEL, 1);
+ 	regmap_write(hdmi->vo_regmap, RK3588_GRF_VO1_CON9, val);
+ 
+-	if (hdmi->port_id)
+-		val = FIELD_PREP_WM16(RK3588_HDMI1_HPD_INT_MSK, 1);
+-	else
+-		val = FIELD_PREP_WM16(RK3588_HDMI0_HPD_INT_MSK, 1);
+-	regmap_write(hdmi->regmap, RK3588_GRF_SOC_CON2, val);
++	dw_hdmi_qp_rk3588_disable_hpd(NULL, hdmi);
+ }
+ 
+ static void dw_hdmi_qp_rk3576_enc_init(struct rockchip_hdmi_qp *hdmi,
+-- 
+2.43.0
+

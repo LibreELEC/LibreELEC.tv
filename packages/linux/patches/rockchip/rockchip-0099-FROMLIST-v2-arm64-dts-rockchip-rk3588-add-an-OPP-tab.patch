@@ -1,0 +1,131 @@
+From c78db6ab2f225d5d0266ca28cf4c21ff5fb630ef Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 22 Sep 2026 10:01:10 +0200
+Subject: [PATCH 099/213] FROMLIST(v2): arm64: dts: rockchip: rk3588: add an
+ OPP table for the NPU
+
+The NPU compute clock is driven by the firmware, which only accepts one of
+the rates in its own PVTPLL table: 300, 400, 500, 600, 700, 800, 900 and
+1000 MHz through the PVTPLL, plus 200 MHz off GPLL. Anything else comes
+back as SCMI_INVALID_PARAMETERS, and that refusal never reaches the caller:
+the clock framework does not look at what the clock's set_rate returns, so
+clk_set_rate() reports success and the clock stays where it was. The table
+therefore has to name those rates exactly rather than describe a range.
+
+200 MHz is included even though the vendor table stops at 300, because
+mainline pins the cores there with assigned-clock-rates, the firmware's
+table names 200 MHz exactly, on its GPLL path, and that is the rate the
+NPU boots and idles at. Its voltage is the same 700 mV the vendor uses for
+300 MHz, so it is conservative.
+
+The voltages are the vendor's, and the upper half of the table matches the
+GPU table in this file step for step: 700 MHz at 700 mV, 800 at 750, 900 at
+800, 1000 at 850. There is no PVTM or binning here, for the same reason the
+GPU table has none: mainline uses conservative worst-case voltages instead
+of per-chip nvmem data.
+
+The table is marked opp-shared and referenced from all three cores. They
+have one clock and one supply between them and cannot be scaled
+independently, and that is what opp-shared describes: one table for one
+clock, the way a CPU cluster shares its table.
+
+The full SoC range is described rather than a per-board subset, so that a
+board which cannot cool the upper rates drops them in its own .dts with a
+/delete-node/ on the OPP it does not want. A board may only delete OPPs
+that way, never invent intermediate ones: a rate that is not in the
+firmware's table is refused by the firmware, but the kernel never learns
+of it, so an invented OPP would be refused while the kernel went on
+reporting it as set.
+
+rk3588j.dtsi does not include this file; it carries its own derated tables
+for the CPU clusters and the GPU, and it gets no NPU table here. That is
+deliberate. The J part is rated lower than the rates in this table and none
+of it can be measured on the hardware this was written on, so inventing a
+derated NPU table would be guessing. Its NPU node stays disabled, so
+nothing binds and the cooling map added later in this series is simply
+never resolved.
+
+The same rates and voltages were arrived at independently by Nicolas
+Dufresne in a proof of concept that was never posted to the list; his
+version differs in that it marks 200 MHz as opp-suspend and drops the
+assigned-clock-rates pins.
+Link: https://gitlab.collabora.com/nicolas/linux/-/commits/rock5b-npu-poc-4
+
+Assisted-by: LLM checkpatch dtbs_check
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi | 54 ++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi
+index b5d630d2c879..59ecaef5101d 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi
+@@ -151,6 +151,48 @@ opp-1000000000 {
+ 			opp-microvolt = <850000 850000 850000>;
+ 		};
+ 	};
++
++	npu_opp_table: opp-table-npu {
++		compatible = "operating-points-v2";
++		opp-shared;
++
++		opp-200000000 {
++			opp-hz = /bits/ 64 <200000000>;
++			opp-microvolt = <700000 700000 850000>;
++		};
++		opp-300000000 {
++			opp-hz = /bits/ 64 <300000000>;
++			opp-microvolt = <700000 700000 850000>;
++		};
++		opp-400000000 {
++			opp-hz = /bits/ 64 <400000000>;
++			opp-microvolt = <700000 700000 850000>;
++		};
++		opp-500000000 {
++			opp-hz = /bits/ 64 <500000000>;
++			opp-microvolt = <700000 700000 850000>;
++		};
++		opp-600000000 {
++			opp-hz = /bits/ 64 <600000000>;
++			opp-microvolt = <700000 700000 850000>;
++		};
++		opp-700000000 {
++			opp-hz = /bits/ 64 <700000000>;
++			opp-microvolt = <700000 700000 850000>;
++		};
++		opp-800000000 {
++			opp-hz = /bits/ 64 <800000000>;
++			opp-microvolt = <750000 750000 850000>;
++		};
++		opp-900000000 {
++			opp-hz = /bits/ 64 <900000000>;
++			opp-microvolt = <800000 800000 850000>;
++		};
++		opp-1000000000 {
++			opp-hz = /bits/ 64 <1000000000>;
++			opp-microvolt = <850000 850000 850000>;
++		};
++	};
+ };
+ 
+ &cpu_b0 {
+@@ -188,3 +230,15 @@ &cpu_l3 {
+ &gpu {
+ 	operating-points-v2 = <&gpu_opp_table>;
+ };
++
++&rknn_core_0 {
++	operating-points-v2 = <&npu_opp_table>;
++};
++
++&rknn_core_1 {
++	operating-points-v2 = <&npu_opp_table>;
++};
++
++&rknn_core_2 {
++	operating-points-v2 = <&npu_opp_table>;
++};
+-- 
+2.43.0
+

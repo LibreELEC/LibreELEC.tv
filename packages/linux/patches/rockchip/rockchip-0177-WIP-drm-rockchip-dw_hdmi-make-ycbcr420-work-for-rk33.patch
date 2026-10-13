@@ -1,0 +1,74 @@
+From f9adc8ee3010d3073b0553c708a371fe22378fe8 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 25 Apr 2026 15:40:55 +0000
+Subject: [PATCH 177/213] WIP: drm/rockchip: dw_hdmi: make ycbcr420 work for
+ rk3399
+
+NOTE: vop can output yuv420 using bcsh to convert rgb2yuv
+NOTE: should it be enabled?
+
+FIXME: bcsh_r2y_csc_mode should also be set to correct csc_mode
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 2 ++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c | 2 ++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h | 2 ++
+ drivers/gpu/drm/rockchip/rockchip_vop_reg.c | 2 ++
+ 4 files changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+index 3f2b5d410b9d..257a0e92e4fd 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -550,6 +550,8 @@ static const struct dw_hdmi_plat_data rk3399_hdmi_drv_data = {
+ 	.cur_ctr    = rockchip_cur_ctr,
+ 	.phy_config = rockchip_phy_config,
+ 	.phy_data = &rk3399_chip_data,
++	.supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_RGB444) |
++			     BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420),
+ 	.use_drm_infoframe = true,
+ 	.max_bpc = 10,
+ };
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+index 5ccc09eb5110..6eb7d14d1159 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+@@ -1495,6 +1495,8 @@ static void vop_crtc_atomic_enable(struct drm_crtc *crtc,
+ 	VOP_REG_SET(vop, common, overlay_mode, yuv_output);
+ 	VOP_REG_SET(vop, common, dsp_out_yuv, yuv_output);
+ 
++	VOP_REG_SET(vop, common, bcsh_r2y_en, yuv_output);
++
+ 	/*
+ 	 * Background color is 10bit depth if vop version >= 3.5
+ 	 */
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.h b/drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+index 1b1c2c3cfd76..3d4d6a29d785 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.h
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+@@ -131,6 +131,8 @@ struct vop_common {
+ 	struct vop_reg dsp_data_swap;
+ 	struct vop_reg dsp_out_yuv;
+ 	struct vop_reg dsp_background;
++
++	struct vop_reg bcsh_r2y_en;
+ };
+ 
+ struct vop_misc {
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+index df62a39a803d..f859b8fff468 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+@@ -949,6 +949,8 @@ static const struct vop_common rk3399_common = {
+ 	.dsp_data_swap = VOP_REG(RK3399_DSP_CTRL0, 0x1f, 12),
+ 	.dsp_out_yuv = VOP_REG(RK3288_POST_SCL_CTRL, 0x1, 2),
+ 	.dsp_background = VOP_REG(RK3288_DSP_BG, 0xffffffff, 0),
++
++	.bcsh_r2y_en = VOP_REG(RK3399_BCSH_CTRL, 0x1, 4),
+ };
+ 
+ static const struct vop_yuv2yuv_phy rk3399_yuv2yuv_win01_data = {
+-- 
+2.43.0
+

@@ -1,0 +1,148 @@
+From 21284a66b26b4b1ab9c33017ec4e12a4d2962cd3 Mon Sep 17 00:00:00 2001
+From: Jiaxing Hu <gahing@gahingwoo.com>
+Date: Thu, 24 Sep 2026 22:21:31 +1200
+Subject: [PATCH 113/213] FROMLIST(v14): accel/rocket: select the per-core
+ clock and reset counts from match data
+
+The RK3576 has the same RKNN block with a different number of clocks and
+resets. Take the counts from soc_data in the match data; RK3588 keeps four
+and two. Check soc before anything is allocated, since a device bound by
+name has no match data.
+
+Signed-off-by: Jiaxing Hu <gahing@gahingwoo.com>
+[chewitt: resolve conflict with FROMLIST(v2) "accel/rocket: number the
+ cores by devicetree position, not bind order", keeping the devicetree
+ core index alongside the match data]
+---
+ drivers/accel/rocket/rocket_core.c |  8 ++++----
+ drivers/accel/rocket/rocket_core.h |  7 +++++++
+ drivers/accel/rocket/rocket_drv.c  | 26 +++++++++++++++++++++++---
+ 3 files changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/accel/rocket/rocket_core.c b/drivers/accel/rocket/rocket_core.c
+index c736537cf28f..02a31e32bd58 100644
+--- a/drivers/accel/rocket/rocket_core.c
++++ b/drivers/accel/rocket/rocket_core.c
+@@ -24,7 +24,7 @@ int rocket_core_init(struct rocket_core *core)
+ 
+ 	core->resets[0].id = "srst_a";
+ 	core->resets[1].id = "srst_h";
+-	err = devm_reset_control_bulk_get_exclusive(&pdev->dev, ARRAY_SIZE(core->resets),
++	err = devm_reset_control_bulk_get_exclusive(&pdev->dev, core->soc->num_resets,
+ 						    core->resets);
+ 	if (err)
+ 		return dev_err_probe(dev, err, "failed to get resets for core %d\n", core->index);
+@@ -33,7 +33,7 @@ int rocket_core_init(struct rocket_core *core)
+ 	core->clks[1].id = "hclk";
+ 	core->clks[2].id = "npu";
+ 	core->clks[3].id = "pclk";
+-	err = devm_clk_bulk_get(dev, ARRAY_SIZE(core->clks), core->clks);
++	err = devm_clk_bulk_get(dev, core->soc->num_clks, core->clks);
+ 	if (err)
+ 		return dev_err_probe(dev, err, "failed to get clocks for core %d\n", core->index);
+ 
+@@ -119,9 +119,9 @@ void rocket_core_fini(struct rocket_core *core)
+ 
+ void rocket_core_reset(struct rocket_core *core)
+ {
+-	reset_control_bulk_assert(ARRAY_SIZE(core->resets), core->resets);
++	reset_control_bulk_assert(core->soc->num_resets, core->resets);
+ 
+ 	udelay(10);
+ 
+-	reset_control_bulk_deassert(ARRAY_SIZE(core->resets), core->resets);
++	reset_control_bulk_deassert(core->soc->num_resets, core->resets);
+ }
+diff --git a/drivers/accel/rocket/rocket_core.h b/drivers/accel/rocket/rocket_core.h
+index c9995bd9e055..a6ff5caa84ee 100644
+--- a/drivers/accel/rocket/rocket_core.h
++++ b/drivers/accel/rocket/rocket_core.h
+@@ -28,9 +28,16 @@
+ #define rocket_core_writel(core, reg, value) \
+ 	writel(value, (core)->core_iomem + (REG_CORE_##reg) - REG_CORE_S_STATUS)
+ 
++/* Per-SoC differences, selected by the of_device_id match data. */
++struct rocket_soc_data {
++	unsigned int num_clks;		/* clk_bulk count */
++	unsigned int num_resets;	/* reset_bulk count */
++};
++
+ struct rocket_core {
+ 	struct device *dev;
+ 	struct rocket_device *rdev;
++	const struct rocket_soc_data *soc;
+ 	/*
+ 	 * Hardware number of the core: its position among the core nodes in
+ 	 * the devicetree. Not an index into rdev->cores[] - that slot is what
+diff --git a/drivers/accel/rocket/rocket_drv.c b/drivers/accel/rocket/rocket_drv.c
+index c6eab2239b6a..9cf6f7ad4caf 100644
+--- a/drivers/accel/rocket/rocket_drv.c
++++ b/drivers/accel/rocket/rocket_drv.c
+@@ -205,9 +205,23 @@ static int rocket_core_hw_index(struct device *dev)
+ 
+ static int rocket_probe(struct platform_device *pdev)
+ {
++	const struct rocket_soc_data *soc = of_device_get_match_data(&pdev->dev);
+ 	int index = rocket_core_hw_index(&pdev->dev);
+ 	int ret;
+ 
++	/*
++	 * soc is dereferenced without a check by every one of its users, and
++	 * rocket_core_init() below is the first of them. A device that bound
++	 * by name rather than by compatible has no match data, so fail before
++	 * anything is allocated rather than at the first dereference: the
++	 * number of cores comes from a walk of matching DT nodes, and a device
++	 * with no of_node was never counted by it.
++	 */
++	if (!soc) {
++		dev_err(&pdev->dev, "no match data for this device\n");
++		return -ENODEV;
++	}
++
+ 	if (index < 0)
+ 		return index;
+ 
+@@ -237,6 +251,7 @@ static int rocket_probe(struct platform_device *pdev)
+ 
+ 	rdev->cores[core].rdev = rdev;
+ 	rdev->cores[core].dev = &pdev->dev;
++	rdev->cores[core].soc = soc;
+ 	rdev->cores[core].index = index;
+ 
+ 	rdev->num_cores++;
+@@ -297,8 +312,13 @@ static void rocket_remove(struct platform_device *pdev)
+ 	}
+ }
+ 
++static const struct rocket_soc_data rk3588_soc_data = {
++	.num_clks = 4,
++	.num_resets = 2,
++};
++
+ static const struct of_device_id dt_match[] = {
+-	{ .compatible = "rockchip,rk3588-rknn-core" },
++	{ .compatible = "rockchip,rk3588-rknn-core", .data = &rk3588_soc_data },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, dt_match);
+@@ -359,7 +379,7 @@ static int rocket_device_runtime_resume(struct device *dev)
+ 	if (core < 0)
+ 		return -ENODEV;
+ 
+-	err = clk_bulk_prepare_enable(ARRAY_SIZE(rdev->cores[core].clks), rdev->cores[core].clks);
++	err = clk_bulk_prepare_enable(rdev->cores[core].soc->num_clks, rdev->cores[core].clks);
+ 	if (err) {
+ 		dev_err(dev, "failed to enable (%d) clocks for core %d\n", err, core);
+ 		return err;
+@@ -381,7 +401,7 @@ static int rocket_device_runtime_suspend(struct device *dev)
+ 	if (!rocket_job_is_idle(&rdev->cores[core]))
+ 		return -EBUSY;
+ 
+-	clk_bulk_disable_unprepare(ARRAY_SIZE(rdev->cores[core].clks), rdev->cores[core].clks);
++	clk_bulk_disable_unprepare(rdev->cores[core].soc->num_clks, rdev->cores[core].clks);
+ 
+ 	if (atomic_dec_and_test(&rdev->active_cores))
+ 		rocket_npu_restore_boot_rate(&rdev->cores[core]);
+-- 
+2.43.0
+

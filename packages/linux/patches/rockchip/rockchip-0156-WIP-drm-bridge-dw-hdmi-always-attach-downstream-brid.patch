@@ -1,0 +1,57 @@
+From 7081c83e71991e9620412d42760a3244ded40981 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 11 Apr 2026 11:42:33 +0000
+Subject: [PATCH 156/213] WIP: drm/bridge: dw-hdmi: always attach downstream
+ bridge
+
+dw-hdmi may create its own connector when DRM_BRIDGE_ATTACH_NO_CONNECTOR
+is not set, but it still needs to attach the downstream bridge to build
+the full bridge chain.
+
+If an output port is present, attach the downstream bridge
+unconditionally and always pass DRM_BRIDGE_ATTACH_NO_CONNECTOR to it.
+When dw-hdmi is responsible for connector creation, create the connector
+only after the bridge chain has been attached.
+
+This keeps the downstream bridge in the chain regardless of connector
+ownership and fixes configurations with another bridge behind dw-hmi.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index db224fa7a69a..18c463aa8a73 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2780,12 +2780,13 @@ static int dw_hdmi_bridge_attach(struct drm_bridge *bridge,
+ 				 enum drm_bridge_attach_flags flags)
+ {
+ 	struct dw_hdmi *hdmi = bridge->driver_private;
++	int ret;
+ 
+ 	/* DRM_BRIDGE_ATTACH_NO_CONNECTOR requires a remote-endpoint to the next bridge */
+ 	if (WARN_ON((flags & DRM_BRIDGE_ATTACH_NO_CONNECTOR) && !hdmi->plat_data->output_port))
+ 		return -EINVAL;
+ 
+-	if (flags & DRM_BRIDGE_ATTACH_NO_CONNECTOR) {
++	if (hdmi->plat_data->output_port) {
+ 		struct device_node *remote __free(device_node) =
+ 			of_graph_get_remote_node(hdmi->dev->of_node,
+ 						 hdmi->plat_data->output_port, -1);
+@@ -2797,7 +2798,10 @@ static int dw_hdmi_bridge_attach(struct drm_bridge *bridge,
+ 		if (!next_bridge)
+ 			return -EPROBE_DEFER;
+ 
+-		return drm_bridge_attach(encoder, next_bridge, bridge, flags);
++		ret = drm_bridge_attach(encoder, next_bridge, bridge,
++					flags | DRM_BRIDGE_ATTACH_NO_CONNECTOR);
++		if (ret || (flags & DRM_BRIDGE_ATTACH_NO_CONNECTOR))
++			return ret;
+ 	}
+ 
+ 	return dw_hdmi_connector_create(hdmi);
+-- 
+2.43.0
+

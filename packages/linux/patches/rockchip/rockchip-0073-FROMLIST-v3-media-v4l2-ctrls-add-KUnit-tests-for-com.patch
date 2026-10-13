@@ -1,0 +1,210 @@
+From 2dec9af9b1d8cad747498d0251feff31fac532d7 Mon Sep 17 00:00:00 2001
+From: Michael Bommarito <michael.bommarito@gmail.com>
+Date: Tue, 16 Jun 2026 22:19:06 -0400
+Subject: [PATCH 073/213] FROMLIST(v3): media: v4l2-ctrls: add KUnit tests for
+ compound control tile validation
+
+Add KUnit coverage for the HEVC and AV1 tile-count checks in
+std_validate_compound(): in-range counts pass, out-of-range per-dimension
+counts and an AV1 grid whose product exceeds V4L2_AV1_MAX_TILE_COUNT are
+rejected, and the zero-initialised AV1 frame control that userspace
+submits still passes.
+
+Assisted-by: Claude:claude-opus-4-8
+Signed-off-by: Michael Bommarito <michael.bommarito@gmail.com>
+---
+ drivers/media/v4l2-core/Kconfig               |  12 ++
+ .../media/v4l2-core/v4l2-ctrls-core-test.c    | 145 ++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ctrls-core.c     |   4 +
+ 3 files changed, 161 insertions(+)
+ create mode 100644 drivers/media/v4l2-core/v4l2-ctrls-core-test.c
+
+diff --git a/drivers/media/v4l2-core/Kconfig b/drivers/media/v4l2-core/Kconfig
+index d50ccac9733c..52c00dfe9322 100644
+--- a/drivers/media/v4l2-core/Kconfig
++++ b/drivers/media/v4l2-core/Kconfig
+@@ -3,6 +3,18 @@
+ # Generic video config states
+ #
+ 
++config V4L2_CTRLS_KUNIT_TEST
++	bool "KUnit tests for V4L2 compound control validation" if !KUNIT_ALL_TESTS
++	depends on VIDEO_DEV && KUNIT=y
++	default KUNIT_ALL_TESTS
++	help
++	  This builds KUnit tests for the stateless-codec compound control
++	  validation in std_validate_compound(). They check that out-of-range
++	  HEVC and AV1 tile counts are rejected before the stateless decoders
++	  consume them as loop bounds and array indices.
++
++	  If unsure, say N.
++
+ config VIDEO_V4L2_I2C
+ 	bool
+ 	depends on I2C && VIDEO_DEV
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls-core-test.c b/drivers/media/v4l2-core/v4l2-ctrls-core-test.c
+new file mode 100644
+index 000000000000..c0141f3defa8
+--- /dev/null
++++ b/drivers/media/v4l2-core/v4l2-ctrls-core-test.c
+@@ -0,0 +1,145 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * KUnit tests for HEVC/AV1 tile-count validation in std_validate_compound().
++ * #included at the end of v4l2-ctrls-core.c to reach the static helper.
++ */
++
++#include <kunit/test.h>
++
++static int call_validate_compound(enum v4l2_ctrl_type type, void *payload,
++				  u32 elem_size)
++{
++	struct v4l2_ctrl ctrl = {
++		.type = type,
++		.elem_size = elem_size,
++	};
++	union v4l2_ctrl_ptr ptr = { .p = payload };
++
++	return std_validate_compound(&ctrl, 0, ptr);
++}
++
++/* HEVC PPS: num_tile_columns_minus1 / num_tile_rows_minus1 bounds. */
++static void v4l2_ctrls_hevc_pps_tile_cols(struct kunit *test)
++{
++	struct v4l2_ctrl_hevc_pps *pps;
++
++	pps = kunit_kzalloc(test, sizeof(*pps), GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, pps);
++
++	pps->flags = V4L2_HEVC_PPS_FLAG_TILES_ENABLED;
++
++	/* In range: count == array capacity (minus1 == capacity - 1). */
++	pps->num_tile_columns_minus1 = ARRAY_SIZE(pps->column_width_minus1) - 1;
++	pps->num_tile_rows_minus1 = ARRAY_SIZE(pps->row_height_minus1) - 1;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_HEVC_PPS, pps,
++					       sizeof(*pps)),
++			0);
++
++	/* Out of range: one past the column array. */
++	pps->num_tile_columns_minus1 = ARRAY_SIZE(pps->column_width_minus1);
++	pps->num_tile_rows_minus1 = 0;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_HEVC_PPS, pps,
++					       sizeof(*pps)),
++			-EINVAL);
++
++	/* Out of range: maximal attacker value. */
++	pps->num_tile_columns_minus1 = 0xff;
++	pps->num_tile_rows_minus1 = 0xff;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_HEVC_PPS, pps,
++					       sizeof(*pps)),
++			-EINVAL);
++}
++
++/* AV1 frame: tile_cols / tile_rows upper bounds. */
++static void v4l2_ctrls_av1_frame_tile(struct kunit *test)
++{
++	struct v4l2_ctrl_av1_frame *f;
++
++	f = kunit_kzalloc(test, sizeof(*f), GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, f);
++
++	/*
++	 * Benign control: a zero-initialised frame (tile_cols == 0) must
++	 * still pass. Userspace and v4l2-compliance set the zeroed default,
++	 * and the divisor that a zero tile_cols would feed is guarded in the
++	 * consuming driver rather than rejected here.
++	 */
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			0);
++
++	/* In range: a 1x1 tiling. */
++	f->tile_info.tile_cols = 1;
++	f->tile_info.tile_rows = 1;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			0);
++
++	/*
++	 * In range: total tiles == V4L2_AV1_MAX_TILE_COUNT with each
++	 * dimension at or below its per-dimension maximum (64 * 8 == 512).
++	 */
++	f->tile_info.tile_cols = V4L2_AV1_MAX_TILE_COLS;
++	f->tile_info.tile_rows = V4L2_AV1_MAX_TILE_COUNT / V4L2_AV1_MAX_TILE_COLS;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			0);
++
++	/*
++	 * Out of range: each dimension is legal on its own but the product
++	 * exceeds V4L2_AV1_MAX_TILE_COUNT (64 * 64 == 4096 > 512), which would
++	 * overflow the per-tile descriptor buffers.
++	 */
++	f->tile_info.tile_cols = V4L2_AV1_MAX_TILE_COLS;
++	f->tile_info.tile_rows = V4L2_AV1_MAX_TILE_ROWS;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			-EINVAL);
++
++	/* Out of range: tile_cols past the array. */
++	f->tile_info.tile_cols = V4L2_AV1_MAX_TILE_COLS + 1;
++	f->tile_info.tile_rows = 1;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			-EINVAL);
++
++	/* Out of range: maximal attacker value. */
++	f->tile_info.tile_cols = 0xff;
++	f->tile_info.tile_rows = 0xff;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			-EINVAL);
++
++	/* Out of range: tile_rows past the array. */
++	f->tile_info.tile_cols = 1;
++	f->tile_info.tile_rows = V4L2_AV1_MAX_TILE_ROWS + 1;
++	KUNIT_EXPECT_EQ(test,
++			call_validate_compound(V4L2_CTRL_TYPE_AV1_FRAME, f,
++					       sizeof(*f)),
++			-EINVAL);
++}
++
++static struct kunit_case v4l2_ctrls_test_cases[] = {
++	KUNIT_CASE(v4l2_ctrls_hevc_pps_tile_cols),
++	KUNIT_CASE(v4l2_ctrls_av1_frame_tile),
++	{}
++};
++
++static struct kunit_suite v4l2_ctrls_test_suite = {
++	.name = "v4l2-ctrls-compound",
++	.test_cases = v4l2_ctrls_test_cases,
++};
++
++kunit_test_suite(v4l2_ctrls_test_suite);
++
++MODULE_DESCRIPTION("KUnit tests for V4L2 stateless-codec compound control validation");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls-core.c b/drivers/media/v4l2-core/v4l2-ctrls-core.c
+index 648b88c868bc..b76679487243 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls-core.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls-core.c
+@@ -2905,3 +2905,7 @@ int v4l2_ctrl_new_fwnode_properties(struct v4l2_ctrl_handler *hdl,
+ 	return hdl->error;
+ }
+ EXPORT_SYMBOL(v4l2_ctrl_new_fwnode_properties);
++
++#if IS_ENABLED(CONFIG_V4L2_CTRLS_KUNIT_TEST)
++#include "v4l2-ctrls-core-test.c"
++#endif
+-- 
+2.43.0
+

@@ -1,0 +1,75 @@
+From c1c3861049c5fc48e971863512f897aab6f60190 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Mon, 5 Oct 2026 03:38:11 +0300
+Subject: [PATCH 063/213] FROMLIST(v12): drm/rockchip: dw_hdmi_qp: Avoid
+ spurious HPD IRQ thread wakeups
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The RK3576 and RK3588 HPD hardirq handlers read shared status registers
+and currently wake the threaded handler whenever any bit in those
+registers is set.  This can wake the HDMI IRQ thread for unrelated
+status bits, and on RK3588 can also wake the thread for the other HDMI
+port.
+
+Mask the status value with the SoC-specific HPD interrupt bit before
+deciding whether to wake the threaded handler.  On RK3588, select the
+HDMI0 or HDMI1 HPD bit according to the instance port id.
+
+No stable backport is needed.  The issue may only cause spurious IRQ
+thread wakeups and does not cause functional breakage.
+
+Reported-by: Sashiko <sashiko-bot@kernel.org>
+Closes: https://lore.kernel.org/all/20260702151346.5A4EC1F000E9@smtp.kernel.org/
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index 8190f45ae679..0b77f744a5c1 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -34,6 +34,7 @@
+ 
+ #define RK3576_IOC_HDMI_HPD_STATUS	0xa440
+ #define RK3576_HDMI_LEVEL_INT		BIT(3)
++#define RK3576_HDMI_OHPD_INT		BIT(4)
+ 
+ #define RK3576_VO0_GRF_SOC_CON1		0x0004
+ #define RK3576_HDMI_FRL_MOD		BIT(0)
+@@ -64,7 +65,9 @@
+ #define RK3588_HPD_HDMI1_IO_EN_MASK	BIT(13)
+ #define RK3588_GRF_SOC_STATUS1		0x0384
+ #define RK3588_HDMI0_LEVEL_INT		BIT(16)
++#define RK3588_HDMI0_OHPD_INT		BIT(17)
+ #define RK3588_HDMI1_LEVEL_INT		BIT(24)
++#define RK3588_HDMI1_OHPD_INT		BIT(25)
+ #define RK3588_GRF_VO1_CON3		0x000c
+ #define RK3588_GRF_VO1_CON6		0x0018
+ #define RK3588_COLOR_DEPTH_MASK		GENMASK(7, 4)
+@@ -356,7 +359,7 @@ static irqreturn_t dw_hdmi_qp_rk3576_hardirq(int irq, void *dev_id)
+ 	u32 intr_stat, val;
+ 
+ 	regmap_read(hdmi->regmap, RK3576_IOC_HDMI_HPD_STATUS, &intr_stat);
+-	if (intr_stat) {
++	if (intr_stat & RK3576_HDMI_OHPD_INT) {
+ 		val = FIELD_PREP_WM16(RK3576_HDMI_HPD_INT_MSK, 1);
+ 
+ 		regmap_write(hdmi->regmap, RK3576_IOC_MISC_CON0, val);
+@@ -389,6 +392,8 @@ static irqreturn_t dw_hdmi_qp_rk3588_hardirq(int irq, void *dev_id)
+ 
+ 	regmap_read(hdmi->regmap, RK3588_GRF_SOC_STATUS1, &intr_stat);
+ 
++	intr_stat &= hdmi->port_id ? RK3588_HDMI1_OHPD_INT : RK3588_HDMI0_OHPD_INT;
++
+ 	if (intr_stat) {
+ 		if (hdmi->port_id)
+ 			val = FIELD_PREP_WM16(RK3588_HDMI1_HPD_INT_MSK, 1);
+-- 
+2.43.0
+

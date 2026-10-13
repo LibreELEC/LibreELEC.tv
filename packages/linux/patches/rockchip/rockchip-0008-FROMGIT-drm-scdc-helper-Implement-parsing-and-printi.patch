@@ -1,0 +1,360 @@
+From 34171c4965842bb36d04a4e66f45ef1131b4485c Mon Sep 17 00:00:00 2001
+From: Nicolas Frattaroli <nicolas.frattaroli@collabora.com>
+Date: Fri, 24 Jul 2026 16:22:38 +0200
+Subject: [PATCH 008/213] FROMGIT: drm/scdc-helper: Implement parsing and
+ printing HDMI 2.1 fields
+
+HDMI 2.1 redefines previously reserved fields in SCDC for various new
+uses. No version check needs to be performed, as an HDMI 2.0 sink's
+reserved SCDC fields are well-defined to be 0, and any zero-ness of
+these fields for an HDMI 2.0 sink is not a surprise for SCDC parsers for
+HDMI 2.1.
+
+Implement reading and outputting these fields over debugfs.
+
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Signed-off-by: Nicolas Frattaroli <nicolas.frattaroli@collabora.com>
+---
+ drivers/gpu/drm/display/drm_scdc_helper.c | 103 +++++++++++++++++++++-
+ include/drm/display/drm_scdc.h            |  21 ++++-
+ include/drm/display/drm_scdc_helper.h     |  69 ++++++++++++++-
+ 3 files changed, 185 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/display/drm_scdc_helper.c b/drivers/gpu/drm/display/drm_scdc_helper.c
+index 129a2b85527b..d00da20862fc 100644
+--- a/drivers/gpu/drm/display/drm_scdc_helper.c
++++ b/drivers/gpu/drm/display/drm_scdc_helper.c
+@@ -21,6 +21,7 @@
+  * DEALINGS IN THE SOFTWARE.
+  */
+ 
++#include <linux/bitfield.h>
+ #include <linux/export.h>
+ #include <linux/i2c.h>
+ #include <linux/slab.h>
+@@ -57,6 +58,38 @@
+ 
+ #define SCDC_I2C_SLAVE_ADDRESS 0x54
+ 
++static const char *drm_scdc_frl_rate_str(enum drm_scdc_frl_rate rate)
++{
++	switch (rate) {
++	case SCDC_FRL_RATE_OFF:
++		return "Off";
++	case SCDC_FRL_RATE_3X3:
++		return "3 Gbit/s x 3 lanes";
++	case SCDC_FRL_RATE_6X3:
++		return "6 Gbit/s x 3 lanes";
++	case SCDC_FRL_RATE_6X4:
++		return "6 Gbit/s x 4 lanes";
++	case SCDC_FRL_RATE_8X4:
++		return "8 Gbit/s x 4 lanes";
++	case SCDC_FRL_RATE_10X4:
++		return "10 Gbit/s x 4 lanes";
++	case SCDC_FRL_RATE_12X4:
++		return "12 Gbit/s x 4 lanes";
++	case SCDC_FRL_RATE_RESV_7:
++	case SCDC_FRL_RATE_RESV_8:
++	case SCDC_FRL_RATE_RESV_9:
++	case SCDC_FRL_RATE_RESV_10:
++	case SCDC_FRL_RATE_RESV_11:
++	case SCDC_FRL_RATE_RESV_12:
++	case SCDC_FRL_RATE_RESV_13:
++	case SCDC_FRL_RATE_RESV_14:
++	case SCDC_FRL_RATE_RESV_15:
++		return "(Reserved)";
++	default:
++		return NULL;
++	}
++}
++
+ /**
+  * drm_scdc_read - read a block of data from SCDC
+  * @adapter: I2C controller
+@@ -286,14 +319,41 @@ drm_scdc_parse_status0_flags(u8 val, struct drm_scdc_status_flags *flags)
+ 	flags->ch0_locked = val & SCDC_CH0_LOCK;
+ 	flags->ch1_locked = val & SCDC_CH1_LOCK;
+ 	flags->ch2_locked = val & SCDC_CH2_LOCK;
++	flags->ln3_locked = val & SCDC_LN3_LOCK;
++	flags->flt_ready = val & SCDC_FLT_READY;
++	flags->dsc_fail = val & SCDC_DSC_FAIL;
++}
++
++static void
++drm_scdc_parse_status1_2_flags(u8 val_flag1, u8 val_flag2,
++			       struct drm_scdc_status_flags *flags)
++{
++	flags->ln0_training_pattern = FIELD_GET(SCDC_LN_EVEN_TRAIN_PTRN, val_flag1);
++	flags->ln1_training_pattern = FIELD_GET(SCDC_LN_ODD_TRAIN_PTRN, val_flag1);
++
++	flags->ln2_training_pattern = FIELD_GET(SCDC_LN_EVEN_TRAIN_PTRN, val_flag2);
++	flags->ln3_training_pattern = FIELD_GET(SCDC_LN_ODD_TRAIN_PTRN, val_flag2);
+ }
+ 
+-static int drm_scdc_parse_error_counters(const u8 scdc[256], u16 counter[3])
++static int drm_scdc_parse_error_counters(const u8 scdc[256], u16 counter[4],
++					 unsigned int num_lanes)
+ {
++	u8 end_reg;
+ 	u8 sum = 0;
+ 	int i;
+ 
+-	for (i = SCDC_ERR_DET_0_L; i <= SCDC_ERR_DET_CHECKSUM ; i++)
++	switch (num_lanes) {
++	case 3:
++		end_reg = SCDC_ERR_DET_CHECKSUM;
++		break;
++	case 4:
++		end_reg = SCDC_ERR_DET_3_H;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	for (i = SCDC_ERR_DET_0_L; i <= end_reg; i++)
+ 		sum = wrapping_add(u8, sum, scdc[i]);
+ 
+ 	if (sum)
+@@ -308,6 +368,12 @@ static int drm_scdc_parse_error_counters(const u8 scdc[256], u16 counter[3])
+ 			counter[i] = 0;
+ 	}
+ 
++	if (num_lanes == 4 && scdc[SCDC_ERR_DET_3_H] & SCDC_CHANNEL_VALID)
++		counter[3] =  (scdc[SCDC_ERR_DET_3_H] & ~SCDC_CHANNEL_VALID) << 8 |
++			      scdc[SCDC_ERR_DET_3_L];
++	else
++		counter[3] = 0;
++
+ 	return 0;
+ }
+ 
+@@ -325,6 +391,7 @@ int drm_scdc_read_state(struct drm_connector *connector, struct drm_scdc_state *
+ 	struct i2c_adapter *ddc;
+ 	struct drm_scdc *scdc;
+ 	u8 *buf = state->scdc;
++	int num_lanes;
+ 	int ret;
+ 
+ 	if (!state || !connector)
+@@ -350,11 +417,26 @@ int drm_scdc_read_state(struct drm_connector *connector, struct drm_scdc_state *
+ 
+ 	state->scrambling_detected = buf[SCDC_SCRAMBLER_STATUS] & SCDC_SCRAMBLING_STATUS;
+ 
++	state->rate = FIELD_GET(SCDC_FRL_RATE, buf[SCDC_CONFIG_1]);
++	num_lanes = drm_scdc_num_frl_lanes(state->rate);
++	if (num_lanes < 0)
++		return num_lanes;
++	if (!num_lanes)
++		num_lanes = 3;
++
++	state->ffe_levels = FIELD_GET(SCDC_FFE_LEVELS, buf[SCDC_CONFIG_1]);
++
+ 	drm_scdc_parse_status0_flags(buf[SCDC_STATUS_FLAGS_0], &state->stf);
+-	ret = drm_scdc_parse_error_counters(buf, state->error_count);
++	drm_scdc_parse_status1_2_flags(buf[SCDC_STATUS_FLAGS_1],
++				       buf[SCDC_STATUS_FLAGS_2], &state->stf);
++	ret = drm_scdc_parse_error_counters(buf, state->error_count, num_lanes);
+ 	if (ret)
+ 		return ret;
+ 
++	if (state->rate && (buf[SCDC_ERR_DET_RS_H] & SCDC_CHANNEL_VALID))
++		state->rs_corrections = (buf[SCDC_ERR_DET_RS_H] & ~SCDC_CHANNEL_VALID) << 8 |
++					buf[SCDC_ERR_DET_RS_L];
++
+ 	return 0;
+ }
+ EXPORT_SYMBOL(drm_scdc_read_state);
+@@ -371,7 +453,7 @@ static int scdc_status_show(struct seq_file *m, void *data)
+ 	struct drm_connector *connector = m->private;
+ 	struct drm_scdc *scdc = &connector->display_info.hdmi.scdc;
+ 	struct drm_scdc_state *st;
+-	int i, ret;
++	int i, ret, frl_lanes;
+ 
+ 	drm_connector_get(connector);
+ 
+@@ -414,8 +496,12 @@ static int scdc_status_show(struct seq_file *m, void *data)
+ 
+ 	drm_connector_put(connector);
+ 
++	frl_lanes = drm_scdc_num_frl_lanes(st->rate);
++
+ 	scdc_print_flag(m, "Scrambling Enabled", st->scrambling_enabled);
+ 	scdc_print_flag(m, "Scrambling Detected", st->scrambling_detected);
++	scdc_print_str(m, "FRL Rate", drm_scdc_frl_rate_str(st->rate));
++	scdc_print_dec(m, "FFE Levels", st->ffe_levels);
+ 
+ 	if (st->tmds_bclk_x40)
+ 		scdc_print_str(m, "TMDS Bit Clock Ratio", "1/40");
+@@ -426,10 +512,19 @@ static int scdc_status_show(struct seq_file *m, void *data)
+ 	scdc_print_flag(m, "Channel 0 Locked", st->stf.ch0_locked);
+ 	scdc_print_flag(m, "Channel 1 Locked", st->stf.ch1_locked);
+ 	scdc_print_flag(m, "Channel 2 Locked", st->stf.ch2_locked);
++	if (frl_lanes == 4)
++		scdc_print_flag(m, "Lane 3 Locked", st->stf.ln3_locked);
++
++	scdc_print_flag(m, "Sink Ready For Link Training", st->stf.flt_ready);
++	scdc_print_flag(m, "Sink Failed To Decode DSC", st->stf.dsc_fail);
+ 
+ 	scdc_print_dec(m, "Channel 0 Errors", st->error_count[0]);
+ 	scdc_print_dec(m, "Channel 1 Errors", st->error_count[1]);
+ 	scdc_print_dec(m, "Channel 2 Errors", st->error_count[2]);
++	if (frl_lanes == 4)
++		scdc_print_dec(m, "Lane 3 Errors", st->error_count[3]);
++	if (frl_lanes > 0)
++		scdc_print_dec(m, "Reed-Solomon Corrections", st->rs_corrections);
+ 
+ 	kfree(st);
+ 
+diff --git a/include/drm/display/drm_scdc.h b/include/drm/display/drm_scdc.h
+index 3d58f37e8ed8..7f0b05b2f280 100644
+--- a/include/drm/display/drm_scdc.h
++++ b/include/drm/display/drm_scdc.h
+@@ -29,6 +29,8 @@
+ #define SCDC_SOURCE_VERSION 0x02
+ 
+ #define SCDC_UPDATE_0 0x10
++#define  SCDC_RSED_UPDATE (1 << 6)
++#define  SCDC_FLT_UPDATE (1 << 5)
+ #define  SCDC_READ_REQUEST_TEST (1 << 2)
+ #define  SCDC_CED_UPDATE (1 << 1)
+ #define  SCDC_STATUS_UPDATE (1 << 0)
+@@ -46,14 +48,25 @@
+ #define SCDC_CONFIG_0 0x30
+ #define  SCDC_READ_REQUEST_ENABLE (1 << 0)
+ 
++#define SCDC_CONFIG_1 0x31
++#define  SCDC_FRL_RATE   0x0f
++#define  SCDC_FFE_LEVELS 0xf0
++
+ #define SCDC_STATUS_FLAGS_0 0x40
++#define  SCDC_DSC_FAIL (1 << 7)
++#define  SCDC_FLT_READY (1 << 6)
++#define  SCDC_LN3_LOCK (1 << 4)
+ #define  SCDC_CH2_LOCK (1 << 3)
+ #define  SCDC_CH1_LOCK (1 << 2)
+ #define  SCDC_CH0_LOCK (1 << 1)
+-#define  SCDC_CH_LOCK_MASK (SCDC_CH2_LOCK | SCDC_CH1_LOCK | SCDC_CH0_LOCK)
++#define  SCDC_CH_LOCK_MASK (SCDC_LN3_LOCK | SCDC_CH2_LOCK | SCDC_CH1_LOCK | \
++			    SCDC_CH0_LOCK)
+ #define  SCDC_CLOCK_DETECT (1 << 0)
+ 
+ #define SCDC_STATUS_FLAGS_1 0x41
++#define  SCDC_LN_EVEN_TRAIN_PTRN 0x0f
++#define  SCDC_LN_ODD_TRAIN_PTRN 0xf0
++#define SCDC_STATUS_FLAGS_2 0x42
+ 
+ #define SCDC_ERR_DET_0_L 0x50
+ #define SCDC_ERR_DET_0_H 0x51
+@@ -65,6 +78,12 @@
+ 
+ #define SCDC_ERR_DET_CHECKSUM 0x56
+ 
++#define SCDC_ERR_DET_3_L 0x57
++#define SCDC_ERR_DET_3_H 0x58
++
++#define SCDC_ERR_DET_RS_L 0x59
++#define SCDC_ERR_DET_RS_H 0x5a
++
+ #define SCDC_TEST_CONFIG_0 0xc0
+ #define  SCDC_TEST_READ_REQUEST (1 << 7)
+ #define  SCDC_TEST_READ_REQUEST_DELAY(x) ((x) & 0x7f)
+diff --git a/include/drm/display/drm_scdc_helper.h b/include/drm/display/drm_scdc_helper.h
+index e0b79d79e1ff..a3b20adaac7e 100644
+--- a/include/drm/display/drm_scdc_helper.h
++++ b/include/drm/display/drm_scdc_helper.h
+@@ -24,6 +24,7 @@
+ #ifndef DRM_SCDC_HELPER_H
+ #define DRM_SCDC_HELPER_H
+ 
++#include <linux/errno.h>
+ #include <linux/types.h>
+ 
+ #include <drm/display/drm_scdc.h>
+@@ -38,8 +39,65 @@ struct drm_scdc_status_flags {
+ 	bool ch0_locked;
+ 	bool ch1_locked;
+ 	bool ch2_locked;
++	bool ln3_locked;
++	bool flt_ready;
++	bool dsc_fail;
++
++	/* Status Register 1 */
++	u8 ln0_training_pattern : 4;
++	u8 ln1_training_pattern : 4;
++
++	/* Status Register 2 */
++	u8 ln2_training_pattern : 4;
++	u8 ln3_training_pattern : 4;
++};
++
++enum drm_scdc_frl_rate {
++	SCDC_FRL_RATE_OFF = 0,
++	SCDC_FRL_RATE_3X3 = 1,
++	SCDC_FRL_RATE_6X3 = 2,
++	SCDC_FRL_RATE_6X4 = 3,
++	SCDC_FRL_RATE_8X4 = 4,
++	SCDC_FRL_RATE_10X4 = 5,
++	SCDC_FRL_RATE_12X4 = 6,
++	SCDC_FRL_RATE_RESV_7 = 7,
++	SCDC_FRL_RATE_RESV_8 = 8,
++	SCDC_FRL_RATE_RESV_9 = 9,
++	SCDC_FRL_RATE_RESV_10 = 10,
++	SCDC_FRL_RATE_RESV_11 = 11,
++	SCDC_FRL_RATE_RESV_12 = 12,
++	SCDC_FRL_RATE_RESV_13 = 13,
++	SCDC_FRL_RATE_RESV_14 = 14,
++	SCDC_FRL_RATE_RESV_15 = 15
+ };
+ 
++/**
++ * drm_scdc_num_frl_lanes - get number of lanes for a given FRL rate
++ * @rate: one of &enum drm_scdc_frl_rate
++ *
++ * For a given @rate, return the number of lanes it uses.
++ *
++ * Returns: %-EINVAL if @rate is not a valid FRL rate, or the number of lanes
++ * for a given &enum drm_scdc_frl_rate on success (including %0 for "off")
++ */
++static inline __pure int drm_scdc_num_frl_lanes(enum drm_scdc_frl_rate rate)
++{
++	switch (rate) {
++	case SCDC_FRL_RATE_OFF:
++		return 0;
++	case SCDC_FRL_RATE_3X3:
++	case SCDC_FRL_RATE_6X3:
++		return 3;
++	case SCDC_FRL_RATE_6X4:
++	case SCDC_FRL_RATE_8X4:
++	case SCDC_FRL_RATE_10X4:
++	case SCDC_FRL_RATE_12X4:
++		return 4;
++	default:
++		return -EINVAL;
++	}
++}
++
+ struct drm_scdc_state {
+ 	/** @stf: contents of the status flag registers */
+ 	struct drm_scdc_status_flags stf;
+@@ -52,9 +110,14 @@ struct drm_scdc_state {
+ 	 * clock period, false if it's 1/10th of the clock period.
+ 	 */
+ 	bool tmds_bclk_x40;
+-	/** @error_count: character error counts for each channel */
+-	u16 error_count[3];
+-
++	/** @rate: FRL rate set by the source */
++	enum drm_scdc_frl_rate rate : 4;
++	/** @ffe_levels: The FFE levels for @rate set by the source */
++	u8 ffe_levels : 4;
++	/** @error_count: character error counts for each channel/link */
++	u16 error_count[4];
++	/** @rs_corrections: number of Reed-Solomon Corrections */
++	u16 rs_corrections;
+ 	/** @scdc: raw SCDC data buffer */
+ 	u8 scdc[256];
+ };
+-- 
+2.43.0
+

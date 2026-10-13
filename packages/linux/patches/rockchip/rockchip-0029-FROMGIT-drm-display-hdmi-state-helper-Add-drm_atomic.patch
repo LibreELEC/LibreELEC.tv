@@ -1,0 +1,68 @@
+From b4d04352a87b2dce9f3390654d9bd57e8e71a1b0 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:46 +0300
+Subject: [PATCH 029/213] FROMGIT: drm/display: hdmi-state-helper: Add
+ drm_atomic_helper_connector_hdmi_force_ctx()
+
+Introduce drm_atomic_helper_connector_hdmi_force_ctx() as the HDMI
+connector implementation of the .force_ctx() callback.  It receives the
+modeset acquire context, allowing it to take additional locks, e.g. to
+support SCDC status synchronization.
+
+Since migrating from the .force() callback is somewhat more involved,
+its users will be migrated incrementally, after which
+drm_atomic_helper_connector_hdmi_force() will be removed.
+
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-22-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ .../gpu/drm/display/drm_hdmi_state_helper.c   | 21 +++++++++++++++++++
+ include/drm/display/drm_hdmi_state_helper.h   |  2 ++
+ 2 files changed, 23 insertions(+)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 485fcca2de4b..8045b1d17d6e 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -1424,3 +1424,24 @@ void drm_atomic_helper_connector_hdmi_force(struct drm_connector *connector)
+ 	drm_atomic_helper_connector_hdmi_update(connector, NULL, connector->status);
+ }
+ EXPORT_SYMBOL(drm_atomic_helper_connector_hdmi_force);
++
++/**
++ * drm_atomic_helper_connector_hdmi_force_ctx - HDMI Connector implementation
++ * of the force_ctx callback
++ * @connector: A pointer to the HDMI connector
++ * @ctx: Lock acquisition context to be used for resetting CRTC
++ *
++ * This function implements the .force_ctx() callback for the HDMI connectors.
++ * It can either be used directly as the callback or should be called from
++ * within the .force_ctx() callback implementation to maintain the HDMI-specific
++ * connector's data.
++ *
++ * Returns:
++ * Zero on success, error code on failure, including -EDEADLK.
++ */
++int drm_atomic_helper_connector_hdmi_force_ctx(struct drm_connector *connector,
++					       struct drm_modeset_acquire_ctx *ctx)
++{
++	return drm_atomic_helper_connector_hdmi_update(connector, ctx, connector->status);
++}
++EXPORT_SYMBOL(drm_atomic_helper_connector_hdmi_force_ctx);
+diff --git a/include/drm/display/drm_hdmi_state_helper.h b/include/drm/display/drm_hdmi_state_helper.h
+index 2439bad15c4b..965342f6bbc9 100644
+--- a/include/drm/display/drm_hdmi_state_helper.h
++++ b/include/drm/display/drm_hdmi_state_helper.h
+@@ -28,6 +28,8 @@ int drm_atomic_helper_connector_hdmi_hotplug(struct drm_connector *connector,
+ 					     struct drm_modeset_acquire_ctx *ctx,
+ 					     enum drm_connector_status status);
+ void drm_atomic_helper_connector_hdmi_force(struct drm_connector *connector);
++int drm_atomic_helper_connector_hdmi_force_ctx(struct drm_connector *connector,
++					       struct drm_modeset_acquire_ctx *ctx);
+ 
+ enum drm_mode_status
+ drm_hdmi_connector_mode_valid(struct drm_connector *connector,
+-- 
+2.43.0
+

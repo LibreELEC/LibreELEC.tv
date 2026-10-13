@@ -1,0 +1,46 @@
+From 4dc2f531318fb393fc5a4a5de33c668cfc4a4035 Mon Sep 17 00:00:00 2001
+From: Alex Bee <knaerzche@gmail.com>
+Date: Wed, 14 Oct 2020 20:43:12 +0200
+Subject: [PATCH 196/213] WIP: arm64: dts: rockchip: Add IEP node for RK3399
+
+Enable IEP operations for the RK3399 SoC.
+
+Signed-off-by: Alex Bee <knaerzche@gmail.com>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3399-base.dtsi | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+index c46e58d4af0d..1dc6661f5102 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+@@ -1475,14 +1475,24 @@ vdec_mmu: iommu@ff660480 {
+ 		#iommu-cells = <0>;
+ 	};
+ 
++	iep: iep@ff670000 {
++		compatible = "rockchip,rk3399-iep", "rockchip,rk3228-iep";
++		reg = <0x0 0xff670000 0x0 0x800>;
++		interrupts = <GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH 0>;
++		clocks = <&cru ACLK_IEP>, <&cru HCLK_IEP>;
++		clock-names = "axi", "ahb";
++		power-domains = <&power RK3399_PD_IEP>;
++		iommus = <&iep_mmu>;
++	};
++
+ 	iep_mmu: iommu@ff670800 {
+ 		compatible = "rockchip,iommu";
+ 		reg = <0x0 0xff670800 0x0 0x40>;
+ 		interrupts = <GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH 0>;
+ 		clocks = <&cru ACLK_IEP>, <&cru HCLK_IEP>;
+ 		clock-names = "aclk", "iface";
++		power-domains = <&power RK3399_PD_IEP>;
+ 		#iommu-cells = <0>;
+-		status = "disabled";
+ 	};
+ 
+ 	rga: rga@ff680000 {
+-- 
+2.43.0
+

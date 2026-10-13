@@ -1,0 +1,53 @@
+From 26e0218653ad715142ca3e7a87c5b3a982e88a51 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Thu, 3 Sep 2026 01:54:13 +0300
+Subject: [PATCH 044/213] FROMLIST(v4): drm/rockchip: vop2: Fix
+ VOP2_MAX_DCLK_RATE overflow on 32-bit
+
+VOP2_MAX_DCLK_RATE is defined as an unsigned long and is used scaled by
+the color-depth ratio when computing the maximum DCLK the HDMI PHY PLL
+can source.
+
+On architectures where unsigned long is 32-bit, VOP2_MAX_DCLK_RATE * 8
+is evaluated in 32-bit arithmetic and overflows: 4800000000 wraps to
+505032704 before it is promoted to the 64-bit argument of
+DIV_ROUND_CLOSEST_ULL().  At 8 bpc this collapses max_dclk from the
+intended 600 MHz down to roughly 63 MHz.
+
+As a result, low-resolution modes (e.g. 640x480 or 720x480, whose pixel
+clocks are well under 30 MHz) still pass the clock <= max_dclk check and
+are reparented to the HDMI PHY PLL as expected, but higher-resolution
+modes such as 1280x720 (~74 MHz), 1920x1080 (~148 MHz) and above are
+wrongly rejected and fall back to the system CRU as the DCLK source.
+
+Define the constant as unsigned long long so that every expression using
+it is evaluated in 64-bit arithmetic, independent of the width of
+unsigned long.  This future-proofs any additional users of the macro as
+well.
+
+Fixes: b0362c45c401 ("drm/rockchip: vop2: Check bpc before switching DCLK source")
+Reported-by: Sashiko <sashiko-bot@kernel.org>
+Closes: https://lore.kernel.org/all/20260623203310.9F8C81F000E9@smtp.kernel.org/
+Link: https://lore.kernel.org/all/20260623203310.9F8C81F000E9@smtp.kernel.org/
+Tested-by: Igor Paunovic <royalnet026@gmail.com>
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index e9f5d015b645..2cd04bedaa2c 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -102,7 +102,7 @@ enum vop2_afbc_format {
+ 	VOP2_AFBC_FMT_INVALID = -1,
+ };
+ 
+-#define VOP2_MAX_DCLK_RATE		600000000UL
++#define VOP2_MAX_DCLK_RATE		600000000ULL
+ 
+ /*
+  * bus-format types.
+-- 
+2.43.0
+

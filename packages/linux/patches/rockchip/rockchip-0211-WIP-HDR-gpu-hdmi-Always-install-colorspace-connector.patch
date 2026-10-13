@@ -1,0 +1,111 @@
+From 67e3082abd220df776374e2d298cf3909fda7b21 Mon Sep 17 00:00:00 2001
+From: Derek Foreman <derek.foreman@collabora.com>
+Date: Mon, 16 Sep 2024 13:09:00 -0500
+Subject: [PATCH 211/213] [WIP-HDR]: gpu: hdmi: Always install colorspace
+ connector property
+
+The colorspace property let user read/set the supported colorspaces which
+should be filtered against the EDID data. Without this, the compositors
+cannot know and signal its supported and what is going to be used.
+
+FIXME: We also trigger an update on HDR data change, should be its own
+patch
+
+Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+[chewitt: install the property from drmm_connector_hdmi_init() as well
+ as drmm_connector_hdmi_ini2(), and drop the now duplicate create and
+ attach from dw-hdmi and vc4]
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c       |  7 -------
+ drivers/gpu/drm/display/drm_hdmi_state_helper.c |  4 +++-
+ drivers/gpu/drm/drm_connector.c                 | 12 ++++++++++++
+ drivers/gpu/drm/vc4/vc4_hdmi.c                  |  5 -----
+ 4 files changed, 15 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index dea3b1787829..5213745e11fe 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2269,18 +2269,11 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ {
+ 	struct drm_encoder *encoder = hdmi->bridge.encoder;
+ 	struct drm_connector *connector;
+-	int ret;
+ 
+ 	connector = drm_bridge_connector_init(hdmi->bridge.dev, encoder);
+ 	if (IS_ERR(connector))
+ 		return PTR_ERR(connector);
+ 
+-	ret = drm_mode_create_hdmi_colorspace_property(connector, 0);
+-	if (ret)
+-		return ret;
+-
+-	drm_connector_attach_colorspace_property(connector);
+-
+ 	return drm_connector_attach_broadcast_rgb_property(connector);
+ }
+ 
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 7cdb7ca3dc12..455f879524cf 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -925,7 +925,9 @@ int drm_atomic_helper_connector_hdmi_check(struct drm_connector *connector,
+ 
+ 	if (old_conn_state->hdmi.broadcast_rgb != new_conn_state->hdmi.broadcast_rgb ||
+ 	    old_conn_state->hdmi.output_bpc != new_conn_state->hdmi.output_bpc ||
+-	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format) {
++	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format ||
++	    old_conn_state->hdr_output_metadata != new_conn_state->hdr_output_metadata ||
++	    old_conn_state->colorspace != new_conn_state->colorspace) {
+ 		struct drm_crtc *crtc = new_conn_state->crtc;
+ 		struct drm_crtc_state *crtc_state;
+ 
+diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
+index d94c86bfed86..d6f12ebdb72c 100644
+--- a/drivers/gpu/drm/drm_connector.c
++++ b/drivers/gpu/drm/drm_connector.c
+@@ -680,6 +680,12 @@ int drmm_connector_hdmi_init(struct drm_device *dev,
+ 	if (ret)
+ 		return ret;
+ 
++	ret = drm_mode_create_hdmi_colorspace_property(connector, 0);
++	if (ret)
++		return ret;
++
++	drm_connector_attach_colorspace_property(connector);
++
+ 	connector->hdmi.funcs = hdmi_funcs;
+ 
+ 	return 0;
+@@ -786,6 +792,12 @@ int drmm_connector_hdmi_ini2(struct drm_device *dev,
+ 	if (ret)
+ 		return ret;
+ 
++	ret = drm_mode_create_hdmi_colorspace_property(connector, 0);
++	if (ret)
++		return ret;
++
++	drm_connector_attach_colorspace_property(connector);
++
+ 	connector->hdmi.funcs = hdmi_funcs;
+ 
+ 	return 0;
+diff --git a/drivers/gpu/drm/vc4/vc4_hdmi.c b/drivers/gpu/drm/vc4/vc4_hdmi.c
+index 3a90dbb61f4e..21ba74d3715c 100644
+--- a/drivers/gpu/drm/vc4/vc4_hdmi.c
++++ b/drivers/gpu/drm/vc4/vc4_hdmi.c
+@@ -575,11 +575,6 @@ static int vc4_hdmi_connector_init(struct drm_device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = drm_mode_create_hdmi_colorspace_property(connector, 0);
+-	if (ret)
+-		return ret;
+-
+-	drm_connector_attach_colorspace_property(connector);
+ 	drm_connector_attach_tv_margin_properties(connector);
+ 
+ 	connector->polled = (DRM_CONNECTOR_POLL_CONNECT |
+-- 
+2.43.0
+

@@ -1,0 +1,33 @@
+From 7cbab90f1fd716e8de25665670805f4a5059281e Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 4 May 2025 09:56:19 +0000
+Subject: [PATCH 180/213] WIP: clk: rockchip: rk3576: Mark pclk_gpu_root as
+ critical
+
+The pclk_gpu_root is required when PVTPLL is used for the GPU.
+
+Mark it with CLK_IS_CRITICAL to ensure it is not disabled.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+Another options is to remove the clk, something that would match RK3588.
+---
+ drivers/clk/rockchip/clk-rk3576.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/rockchip/clk-rk3576.c b/drivers/clk/rockchip/clk-rk3576.c
+index 2cdd667f4004..f28f54b3069e 100644
+--- a/drivers/clk/rockchip/clk-rk3576.c
++++ b/drivers/clk/rockchip/clk-rk3576.c
+@@ -913,7 +913,7 @@ static struct rockchip_clk_branch rk3576_clk_branches[] __initdata = {
+ 			RK3576_CLKGATE_CON(69), 1, GFLAGS),
+ 	GATE(CLK_GPU, "clk_gpu", "clk_gpu_src_pre", 0,
+ 			RK3576_CLKGATE_CON(69), 3, GFLAGS),
+-	COMPOSITE_NODIV(PCLK_GPU_ROOT, "pclk_gpu_root", mux_100m_50m_24m_p, 0,
++	COMPOSITE_NODIV(PCLK_GPU_ROOT, "pclk_gpu_root", mux_100m_50m_24m_p, CLK_IS_CRITICAL,
+ 			RK3576_CLKSEL_CON(166), 10, 2, MFLAGS,
+ 			RK3576_CLKGATE_CON(69), 8, GFLAGS),
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,38 @@
+From 646f359f44b1688cbc93e6b896e5e26a70ca80e0 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Thu, 3 Sep 2026 01:54:20 +0300
+Subject: [PATCH 051/213] FROMLIST(v4): drm/rockchip: dw_hdmi_qp: Enable YUV420
+ output format
+
+Both RK3576 and RK3588 SoCs are capable of driving the YUV420 output
+color format, and the required bus-format handling and VOP2 support are
+already in place.  Advertise it via the platform supported formats so
+the HDMI core can select it.
+
+YUV420 halves the TMDS bandwidth compared to RGB/YUV444, which enables
+high-resolution modes such as 4K@60Hz on links that cannot otherwise
+carry the full-bandwidth signal.
+
+Tested-by: Igor Paunovic <royalnet026@gmail.com>
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index 78473f9a0fce..1af29066a0a3 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -611,7 +611,8 @@ static int dw_hdmi_qp_rockchip_bind(struct device *dev, struct device *master,
+ 
+ 	plat_data.supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_RGB444) |
+ 				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444) |
+-				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422);
++				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422) |
++				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420);
+ 
+ 	encoder = &hdmi->encoder.encoder;
+ 	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
+-- 
+2.43.0
+

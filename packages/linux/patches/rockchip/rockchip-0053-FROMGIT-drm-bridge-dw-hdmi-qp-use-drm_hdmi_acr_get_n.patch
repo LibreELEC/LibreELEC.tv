@@ -1,0 +1,311 @@
+From c39fd95d1e801ee7814efd72f2ad432689263a01 Mon Sep 17 00:00:00 2001
+From: Simon Wright <simon@symple.nz>
+Date: Thu, 21 May 2026 19:36:47 +1200
+Subject: [PATCH 053/213] FROMGIT: drm/bridge: dw-hdmi-qp: use
+ drm_hdmi_acr_get_n_cts() helper for audio N/CTS
+
+dw_hdmi_qp_set_sample_rate() open-coded its own N and CTS lookup
+tables and search/compute helpers, but it lacked the out-of-table
+CTS fallback needed by strict HDMI sinks at TMDS rates not in the
+table.  The original LG G3 OLED audio mute (linux-rockchip 070633)
+was caused by dw_hdmi_qp_find_cts() returning 0 at 185.625 MHz,
+leaving AUDPKT_ACR_CTS_OVR_EN clear and falling back to the
+controller's internal CTS auto-measurement, which produces incorrect
+timing on the wire at out-of-table rates.
+
+The shared drm_hdmi_acr_get_n_cts() helper in
+drivers/gpu/drm/display/drm_hdmi_helper.c already implements the
+correct behaviour: it has the HDMI 1.4b spec N/CTS tables, and for
+TMDS rates not in the table it computes CTS = (TMDS * N) / (128 * Fs)
+inline (the canonical HDMI spec formula).  It is already used by
+drivers/gpu/drm/msm/hdmi/hdmi_audio.c.
+
+Convert dw_hdmi_qp_set_sample_rate() to call the helper.  This
+removes ~200 lines of open-coded tables and search functions
+(dw_hdmi_qp_find_n, _compute_n, _find_cts, _audio_math_diff,
+_match_tmds_n_table, common_tmds_n_table[], common_tmds_cts_table[])
+and fixes the strict-sink audio mute as a side effect of using the
+helper's complete N+CTS path.
+
+Tested on R76S (RK3576) running Linux 7.0.1, against the LG G3 OLED
+(the sink that originally reported the mute in linux-rockchip
+070633) at four TMDS rates spanning HDMI 1.4 and HDMI 2.0:
+
+  TMDS         Mode              Audio with v3
+  148.5 MHz    1080p60   8-bit   plays
+  185.625 MHz  1080p60  10-bit   plays
+  297 MHz      1080p100  8-bit   plays
+  594 MHz      3840p60   8-bit   plays
+
+Without this change, the LG G3 mutes audio at 185.625, 297, and
+594 MHz (every rate outside dw-hdmi-qp's open-coded CTS table,
+which contained only 148.5 MHz and below).  With this change,
+drm_hdmi_acr_get_n_cts() supplies the correct CTS at every rate --
+table-canonical at 148.5 / 297 / 594 MHz, and computed via the
+HDMI 1.4b formula at 185.625 MHz.  The 148.5 MHz row is a
+regression check confirming the in-table path is unchanged.
+
+The Kogan KALED43XU9210STA (a permissive HDMI 2.0 sink that plays
+audio at all rates with or without this change) was used as a
+no-regression control: audio plays at 594 MHz with v3 loaded.
+
+The open-coded N table in dw-hdmi-qp included optimised N values
+for some TMDS rates that are not in the helper's table (e.g.
+various non-CEA rates between 28-162 MHz).  For those rates the
+helper's fallback returns N = 128 * Fs / 1000, which is the same
+value dw_hdmi_qp_compute_n() returned when no table optimisation
+was needed; no audio regression has been observed at the rates
+tested above.
+
+Reported-by: Simon Wright <simon@symple.nz>
+Closes: https://lore.kernel.org/linux-rockchip/ME3P282MB21960D9D68BFF520316BDFCEA83E2@ME3P282MB2196.AUSP282.PROD.OUTLOOK.COM/
+Suggested-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Suggested-by: Jonas Karlman <jonas@kwiboo.se>
+Assisted-by: Claude:claude-opus-4-7
+Signed-off-by: Simon Wright <simon@symple.nz>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, both HDMI controllers
+Tested-by: Christian Hewitt <christianshewitt@gmail.com>
+Reviewed-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Tested-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Link: https://patch.msgid.link/86fcf349-0a7a-4618-9001-612371b0f71b@symple.nz
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 208 +------------------
+ 1 file changed, 1 insertion(+), 207 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index 3deeaec5cdd6..648b52cbfd12 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -40,88 +40,6 @@
+ 
+ #define SCRAMB_POLL_DELAY_MS	3000
+ 
+-/*
+- * Unless otherwise noted, entries in this table are 100% optimization.
+- * Values can be obtained from dw_hdmi_qp_compute_n() but that function is
+- * slow so we pre-compute values we expect to see.
+- *
+- * The values for TMDS 25175, 25200, 27000, 54000, 74250 and 148500 kHz are
+- * the recommended N values specified in the Audio chapter of the HDMI
+- * specification.
+- */
+-static const struct dw_hdmi_audio_tmds_n {
+-	unsigned long tmds;
+-	unsigned int n_32k;
+-	unsigned int n_44k1;
+-	unsigned int n_48k;
+-} common_tmds_n_table[] = {
+-	{ .tmds = 25175000,  .n_32k = 4576,  .n_44k1 = 7007,  .n_48k = 6864, },
+-	{ .tmds = 25200000,  .n_32k = 4096,  .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 27000000,  .n_32k = 4096,  .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 28320000,  .n_32k = 4096,  .n_44k1 = 5586,  .n_48k = 6144, },
+-	{ .tmds = 30240000,  .n_32k = 4096,  .n_44k1 = 5642,  .n_48k = 6144, },
+-	{ .tmds = 31500000,  .n_32k = 4096,  .n_44k1 = 5600,  .n_48k = 6144, },
+-	{ .tmds = 32000000,  .n_32k = 4096,  .n_44k1 = 5733,  .n_48k = 6144, },
+-	{ .tmds = 33750000,  .n_32k = 4096,  .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 36000000,  .n_32k = 4096,  .n_44k1 = 5684,  .n_48k = 6144, },
+-	{ .tmds = 40000000,  .n_32k = 4096,  .n_44k1 = 5733,  .n_48k = 6144, },
+-	{ .tmds = 49500000,  .n_32k = 4096,  .n_44k1 = 5488,  .n_48k = 6144, },
+-	{ .tmds = 50000000,  .n_32k = 4096,  .n_44k1 = 5292,  .n_48k = 6144, },
+-	{ .tmds = 54000000,  .n_32k = 4096,  .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 65000000,  .n_32k = 4096,  .n_44k1 = 7056,  .n_48k = 6144, },
+-	{ .tmds = 68250000,  .n_32k = 4096,  .n_44k1 = 5376,  .n_48k = 6144, },
+-	{ .tmds = 71000000,  .n_32k = 4096,  .n_44k1 = 7056,  .n_48k = 6144, },
+-	{ .tmds = 72000000,  .n_32k = 4096,  .n_44k1 = 5635,  .n_48k = 6144, },
+-	{ .tmds = 73250000,  .n_32k = 11648, .n_44k1 = 14112, .n_48k = 6144, },
+-	{ .tmds = 74250000,  .n_32k = 4096,  .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 75000000,  .n_32k = 4096,  .n_44k1 = 5880,  .n_48k = 6144, },
+-	{ .tmds = 78750000,  .n_32k = 4096,  .n_44k1 = 5600,  .n_48k = 6144, },
+-	{ .tmds = 78800000,  .n_32k = 4096,  .n_44k1 = 5292,  .n_48k = 6144, },
+-	{ .tmds = 79500000,  .n_32k = 4096,  .n_44k1 = 4704,  .n_48k = 6144, },
+-	{ .tmds = 83500000,  .n_32k = 4096,  .n_44k1 = 7056,  .n_48k = 6144, },
+-	{ .tmds = 85500000,  .n_32k = 4096,  .n_44k1 = 5488,  .n_48k = 6144, },
+-	{ .tmds = 88750000,  .n_32k = 4096,  .n_44k1 = 14112, .n_48k = 6144, },
+-	{ .tmds = 97750000,  .n_32k = 4096,  .n_44k1 = 14112, .n_48k = 6144, },
+-	{ .tmds = 101000000, .n_32k = 4096,  .n_44k1 = 7056,  .n_48k = 6144, },
+-	{ .tmds = 106500000, .n_32k = 4096,  .n_44k1 = 4704,  .n_48k = 6144, },
+-	{ .tmds = 108000000, .n_32k = 4096,  .n_44k1 = 5684,  .n_48k = 6144, },
+-	{ .tmds = 115500000, .n_32k = 4096,  .n_44k1 = 5712,  .n_48k = 6144, },
+-	{ .tmds = 119000000, .n_32k = 4096,  .n_44k1 = 5544,  .n_48k = 6144, },
+-	{ .tmds = 135000000, .n_32k = 4096,  .n_44k1 = 5488,  .n_48k = 6144, },
+-	{ .tmds = 146250000, .n_32k = 11648, .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 148500000, .n_32k = 4096,  .n_44k1 = 6272,  .n_48k = 6144, },
+-	{ .tmds = 154000000, .n_32k = 4096,  .n_44k1 = 5544,  .n_48k = 6144, },
+-	{ .tmds = 162000000, .n_32k = 4096,  .n_44k1 = 5684,  .n_48k = 6144, },
+-
+-	/* For 297 MHz+ HDMI spec have some other rule for setting N */
+-	{ .tmds = 297000000, .n_32k = 3073,  .n_44k1 = 4704,  .n_48k = 5120, },
+-	{ .tmds = 594000000, .n_32k = 3073,  .n_44k1 = 9408,  .n_48k = 10240,},
+-
+-	/* End of table */
+-	{ .tmds = 0,         .n_32k = 0,     .n_44k1 = 0,     .n_48k = 0,    },
+-};
+-
+-/*
+- * These are the CTS values as recommended in the Audio chapter of the HDMI
+- * specification.
+- */
+-static const struct dw_hdmi_audio_tmds_cts {
+-	unsigned long tmds;
+-	unsigned int cts_32k;
+-	unsigned int cts_44k1;
+-	unsigned int cts_48k;
+-} common_tmds_cts_table[] = {
+-	{ .tmds = 25175000,  .cts_32k = 28125,  .cts_44k1 = 31250,  .cts_48k = 28125,  },
+-	{ .tmds = 25200000,  .cts_32k = 25200,  .cts_44k1 = 28000,  .cts_48k = 25200,  },
+-	{ .tmds = 27000000,  .cts_32k = 27000,  .cts_44k1 = 30000,  .cts_48k = 27000,  },
+-	{ .tmds = 54000000,  .cts_32k = 54000,  .cts_44k1 = 60000,  .cts_48k = 54000,  },
+-	{ .tmds = 74250000,  .cts_32k = 74250,  .cts_44k1 = 82500,  .cts_48k = 74250,  },
+-	{ .tmds = 148500000, .cts_32k = 148500, .cts_44k1 = 165000, .cts_48k = 148500, },
+-
+-	/* End of table */
+-	{ .tmds = 0,         .cts_32k = 0,      .cts_44k1 = 0,      .cts_48k = 0,      },
+-};
+-
+ struct dw_hdmi_qp_i2c {
+ 	struct i2c_adapter	adap;
+ 
+@@ -213,129 +131,6 @@ static void dw_hdmi_qp_set_cts_n(struct dw_hdmi_qp *hdmi, unsigned int cts,
+ 		       AUDPKT_ACR_CONTROL1);
+ }
+ 
+-static int dw_hdmi_qp_match_tmds_n_table(struct dw_hdmi_qp *hdmi,
+-					 unsigned long pixel_clk,
+-					 unsigned long freq)
+-{
+-	const struct dw_hdmi_audio_tmds_n *tmds_n = NULL;
+-	int i;
+-
+-	for (i = 0; common_tmds_n_table[i].tmds != 0; i++) {
+-		if (pixel_clk == common_tmds_n_table[i].tmds) {
+-			tmds_n = &common_tmds_n_table[i];
+-			break;
+-		}
+-	}
+-
+-	if (!tmds_n)
+-		return -ENOENT;
+-
+-	switch (freq) {
+-	case 32000:
+-		return tmds_n->n_32k;
+-	case 44100:
+-	case 88200:
+-	case 176400:
+-		return (freq / 44100) * tmds_n->n_44k1;
+-	case 48000:
+-	case 96000:
+-	case 192000:
+-		return (freq / 48000) * tmds_n->n_48k;
+-	default:
+-		return -ENOENT;
+-	}
+-}
+-
+-static u32 dw_hdmi_qp_audio_math_diff(unsigned int freq, unsigned int n,
+-				      unsigned int pixel_clk)
+-{
+-	u64 cts = mul_u32_u32(pixel_clk, n);
+-
+-	return do_div(cts, 128 * freq);
+-}
+-
+-static unsigned int dw_hdmi_qp_compute_n(struct dw_hdmi_qp *hdmi,
+-					 unsigned long pixel_clk,
+-					 unsigned long freq)
+-{
+-	unsigned int min_n = DIV_ROUND_UP((128 * freq), 1500);
+-	unsigned int max_n = (128 * freq) / 300;
+-	unsigned int ideal_n = (128 * freq) / 1000;
+-	unsigned int best_n_distance = ideal_n;
+-	unsigned int best_n = 0;
+-	u64 best_diff = U64_MAX;
+-	int n;
+-
+-	/* If the ideal N could satisfy the audio math, then just take it */
+-	if (dw_hdmi_qp_audio_math_diff(freq, ideal_n, pixel_clk) == 0)
+-		return ideal_n;
+-
+-	for (n = min_n; n <= max_n; n++) {
+-		u64 diff = dw_hdmi_qp_audio_math_diff(freq, n, pixel_clk);
+-
+-		if (diff < best_diff ||
+-		    (diff == best_diff && abs(n - ideal_n) < best_n_distance)) {
+-			best_n = n;
+-			best_diff = diff;
+-			best_n_distance = abs(best_n - ideal_n);
+-		}
+-
+-		/*
+-		 * The best N already satisfy the audio math, and also be
+-		 * the closest value to ideal N, so just cut the loop.
+-		 */
+-		if (best_diff == 0 && (abs(n - ideal_n) > best_n_distance))
+-			break;
+-	}
+-
+-	return best_n;
+-}
+-
+-static unsigned int dw_hdmi_qp_find_n(struct dw_hdmi_qp *hdmi, unsigned long pixel_clk,
+-				      unsigned long sample_rate)
+-{
+-	int n = dw_hdmi_qp_match_tmds_n_table(hdmi, pixel_clk, sample_rate);
+-
+-	if (n > 0)
+-		return n;
+-
+-	dev_dbg(hdmi->dev, "Rate %lu missing; compute N dynamically\n", pixel_clk);
+-
+-	return dw_hdmi_qp_compute_n(hdmi, pixel_clk, sample_rate);
+-}
+-
+-static unsigned int dw_hdmi_qp_find_cts(struct dw_hdmi_qp *hdmi, unsigned long pixel_clk,
+-					unsigned long sample_rate)
+-{
+-	const struct dw_hdmi_audio_tmds_cts *tmds_cts = NULL;
+-	int i;
+-
+-	for (i = 0; common_tmds_cts_table[i].tmds != 0; i++) {
+-		if (pixel_clk == common_tmds_cts_table[i].tmds) {
+-			tmds_cts = &common_tmds_cts_table[i];
+-			break;
+-		}
+-	}
+-
+-	if (!tmds_cts)
+-		return 0;
+-
+-	switch (sample_rate) {
+-	case 32000:
+-		return tmds_cts->cts_32k;
+-	case 44100:
+-	case 88200:
+-	case 176400:
+-		return tmds_cts->cts_44k1;
+-	case 48000:
+-	case 96000:
+-	case 192000:
+-		return tmds_cts->cts_48k;
+-	default:
+-		return -ENOENT;
+-	}
+-}
+-
+ static void dw_hdmi_qp_set_audio_interface(struct dw_hdmi_qp *hdmi,
+ 					   struct hdmi_codec_daifmt *fmt,
+ 					   struct hdmi_codec_params *hparms)
+@@ -455,8 +250,7 @@ static void dw_hdmi_qp_set_sample_rate(struct dw_hdmi_qp *hdmi, unsigned long lo
+ {
+ 	unsigned int n, cts;
+ 
+-	n = dw_hdmi_qp_find_n(hdmi, tmds_char_rate, sample_rate);
+-	cts = dw_hdmi_qp_find_cts(hdmi, tmds_char_rate, sample_rate);
++	drm_hdmi_acr_get_n_cts(tmds_char_rate, sample_rate, &n, &cts);
+ 
+ 	dw_hdmi_qp_set_cts_n(hdmi, cts, n);
+ }
+-- 
+2.43.0
+
