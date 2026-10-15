@@ -1,0 +1,366 @@
+From a13ebe442b6916825e3fd5ca50b6ffb14e17363c Mon Sep 17 00:00:00 2001
+From: Craig Carnell <1188869+cscd98@users.noreply.github.com>
+Date: Thu, 15 Oct 2026 14:56:46 +0100
+Subject: [PATCH] libretro: fix shared contexts
+
+---
+ .../VideoContexts/GLContextLR.cpp             | 311 ++++++++++++++++++
+ .../VideoContexts/GLContextLR.h               |   6 +-
+ 2 files changed, 316 insertions(+), 1 deletion(-)
+
+diff --git a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp
+index 1a42fb7541..0ab694c177 100644
+--- a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp
++++ b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.cpp
+@@ -7,6 +7,303 @@
+ #include "DolphinLibretro/VideoContexts/ContextStatus.h"
+ #include "DolphinLibretro/Video.h"
+ 
++#include <cstring>
++#include <memory>
++#include <vector>
++
++#include "Common/GL/GLExtensions/GLExtensions.h"
++
++#if defined(HAVE_EGL)
++#include <EGL/egl.h>
++#include <EGL/eglext.h>
++#endif
++
++#if defined(HAVE_X11)
++#include "Common/DynamicLibrary.h"
++#endif
++
++namespace
++{
++// Version/profile of the frontend context, so worker contexts are created to match it.
++struct CurrentGLVersion
++{
++  GLint major = 0;
++  GLint minor = 0;
++  bool core_profile = false;
++};
++
++CurrentGLVersion QueryCurrentGLVersion(bool gles)
++{
++  CurrentGLVersion v;
++  glGetIntegerv(GL_MAJOR_VERSION, &v.major);
++  glGetIntegerv(GL_MINOR_VERSION, &v.minor);
++  if (!gles && (v.major > 3 || (v.major == 3 && v.minor >= 2)))
++  {
++    GLint mask = 0;
++    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &mask);
++    v.core_profile = (mask & GL_CONTEXT_CORE_PROFILE_BIT) != 0;
++  }
++  return v;
++}
++
++#if defined(HAVE_EGL)
++class GLContextLRSharedEGL final : public GLContext
++{
++public:
++  GLContextLRSharedEGL(Mode mode, EGLDisplay display, EGLContext context, EGLSurface surface)
++      : m_display(display), m_context(context), m_surface(surface)
++  {
++    m_opengl_mode = mode;
++    m_is_shared = true;
++  }
++
++  ~GLContextLRSharedEGL() override
++  {
++    if (eglGetCurrentContext() == m_context)
++      ClearCurrent();
++    if (m_surface != EGL_NO_SURFACE)
++      eglDestroySurface(m_display, m_surface);
++    eglDestroyContext(m_display, m_context);
++  }
++
++  bool IsHeadless() const override { return true; }
++
++  bool MakeCurrent() override
++  {
++    eglBindAPI(m_opengl_mode == Mode::OpenGLES ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
++    return eglMakeCurrent(m_display, m_surface, m_surface, m_context) == EGL_TRUE;
++  }
++
++  bool ClearCurrent() override
++  {
++    return eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT) == EGL_TRUE;
++  }
++
++  void* GetFuncAddress(const std::string& name) override
++  {
++    return reinterpret_cast<void*>(Libretro::Video::hw_render.get_proc_address(name.c_str()));
++  }
++
++private:
++  EGLDisplay m_display;
++  EGLContext m_context;
++  EGLSurface m_surface;
++};
++
++std::unique_ptr<GLContext> CreateSharedEGL(GLContext::Mode mode)
++{
++  const bool gles = mode == GLContext::Mode::OpenGLES;
++  eglBindAPI(gles ? EGL_OPENGL_ES_API : EGL_OPENGL_API);
++
++  const EGLContext share = eglGetCurrentContext();
++  const EGLDisplay display = eglGetCurrentDisplay();
++  if (share == EGL_NO_CONTEXT || display == EGL_NO_DISPLAY)
++    return nullptr;
++
++  EGLint config_id = 0;
++  eglQueryContext(display, share, EGL_CONFIG_ID, &config_id);
++  const EGLint config_attribs[] = {EGL_CONFIG_ID, config_id, EGL_NONE};
++  EGLConfig config = nullptr;
++  EGLint num_configs = 0;
++  if (!eglChooseConfig(display, config_attribs, &config, 1, &num_configs) || num_configs < 1)
++    config = nullptr;  // EGL_NO_CONFIG_KHR, frontend may have used EGL_KHR_no_config_context
++
++  const CurrentGLVersion ver = QueryCurrentGLVersion(gles);
++  std::vector<EGLint> ctx_attribs = {EGL_CONTEXT_MAJOR_VERSION_KHR, ver.major,
++                                     EGL_CONTEXT_MINOR_VERSION_KHR, ver.minor};
++  if (!gles)
++  {
++    ctx_attribs.push_back(EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR);
++    ctx_attribs.push_back(ver.core_profile ? EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR :
++                                             EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT_KHR);
++  }
++  ctx_attribs.push_back(EGL_NONE);
++
++  EGLContext context = eglCreateContext(display, config, share, ctx_attribs.data());
++  if (context == EGL_NO_CONTEXT)
++  {
++    // No EGL_KHR_create_context, fall back to the basic attributes.
++    const EGLint es_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
++    const EGLint gl_attribs[] = {EGL_NONE};
++    context = eglCreateContext(display, config, share, gles ? es_attribs : gl_attribs);
++  }
++  if (context == EGL_NO_CONTEXT)
++  {
++    WARN_LOG_FMT(VIDEO, "Shared context: eglCreateContext failed {:#06x}", eglGetError());
++    return nullptr;
++  }
++
++  // Worker contexts never draw, so avoid a surface when possible.
++  EGLSurface surface = EGL_NO_SURFACE;
++  const char* exts = eglQueryString(display, EGL_EXTENSIONS);
++  if (!exts || !strstr(exts, "EGL_KHR_surfaceless_context"))
++  {
++    const EGLint pbuffer_attribs[] = {EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
++    surface = config ? eglCreatePbufferSurface(display, config, pbuffer_attribs) : EGL_NO_SURFACE;
++    if (surface == EGL_NO_SURFACE)
++    {
++      WARN_LOG_FMT(VIDEO, "Shared context: no surfaceless support and pbuffer creation failed");
++      eglDestroyContext(display, context);
++      return nullptr;
++    }
++  }
++
++  INFO_LOG_FMT(VIDEO, "Created EGL shared context for shader compiling");
++  return std::make_unique<GLContextLRSharedEGL>(mode, display, context, surface);
++}
++#endif  // HAVE_EGL
++
++#if defined(HAVE_X11)
++// GLX is loaded at runtime (rather than including GL/glx.h, which conflicts with Dolphin's GL
++// loader, and linking libGL), using whichever libGL the frontend already has loaded.
++namespace GLX
++{
++using Display = void;
++using GLXContext = void*;
++using GLXFBConfig = void*;
++using GLXDrawable = unsigned long;
++using XErrorHandler = int (*)(Display*, void*);
++
++constexpr int GLX_SCREEN = 0x800C;
++constexpr int GLX_FBCONFIG_ID = 0x8013;
++constexpr int GLX_CONTEXT_MAJOR_VERSION_ARB = 0x2091;
++constexpr int GLX_CONTEXT_MINOR_VERSION_ARB = 0x2092;
++constexpr int GLX_CONTEXT_PROFILE_MASK_ARB = 0x9126;
++constexpr int GLX_CONTEXT_CORE_PROFILE_BIT_ARB = 0x1;
++constexpr int GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB = 0x2;
++constexpr int GLX_CONTEXT_ES2_PROFILE_BIT_EXT = 0x4;
++
++GLXContext (*GetCurrentContext)();
++Display* (*GetCurrentDisplay)();
++int (*QueryContext)(Display*, GLXContext, int, int*);
++GLXFBConfig* (*ChooseFBConfig)(Display*, int, const int*, int*);
++void* (*GetProcAddressARB)(const unsigned char*);
++int (*MakeContextCurrent)(Display*, GLXDrawable, GLXDrawable, GLXContext);
++void (*DestroyContext)(Display*, GLXContext);
++GLXContext (*CreateContextAttribsARB)(Display*, GLXFBConfig, GLXContext, int, const int*);
++int (*XFree)(void*);
++int (*XSync)(Display*, int);
++XErrorHandler (*XSetErrorHandler)(XErrorHandler);
++
++bool Load()
++{
++  static Common::DynamicLibrary libgl;
++  static Common::DynamicLibrary libx11;
++  static const bool loaded = [] {
++    if (!libgl.Open("libGL.so.1") && !libgl.Open("libGL.so"))
++      return false;
++    if (!libx11.Open("libX11.so.6") && !libx11.Open("libX11.so"))
++      return false;
++    return libgl.GetSymbol("glXGetCurrentContext", &GetCurrentContext) &&
++           libgl.GetSymbol("glXGetCurrentDisplay", &GetCurrentDisplay) &&
++           libgl.GetSymbol("glXQueryContext", &QueryContext) &&
++           libgl.GetSymbol("glXChooseFBConfig", &ChooseFBConfig) &&
++           libgl.GetSymbol("glXGetProcAddressARB", &GetProcAddressARB) &&
++           libgl.GetSymbol("glXMakeContextCurrent", &MakeContextCurrent) &&
++           libgl.GetSymbol("glXDestroyContext", &DestroyContext) &&
++           libx11.GetSymbol("XFree", &XFree) && libx11.GetSymbol("XSync", &XSync) &&
++           libx11.GetSymbol("XSetErrorHandler", &XSetErrorHandler) &&
++           (CreateContextAttribsARB = reinterpret_cast<decltype(CreateContextAttribsARB)>(
++                GetProcAddressARB(reinterpret_cast<const unsigned char*>(
++                    "glXCreateContextAttribsARB")))) != nullptr;
++  }();
++  return loaded;
++}
++
++int IgnoreXError(Display*, void*)
++{
++  return 0;
++}
++}  // namespace GLX
++
++class GLContextLRSharedGLX final : public GLContext
++{
++public:
++  GLContextLRSharedGLX(Mode mode, GLX::Display* display, GLX::GLXContext context)
++      : m_display(display), m_context(context)
++  {
++    m_opengl_mode = mode;
++    m_is_shared = true;
++  }
++
++  ~GLContextLRSharedGLX() override
++  {
++    if (GLX::GetCurrentContext() == m_context)
++      ClearCurrent();
++    GLX::DestroyContext(m_display, m_context);
++  }
++
++  bool IsHeadless() const override { return true; }
++
++  // GLX_ARB_create_context allows GL 3.0+ contexts to be made current without a drawable.
++  bool MakeCurrent() override { return GLX::MakeContextCurrent(m_display, 0, 0, m_context) != 0; }
++  bool ClearCurrent() override { return GLX::MakeContextCurrent(m_display, 0, 0, nullptr) != 0; }
++
++  void* GetFuncAddress(const std::string& name) override
++  {
++    return reinterpret_cast<void*>(Libretro::Video::hw_render.get_proc_address(name.c_str()));
++  }
++
++private:
++  GLX::Display* m_display;
++  GLX::GLXContext m_context;
++};
++
++std::unique_ptr<GLContext> CreateSharedGLX(GLContext::Mode mode)
++{
++  if (!GLX::Load())
++    return nullptr;
++
++  GLX::GLXContext share = GLX::GetCurrentContext();
++  GLX::Display* display = GLX::GetCurrentDisplay();
++  if (!share || !display)
++    return nullptr;
++
++  int screen = 0;
++  int fbconfig_id = 0;
++  GLX::QueryContext(display, share, GLX::GLX_SCREEN, &screen);
++  GLX::QueryContext(display, share, GLX::GLX_FBCONFIG_ID, &fbconfig_id);
++  const int fb_attribs[] = {GLX::GLX_FBCONFIG_ID, fbconfig_id, 0};
++  int num_configs = 0;
++  GLX::GLXFBConfig* configs = GLX::ChooseFBConfig(display, screen, fb_attribs, &num_configs);
++  if (!configs || num_configs < 1)
++  {
++    WARN_LOG_FMT(VIDEO, "Shared context: no GLXFBConfig matching frontend context");
++    return nullptr;
++  }
++  GLX::GLXFBConfig config = configs[0];
++  GLX::XFree(configs);
++
++  const bool gles = mode == GLContext::Mode::OpenGLES;
++  const CurrentGLVersion ver = QueryCurrentGLVersion(gles);
++  const int profile = gles ? GLX::GLX_CONTEXT_ES2_PROFILE_BIT_EXT :
++                      ver.core_profile ? GLX::GLX_CONTEXT_CORE_PROFILE_BIT_ARB :
++                                         GLX::GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
++  const int ctx_attribs[] = {GLX::GLX_CONTEXT_MAJOR_VERSION_ARB, ver.major,
++                             GLX::GLX_CONTEXT_MINOR_VERSION_ARB, ver.minor,
++                             GLX::GLX_CONTEXT_PROFILE_MASK_ARB,  profile,
++                             0};
++
++  // A failed glXCreateContextAttribsARB raises an X error, and the default handler would
++  // terminate the frontend, so swallow errors while creating.
++  GLX::XSync(display, 0);
++  const GLX::XErrorHandler old_handler = GLX::XSetErrorHandler(GLX::IgnoreXError);
++  GLX::GLXContext context = GLX::CreateContextAttribsARB(display, config, share, 1, ctx_attribs);
++  GLX::XSync(display, 0);
++  GLX::XSetErrorHandler(old_handler);
++
++  if (!context)
++  {
++    WARN_LOG_FMT(VIDEO, "Shared context: glXCreateContextAttribsARB failed");
++    return nullptr;
++  }
++
++  INFO_LOG_FMT(VIDEO, "Created GLX shared context for shader compiling");
++  return std::make_unique<GLContextLRSharedGLX>(mode, display, context);
++}
++#endif  // HAVE_X11
++}  // namespace
++
+ GLContextLR::GLContextLR()
+ {
+ }
+@@ -54,6 +351,20 @@ void GLContextLR::Swap()
+         m_backbuffer_width, m_backbuffer_height, 0);
+ }
+ 
++std::unique_ptr<GLContext> GLContextLR::CreateSharedContext()
++{
++  // Must be called on the thread the frontend's context is current on.
++#if defined(HAVE_EGL)
++  if (auto context = CreateSharedEGL(m_opengl_mode))
++    return context;
++#endif
++#if defined(HAVE_X11)
++  if (auto context = CreateSharedGLX(m_opengl_mode))
++    return context;
++#endif
++  return nullptr;
++}
++
+ void GLContextLR::Shutdown()
+ {
+   m_initialized = false;
+diff --git a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h
+index 84238cbe16..1bf7a790db 100644
+--- a/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h
++++ b/Source/Core/DolphinLibretro/VideoContexts/GLContextLR.h
+@@ -9,7 +9,7 @@ class GLContextLR : public GLContext
+ public:
+   GLContextLR();
+   ~GLContextLR() override;
+-  
++
+   bool IsHeadless() const override { return false; }
+   void Swap() override;
+   void* GetFuncAddress(const std::string& name) override;
+@@ -17,6 +17,10 @@ public:
+   bool IsInitialized() const { return m_initialized; }
+   void Shutdown();
+ 
++  // libretro has no API for additional contexts, so this creates one directly through
++  // EGL/GLX, sharing with whatever frontend context is current on the calling thread.
++  std::unique_ptr<GLContext> CreateSharedContext() override;
++
+ private:
+   bool m_initialized = false;
+ };
+-- 
+2.53.0
+
