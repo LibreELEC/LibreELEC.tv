@@ -32,6 +32,10 @@ else
   PKG_MAKE_OPTS_TARGET+=" profile=accuracy"
 fi
 
+pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=${PKG_VERSION:0:7} GIT_DATE=$(date -u -r ${PKG_BUILD}/LICENSE.md +%y%m%d)"
+}
+
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}

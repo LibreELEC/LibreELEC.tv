@@ -49,6 +49,12 @@ else
   PKG_MAKE_OPTS_TARGET+=" platform=unix DYNAREC=none"
 fi
 
+pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
+  echo "#define REV \"${PKG_VERSION:0:7}\"" >${PKG_BUILD}/include/revision.h
+  MAKEFLAGS+=" --assume-old=include/revision.h"
+}
+
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}

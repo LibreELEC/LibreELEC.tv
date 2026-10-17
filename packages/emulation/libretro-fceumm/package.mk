@@ -17,6 +17,10 @@ PKG_LIBVAR="FCEUMM_LIB"
 
 PKG_MAKE_OPTS_TARGET="-f Makefile.libretro"
 
+pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
+}
+
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}

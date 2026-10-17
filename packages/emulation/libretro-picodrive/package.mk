@@ -29,6 +29,7 @@ makeinstall_host() {
 }
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_REVISION=-${PKG_VERSION:0:7}"
   CFLAGS+=" -I./"
 }
 

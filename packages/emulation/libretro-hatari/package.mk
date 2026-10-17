@@ -18,6 +18,7 @@ PKG_LIBVAR="HATARI_LIB"
 PKG_MAKE_OPTS_TARGET="-C ../ -f Makefile.libretro"
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
   if [ "${ARCH}" = "arm" ]; then
     CFLAGS+=" -DNO_ASM -DARM -D__arm__ -DARM_ASM -DNOSSE -DARM_HARDFP"
   fi

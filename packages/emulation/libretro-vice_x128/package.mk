@@ -15,6 +15,10 @@ PKG_LIBNAME="vice_x128_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="VICE-X128_LIB"
 
+pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
+}
+
 make_target() {
   make EMUTYPE=x128
 }

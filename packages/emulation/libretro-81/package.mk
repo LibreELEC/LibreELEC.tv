@@ -16,6 +16,11 @@ PKG_LIBNAME="81_libretro.so"
 PKG_LIBPATH="${PKG_LIBNAME}"
 PKG_LIBVAR="81_LIB"
 
+pre_make_target() {
+  sed "s/HASH/${PKG_VERSION}/g" ${PKG_BUILD}/etc/version.c.templ >${PKG_BUILD}/src/version.c
+  MAKEFLAGS+=" --assume-old=src/version.c"
+}
+
 makeinstall_target() {
   mkdir -p ${SYSROOT_PREFIX}/usr/lib/cmake/${PKG_NAME}
   cp ${PKG_LIBPATH} ${SYSROOT_PREFIX}/usr/lib/${PKG_LIBNAME}

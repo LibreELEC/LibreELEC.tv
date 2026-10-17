@@ -18,6 +18,7 @@ else
 fi
 
 pre_make_target() {
+  MAKEFLAGS+=" GIT_VERSION=\"\\ ${PKG_VERSION:0:7}\""
   PKG_MAKE_OPTS_TARGET+=" CC=${CC} CXX=${CXX} AR=${AR}"
 }
 

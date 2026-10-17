@@ -18,6 +18,8 @@ PKG_LIBVAR="FUSE_LIB"
 PKG_MAKE_OPTS_TARGET="-f Makefile.libretro"
 
 pre_make_target() {
+  sed "s/HASH/${PKG_VERSION}/g" ${PKG_BUILD}/etc/version.c.templ >${PKG_BUILD}/src/version.c
+  MAKEFLAGS+=" --assume-old=src/version.c"
   CFLAGS+=" -DHAVE_LIBBZ2"
   CXXFLAGS+=" -DHAVE_LIBBZ2"
 }
