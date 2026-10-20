@@ -14,7 +14,7 @@ PKG_SOURCE_DIR="hue-ambi-${PKG_VERSION}"
 PKG_DEPENDS_TARGET="toolchain openssl cargo:host"
 PKG_SECTION="service"
 PKG_SHORTDESC="Hue Ambi: Philips Hue ambilight from the picture on screen"
-PKG_LONGDESC="Hue Ambi (${PKG_VERSION}) reads the picture straight from the display controller and drives a Philips Hue entertainment area: each light takes the colour of the part of the picture it faces. Needs a Hue bridge with an entertainment area and the Direct To Plane video renderer."
+PKG_LONGDESC="Hue Ambi (${PKG_VERSION}) reads the picture straight from the display controller and drives a Philips Hue entertainment area: each light takes the colour of the part of the picture it faces. Raspberry Pi 5 only. Needs a Hue bridge with an entertainment area and the Direct To Plane video renderer."
 PKG_TOOLCHAIN="manual"
 
 PKG_IS_ADDON="yes"
@@ -22,7 +22,7 @@ PKG_IS_ADDON="yes"
 PKG_ADDON_VERSION="${ADDON_VERSION}.${PKG_REV}"
 PKG_ADDON_NAME="Hue Ambi"
 PKG_ADDON_TYPE="xbmc.service"
-PKG_ADDON_PROJECTS="RPi5"
+PKG_ADDON_PROJECTS="ARMv8"
 PKG_MAINTAINER="Rémi Collignon-Ducret (miton18)"
 
 make_target() {
