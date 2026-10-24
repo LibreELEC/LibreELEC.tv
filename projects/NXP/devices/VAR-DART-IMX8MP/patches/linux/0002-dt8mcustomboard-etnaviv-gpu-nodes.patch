@@ -1,0 +1,37 @@
+From: LibreELEC VAR-DART-IMX8MP
+Subject: [PATCH] arm64: dts: dt8mcustomboard: bind GPU with etnaviv
+
+Vendor DT describes GC7000L as fsl,imx8-gpu (galcore). CONFIG_MXC_GPU_VIV
+is off, and etnaviv only matches vivante,gc, so the GPU has no driver.
+Kodi GBM then fails on the imx-drm display card (no render node).
+
+--- a/arch/arm64/boot/dts/freescale/imx8mp-var-dart-dt8mcustomboard.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mp-var-dart-dt8mcustomboard.dts
+@@ -422,6 +422,27 @@
+ 	status = "disabled";
+ };
+ 
++/* galcore nodes -> etnaviv (Kodi/mesa). mix_gpu_ml is Vivante only. */
++&mix_gpu_ml {
++	status = "disabled";
++};
++
++&ml_vipsi {
++	status = "disabled";
++};
++
++&gpu_3d {
++	compatible = "vivante,gc";
++	clock-names = "core", "shader", "bus", "reg";
++	status = "okay";
++};
++
++&gpu_2d {
++	compatible = "vivante,gc";
++	clock-names = "core", "bus", "reg";
++	status = "okay";
++};
++
+ &mipi_dsi {
+ 	status = "disabled";
+ };

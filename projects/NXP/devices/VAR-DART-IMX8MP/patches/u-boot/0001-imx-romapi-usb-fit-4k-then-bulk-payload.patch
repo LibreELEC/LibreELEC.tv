@@ -1,0 +1,134 @@
+i.MX8MP USB HID pages are 1024 bytes. A FIT FDT with ATF+OP-TEE is 1120
+bytes, so a 1024-byte search never completes the header. Pull 4KiB pages
+for the search, then the FIT payload in 4KiB chunks of the exact remaining
+size. Do not page-align past EOF: that made UUU hit 100% while the ROM
+waited for padding bytes that are not in imx-boot.
+
+--- a/arch/arm/mach-imx/spl_imx_romapi.c
++++ b/arch/arm/mach-imx/spl_imx_romapi.c
+@@ -314,6 +314,33 @@
+ 
+ static int img_total_size(void *img_hdr)
+ {
++	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT)) {
++		int images, noffset;
++		int total = fit_get_size(img_hdr);
++
++		images = fdt_path_offset(img_hdr, FIT_IMAGES_PATH);
++		if (images < 0)
++			return total;
++
++		fdt_for_each_subnode(noffset, img_hdr, images) {
++			int sz, pos;
++
++			if (fit_image_get_data_size(img_hdr, noffset, &sz))
++				continue;
++			if (!fit_image_get_data_position(img_hdr, noffset, &pos)) {
++				if (pos + sz > total)
++					total = pos + sz;
++			} else if (!fit_image_get_data_offset(img_hdr, noffset,
++							      &pos)) {
++				pos += ALIGN(fit_get_size(img_hdr), 4);
++				if (pos + sz > total)
++					total = pos + sz;
++			}
++		}
++
++		return total;
++	}
++
+ 	if (IS_ENABLED(CONFIG_SPL_LOAD_IMX_CONTAINER)) {
+ 		int total = get_container_size((ulong)img_hdr, NULL);
+ 
+@@ -346,8 +373,12 @@
+ 		puts("failure at query_boot_info\n");
+ 
+ 	pg = pagesize;
+-	if (pg < 1024)
+-		pg = 1024;
++	/*
++	 * FIT FDT with ATF+TEE is 1120 bytes. A 1024-byte USB page can never
++	 * hold it, which forces a fragile "Need continue download 1024".
++	 */
++	if (pg < 0x1000)
++		pg = 0x1000;
+ 
+ 	for (i = 0; i < 640; i++) {
+ 		ret = rom_api_download_image(p, 0, pg);
+@@ -402,38 +433,56 @@
+ 		}
+ 	}
+ 
+-	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT)) {
+-		struct stream_state ss;
+-
+-		ss.base = phdr;
+-		ss.end = p;
+-		ss.pagesize = pagesize;
+-
+-		spl_load_init(&load, spl_romapi_read_stream, &ss, 1);
+-
+-		return spl_load_simple_fit(spl_image, &load, (ulong)phdr, phdr);
+-	}
+-
+ 	total = img_total_size(phdr);
++	if (total < (int)(p - phdr))
++		total = p - phdr;
+ 	total += 3;
+ 	total &= ~0x3;
+ 
+ 	imagesize = total - (p - phdr);
+ 
+-	imagesize += pagesize - 1;
+-	imagesize /= pagesize;
+-	imagesize *= pagesize;
+-
+-	printf("Download %d, Total size %d\n", imagesize, total);
++	/*
++	 * Do not round this up. Page-aligning 1713936 past the FIT end
++	 * asked UUU for bytes that are not in imx-boot: SDPS hits 100%
++	 * and the ROM waits forever. One 1.7MiB download_image also
++	 * stalls; 4K pages already worked for the header search.
++	 */
++	if (imagesize > 0) {
++		int remain = imagesize;
++		int got = 0;
++
++		printf("Download %d, Total size %d\n", imagesize, total);
++
++		while (remain > 0) {
++			int chunk = remain > (int)pg ? (int)pg : remain;
++
++			ret = rom_api_download_image(p, 0, chunk);
++			if (ret != ROM_API_OKAY) {
++				printf("ROM download failure %d after %d\n",
++				       chunk, got);
++				return -1;
++			}
++			p += chunk;
++			got += chunk;
++			remain -= chunk;
++			if (got == imagesize || (got & 0x3ffff) == 0)
++				printf("downloaded %d/%d\n", got, imagesize);
++		}
++	}
+ 
+-	ret = rom_api_download_image(p, 0, imagesize);
+-	if (ret != ROM_API_OKAY)
+-		printf("ROM download failure %d\n", imagesize);
++	puts("FIT payload ready\n");
+ 
+ 	memset(&load, 0, sizeof(load));
+ 	spl_set_bl_len(&load, 1);
+ 	load.read = spl_ram_load_read;
+ 
++	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT)) {
++		ret = spl_load_simple_fit(spl_image, &load, (ulong)phdr, phdr);
++		printf("FIT load %d entry=0x%lx load=0x%lx os=%u\n",
++		       ret, spl_image->entry_point, spl_image->load_addr,
++		       spl_image->os);
++		return ret;
++	}
+ 	if (IS_ENABLED(CONFIG_SPL_LOAD_IMX_CONTAINER))
+ 		return spl_load_imx_container(spl_image, &load, (ulong)phdr);
+ 

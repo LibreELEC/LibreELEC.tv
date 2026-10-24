@@ -7,9 +7,15 @@ PKG_SHA256="edb0d7b6b6f15b30695a1f9a4770cd2798a8a5486c2b1968e5ec6ba74772df06"
 PKG_LICENSE="Unlicense AND BSD-2-Clause"
 PKG_SITE="https://pypi.org/project/pycryptodome"
 PKG_URL="https://github.com/Legrandin/${PKG_NAME}/archive/v${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_HOST="Python3:host setuptools:host"
 PKG_DEPENDS_TARGET="toolchain Python3 setuptools:host"
 PKG_LONGDESC="PyCryptodome is a self-contained Python package of low-level cryptographic primitives."
 PKG_TOOLCHAIN="python"
+
+pre_configure_host() {
+  cd ${PKG_BUILD}
+  rm -rf .${HOST_NAME}
+}
 
 pre_configure_target() {
   cd ${PKG_BUILD}

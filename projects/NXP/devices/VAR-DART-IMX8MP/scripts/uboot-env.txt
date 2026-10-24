@@ -1,0 +1,33 @@
+# Variscite compiled-in defaults plus scriptaddr loadbootscript.
+# Packed by mk-uboot-env.sh to 16 KiB at eMMC user 0x700000.
+# Do not use saveenv over SDP: CONFIG_SYS_MMC_ENV_DEV is SD (1).
+bootdir=/boot
+bsp_script=boot.scr
+scriptaddr=0x43500000
+loadaddr=0x40480000
+kernel_addr_r=0x40480000
+img_addr=0x42000000
+initrd_addr=0x43800000
+initrd_high=0xffffffffffffffff
+fdt_addr=0x43000000
+fdt_addr_r=0x43000000
+fdt_high=0xffffffffffffffff
+image=Image.gz
+console=ttymxc0,115200
+emmc_dev=2
+sd_dev=1
+mmcdev=2
+mmcblk=2
+mmcpart=1
+mmcautodetect=yes
+boot_fdt=try
+boot_fit=no
+fdt_file=undefined
+ip_dyn=yes
+use_m7=no
+prepare_mcore=setenv mcore_clk clk-imx8mp.mcore_booted;
+ramsize_check=if test $sdram_size -le 512; then setenv cma_size cma=64M; elif test $sdram_size -le 1024; then setenv cma_size cma=320M; elif test $sdram_size -le 2048; then setenv cma_size cma=384M; else setenv cma_size cma=704M; fi
+loadbootscript=load mmc ${mmcdev}:${mmcpart} ${scriptaddr} ${bootdir}/${bsp_script}
+bootscript=echo Running bootscript from mmc ...; source ${scriptaddr}
+bsp_bootcmd=echo Running BSP bootcmd ...; mmc dev ${mmcdev}; if mmc rescan; then if run loadbootscript; then run bootscript; fi; fi
+bootcmd=run bsp_bootcmd

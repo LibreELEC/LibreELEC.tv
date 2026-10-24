@@ -1,0 +1,43 @@
+From: LibreELEC VAR-DART-IMX8MP
+Subject: [PATCH] arm64: dts: dt8mcustomboard: disable unused LVDS
+
+Kodi GBM picks LVDS-1 when both LVDS and HDMI report connected.
+
+--- a/arch/arm64/boot/dts/freescale/imx8mp-var-dart-dt8mcustomboard.dts	2026-09-12 10:55:00.777373610 +0200
++++ b/arch/arm64/boot/dts/freescale/imx8mp-var-dart-dt8mcustomboard.dts	2026-09-12 10:55:00.778438017 +0200
+@@ -102,7 +102,7 @@
+ 		height-mm = <87>;
+ 		label = "gktw70sdae4se";
+ 		data-mapping = "jeida-24";
+-		status = "okay";
++		status = "disabled";
+ 
+ 		panel-timing {
+ 			clock-frequency = <33000000>;
+@@ -390,7 +390,7 @@
+ 
+ /* LVDS */
+ &lcdif2 {
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ /* HDMI */
+@@ -401,7 +401,7 @@
+ };
+ 
+ &ldb {
+-	status = "okay";
++	status = "disabled";
+ 
+ 	lvds-channel@0 {
+ 		fsl,data-mapping = "jeida";
+@@ -419,7 +419,7 @@
+ };
+ 
+ &ldb_phy {
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &mipi_dsi {
