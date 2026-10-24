@@ -1,0 +1,46 @@
+From d0c50da426e1149d62dd9b00865ade232ef183d2 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 22 Aug 2026 21:30:00 +1000
+Subject: [PATCH 005/220] LOCAL: drm/rockchip: vop: disable AFBC on RK3399
+
+Kodi is unusable on RK3399 because the vop advertises AFBC on win0.
+
+Two independent failures follow from it. The AFBC decoder is programmed
+with hreg_block_split hardcoded to 0, and without SPLIT mode it cannot
+sustain a 3840 wide scanout, so a 4K desktop is displayed as a black
+screen. Nothing rejects it: vop_plane_atomic_check() validates the AFBC
+format, the source offset and the rotation, but not the width, so the
+atomic commit succeeds and the picture is simply lost.
+
+Separately, win0 is the only plane that can scan out AFBC and its zpos
+is fixed at 0. A compositor that needs a gui layer above a video layer
+therefore has to place the gui on win1, which is linear only, so no
+valid plane pair exists and hardware video playback cannot be set up at
+all. On Kodi this ends in "Cannot find a Video Plane .. together with a
+Gui Plane ..", a fallback to a GLES path that does not accept drm_prime,
+and no video.
+
+Both disappear when the gui buffer is linear. Stop advertising the
+modifier until SPLIT mode is implemented and the plane pairing has a
+solution.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_vop_reg.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+index 72301e0a3e0a..828f932f9b6b 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+@@ -78,7 +78,6 @@ static const uint64_t format_modifiers_win_full[] = {
+ };
+ 
+ static const uint64_t format_modifiers_win_full_afbc[] = {
+-	ROCKCHIP_AFBC_MOD,
+ 	DRM_FORMAT_MOD_LINEAR,
+ 	DRM_FORMAT_MOD_INVALID,
+ };
+-- 
+2.43.0
+

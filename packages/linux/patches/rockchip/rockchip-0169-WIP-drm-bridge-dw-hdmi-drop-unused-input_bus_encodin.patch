@@ -1,0 +1,72 @@
+From fe0e202e35fa7148dfbe1a6b4dfea2aecc9c881e Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Fri, 24 Apr 2026 14:47:07 +0000
+Subject: [PATCH 169/220] WIP: drm/bridge: dw-hdmi: drop unused
+ input_bus_encoding
+
+input_bus_encoding is only copied into enc_in_encoding during power-on,
+but enc_in_encoding is never used afterwards.
+
+Drop the unused platform data field, the dead assignment in
+dw_hdmi_poweron(), and the Meson initialization of the field.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 8 --------
+ drivers/gpu/drm/meson/meson_dw_hdmi.c     | 1 -
+ include/drm/bridge/dw_hdmi.h              | 1 -
+ 3 files changed, 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index ffea98489a5d..1814778c4af8 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -123,7 +123,6 @@ struct hdmi_vmode {
+ struct hdmi_data_info {
+ 	unsigned int enc_in_bus_format;
+ 	unsigned int enc_out_bus_format;
+-	unsigned int enc_in_encoding;
+ 	unsigned int enc_out_encoding;
+ 	unsigned int pix_repet_factor;
+ 	unsigned int hdcp_enable;
+@@ -2225,13 +2224,6 @@ static int dw_hdmi_poweron(struct dw_hdmi *hdmi,
+ 	if (hdmi->hdmi_data.enc_in_bus_format == MEDIA_BUS_FMT_FIXED)
+ 		hdmi->hdmi_data.enc_in_bus_format = MEDIA_BUS_FMT_RGB888_1X24;
+ 
+-	/* TOFIX: Get input encoding from plat data or fallback to none */
+-	if (hdmi->plat_data->input_bus_encoding)
+-		hdmi->hdmi_data.enc_in_encoding =
+-			hdmi->plat_data->input_bus_encoding;
+-	else
+-		hdmi->hdmi_data.enc_in_encoding = V4L2_YCBCR_ENC_DEFAULT;
+-
+ 	if (hdmi->hdmi_data.enc_out_bus_format == MEDIA_BUS_FMT_FIXED)
+ 		hdmi->hdmi_data.enc_out_bus_format = MEDIA_BUS_FMT_RGB888_1X24;
+ 
+diff --git a/drivers/gpu/drm/meson/meson_dw_hdmi.c b/drivers/gpu/drm/meson/meson_dw_hdmi.c
+index e35f32cd6d98..cfdc4332b198 100644
+--- a/drivers/gpu/drm/meson/meson_dw_hdmi.c
++++ b/drivers/gpu/drm/meson/meson_dw_hdmi.c
+@@ -759,7 +759,6 @@ static int meson_dw_hdmi_bind(struct device *dev, struct device *master,
+ 	dw_plat_data->phy_ops = &meson_dw_hdmi_phy_ops;
+ 	dw_plat_data->phy_name = "meson_dw_hdmi_phy";
+ 	dw_plat_data->phy_data = meson_dw_hdmi;
+-	dw_plat_data->input_bus_encoding = V4L2_YCBCR_ENC_709;
+ 	dw_plat_data->supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444) |
+ 					  BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422) |
+ 					  BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420);
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 656f10d6b4b5..7f7a18e5a055 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -132,7 +132,6 @@ struct dw_hdmi_plat_data {
+ 	 */
+ 	unsigned int output_port;
+ 
+-	unsigned long input_bus_encoding;
+ 	bool use_drm_infoframe;
+ 	/* Supported encoder output formats: bitmask of @drm_output_color_format */
+ 	unsigned int supported_formats;
+-- 
+2.43.0
+

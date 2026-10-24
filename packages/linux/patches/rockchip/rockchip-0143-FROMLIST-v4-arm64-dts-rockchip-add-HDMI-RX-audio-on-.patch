@@ -1,0 +1,65 @@
+From 8e5d051e59b11906fb8b7f078b391bc782058a9e Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 21 Jul 2026 08:41:14 +0200
+Subject: [PATCH 143/220] FROMLIST(v4): arm64: dts: rockchip: add HDMI RX audio
+ on RK3588
+
+The Synopsys HDMI RX controller exposes two digital audio interfaces,
+one for I2S (0) and one for S/PDIF (1). Add the #sound-dai-cells
+property so audio cards can reference them as a codec, as documented
+by the snps,dw-hdmi-rx binding.
+
+Add a shared simple-audio-card routing the receiver I2S DAI to
+i2s7_8ch, the receive-only I2S interface dedicated to HDMI RX, with
+the receiver as bitclock and frame master. The card is named
+"RK3588 HDMI-IN", which is what users see in alsamixer and what ALSA
+UCM matches on. It mirrors the existing HDMI TX sound cards in this
+file and is disabled by default, since not every RK3588 board routes
+HDMI RX audio; boards that do only need to flip its status.
+
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+Reviewed-by: Sebastian Reichel <sebastian.reichel@collabora.com>
+Reviewed-by: Dmitry Osipenko <dmitry.osipenko@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi
+index 2bcf30d8a338..96cdc03606d1 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-extra.dtsi
+@@ -23,6 +23,23 @@ simple-audio-card,cpu {
+ 		};
+ 	};
+ 
++	hdmi_receiver_sound: hdmi-receiver-sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,name = "RK3588 HDMI-IN";
++		simple-audio-card,bitclock-master = <&hdmiin_codec>;
++		simple-audio-card,frame-master = <&hdmiin_codec>;
++		status = "disabled";
++
++		hdmiin_codec: simple-audio-card,codec {
++			sound-dai = <&hdmi_receiver 0>;
++		};
++
++		simple-audio-card,cpu {
++			sound-dai = <&i2s7_8ch>;
++		};
++	};
++
+ 	reserved-memory {
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+@@ -338,6 +355,7 @@ hdmi_receiver: hdmi_receiver@fdee0000 {
+ 		reset-names = "axi", "apb", "ref", "biu";
+ 		rockchip,grf = <&sys_grf>;
+ 		rockchip,vo1-grf = <&vo1_grf>;
++		#sound-dai-cells = <1>;
+ 		status = "disabled";
+ 	};
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,54 @@
+From 9a52f796970aeb5195361ed69cec86ef487cb2c0 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Fri, 24 Apr 2026 22:41:10 +0000
+Subject: [PATCH 151/220] WIP: drm/bridge: dw-hdmi: scale CSC offsets for
+ deep-color output
+
+The DW HDMI CSC coefficient tables are defined for 8-bit output.
+For output formats above 8 bits per component, the CSC constant terms
+written through the A4/B4/C4 registers also need to be scaled to the
+selected output depth.
+
+Without this, color conversion produces incorrect output on deep-color
+modes. Scale those coefficients by the output color depth before
+programming the hardware.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index e79497c5b619..e5e8f9c41671 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -1119,10 +1119,12 @@ static void dw_hdmi_update_csc_coeffs(struct dw_hdmi *hdmi)
+ 	const u16 (*csc_coeff)[3][4] = &csc_coeff_default;
+ 	bool is_input_rgb, is_output_rgb, is_limited_range = true;
+ 	unsigned i;
++	int depth;
+ 	u32 csc_scale = 1;
+ 
+ 	is_input_rgb = hdmi_bus_fmt_is_rgb(hdmi->hdmi_data.enc_in_bus_format);
+ 	is_output_rgb = hdmi_bus_fmt_is_rgb(hdmi->hdmi_data.enc_out_bus_format);
++	depth = hdmi_bus_fmt_color_depth(hdmi->hdmi_data.enc_out_bus_format);
+ 
+ 	if (!is_input_rgb && is_output_rgb) {
+ 		if (hdmi->hdmi_data.enc_out_encoding == V4L2_YCBCR_ENC_601)
+@@ -1150,6 +1152,13 @@ static void dw_hdmi_update_csc_coeffs(struct dw_hdmi *hdmi)
+ 		u16 coeff_b = (*csc_coeff)[1][i];
+ 		u16 coeff_c = (*csc_coeff)[2][i];
+ 
++		/* Scale CSC coeffs to match output color depth */
++		if (i == 3 && depth > 8) {
++			coeff_a <<= depth - 8;
++			coeff_b <<= depth - 8;
++			coeff_c <<= depth - 8;
++		}
++
+ 		hdmi_writeb(hdmi, coeff_a & 0xff, HDMI_CSC_COEF_A1_LSB + i * 2);
+ 		hdmi_writeb(hdmi, coeff_a >> 8, HDMI_CSC_COEF_A1_MSB + i * 2);
+ 		hdmi_writeb(hdmi, coeff_b & 0xff, HDMI_CSC_COEF_B1_LSB + i * 2);
+-- 
+2.43.0
+

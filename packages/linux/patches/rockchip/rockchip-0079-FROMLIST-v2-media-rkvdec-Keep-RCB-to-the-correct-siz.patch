@@ -1,0 +1,161 @@
+From 5b0c98834312e98ab25623cadd4ffedf9459ca6b Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Mon, 10 Aug 2026 11:22:11 -0400
+Subject: [PATCH 079/220] FROMLIST(v2): media: rkvdec: Keep RCB to the correct
+ size
+
+Currently, if a video changes resolution, the RCB size might be too small
+and the HW could try to write out of the allocated buffer.
+
+To fix that, make sure that the RCB size is validated for each run and
+increase the buffer size when needed.
+
+Fixes: e5640dbb991c ("media: rkvdec: Add RCB and SRAM support")
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ .../platform/rockchip/rkvdec/rkvdec-rcb.c     | 26 +++++++++++++---
+ .../platform/rockchip/rkvdec/rkvdec-rcb.h     |  3 +-
+ .../media/platform/rockchip/rkvdec/rkvdec.c   | 31 ++++++++++---------
+ 3 files changed, 40 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.c
+index fdcf1f177379..191f78278c01 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.c
+@@ -17,6 +17,8 @@
+ struct rkvdec_rcb_config {
+ 	struct rkvdec_aux_buf *rcb_bufs;
+ 	size_t rcb_count;
++	u32 width;
++	u32 height;
+ };
+ 
+ static size_t rkvdec_rcb_size(const struct rcb_size_info *size_info,
+@@ -40,6 +42,21 @@ int rkvdec_rcb_buf_count(struct rkvdec_ctx *ctx)
+ 	return ctx->rcb_config->rcb_count;
+ }
+ 
++bool rkvdec_rcb_buf_validate_size(struct rkvdec_ctx *ctx)
++{
++	struct rkvdec_rcb_config *cfg = ctx->rcb_config;
++
++	bool ret = cfg && cfg->height >= ctx->decoded_fmt.fmt.pix_mp.height &&
++		   cfg->width >= ctx->decoded_fmt.fmt.pix_mp.width;
++
++	if (!ret && cfg) {
++		dev_dbg(ctx->dev->dev, "RCB size %ux%u -> %ux%u\n", cfg->width, cfg->height,
++			ctx->decoded_fmt.fmt.pix_mp.width, ctx->decoded_fmt.fmt.pix_mp.height);
++	}
++
++	return ret;
++}
++
+ void rkvdec_free_rcb(struct rkvdec_ctx *ctx)
+ {
+ 	struct rkvdec_dev *dev = ctx->dev;
+@@ -77,14 +94,15 @@ void rkvdec_free_rcb(struct rkvdec_ctx *ctx)
+ 		devm_kfree(dev->dev, cfg->rcb_bufs);
+ 
+ 	devm_kfree(dev->dev, cfg);
++
++	ctx->rcb_config = NULL;
+ }
+ 
+-int rkvdec_allocate_rcb(struct rkvdec_ctx *ctx,
++int rkvdec_allocate_rcb(struct rkvdec_ctx *ctx, u32 width, u32 height,
+ 			const struct rcb_size_info *size_info,
+ 			size_t rcb_count)
+ {
+ 	int ret, i;
+-	u32 width, height;
+ 	struct rkvdec_dev *rkvdec = ctx->dev;
+ 	struct rkvdec_rcb_config *cfg;
+ 
+@@ -105,8 +123,8 @@ int rkvdec_allocate_rcb(struct rkvdec_ctx *ctx,
+ 		goto err_alloc;
+ 	}
+ 
+-	width = ctx->decoded_fmt.fmt.pix_mp.width;
+-	height = ctx->decoded_fmt.fmt.pix_mp.height;
++	cfg->width = width;
++	cfg->height = height;
+ 
+ 	for (i = 0; i < rcb_count; i++) {
+ 		void *cpu = NULL;
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.h b/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.h
+index 30e8002555c8..0662a4359bdf 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-rcb.h
+@@ -20,10 +20,11 @@ struct rcb_size_info {
+ 	enum rcb_axis axis;
+ };
+ 
+-int rkvdec_allocate_rcb(struct rkvdec_ctx *ctx,
++int rkvdec_allocate_rcb(struct rkvdec_ctx *ctx, u32 width, u32 height,
+ 			const struct rcb_size_info *size_info,
+ 			size_t rcb_count);
+ dma_addr_t rkvdec_rcb_buf_dma_addr(struct rkvdec_ctx *ctx, int id);
+ size_t rkvdec_rcb_buf_size(struct rkvdec_ctx *ctx, int id);
+ int rkvdec_rcb_buf_count(struct rkvdec_ctx *ctx);
++bool rkvdec_rcb_buf_validate_size(struct rkvdec_ctx *ctx);
+ void rkvdec_free_rcb(struct rkvdec_ctx *ctx);
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index e6a0a91a828a..3e0b6c557142 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -1184,8 +1184,7 @@ static int rkvdec_start_streaming(struct vb2_queue *q, unsigned int count)
+ {
+ 	struct rkvdec_ctx *ctx = vb2_get_drv_priv(q);
+ 	const struct rkvdec_coded_fmt_desc *desc;
+-	const struct rkvdec_variant *variant = ctx->dev->variant;
+-	int ret;
++	int ret = 0;
+ 
+ 	if (V4L2_TYPE_IS_CAPTURE(q->type))
+ 		return 0;
+@@ -1194,20 +1193,8 @@ static int rkvdec_start_streaming(struct vb2_queue *q, unsigned int count)
+ 	if (WARN_ON(!desc))
+ 		return -EINVAL;
+ 
+-	ret = rkvdec_allocate_rcb(ctx, variant->rcb_sizes, variant->num_rcb_sizes);
+-	if (ret)
+-		return ret;
+-
+-	if (desc->ops->start) {
++	if (desc->ops->start)
+ 		ret = desc->ops->start(ctx);
+-		if (ret)
+-			goto err_ops_start;
+-	}
+-
+-	return 0;
+-
+-err_ops_start:
+-	rkvdec_free_rcb(ctx);
+ 
+ 	return ret;
+ }
+@@ -1380,6 +1367,20 @@ static void rkvdec_device_run(void *priv)
+ 		return;
+ 	}
+ 
++	if (!rkvdec_rcb_buf_validate_size(ctx)) {
++		rkvdec_free_rcb(ctx);
++
++		ret = rkvdec_allocate_rcb(ctx,
++					  ctx->decoded_fmt.fmt.pix_mp.width,
++					  ctx->decoded_fmt.fmt.pix_mp.height,
++					  ctx->dev->variant->rcb_sizes,
++					  ctx->dev->variant->num_rcb_sizes);
++		if (ret) {
++			rkvdec_job_finish(ctx, VB2_BUF_STATE_ERROR);
++			return;
++		}
++	}
++
+ 	ret = desc->ops->run(ctx);
+ 	if (ret)
+ 		rkvdec_job_finish(ctx, VB2_BUF_STATE_ERROR);
+-- 
+2.43.0
+

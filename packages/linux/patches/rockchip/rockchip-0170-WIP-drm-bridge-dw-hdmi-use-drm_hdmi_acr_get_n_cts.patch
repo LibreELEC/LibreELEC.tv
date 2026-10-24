@@ -1,0 +1,129 @@
+From c782f1d15c24ec93e4c5cd3f59804984cd4c87d8 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 11 Apr 2026 14:38:26 +0000
+Subject: [PATCH 170/220] WIP: drm/bridge: dw-hdmi: use
+ drm_hdmi_acr_get_n_cts()
+
+Replace the local ACR N table and manual CTS calculation with
+drm_hdmi_acr_get_n_cts().
+
+This removes duplicated HDMI audio clock regeneration logic from dw-hdmi
+and keeps the driver aligned with the common DRM HDMI helper for N/CTS
+values.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 81 +----------------------
+ 1 file changed, 3 insertions(+), 78 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 1814778c4af8..0e4786743d1b 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -567,68 +567,6 @@ static void hdmi_set_cts_n(struct dw_hdmi *hdmi, unsigned int cts,
+ 	hdmi_writeb(hdmi, n & 0xff, HDMI_AUD_N1);
+ }
+ 
+-static unsigned int hdmi_compute_n(unsigned int freq, unsigned long pixel_clk)
+-{
+-	unsigned int n = (128 * freq) / 1000;
+-	unsigned int mult = 1;
+-
+-	while (freq > 48000) {
+-		mult *= 2;
+-		freq /= 2;
+-	}
+-
+-	switch (freq) {
+-	case 32000:
+-		if (pixel_clk == 25175000)
+-			n = 4576;
+-		else if (pixel_clk == 27027000)
+-			n = 4096;
+-		else if (pixel_clk == 74176000 || pixel_clk == 148352000)
+-			n = 11648;
+-		else if (pixel_clk == 297000000)
+-			n = 3072;
+-		else
+-			n = 4096;
+-		n *= mult;
+-		break;
+-
+-	case 44100:
+-		if (pixel_clk == 25175000)
+-			n = 7007;
+-		else if (pixel_clk == 74176000)
+-			n = 17836;
+-		else if (pixel_clk == 148352000)
+-			n = 8918;
+-		else if (pixel_clk == 297000000)
+-			n = 4704;
+-		else
+-			n = 6272;
+-		n *= mult;
+-		break;
+-
+-	case 48000:
+-		if (pixel_clk == 25175000)
+-			n = 6864;
+-		else if (pixel_clk == 27027000)
+-			n = 6144;
+-		else if (pixel_clk == 74176000)
+-			n = 11648;
+-		else if (pixel_clk == 148352000)
+-			n = 5824;
+-		else if (pixel_clk == 297000000)
+-			n = 5120;
+-		else
+-			n = 6144;
+-		n *= mult;
+-		break;
+-
+-	default:
+-		break;
+-	}
+-
+-	return n;
+-}
+-
+ /*
+  * When transmitting IEC60958 linear PCM audio, these registers allow to
+  * configure the channel status information of all the channel status
+@@ -652,31 +590,18 @@ EXPORT_SYMBOL_GPL(dw_hdmi_set_channel_status);
+ static void hdmi_set_clk_regenerator(struct dw_hdmi *hdmi,
+ 	unsigned long pixel_clk, unsigned int sample_rate)
+ {
+-	unsigned long ftdms = pixel_clk;
+ 	unsigned int n, cts;
+ 	u8 config3;
+-	u64 tmp;
+ 
+-	n = hdmi_compute_n(sample_rate, pixel_clk);
++	drm_hdmi_acr_get_n_cts(pixel_clk, sample_rate, &n, &cts);
+ 
+ 	config3 = hdmi_readb(hdmi, HDMI_CONFIG3_ID);
+ 
+-	/* Compute CTS when using internal AHB audio or General Parallel audio*/
++	/* Use CTS when using internal AHB audio or General Parallel audio */
+ 	if ((config3 & HDMI_CONFIG3_AHBAUDDMA) || (config3 & HDMI_CONFIG3_GPAUD)) {
+-		/*
+-		 * Compute the CTS value from the N value.  Note that CTS and N
+-		 * can be up to 20 bits in total, so we need 64-bit math.  Also
+-		 * note that our TDMS clock is not fully accurate; it is
+-		 * accurate to kHz.  This can introduce an unnecessary remainder
+-		 * in the calculation below, so we don't try to warn about that.
+-		 */
+-		tmp = (u64)ftdms * n;
+-		do_div(tmp, 128 * sample_rate);
+-		cts = tmp;
+-
+ 		dev_dbg(hdmi->dev, "%s: fs=%uHz ftdms=%lu.%03luMHz N=%d cts=%d\n",
+ 			__func__, sample_rate,
+-			ftdms / 1000000, (ftdms / 1000) % 1000,
++			pixel_clk / 1000000, (pixel_clk / 1000) % 1000,
+ 			n, cts);
+ 	} else {
+ 		cts = 0;
+-- 
+2.43.0
+

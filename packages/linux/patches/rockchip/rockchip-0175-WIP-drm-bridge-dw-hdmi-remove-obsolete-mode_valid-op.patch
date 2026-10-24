@@ -1,0 +1,83 @@
+From 4d8a945268c61f0e468fe958807fae32e29a06ab Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Mon, 20 Apr 2026 23:00:03 +0000
+Subject: [PATCH 175/220] WIP: drm/bridge: dw-hdmi: remove obsolete mode_valid
+ ops
+
+NOTE: complete migration to tmds_char_rate_valid ops
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 19 -------------------
+ include/drm/bridge/dw_hdmi.h              |  7 ++-----
+ 2 files changed, 2 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 7a412723c748..3b7f2bc3a406 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2508,22 +2508,6 @@ static int dw_hdmi_bridge_attach(struct drm_bridge *bridge,
+ 	return dw_hdmi_connector_create(hdmi);
+ }
+ 
+-static enum drm_mode_status
+-dw_hdmi_bridge_mode_valid(struct drm_bridge *bridge,
+-			  const struct drm_display_info *info,
+-			  const struct drm_display_mode *mode)
+-{
+-	struct dw_hdmi *hdmi = bridge->driver_private;
+-	const struct dw_hdmi_plat_data *pdata = hdmi->plat_data;
+-	enum drm_mode_status mode_status = MODE_OK;
+-
+-	if (pdata->mode_valid)
+-		mode_status = pdata->mode_valid(hdmi, pdata->priv_data, info,
+-						mode);
+-
+-	return mode_status;
+-}
+-
+ static void dw_hdmi_bridge_atomic_disable(struct drm_bridge *bridge,
+ 					  struct drm_atomic_commit *state)
+ {
+@@ -2609,8 +2593,6 @@ dw_hdmi_bridge_tmds_char_rate_valid(const struct drm_bridge *bridge,
+ 	if (pdata->tmds_char_rate_valid)
+ 		return pdata->tmds_char_rate_valid(hdmi, pdata->priv_data,
+ 						   mode, tmds_rate);
+-	else if (pdata->mode_valid)
+-		return pdata->mode_valid(hdmi, pdata->priv_data, NULL, mode);
+ 
+ 	return MODE_OK;
+ }
+@@ -2652,7 +2634,6 @@ static const struct drm_bridge_funcs dw_hdmi_bridge_funcs = {
+ 	.atomic_get_input_bus_fmts = dw_hdmi_bridge_atomic_get_input_bus_fmts,
+ 	.atomic_enable = dw_hdmi_bridge_atomic_enable,
+ 	.atomic_disable = dw_hdmi_bridge_atomic_disable,
+-	.mode_valid = dw_hdmi_bridge_mode_valid,
+ 	.detect = dw_hdmi_bridge_detect,
+ 	.edid_read = dw_hdmi_bridge_edid_read,
+ 	.hpd_enable = dw_hdmi_bridge_hpd_enable,
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 6a1d0213e55d..1d9b4d976e17 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -140,15 +140,12 @@ struct dw_hdmi_plat_data {
+ 	unsigned long long max_tmds_char_rate;
+ 
+ 	/*
+-	 * Private data passed to all the .mode_valid(), .tmds_char_rate_valid()
+-	 * and .configure_phy() callback functions.
++	 * Private data passed to all the .tmds_char_rate_valid() and
++	 * .configure_phy() callback functions.
+ 	 */
+ 	void *priv_data;
+ 
+ 	/* Platform-specific mode validation (optional). */
+-	enum drm_mode_status (*mode_valid)(struct dw_hdmi *hdmi, void *data,
+-					   const struct drm_display_info *info,
+-					   const struct drm_display_mode *mode);
+ 	enum drm_mode_status (*tmds_char_rate_valid)(struct dw_hdmi *hdmi, void *data,
+ 						     const struct drm_display_mode *mode,
+ 						     unsigned long long tmds_rate);
+-- 
+2.43.0
+

@@ -1,12 +1,17 @@
-From 298e93751e7b84bcecd1ca365e567ce99419b1cc Mon Sep 17 00:00:00 2001
+From dabb0aa2b60ae06f6bbf0adfadf54551adec9b3f Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Wed, 16 Jul 2025 11:03:09 +0000
-Subject: [PATCH 002/187] LOCAL: arm64: dts: rockchip: rock5b: disable sdio
+Subject: [PATCH 002/220] LOCAL: arm64: dts: rockchip: rock5b: disable sdio
  node
 
-Radxa ships an M2 compatible WiFi module with PCIe wired RTL8852BE
-chip, so leave the SDIO node described in device-tree, but disable
-it by default to avoid mmc2 failures in the system log:
+The rock-5b board ships with an M2 slot that can be used with PCIe or SDIO
+cards so both are described and enabled in device-tree. While there are a
+huge number of inexpensive PCIe M2 cards available, there are few SDIO M2
+cards in circulation, and none are available from Radxa.
+
+Reflect real-world usage of the 5B board; leave the SDIO node described as
+a capability but disable it by default to prevent dmesg errors seen during
+mmc probe for an SDIO card that in-practice never exists.
 
 ROCK5B:~ # dmesg | grep mmc2
 [    0.790097] mmc_host mmc2: card is non-removable.

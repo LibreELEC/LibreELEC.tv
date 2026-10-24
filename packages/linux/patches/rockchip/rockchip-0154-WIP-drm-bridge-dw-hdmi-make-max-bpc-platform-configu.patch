@@ -1,0 +1,57 @@
+From 6952889a79d1432db9ec8bc2b5bce6db07a3735e Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 26 Apr 2026 19:17:49 +0000
+Subject: [PATCH 154/220] WIP: drm/bridge: dw-hdmi: make max bpc platform
+ configurable
+
+The DW HDMI bridge always exposes a max bpc range of 8 to 16 on the
+connector, even on platforms that cannot support all deep-color modes.
+
+Add a max_bpc field to struct dw_hdmi_plat_data and use it as the
+upper bound when attaching the connector max bpc property, while still
+keeping 8 bpc as the minimum.
+
+Currently MEDIA_BUS_FMT_RGB888_1X24 is listed early in the output_fmts
+array, which restricts the effective output to 8 bpc. With the new
+default max_bpc of 8, this should therefore have no functional impact
+for existing users.
+
+This lets platform integrations advertise the actual output depth they
+support instead of unconditionally exposing 16 bpc.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 3 ++-
+ include/drm/bridge/dw_hdmi.h              | 2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index ede596bc5ee3..43f24830ecab 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2572,7 +2572,8 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ 	 */
+ 	drm_atomic_helper_connector_reset(connector);
+ 
+-	drm_connector_attach_max_bpc_property(connector, 8, 16);
++	drm_connector_attach_max_bpc_property(connector, 8,
++					      max(hdmi->plat_data->max_bpc, 8));
+ 
+ 	if (hdmi->version >= 0x200a && hdmi->plat_data->use_drm_infoframe)
+ 		drm_connector_attach_hdr_output_metadata_property(connector);
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 0d1fd7ca6ae5..656f10d6b4b5 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -136,6 +136,8 @@ struct dw_hdmi_plat_data {
+ 	bool use_drm_infoframe;
+ 	/* Supported encoder output formats: bitmask of @drm_output_color_format */
+ 	unsigned int supported_formats;
++	/* Maximum bits per color channel: 8, 10, 12 or 16 */
++	unsigned int max_bpc;
+ 
+ 	/*
+ 	 * Private data passed to all the .mode_valid() and .configure_phy()
+-- 
+2.43.0
+

@@ -1,0 +1,51 @@
+From 16f780992a75fe669e32efd5e158b8828bf13096 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 9 Aug 2026 04:16:44 +0000
+Subject: [PATCH 212/220] FIXUP: drm/bridge: dw-hdmi: Select the display
+ helpers the driver uses
+
+dw-hdmi was converted to the HDMI bridge helpers and to
+drm_bridge_connector, but DRM_DW_HDMI was never updated to select the
+helpers providing those symbols. drm_bridge_connector.o is built only
+for DRM_BRIDGE_CONNECTOR and drm_hdmi_state_helper.o only for
+DRM_DISPLAY_HDMI_STATE_HELPER, so on a config where nothing else
+selects them the link fails:
+
+  ld: drivers/gpu/drm/bridge/synopsys/dw-hdmi.o: in function `dw_hdmi_connector_create':
+  dw-hdmi.c:2309: undefined reference to `drm_bridge_connector_init'
+  ld: drivers/gpu/drm/bridge/synopsys/dw-hdmi.o: in function `dw_hdmi_poweron':
+  dw-hdmi.c:2224: undefined reference to `drm_atomic_helper_connector_hdmi_update_infoframes'
+
+This stayed hidden on arm64 because ROCKCHIP_DW_HDMI_QP selects
+DRM_BRIDGE_CONNECTOR and DRM_DW_HDMI_QP selects
+DRM_DISPLAY_HDMI_STATE_HELPER, so both objects are pulled in by the QP
+driver. RK3288 only enables ROCKCHIP_DW_HDMI, leaving both unset.
+
+Select them from DRM_DW_HDMI, which is where the calls are, rather than
+relying on the platform glue to do it.
+
+Fixes: e23fda61333e ("WIP: drm/bridge: dw-hdmi: switch to drm_bridge_connector")
+Fixes: 216353095bd6 ("WIP: drm/bridge: dw-hdmi: convert to HDMI bridge helpers")
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/Kconfig b/drivers/gpu/drm/bridge/synopsys/Kconfig
+index 26662db10649..024313122604 100644
+--- a/drivers/gpu/drm/bridge/synopsys/Kconfig
++++ b/drivers/gpu/drm/bridge/synopsys/Kconfig
+@@ -8,7 +8,9 @@ config DRM_DW_DP
+ 
+ config DRM_DW_HDMI
+ 	tristate
++	select DRM_BRIDGE_CONNECTOR
+ 	select DRM_DISPLAY_HDMI_HELPER
++	select DRM_DISPLAY_HDMI_STATE_HELPER
+ 	select DRM_DISPLAY_HELPER
+ 	select DRM_KMS_HELPER
+ 	select REGMAP_MMIO
+-- 
+2.43.0
+

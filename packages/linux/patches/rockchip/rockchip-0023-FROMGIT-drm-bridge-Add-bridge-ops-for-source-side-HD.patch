@@ -1,0 +1,70 @@
+From 982d0b81a541187befe6ed8df6e7750a56c30c86 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:40 +0300
+Subject: [PATCH 023/220] FROMGIT: drm/bridge: Add bridge ops for source-side
+ HDMI 2.0 scrambling
+
+Bridges advertising HDMI 2.0 must be able to enable and disable
+source-side scrambling and the high TMDS clock ratio when the configured
+mode exceeds 340 MHz.
+
+Add .hdmi_scrambler_{enable|disable}() callbacks covering the
+source-side programming only; sink-side SCDC negotiation remains the job
+of the HDMI connector helpers.
+
+Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-16-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ include/drm/drm_bridge.h | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/include/drm/drm_bridge.h b/include/drm/drm_bridge.h
+index 5a5a25995471..77b3ffe69230 100644
+--- a/include/drm/drm_bridge.h
++++ b/include/drm/drm_bridge.h
+@@ -561,6 +561,41 @@ struct drm_bridge_funcs {
+ 				     const struct drm_display_mode *mode,
+ 				     unsigned long long tmds_rate);
+ 
++	/**
++	 * @hdmi_scrambler_enable:
++	 *
++	 * Enable source-side scrambling and the high TMDS clock ratio for the
++	 * mode currently being applied.
++	 *
++	 * This only programs the source side. Sink-side SCDC configuration is
++	 * handled by the HDMI connector helpers.
++	 *
++	 * Mandatory for bridges that set the DRM_BRIDGE_OP_HDMI flag in their
++	 * &drm_bridge->ops and advertise HDMI_VERSION_2_0 or later via
++	 * &drm_bridge->supported_hdmi_ver; unused otherwise.
++	 *
++	 * Returns:
++	 * 0 on success, a negative error code otherwise.
++	 */
++	int (*hdmi_scrambler_enable)(struct drm_bridge *bridge);
++
++	/**
++	 * @hdmi_scrambler_disable:
++	 *
++	 * Disable source-side scrambling and the high TMDS clock ratio.
++	 *
++	 * This only programs the source side. Sink-side SCDC configuration is
++	 * handled by the HDMI connector helpers.
++	 *
++	 * Mandatory for bridges that set the DRM_BRIDGE_OP_HDMI flag in their
++	 * &drm_bridge->ops and advertise HDMI_VERSION_2_0 or later via
++	 * &drm_bridge->supported_hdmi_ver; unused otherwise.
++	 *
++	 * Returns:
++	 * 0 on success, a negative error code otherwise.
++	 */
++	int (*hdmi_scrambler_disable)(struct drm_bridge *bridge);
++
+ 	/**
+ 	 * @hdmi_clear_avi_infoframe:
+ 	 *
+-- 
+2.43.0
+

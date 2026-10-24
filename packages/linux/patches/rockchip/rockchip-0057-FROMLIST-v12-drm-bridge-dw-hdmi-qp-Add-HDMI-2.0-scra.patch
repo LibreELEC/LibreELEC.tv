@@ -1,0 +1,177 @@
+From bcb1dc74146646b676f93eb3466590f1155292fe Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Mon, 5 Oct 2026 03:38:05 +0300
+Subject: [PATCH 057/220] FROMLIST(v12): drm/bridge: dw-hdmi-qp: Add HDMI 2.0
+ scrambling support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add support for SCDC scrambling and the high TMDS clock ratio required
+by HDMI 2.0 modes with TMDS character rates above 340 MHz, such as
+4K@60Hz.
+
+Hook the bridge into the DRM HDMI connector scrambling helpers so the
+sink-side SCDC state and the controller scrambler are updated together
+as part of the atomic enable and disable paths.  This allows the driver
+to advertise HDMI 2.0 support when HPD is available.
+
+Keep no-HPD configurations limited to HDMI 1.4, since SCDC access
+requires a connected HDMI sink.
+
+Modes above the HDMI 2.0 600 MHz TMDS character-rate limit are now
+implicitly rejected by the DRM HDMI connector/bridge infrastructure,
+making the dw_hdmi_qp_bridge_tmds_char_rate_valid() callback redundant.
+Drop it.
+
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Acked-by: Heiko Stuebner <heiko@sntech.de>
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+[chewitt: resolve conflict with FROMLIST(v4) "drm/bridge: dw-hdmi-qp: Log
+ resolution and refresh rate in atomic_enable()", keeping both debug outputs]
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 63 +++++++++++++-------
+ 1 file changed, 40 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index db65fcdf083b..19ab1608473c 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -2,6 +2,7 @@
+ /*
+  * Copyright (c) 2021-2022 Rockchip Electronics Co., Ltd.
+  * Copyright (c) 2024 Collabora Ltd.
++ * Copyright (c) 2025 Amazon.com, Inc. or its affiliates.
+  *
+  * Author: Algea Cao <algea.cao@rock-chips.com>
+  * Author: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+@@ -540,6 +541,7 @@ static void dw_hdmi_qp_bridge_atomic_enable(struct drm_bridge *bridge,
+ 	struct drm_crtc_state *crtc_state;
+ 	struct drm_connector *connector;
+ 	unsigned int op_mode;
++	int ret;
+ 
+ 	connector = drm_atomic_get_new_connector_for_encoder(state, bridge->encoder);
+ 	if (WARN_ON(!connector))
+@@ -550,20 +552,25 @@ static void dw_hdmi_qp_bridge_atomic_enable(struct drm_bridge *bridge,
+ 		return;
+ 
+ 	if (connector->display_info.is_hdmi) {
++		op_mode = 0;
++		hdmi->tmds_char_rate = conn_state->hdmi.tmds_char_rate;
++
++		ret = drm_connector_hdmi_enable_scrambling(connector, conn_state);
++		if (ret)
++			dev_warn(hdmi->dev, "Failed to enable scrambling: %d\n", ret);
++
+ 		crtc_state = drm_atomic_get_new_crtc_state(state, conn_state->crtc);
+ 		mode = &crtc_state->mode;
+ 		dev_dbg(hdmi->dev,
+-			"%s mode=HDMI:%ux%u@%uHz fmt=%s rate=%llu bpc=%u\n",
++			"%s mode=HDMI:%ux%u@%uHz fmt=%s rate=%llu bpc=%u scramb=%d\n",
+ 			__func__, mode->hdisplay, mode->vdisplay,
+ 			drm_mode_vrefresh(mode),
+ 			drm_hdmi_connector_get_output_format_name(conn_state->hdmi.output_format),
+-			conn_state->hdmi.tmds_char_rate, conn_state->hdmi.output_bpc);
+-
+-		op_mode = 0;
+-		hdmi->tmds_char_rate = conn_state->hdmi.tmds_char_rate;
++			conn_state->hdmi.tmds_char_rate, conn_state->hdmi.output_bpc,
++			connector->hdmi.scrambler_enabled);
+ 	} else {
+-		dev_dbg(hdmi->dev, "%s mode=DVI\n", __func__);
+ 		op_mode = OPMODE_DVI;
++		dev_dbg(hdmi->dev, "%s mode=DVI\n", __func__);
+ 	}
+ 
+ 	hdmi->phy.ops->init(hdmi, hdmi->phy.data);
+@@ -578,9 +585,13 @@ static void dw_hdmi_qp_bridge_atomic_disable(struct drm_bridge *bridge,
+ 					     struct drm_atomic_commit *state)
+ {
+ 	struct dw_hdmi_qp *hdmi = bridge->driver_private;
++	struct drm_connector *connector;
+ 
+ 	hdmi->tmds_char_rate = 0;
+ 
++	connector = drm_atomic_get_old_connector_for_encoder(state, bridge->encoder);
++	drm_connector_hdmi_disable_scrambling(connector);
++
+ 	hdmi->phy.ops->disable(hdmi, hdmi->phy.data);
+ }
+ 
+@@ -615,24 +626,24 @@ dw_hdmi_qp_bridge_edid_read(struct drm_bridge *bridge,
+ 	return drm_edid;
+ }
+ 
+-static enum drm_mode_status
+-dw_hdmi_qp_bridge_tmds_char_rate_valid(const struct drm_bridge *bridge,
+-				       const struct drm_display_mode *mode,
+-				       unsigned long long rate)
++static int dw_hdmi_qp_bridge_scrambler_enable(struct drm_bridge *bridge)
+ {
+ 	struct dw_hdmi_qp *hdmi = bridge->driver_private;
+ 
+-	/*
+-	 * TODO: when hdmi->no_hpd is 1 we must not support modes that
+-	 * require scrambling, including every mode with a clock above
+-	 * HDMI_1_3_TMDS_CHAR_RATE_MAX_HZ.
+-	 */
+-	if (rate > HDMI_1_3_TMDS_CHAR_RATE_MAX_HZ) {
+-		dev_dbg(hdmi->dev, "Unsupported TMDS char rate: %lld\n", rate);
+-		return MODE_CLOCK_HIGH;
+-	}
++	dw_hdmi_qp_write(hdmi, 1, SCRAMB_CONFIG0);
++	dev_dbg(hdmi->dev, "scrambler enabled\n");
+ 
+-	return MODE_OK;
++	return 0;
++}
++
++static int dw_hdmi_qp_bridge_scrambler_disable(struct drm_bridge *bridge)
++{
++	struct dw_hdmi_qp *hdmi = bridge->driver_private;
++
++	dw_hdmi_qp_write(hdmi, 0, SCRAMB_CONFIG0);
++	dev_dbg(hdmi->dev, "scrambler disabled\n");
++
++	return 0;
+ }
+ 
+ static int dw_hdmi_qp_bridge_clear_avi_infoframe(struct drm_bridge *bridge)
+@@ -1008,7 +1019,8 @@ static const struct drm_bridge_funcs dw_hdmi_qp_bridge_funcs = {
+ 	.hpd_enable = dw_hdmi_qp_bridge_hpd_enable,
+ 	.hpd_disable = dw_hdmi_qp_bridge_hpd_disable,
+ 	.edid_read = dw_hdmi_qp_bridge_edid_read,
+-	.hdmi_tmds_char_rate_valid = dw_hdmi_qp_bridge_tmds_char_rate_valid,
++	.hdmi_scrambler_enable = dw_hdmi_qp_bridge_scrambler_enable,
++	.hdmi_scrambler_disable = dw_hdmi_qp_bridge_scrambler_disable,
+ 	.hdmi_clear_avi_infoframe = dw_hdmi_qp_bridge_clear_avi_infoframe,
+ 	.hdmi_write_avi_infoframe = dw_hdmi_qp_bridge_write_avi_infoframe,
+ 	.hdmi_clear_hdmi_infoframe = dw_hdmi_qp_bridge_clear_hdmi_infoframe,
+@@ -1136,13 +1148,18 @@ struct dw_hdmi_qp *dw_hdmi_qp_bind(struct platform_device *pdev,
+ 			   DRM_BRIDGE_OP_HDMI_AUDIO |
+ 			   DRM_BRIDGE_OP_HDMI_HDR_DRM_INFOFRAME |
+ 			   DRM_BRIDGE_OP_HDMI_SPD_INFOFRAME;
+-	if (!hdmi->no_hpd)
+-		hdmi->bridge.ops |= DRM_BRIDGE_OP_HPD;
+ 	hdmi->bridge.of_node = pdev->dev.of_node;
+ 	hdmi->bridge.type = DRM_MODE_CONNECTOR_HDMIA;
+ 	hdmi->bridge.vendor = "Synopsys";
+ 	hdmi->bridge.product = "DW HDMI QP TX";
+ 
++	if (hdmi->no_hpd) {
++		hdmi->bridge.supported_hdmi_ver = HDMI_VERSION_1_4;
++	} else {
++		hdmi->bridge.supported_hdmi_ver = HDMI_VERSION_2_0;
++		hdmi->bridge.ops |= DRM_BRIDGE_OP_HPD;
++	}
++
+ 	if (plat_data->supported_formats)
+ 		hdmi->bridge.supported_formats = plat_data->supported_formats;
+ 
+-- 
+2.43.0
+

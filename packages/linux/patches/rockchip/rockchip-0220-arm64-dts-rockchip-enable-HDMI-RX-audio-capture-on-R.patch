@@ -1,0 +1,50 @@
+From c60152d2e608f00cb6d03ad7c29590a4564894c5 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 14 Oct 2026 12:57:04 +0000
+Subject: [PATCH 220/220] arm64: dts: rockchip: enable HDMI RX audio capture on
+ Rock 5B+
+
+Enable the HDMI receiver, the shared HDMI RX sound card and the
+i2s7_8ch interface it uses. Together with the audio capture support
+in the snps_hdmirx driver this exposes a capture-only ALSA card fed
+by the HDMI input. The receiver must be enabled for the card to bind
+its codec DAI.
+
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-rock-5b-plus.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-rock-5b-plus.dts b/arch/arm64/boot/dts/rockchip/rk3588-rock-5b-plus.dts
+index 30d15c7e860a..dc4798f29235 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-rock-5b-plus.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3588-rock-5b-plus.dts
+@@ -69,6 +69,14 @@ wwan-wake-n-hog {
+ 	};
+ };
+ 
++&hdmi_receiver {
++	status = "okay";
++};
++
++&hdmi_receiver_sound {
++	status = "okay";
++};
++
+ &i2c1 {
+ 	eeprom@50 {
+ 		compatible = "belling,bl24c16a", "atmel,24c16";
+@@ -79,6 +87,10 @@ eeprom@50 {
+ 	};
+ };
+ 
++&i2s7_8ch {
++	status = "okay";
++};
++
+ &pcie30phy {
+ 	data-lanes = <1 1 2 2>;
+ };
+-- 
+2.43.0
+

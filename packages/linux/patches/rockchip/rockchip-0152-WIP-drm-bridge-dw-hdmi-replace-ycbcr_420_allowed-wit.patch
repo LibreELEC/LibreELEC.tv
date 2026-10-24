@@ -1,0 +1,85 @@
+From cab36bdabc140ccf397692af9a208292ac3ff777 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 26 Apr 2026 18:47:19 +0000
+Subject: [PATCH 152/220] WIP: drm/bridge: dw-hdmi: replace ycbcr_420_allowed
+ with supported_formats
+
+The ycbcr_420_allowed platform flag only describes a single output
+format. Replace it with a supported_formats bitmask so platform drivers
+can advertise the full set of encoder output formats.
+
+Derive the connector and bridge YCbCr 4:2:0 capability from the
+DRM_OUTPUT_COLOR_FORMAT_YCBCR420 bit, and update the Meson dw-hdmi
+driver to populate the new bitmask.
+
+This prepares for later input/output format filtering and the connector
+color format property.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 11 ++++++-----
+ drivers/gpu/drm/meson/meson_dw_hdmi.c     |  4 +++-
+ include/drm/bridge/dw_hdmi.h              |  3 ++-
+ 3 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index e5e8f9c41671..c687b359a28f 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2546,9 +2546,9 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ 	struct drm_connector *connector = &hdmi->connector;
+ 	int ret;
+ 
+-	if (hdmi->version >= 0x200a)
+-		connector->ycbcr_420_allowed =
+-			hdmi->plat_data->ycbcr_420_allowed;
++	if (hdmi->version >= 0x200a &&
++	    hdmi->plat_data->supported_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420))
++		connector->ycbcr_420_allowed = true;
+ 	else
+ 		connector->ycbcr_420_allowed = false;
+ 
+@@ -3411,8 +3411,9 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
+ 	hdmi->bridge.of_node = pdev->dev.of_node;
+ 	hdmi->bridge.type = DRM_MODE_CONNECTOR_HDMIA;
+ 
+-	if (hdmi->version >= 0x200a)
+-		hdmi->bridge.ycbcr_420_allowed = plat_data->ycbcr_420_allowed;
++	if (hdmi->version >= 0x200a &&
++	    plat_data->supported_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420))
++		hdmi->bridge.ycbcr_420_allowed = true;
+ 
+ 	memset(&pdevinfo, 0, sizeof(pdevinfo));
+ 	pdevinfo.parent = dev;
+diff --git a/drivers/gpu/drm/meson/meson_dw_hdmi.c b/drivers/gpu/drm/meson/meson_dw_hdmi.c
+index 2a8756da569b..e35f32cd6d98 100644
+--- a/drivers/gpu/drm/meson/meson_dw_hdmi.c
++++ b/drivers/gpu/drm/meson/meson_dw_hdmi.c
+@@ -760,7 +760,9 @@ static int meson_dw_hdmi_bind(struct device *dev, struct device *master,
+ 	dw_plat_data->phy_name = "meson_dw_hdmi_phy";
+ 	dw_plat_data->phy_data = meson_dw_hdmi;
+ 	dw_plat_data->input_bus_encoding = V4L2_YCBCR_ENC_709;
+-	dw_plat_data->ycbcr_420_allowed = true;
++	dw_plat_data->supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444) |
++					  BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422) |
++					  BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420);
+ 	dw_plat_data->disable_cec = true;
+ 	dw_plat_data->output_port = 1;
+ 
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index dfc5b8d07d48..0d1fd7ca6ae5 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -134,7 +134,8 @@ struct dw_hdmi_plat_data {
+ 
+ 	unsigned long input_bus_encoding;
+ 	bool use_drm_infoframe;
+-	bool ycbcr_420_allowed;
++	/* Supported encoder output formats: bitmask of @drm_output_color_format */
++	unsigned int supported_formats;
+ 
+ 	/*
+ 	 * Private data passed to all the .mode_valid() and .configure_phy()
+-- 
+2.43.0
+

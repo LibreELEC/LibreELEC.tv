@@ -1,0 +1,74 @@
+From 6aef28fe79f4152f3a24d1804d6a89b4905c60b7 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 18 Feb 2026 03:33:53 +0000
+Subject: [PATCH 215/220] [WIP-HDR]: drm/rockchip_vop2: add RK3568 plane color
+ encoding and range properties
+
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_vop2_reg.c | 28 ++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
+index cd1cfd1ab119..9437120d5ffd 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop2_reg.c
+@@ -632,6 +632,13 @@ static const struct vop2_win_data rk3568_vop_win_data[] = {
+ 		.base = 0x1a00,
+ 		.layer_sel_id = { 6, 6, 6, 0xf },
+ 		.supported_rotations = DRM_MODE_REFLECT_Y,
++		.supported_color_encodings = BIT(DRM_COLOR_YCBCR_BT601) |
++					     BIT(DRM_COLOR_YCBCR_BT709) |
++					     BIT(DRM_COLOR_YCBCR_BT2020),
++		.default_color_encoding = DRM_COLOR_YCBCR_BT709,
++		.supported_color_ranges = BIT(DRM_COLOR_YCBCR_LIMITED_RANGE) |
++					  BIT(DRM_COLOR_YCBCR_FULL_RANGE),
++		.default_color_range = DRM_COLOR_YCBCR_LIMITED_RANGE,
+ 		.type = DRM_PLANE_TYPE_PRIMARY,
+ 		.max_upscale_factor = 8,
+ 		.max_downscale_factor = 8,
+@@ -646,6 +653,13 @@ static const struct vop2_win_data rk3568_vop_win_data[] = {
+ 		.base = 0x1800,
+ 		.layer_sel_id = { 2, 2, 2, 0xf },
+ 		.supported_rotations = DRM_MODE_REFLECT_Y,
++		.supported_color_encodings = BIT(DRM_COLOR_YCBCR_BT601) |
++					     BIT(DRM_COLOR_YCBCR_BT709) |
++					     BIT(DRM_COLOR_YCBCR_BT2020),
++		.default_color_encoding = DRM_COLOR_YCBCR_BT709,
++		.supported_color_ranges = BIT(DRM_COLOR_YCBCR_LIMITED_RANGE) |
++					  BIT(DRM_COLOR_YCBCR_FULL_RANGE),
++		.default_color_range = DRM_COLOR_YCBCR_LIMITED_RANGE,
+ 		.type = DRM_PLANE_TYPE_PRIMARY,
+ 		.max_upscale_factor = 8,
+ 		.max_downscale_factor = 8,
+@@ -661,6 +675,13 @@ static const struct vop2_win_data rk3568_vop_win_data[] = {
+ 		.layer_sel_id = { 0, 0, 0, 0xf },
+ 		.supported_rotations = DRM_MODE_ROTATE_90 | DRM_MODE_ROTATE_270 |
+ 					DRM_MODE_REFLECT_X | DRM_MODE_REFLECT_Y,
++		.supported_color_encodings = BIT(DRM_COLOR_YCBCR_BT601) |
++					     BIT(DRM_COLOR_YCBCR_BT709) |
++					     BIT(DRM_COLOR_YCBCR_BT2020),
++		.default_color_encoding = DRM_COLOR_YCBCR_BT709,
++		.supported_color_ranges = BIT(DRM_COLOR_YCBCR_LIMITED_RANGE) |
++					  BIT(DRM_COLOR_YCBCR_FULL_RANGE),
++		.default_color_range = DRM_COLOR_YCBCR_LIMITED_RANGE,
+ 		.max_upscale_factor = 4,
+ 		.max_downscale_factor = 4,
+ 		.dly = { 0, 27, 21 },
+@@ -677,6 +698,13 @@ static const struct vop2_win_data rk3568_vop_win_data[] = {
+ 		.layer_sel_id = { 1, 1, 1, 0xf },
+ 		.supported_rotations = DRM_MODE_ROTATE_90 | DRM_MODE_ROTATE_270 |
+ 					DRM_MODE_REFLECT_X | DRM_MODE_REFLECT_Y,
++		.supported_color_encodings = BIT(DRM_COLOR_YCBCR_BT601) |
++					     BIT(DRM_COLOR_YCBCR_BT709) |
++					     BIT(DRM_COLOR_YCBCR_BT2020),
++		.default_color_encoding = DRM_COLOR_YCBCR_BT709,
++		.supported_color_ranges = BIT(DRM_COLOR_YCBCR_LIMITED_RANGE) |
++					  BIT(DRM_COLOR_YCBCR_FULL_RANGE),
++		.default_color_range = DRM_COLOR_YCBCR_LIMITED_RANGE,
+ 		.type = DRM_PLANE_TYPE_OVERLAY,
+ 		.max_upscale_factor = 4,
+ 		.max_downscale_factor = 4,
+-- 
+2.43.0
+

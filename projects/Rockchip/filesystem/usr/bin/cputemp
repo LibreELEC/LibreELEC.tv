@@ -7,10 +7,12 @@
 # try to find temperature of cpu
 for thermal_zone in /sys/devices/virtual/thermal/thermal_zone*; do
   [ -d "$thermal_zone" ] || continue
-  if [[ "$(cat $thermal_zone/type)" =~ '(cpu|soc|package)-thermal' ]]; then
-    TEMP="$(cat $thermal_zone/temp)"
-    break
-  fi
+  case "$(cat $thermal_zone/type)" in
+    cpu-thermal|soc-thermal|package-thermal)
+      TEMP="$(cat $thermal_zone/temp)"
+      break
+      ;;
+  esac
 done
 
 # fallback to highest temperature

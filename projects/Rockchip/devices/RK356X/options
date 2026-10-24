@@ -28,7 +28,7 @@
     GRAPHIC_DRIVERS="panfrost"
 
   # kernel serial console
-    EXTRA_CMDLINE="earlycon console=uart8250,mmio32,0xfe660000 console=tty0 coherent_pool=2M cec.debounce_ms=5000 systemd.debug_shell=ttyS2"
+    EXTRA_CMDLINE="earlycon console=uart8250,mmio32,0xfe660000 console=tty0 coherent_pool=2M systemd.debug_shell=ttyS2"
 
   # set the addon project
     ADDON_PROJECT="ARMv8"

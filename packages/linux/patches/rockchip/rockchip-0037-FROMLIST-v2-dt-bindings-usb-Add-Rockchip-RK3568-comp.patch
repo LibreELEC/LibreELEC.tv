@@ -1,0 +1,83 @@
+From 43770300f2c01b93ab820520bd14ae5ce61a4a43 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Wed, 24 Jun 2026 19:27:24 +0000
+Subject: [PATCH 037/220] FROMLIST(v2): dt-bindings: usb: Add Rockchip RK3568
+ compatible for EHCI and OHCI
+
+The Rockchip RK3568 EHCI/OHCI controller depends on clk_usbphy1_480m
+being enabled, or the system may freeze when registers are accessed.
+
+Add Rockchip RK3568 EHCI and OHCI compatibles with a similar four-clock
+constraint as RK3588, also extend the EHCI constraint to include RK3588
+to match similar requirements of RK3588.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ .../devicetree/bindings/usb/generic-ehci.yaml      | 14 ++++++++++++++
+ .../devicetree/bindings/usb/generic-ohci.yaml      |  7 ++++++-
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/generic-ehci.yaml b/Documentation/devicetree/bindings/usb/generic-ehci.yaml
+index ae9fb70d0212..95f4c4cc0463 100644
+--- a/Documentation/devicetree/bindings/usb/generic-ehci.yaml
++++ b/Documentation/devicetree/bindings/usb/generic-ehci.yaml
+@@ -52,6 +52,7 @@ properties:
+               - ibm,476gtr-ehci
+               - nxp,lpc1850-ehci
+               - qca,ar7100-ehci
++              - rockchip,rk3568-ehci
+               - rockchip,rk3588-ehci
+               - snps,hsdk-v1.0-ehci
+               - socionext,uniphier-ehci
+@@ -193,6 +194,19 @@ allOf:
+     else:
+       properties:
+         clock-names: false
++  - if:
++      properties:
++        compatible:
++          contains:
++            enum:
++              - rockchip,rk3568-ehci
++              - rockchip,rk3588-ehci
++    then:
++      properties:
++        clocks:
++          minItems: 4
++      required:
++        - clocks
+ 
+ unevaluatedProperties: false
+ 
+diff --git a/Documentation/devicetree/bindings/usb/generic-ohci.yaml b/Documentation/devicetree/bindings/usb/generic-ohci.yaml
+index 322808aaa283..8449ecf3f876 100644
+--- a/Documentation/devicetree/bindings/usb/generic-ohci.yaml
++++ b/Documentation/devicetree/bindings/usb/generic-ohci.yaml
+@@ -47,6 +47,7 @@ properties:
+               - hpe,gxp-ohci
+               - ibm,476gtr-ohci
+               - ingenic,jz4740-ohci
++              - rockchip,rk3568-ohci
+               - rockchip,rk3588-ohci
+               - snps,hsdk-v1.0-ohci
+           - const: generic-ohci
+@@ -203,11 +204,15 @@ allOf:
+       properties:
+         compatible:
+           contains:
+-            const: rockchip,rk3588-ohci
++            enum:
++              - rockchip,rk3568-ohci
++              - rockchip,rk3588-ohci
+     then:
+       properties:
+         clocks:
+           minItems: 4
++      required:
++        - clocks
+     else:
+       properties:
+         clocks:
+-- 
+2.43.0
+

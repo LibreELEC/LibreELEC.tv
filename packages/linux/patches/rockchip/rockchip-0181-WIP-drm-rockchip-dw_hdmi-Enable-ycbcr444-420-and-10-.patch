@@ -1,0 +1,33 @@
+From c4daacdd9f2d62f415d98e5a04678157dc4f9bd2 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 25 Apr 2026 11:18:50 +0000
+Subject: [PATCH 181/220] WIP: drm/rockchip: dw_hdmi: Enable ycbcr444/420 and
+ 10-bit for RK3568
+
+NOTE: ycbcr420 may need more testing and possible some more work
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+index 3ad1db9f1ac0..3f2b5d410b9d 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -566,8 +566,12 @@ static const struct dw_hdmi_plat_data rk3568_hdmi_drv_data = {
+ 	.cur_ctr    = rockchip_cur_ctr,
+ 	.phy_config = rockchip_phy_config,
+ 	.phy_data = &rk3568_chip_data,
++	.supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_RGB444) |
++			     BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444) |
++			     BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420),
+ 	.use_drm_infoframe = true,
+ 	.output_port = 1,
++	.max_bpc = 10,
+ };
+ 
+ static const struct of_device_id dw_hdmi_rockchip_dt_ids[] = {
+-- 
+2.43.0
+

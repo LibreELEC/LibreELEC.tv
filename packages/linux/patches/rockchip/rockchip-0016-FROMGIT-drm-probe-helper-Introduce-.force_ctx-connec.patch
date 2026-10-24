@@ -1,0 +1,122 @@
+From ed9c6fb83cec563f91709bdf4ed3e0d2a4070722 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:30 +0300
+Subject: [PATCH 016/220] FROMGIT: drm/probe-helper: Introduce .force_ctx()
+ connector callback
+
+The .force() connector callback is invoked by
+drm_helper_probe_single_connector_modes() while the modeset acquire
+context it created is live, but the hook signature provides no way to
+pass it down, e.g. to support implementations needing to lock further
+objects.
+
+Add a .force_ctx() variant to drm_connector_helper_funcs, taking the
+acquire context and returning an error code, so that -EDEADLK propagates
+into the existing retry path.  When provided, it takes precedence over
+drm_connector_funcs' .force(), which is kept for existing users.
+
+This is a prerequisite for SCDC status synchronization in the HDMI
+connector framework.
+
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-6-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/drm_probe_helper.c       | 15 ++++++++++++-
+ include/drm/drm_connector.h              |  6 +++++
+ include/drm/drm_modeset_helper_vtables.h | 28 ++++++++++++++++++++++++
+ 3 files changed, 48 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/drm_probe_helper.c b/drivers/gpu/drm/drm_probe_helper.c
+index e26ead5b5e58..856b40fdaac4 100644
+--- a/drivers/gpu/drm/drm_probe_helper.c
++++ b/drivers/gpu/drm/drm_probe_helper.c
+@@ -559,6 +559,7 @@ static int __drm_helper_update_and_validate(struct drm_connector *connector,
+ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
+ 					    uint32_t maxX, uint32_t maxY)
+ {
++	const struct drm_connector_helper_funcs *funcs = connector->helper_private;
+ 	struct drm_device *dev = connector->dev;
+ 	struct drm_display_mode *mode;
+ 	int count = 0, ret;
+@@ -592,8 +593,20 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
+ 			connector->status = connector_status_connected;
+ 		else
+ 			connector->status = connector_status_disconnected;
+-		if (connector->funcs->force)
++
++		if (funcs && funcs->force_ctx) {
++			ret = funcs->force_ctx(connector, &ctx);
++			if (ret == -EDEADLK) {
++				connector->status = old_status;
++				drm_modeset_backoff(&ctx);
++				goto retry;
++			} else if (ret < 0) {
++				drm_dbg_kms(dev, "[CONNECTOR:%d:%s] force_ctx failed: %d\n",
++					    connector->base.id, connector->name, ret);
++			}
++		} else if (connector->funcs->force) {
+ 			connector->funcs->force(connector);
++		}
+ 	} else {
+ 		ret = drm_helper_probe_detect(connector, &ctx, true);
+ 
+diff --git a/include/drm/drm_connector.h b/include/drm/drm_connector.h
+index 2a49c4d55f77..a6de3e63b462 100644
+--- a/include/drm/drm_connector.h
++++ b/include/drm/drm_connector.h
+@@ -1603,6 +1603,12 @@ struct drm_connector_funcs {
+ 	 * the sysfs interfaces or on the kernel cmdline. In that case the
+ 	 * @detect callback isn't called.
+ 	 *
++	 * New drivers should implement
++	 * &drm_connector_helper_funcs.force_ctx instead, which gets passed
++	 * the modeset acquire context and thus allows taking additional
++	 * locks.  It takes precedence over this callback when both are
++	 * implemented.
++	 *
+ 	 * FIXME:
+ 	 *
+ 	 * Note that this hook is only called by the probe helper. It's not in
+diff --git a/include/drm/drm_modeset_helper_vtables.h b/include/drm/drm_modeset_helper_vtables.h
+index ca6268945c28..cf5fe5ba2b18 100644
+--- a/include/drm/drm_modeset_helper_vtables.h
++++ b/include/drm/drm_modeset_helper_vtables.h
+@@ -921,6 +921,34 @@ struct drm_connector_helper_funcs {
+ 			  struct drm_modeset_acquire_ctx *ctx,
+ 			  bool force);
+ 
++	/**
++	 * @force_ctx:
++	 *
++	 * This function is called to update internal encoder state when the
++	 * connector is forced to a certain state by userspace, either through
++	 * the sysfs interfaces or on the kernel cmdline. In that case the
++	 * @detect_ctx callback isn't called.
++	 *
++	 * This is the atomic version of &drm_connector_funcs.force.  When
++	 * both are implemented, this one takes precedence and
++	 * &drm_connector_funcs.force is not called.
++	 *
++	 * To avoid races against concurrent connector state updates, the
++	 * helper libraries always call this with ctx set to a valid context,
++	 * and &drm_mode_config.connection_mutex will always be locked with
++	 * the ctx parameter set to this ctx. This allows taking additional
++	 * locks as required.
++	 *
++	 * RETURNS:
++	 *
++	 * Zero on success, or a negative error code otherwise.  This includes
++	 * -EDEADLK when a lock acquisition needs to be restarted, in which
++	 * case the helpers take care of backing off and calling this function
++	 * again.
++	 */
++	int (*force_ctx)(struct drm_connector *connector,
++			 struct drm_modeset_acquire_ctx *ctx);
++
+ 	/**
+ 	 * @mode_valid:
+ 	 *
+-- 
+2.43.0
+

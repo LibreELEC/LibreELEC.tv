@@ -1,0 +1,115 @@
+From 34af1e37202c1a9f3b30dc05c6cb606c05e2976b Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 25 Apr 2026 11:18:18 +0000
+Subject: [PATCH 174/220] WIP: drm/rockchip: dw_hdmi: rename max_tmds_clock to
+ max_tmds_rate
+
+NOTE: add missing max_tmds_rate for rk3368, based on vendor kernel limit
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+[chewitt: pass the per-SoC limit to the core as the dw_hdmi_plat_data
+ max_tmds_char_rate instead of checking it in the glue]
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+index 38654a9f988b..961632ced51d 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -61,13 +61,11 @@
+  * @lcdsel_grf_reg: grf register offset of lcdc select
+  * @lcdsel_big: reg value of selecting vop big for HDMI
+  * @lcdsel_lit: reg value of selecting vop little for HDMI
+- * @max_tmds_clock: maximum TMDS clock rate supported
+  */
+ struct rockchip_hdmi_chip_data {
+ 	int	lcdsel_grf_reg;
+ 	u32	lcdsel_big;
+ 	u32	lcdsel_lit;
+-	int	max_tmds_clock;
+ };
+ 
+ struct rockchip_hdmi {
+@@ -205,10 +203,6 @@ dw_hdmi_rockchip_tmds_char_rate_valid(struct dw_hdmi *dw_hdmi, void *data,
+ 	struct rockchip_hdmi *hdmi = data;
+ 	int pclk = mode->clock * 1000;
+ 
+-	if (hdmi->chip_data->max_tmds_clock &&
+-	    mode->clock > hdmi->chip_data->max_tmds_clock)
+-		return MODE_CLOCK_HIGH;
+-
+ 	if (hdmi->ref_clk) {
+ 		int rpclk = clk_round_rate(hdmi->ref_clk, pclk);
+ 
+@@ -431,10 +425,10 @@ static const struct dw_hdmi_phy_ops rk3228_hdmi_phy_ops = {
+ 
+ static struct rockchip_hdmi_chip_data rk3228_chip_data = {
+ 	.lcdsel_grf_reg = -1,
+-	.max_tmds_clock = 594000,
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3228_hdmi_drv_data = {
++	.max_tmds_char_rate = 594000000,
+ 	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.phy_data = &rk3228_chip_data,
+ 	.phy_ops = &rk3228_hdmi_phy_ops,
+@@ -446,10 +440,10 @@ static struct rockchip_hdmi_chip_data rk3288_chip_data = {
+ 	.lcdsel_grf_reg = RK3288_GRF_SOC_CON6,
+ 	.lcdsel_big = FIELD_PREP_WM16_CONST(RK3288_HDMI_LCDC_SEL, 0),
+ 	.lcdsel_lit = FIELD_PREP_WM16_CONST(RK3288_HDMI_LCDC_SEL, 1),
+-	.max_tmds_clock = 340000,
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3288_hdmi_drv_data = {
++	.max_tmds_char_rate = 340000000,
+ 	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+@@ -466,10 +460,10 @@ static const struct dw_hdmi_phy_ops rk3328_hdmi_phy_ops = {
+ 
+ static struct rockchip_hdmi_chip_data rk3328_chip_data = {
+ 	.lcdsel_grf_reg = -1,
+-	.max_tmds_clock = 594000,
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3328_hdmi_drv_data = {
++	.max_tmds_char_rate = 594000000,
+ 	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.phy_data = &rk3328_chip_data,
+ 	.phy_ops = &rk3328_hdmi_phy_ops,
+@@ -483,6 +477,7 @@ static struct rockchip_hdmi_chip_data rk3368_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3368_hdmi_drv_data = {
++	.max_tmds_char_rate = 340000000,
+ 	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+@@ -495,10 +490,10 @@ static struct rockchip_hdmi_chip_data rk3399_chip_data = {
+ 	.lcdsel_grf_reg = RK3399_GRF_SOC_CON20,
+ 	.lcdsel_big = FIELD_PREP_WM16_CONST(RK3399_HDMI_LCDC_SEL, 0),
+ 	.lcdsel_lit = FIELD_PREP_WM16_CONST(RK3399_HDMI_LCDC_SEL, 1),
+-	.max_tmds_clock = 594000,
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3399_hdmi_drv_data = {
++	.max_tmds_char_rate = 594000000,
+ 	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+@@ -509,10 +504,10 @@ static const struct dw_hdmi_plat_data rk3399_hdmi_drv_data = {
+ 
+ static struct rockchip_hdmi_chip_data rk3568_chip_data = {
+ 	.lcdsel_grf_reg = -1,
+-	.max_tmds_clock = 594000,
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3568_hdmi_drv_data = {
++	.max_tmds_char_rate = 594000000,
+ 	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+-- 
+2.43.0
+

@@ -1,0 +1,38 @@
+From 6f03e687cf3d1d6266e5453cfb6c6cadf8bc5d8a Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 11 Apr 2026 17:18:09 +0000
+Subject: [PATCH 147/220] WIP: drm/bridge: dw-hdmi: use IS_ERR_OR_NULL() in
+ dw_hdmi_remove()
+
+dw_hdmi_remove() may be called when the audio or CEC helper device was
+never created. Also, platform_device_register_full() can return an
+ERR_PTR() on failure.
+
+Use IS_ERR_OR_NULL() for both hdmi->audio and hdmi->cec before calling
+platform_device_unregister() so the remove path handles both NULL and
+error pointers consistently.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 540afa581a2a..60abafca2a1e 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -3479,9 +3479,9 @@ void dw_hdmi_remove(struct dw_hdmi *hdmi)
+ 
+ 	drm_bridge_remove(&hdmi->bridge);
+ 
+-	if (hdmi->audio && !IS_ERR(hdmi->audio))
++	if (!IS_ERR_OR_NULL(hdmi->audio))
+ 		platform_device_unregister(hdmi->audio);
+-	if (!IS_ERR(hdmi->cec))
++	if (!IS_ERR_OR_NULL(hdmi->cec))
+ 		platform_device_unregister(hdmi->cec);
+ 
+ 	if (hdmi->i2c)
+-- 
+2.43.0
+

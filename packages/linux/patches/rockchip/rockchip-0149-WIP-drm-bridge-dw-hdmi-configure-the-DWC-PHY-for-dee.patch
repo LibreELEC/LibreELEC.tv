@@ -1,0 +1,71 @@
+From 9408b5f043fd96296f52b8eeab885316e36985d6 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Mon, 20 Jul 2020 21:34:48 +0000
+Subject: [PATCH 149/220] WIP: drm/bridge: dw-hdmi: configure the DWC PHY for
+ deep color
+
+The Synopsys HDMI 3D TX PHY provides separate configuration values for
+different color depths, but dw-hdmi always programs the 8 bpc entry.
+The current control and PHY configuration tables are also selected
+from the pixel clock, even though deep-color modes change the
+effective TMDS clock.
+
+Select the PHY settings based on the output color depth and use the
+TMDS clock for the table lookups that depend on link rate. This makes
+the PHY programming match deep-color output modes.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 83d6d262678e..4777bfbfbf66 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -1569,6 +1569,7 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+ 	const struct dw_hdmi_mpll_config *mpll_config = pdata->mpll_cfg;
+ 	const struct dw_hdmi_curr_ctrl *curr_ctrl = pdata->cur_ctr;
+ 	const struct dw_hdmi_phy_config *phy_config = pdata->phy_config;
++	int depth;
+ 
+ 	/* TOFIX Will need 420 specific PHY configuration tables */
+ 
+@@ -1578,11 +1579,11 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+ 			break;
+ 
+ 	for (; curr_ctrl->mpixelclock != ~0UL; curr_ctrl++)
+-		if (mpixelclock <= curr_ctrl->mpixelclock)
++		if (mtmdsclock <= curr_ctrl->mpixelclock)
+ 			break;
+ 
+ 	for (; phy_config->mpixelclock != ~0UL; phy_config++)
+-		if (mpixelclock <= phy_config->mpixelclock)
++		if (mtmdsclock <= phy_config->mpixelclock)
+ 			break;
+ 
+ 	if (mpll_config->mpixelclock == ~0UL ||
+@@ -1590,11 +1591,17 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+ 	    phy_config->mpixelclock == ~0UL)
+ 		return -EINVAL;
+ 
+-	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[0].cpce,
++	depth = hdmi_bus_fmt_color_depth(hdmi->hdmi_data.enc_out_bus_format);
++	if (depth > 8 && mpixelclock != mtmdsclock)
++		depth = fls(depth - 8) - 1;
++	else
++		depth = 0;
++
++	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[depth].cpce,
+ 			      HDMI_3D_TX_PHY_CPCE_CTRL);
+-	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[0].gmp,
++	dw_hdmi_phy_i2c_write(hdmi, mpll_config->res[depth].gmp,
+ 			      HDMI_3D_TX_PHY_GMPCTRL);
+-	dw_hdmi_phy_i2c_write(hdmi, curr_ctrl->curr[0],
++	dw_hdmi_phy_i2c_write(hdmi, curr_ctrl->curr[depth],
+ 			      HDMI_3D_TX_PHY_CURRCTRL);
+ 
+ 	dw_hdmi_phy_i2c_write(hdmi, 0, HDMI_3D_TX_PHY_PLLPHBYCTRL);
+-- 
+2.43.0
+

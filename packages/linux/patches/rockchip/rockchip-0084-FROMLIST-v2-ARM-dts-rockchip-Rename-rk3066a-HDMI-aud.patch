@@ -1,0 +1,33 @@
+From dab3e76eb68db8e8bff32e53b5963aa4c4642143 Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Thu, 10 Sep 2026 09:34:43 -0400
+Subject: [PATCH 084/220] FROMLIST(v2): ARM: dts: rockchip: Rename rk3066a HDMI
+ audio card
+
+Rename the card from "HDMI" to "RK3066a HDMI" so it identifies the
+SoC in user-visible ALSA fields (shortname / longname / driver) and
+no longer collides with the identical "HDMI" string used by rk3288,
+rk3328, rk356x and rk3576.
+
+Fixes: 041f240e4df6c ("ARM: dts: rockchip: add hdmi-sound node to rk3066a")
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ arch/arm/boot/dts/rockchip/rk3066a.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/rockchip/rk3066a.dtsi b/arch/arm/boot/dts/rockchip/rk3066a.dtsi
+index 3f6d49459734..12a3cbdfb481 100644
+--- a/arch/arm/boot/dts/rockchip/rk3066a.dtsi
++++ b/arch/arm/boot/dts/rockchip/rk3066a.dtsi
+@@ -55,7 +55,7 @@ display-subsystem {
+ 
+ 	hdmi_sound: hdmi-sound {
+ 		compatible = "simple-audio-card";
+-		simple-audio-card,name = "HDMI";
++		simple-audio-card,name = "RK3066a HDMI";
+ 		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <256>;
+ 		status = "disabled";
+-- 
+2.43.0
+

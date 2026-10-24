@@ -1,0 +1,68 @@
+From 58dcc83f94b0b8646047ecdaac3abfcc36b0a268 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 26 Apr 2026 20:10:06 +0000
+Subject: [PATCH 159/220] WIP: drm/bridge: dw-hdmi: extend supported_formats
+ when CSC is available
+
+dw-hdmi currently advertises only the formats listed in
+bridge->supported_formats. On controllers with a CSC block this is too
+restrictive, since the hardware can convert between RGB444, YCbCr444 and
+YCbCr422.
+
+Now that the negotiated input and output bus formats are propagated
+correctly, dw-hdmi can safely expose the full CSC-convertible format set
+when the hardware has a CSC block.
+
+Extend supported_formats accordingly during probe so format negotiation
+can select RGB444, YCbCr444 or YCbCr422 whenever the conversion can be
+handled by the CSC block.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 10 ++++++++++
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.h |  1 +
+ 2 files changed, 11 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 8ab40e8241a7..2659ffb20d0b 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -50,6 +50,11 @@
+ 
+ #define HOTPLUG_DEBOUNCE_MS	1100
+ 
++/* The CSC block supports converting RGB444 to/from YCBCR444/422 */
++#define CSC_FORMATS		(BIT(DRM_OUTPUT_COLOR_FORMAT_RGB444) | \
++				 BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444) | \
++				 BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422))
++
+ static const u16 csc_coeff_default[3][4] = {
+ 	{ 0x2000, 0x0000, 0x0000, 0x0000 },
+ 	{ 0x0000, 0x2000, 0x0000, 0x0000 },
+@@ -3476,6 +3481,11 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
+ 	config0 = hdmi_readb(hdmi, HDMI_CONFIG0_ID);
+ 	config3 = hdmi_readb(hdmi, HDMI_CONFIG3_ID);
+ 
++	/* Extend supported formats if CSC block is available */
++	if (config0 & HDMI_CONFIG0_CSC &&
++	    hdmi->bridge.supported_formats & CSC_FORMATS)
++		hdmi->bridge.supported_formats |= CSC_FORMATS;
++
+ 	if (iores && config3 & HDMI_CONFIG3_AHBAUDDMA) {
+ 		struct dw_hdmi_audio_data audio;
+ 
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
+index af43a0414b78..d404ca2c6892 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
+@@ -550,6 +550,7 @@ enum {
+ 
+ /* CONFIG0_ID field values */
+ 	HDMI_CONFIG0_I2S = 0x10,
++	HDMI_CONFIG0_CSC = 0x04,
+ 	HDMI_CONFIG0_CEC = 0x02,
+ 
+ /* CONFIG1_ID field values */
+-- 
+2.43.0
+

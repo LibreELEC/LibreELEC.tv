@@ -1,0 +1,47 @@
+From 48c5f418d25ced2084c571a81270cd334aad03e3 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:26 +0300
+Subject: [PATCH 012/220] FROMGIT: drm/connector: hdmi: Handle reset() state
+ allocation failure
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In drmm_connector_hdmi_init(), if the reset callback fails to allocate
+memory, e.g. inside drm_atomic_helper_connector_reset(),
+connector->state will remain NULL.  This is unconditionally passed to
+drm_connector_attach_max_bpc_property(), leading to a NULL pointer
+dereference.
+
+Bail out with -ENOMEM if the reset callback leaves connector->state
+unset.
+
+Fixes: aadb3e16b8f3 ("drm/connector: hdmi: Add output BPC to the connector state")
+Reported-by: Sashiko <sashiko-bot@kernel.org>
+Closes: https://lore.kernel.org/all/20260723015306.C94241F000E9@smtp.kernel.org/
+Link: https://lore.kernel.org/all/20260723015306.C94241F000E9@smtp.kernel.org/
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-2-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/drm_connector.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
+index 8b4baed060f3..0e39431e85b2 100644
+--- a/drivers/gpu/drm/drm_connector.c
++++ b/drivers/gpu/drm/drm_connector.c
+@@ -628,6 +628,8 @@ int drmm_connector_hdmi_init(struct drm_device *dev,
+ 		connector->state = state;
+ 	} else if (connector->funcs->reset) {
+ 		connector->funcs->reset(connector);
++		if (!connector->state)
++			return -ENOMEM;
+ 	}
+ 
+ 	drm_connector_attach_max_bpc_property(connector, 8, max_bpc);
+-- 
+2.43.0
+

@@ -1,0 +1,109 @@
+From 91bf06c4cc88b429235c075c2387f13ac209e0db Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Fri, 20 Feb 2026 15:36:47 +0000
+Subject: [PATCH 209/220] WIP: ASoC: rockchip: i2s-tdm: Fix HBR audio
+ pass-through for HDMI
+
+High Bit Rate (HBR) audio formats requires 8-channel IEC958 subframe
+data at 192 kHz. This fails silently on Rockchip I2S TDM controllers
+due to two issues identified through comparison with the Rockchip
+Linux 6.6 vendor kernel:
+
+1) The I2S hardware has an unpredictable first LRCK edge that can
+   appear on the wrong BCLK cycle. For L-PCM this causes one
+   inaudible silent sample, but for bitstream pass-through (NLPCM/HBR)
+   the receiver cannot lock onto the data stream. Fix this by pre-
+   filling the TX FIFO with one frame of zeros before enabling
+   DMA, and adding a 1ms delay for DMA to begin filling the FIFO
+   before the I2S transfer starts clocking data out.
+
+2) The DMA maxburst is set to a fixed 8 words at probe time. For
+   8-channel audio each frame is 8 words, so maxburst should scale
+   with the channel count (channels / 2 * 8) to keep the FIFO
+   adequately filled at high data rates.
+
+Both fixes are applied to the txctrl (non-TRCM) and txrxctrl (TRCM)
+playback paths.
+
+Assisted-by: Claude:claude-opus-4-6
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ sound/soc/rockchip/rockchip_i2s_tdm.c | 34 +++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/rockchip/rockchip_i2s_tdm.c b/sound/soc/rockchip/rockchip_i2s_tdm.c
+index 7e7dd9e33e09..9e6deadb20c3 100644
+--- a/sound/soc/rockchip/rockchip_i2s_tdm.c
++++ b/sound/soc/rockchip/rockchip_i2s_tdm.c
+@@ -280,6 +280,27 @@ static inline void rockchip_disable_rde(struct regmap *regmap)
+ 			   I2S_DMACR_RDE_DISABLE);
+ }
+ 
++/*
++ * Pre-fill the TX FIFO with one frame of zero data before enabling DMA.
++ * This works around a hardware timing issue where the first LRCK edge
++ * may appear on an unpredictable BCLK cycle.  For L-PCM, a single
++ * silent frame is inaudible; for bitstream pass-through (NLPCM/HBR)
++ * the correct framing from the very first sample is essential,
++ * otherwise the receiver (AVR/TV) cannot lock onto the audio stream.
++ */
++static void rockchip_i2s_tdm_tx_fifo_padding(struct rk_i2s_tdm_dev *i2s_tdm)
++{
++	unsigned int val, vdw, channels, words, i;
++
++	regmap_read(i2s_tdm->regmap, I2S_TXCR, &val);
++	vdw = ((val & I2S_TXCR_VDW_MASK) >> I2S_TXCR_VDW_SHIFT) + 1;
++	channels = ((val & I2S_TXCR_CSR_MASK) >> I2S_CSR_SHIFT) * 2 + 2;
++	words = channels * vdw / 32;
++
++	for (i = 0; i < words; i++)
++		regmap_write(i2s_tdm->regmap, I2S_TXDR, 0x0);
++}
++
+ /* only used when clk_trcm > 0 */
+ static void rockchip_snd_txrxctrl(struct snd_pcm_substream *substream,
+ 				  struct snd_soc_dai *dai, int on)
+@@ -288,10 +309,13 @@ static void rockchip_snd_txrxctrl(struct snd_pcm_substream *substream,
+ 
+ 	guard(spinlock_irqsave)(&i2s_tdm->lock);
+ 	if (on) {
+-		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++			rockchip_i2s_tdm_tx_fifo_padding(i2s_tdm);
+ 			rockchip_enable_tde(i2s_tdm->regmap);
+-		else
++			udelay(1);
++		} else {
+ 			rockchip_enable_rde(i2s_tdm->regmap);
++		}
+ 
+ 		if (++i2s_tdm->refcount == 1) {
+ 			rockchip_snd_xfer_sync_reset(i2s_tdm);
+@@ -317,7 +341,9 @@ static void rockchip_snd_txrxctrl(struct snd_pcm_substream *substream,
+ static void rockchip_snd_txctrl(struct rk_i2s_tdm_dev *i2s_tdm, int on)
+ {
+ 	if (on) {
++		rockchip_i2s_tdm_tx_fifo_padding(i2s_tdm);
+ 		rockchip_enable_tde(i2s_tdm->regmap);
++		udelay(1);
+ 
+ 		regmap_update_bits(i2s_tdm->regmap, I2S_XFER,
+ 				   I2S_XFER_TXS_START,
+@@ -641,10 +667,14 @@ static int rockchip_i2s_tdm_hw_params(struct snd_pcm_substream *substream,
+ 				      struct snd_soc_dai *dai)
+ {
+ 	struct rk_i2s_tdm_dev *i2s_tdm = to_info(dai);
++	struct snd_dmaengine_dai_dma_data *dma_data;
+ 	unsigned int val = 0;
+ 	unsigned int mclk_rate, bclk_rate, div_bclk = 4, div_lrck = 64;
+ 	int err;
+ 
++	dma_data = snd_soc_dai_get_dma_data(dai, substream);
++	dma_data->maxburst = 8 * params_channels(params) / 2;
++
+ 	if (i2s_tdm->is_master_mode) {
+ 		struct clk *mclk;
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,58 @@
+From 1cdc27727529dc71d920db67a1eb00b55a4aa80e Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 27 Apr 2025 20:38:47 +0000
+Subject: [PATCH 186/220] WIP: arm64: dts: rockchip: rk3576: Use scmi gpu clk
+ as main GPU clock
+
+CLK_GPU is the main clock for the GPU on RK3576, it's typical source
+pll can be one of gpll, cpll, aupll, spll or lpll. For higher clock
+rates it is also possible to use the gpu pvtpll as pll source.
+
+The logic to switch between a normal pll and the pvtpll depending on
+rate is handled in TF-A firmware, and exposed to Linux as a scmi clock.
+TF-A will typically change to use normal pll for rates up to 200 MHz and
+use pvtpll for 300 MHz or more.
+
+Change to use the SCMI_CLK_GPU as the main GPU clock and the normal
+CLK_GPU as a bus clk to model this in a similar way as on RK356x.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm64/boot/dts/rockchip/rk3576.dtsi | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3576.dtsi b/arch/arm64/boot/dts/rockchip/rk3576.dtsi
+index 5f32915f44b8..f6291bc8f605 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3576.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3576.dtsi
+@@ -347,6 +347,12 @@ opp-2208000000 {
+ 	gpu_opp_table: opp-table-gpu {
+ 		compatible = "operating-points-v2";
+ 
++		opp-200000000 {
++			opp-hz = /bits/ 64 <200000000>;
++			opp-microvolt = <712500 712500 875000>;
++			opp-suspend;
++		};
++
+ 		opp-300000000 {
+ 			opp-hz = /bits/ 64 <300000000>;
+ 			opp-microvolt = <712500 712500 875000>;
+@@ -1339,10 +1345,10 @@ rknn_mmu_1: iommu@2770a000 {
+ 		gpu: gpu@27800000 {
+ 			compatible = "rockchip,rk3576-mali", "arm,mali-bifrost";
+ 			reg = <0x0 0x27800000 0x0 0x20000>;
+-			assigned-clocks = <&scmi_clk SCMI_CLK_GPU>;
+-			assigned-clock-rates = <198000000>;
+-			clocks = <&cru CLK_GPU>;
+-			clock-names = "core";
++			assigned-clocks = <&cru CLK_GPU>, <&scmi_clk SCMI_CLK_GPU>;
++			assigned-clock-rates = <198000000>, <200000000>;
++			clocks = <&scmi_clk SCMI_CLK_GPU>, <&cru CLK_GPU>;
++			clock-names = "gpu", "bus";
+ 			dynamic-power-coefficient = <1625>;
+ 			interrupts = <GIC_SPI 347 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 348 IRQ_TYPE_LEVEL_HIGH>,
+-- 
+2.43.0
+

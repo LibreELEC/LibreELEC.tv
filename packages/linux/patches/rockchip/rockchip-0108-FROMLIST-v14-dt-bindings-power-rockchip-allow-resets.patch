@@ -1,0 +1,45 @@
+From 6a31d60a41ab330743bddb5565bc8216a2bafd65 Mon Sep 17 00:00:00 2001
+From: Jiaxing Hu <gahing@gahingwoo.com>
+Date: Thu, 24 Sep 2026 22:21:27 +1200
+Subject: [PATCH 108/220] FROMLIST(v14): dt-bindings: power: rockchip: allow
+ resets in a power domain node
+
+Some domains need a reset cycled once power is on. The RK3576 NPU domains
+are one: without it the first access after power-on takes an async SError.
+
+Signed-off-by: Jiaxing Hu <gahing@gahingwoo.com>
+Acked-by: Conor Dooley <conor.dooley@microchip.com>
+Reviewed-by: Heiko Stuebner <heiko@sntech.de>
+---
+ .../bindings/power/rockchip,power-controller.yaml         | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/power/rockchip,power-controller.yaml b/Documentation/devicetree/bindings/power/rockchip,power-controller.yaml
+index b41db576f95d..83741f048716 100644
+--- a/Documentation/devicetree/bindings/power/rockchip,power-controller.yaml
++++ b/Documentation/devicetree/bindings/power/rockchip,power-controller.yaml
+@@ -136,6 +136,13 @@ $defs:
+           A number of phandles to clocks that need to be enabled
+           while power domain switches state.
+ 
++      resets:
++        maxItems: 1
++        description:
++          A phandle to a reset that needs to be cycled once the power domain has
++          been switched on, for domains whose logic does not come up in a usable
++          state by itself.
++
+       domain-supply:
+         description: domain regulator supply.
+ 
+@@ -216,6 +223,7 @@ examples:
+                     reg = <RK3399_PD_IEP>;
+                     clocks = <&cru ACLK_IEP>,
+                              <&cru HCLK_IEP>;
++                    resets = <&cru SRST_A_IEP>;
+                     pm_qos = <&qos_iep>;
+                     #power-domain-cells = <0>;
+                 };
+-- 
+2.43.0
+

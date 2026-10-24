@@ -727,6 +727,9 @@ check_update() {
 
     OFFSET=$(($OFFSET * $SECTOR_SIZE))
 
+    export UPDATE_IMG_FILE="$IMG_FILE"
+    export UPDATE_IMG_OFFSET="$OFFSET"
+
     # use losetup because busybox mount does not support the -o offset option
     echo "Mounting system partition..."
     losetup -o $OFFSET $LOOP $IMG_FILE

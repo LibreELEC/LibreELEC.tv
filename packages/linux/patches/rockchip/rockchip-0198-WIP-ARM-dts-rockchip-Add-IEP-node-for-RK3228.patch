@@ -1,0 +1,45 @@
+From 6a02546a44a1f1c0cc62d4c38e1fc4c90f81a0fe Mon Sep 17 00:00:00 2001
+From: Paolo Sabatino <paolo.sabatino@gmail.com>
+Date: Thu, 9 Sep 2021 19:14:08 +0000
+Subject: [PATCH 198/220] WIP: ARM: dts: rockchip: Add IEP node for RK3228
+
+Enable IEP operations for the RK3228 SoC.
+
+Signed-off-by: Paolo Sabatino <paolo.sabatino@gmail.com>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm/boot/dts/rockchip/rk322x.dtsi | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/rockchip/rk322x.dtsi b/arch/arm/boot/dts/rockchip/rk322x.dtsi
+index cd11a018105b..4e79ea50cc6b 100644
+--- a/arch/arm/boot/dts/rockchip/rk322x.dtsi
++++ b/arch/arm/boot/dts/rockchip/rk322x.dtsi
+@@ -705,6 +705,16 @@ rga: rga@20060000 {
+ 		reset-names = "core", "axi", "ahb";
+ 	};
+ 
++	iep: iep@20070000 {
++		compatible = "rockchip,rk3228-iep";
++		reg = <0x20070000 0x800>;
++		interrupts = <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&cru ACLK_IEP>, <&cru HCLK_IEP>;
++		clock-names = "axi", "ahb";
++		power-domains = <&power RK3228_PD_VIO>;
++		iommus = <&iep_mmu>;
++	};
++
+ 	iep_mmu: iommu@20070800 {
+ 		compatible = "rockchip,iommu";
+ 		reg = <0x20070800 0x100>;
+@@ -713,7 +723,6 @@ iep_mmu: iommu@20070800 {
+ 		clock-names = "aclk", "iface";
+ 		power-domains = <&power RK3228_PD_VIO>;
+ 		#iommu-cells = <0>;
+-		status = "disabled";
+ 	};
+ 
+ 	hdmi: hdmi@200a0000 {
+-- 
+2.43.0
+
