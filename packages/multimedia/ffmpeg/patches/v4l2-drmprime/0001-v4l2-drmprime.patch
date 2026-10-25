@@ -1,7 +1,7 @@
 From 8d0c529749096e58c1404a526530cb0273f3aafe Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Tue, 24 Apr 2018 23:00:23 -0700
-Subject: [PATCH 1/9] libavcodec: v4l2m2m: output AVDRMFrameDescriptor
+Subject: [PATCH 1/10] libavcodec: v4l2m2m: output AVDRMFrameDescriptor
 
 This allows for a zero-copy output by exporting the v4l2 buffer then wrapping that buffer
 in the AVDRMFrameDescriptor like it is done in rkmpp.
@@ -422,7 +422,7 @@ index ba1fe769e0fe..08cfb4e5a49f 100644
 From 6e07edda13a1af6202d0edcee5e4a3140e3b3d85 Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Thu, 16 Aug 2018 21:09:40 -0700
-Subject: [PATCH 2/9] libavcodec: v4l2m2m: depends on libdrm
+Subject: [PATCH 2/10] libavcodec: v4l2m2m: depends on libdrm
 
 ---
  configure                 | 1 +
@@ -458,7 +458,7 @@ index 863877ce2bb8..b6b1c6b586e2 100644
 From 52d0550fba278f41bf5a74a10197286c87c0d44d Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Thu, 16 Aug 2018 21:10:13 -0700
-Subject: [PATCH 3/9] libavcodec: v4l2m2m: set format_modifier to
+Subject: [PATCH 3/10] libavcodec: v4l2m2m: set format_modifier to
  DRM_FORMAT_MOD_LINEAR
 
 ---
@@ -486,7 +486,7 @@ index b6b1c6b586e2..40420a50a3b2 100644
 From 2a9066cf6f683c9855cc9774ea3ee57fa333d2eb Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Thu, 16 Aug 2018 21:10:53 -0700
-Subject: [PATCH 4/9] libavcodec: v4l2m2m: only mmap the buffer when it is
+Subject: [PATCH 4/10] libavcodec: v4l2m2m: only mmap the buffer when it is
  output type and drm prime is used
 
 ---
@@ -530,7 +530,7 @@ index 40420a50a3b2..ad537dcc1184 100644
 From 90acef9ad745d9d1f6ab583f74495b0a67c153ac Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Thu, 16 Aug 2018 21:11:38 -0700
-Subject: [PATCH 5/9] libavcodec: v4l2m2m: allow using software pixel formats
+Subject: [PATCH 5/10] libavcodec: v4l2m2m: allow using software pixel formats
 
 ---
  libavcodec/v4l2_m2m_dec.c | 11 ++++++++++-
@@ -570,7 +570,7 @@ index 08cfb4e5a49f..a500cad0b38b 100644
 From 0b204bfb795cc19fe0135429e1cf9055d0035f32 Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Mon, 24 Sep 2018 13:39:31 -0700
-Subject: [PATCH 6/9] libavcodec: v4l2m2m: implement hwcontext
+Subject: [PATCH 6/10] libavcodec: v4l2m2m: implement hwcontext
 
 ---
  libavcodec/v4l2_buffers.c | 22 ++++++++++++++++++++++
@@ -678,7 +678,7 @@ index a500cad0b38b..3512928895f0 100644
 From 1d7da897085e1eb82c93af8037b6bb468b50aa0e Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Wed, 6 May 2020 11:12:58 -0700
-Subject: [PATCH 7/9] libavcodec: v4l2m2m: add option to specify pixel format
+Subject: [PATCH 7/10] libavcodec: v4l2m2m: add option to specify pixel format
  used by the decoder
 
 ---
@@ -750,7 +750,7 @@ index 3512928895f0..3ec484b37a6a 100644
 From 99bbab25229ac2d9f543f99fff5e4e38c6fe3a55 Mon Sep 17 00:00:00 2001
 From: Lukas Rusak <lorusak@gmail.com>
 Date: Mon, 24 Sep 2018 13:39:56 -0700
-Subject: [PATCH 8/9] libavcodec: v4l2m2m: implement flush
+Subject: [PATCH 8/10] libavcodec: v4l2m2m: implement flush
 
 ---
  libavcodec/v4l2_m2m_dec.c | 36 ++++++++++++++++++++++++++++++++++++
@@ -814,7 +814,7 @@ index 3ec484b37a6a..0dc848fb1cbe 100644
 From e09a941e067c0141acf06e3d19033d41cdf878ec Mon Sep 17 00:00:00 2001
 From: Rudi Heitbaum <rudi@heitbaum.com>
 Date: Sun, 11 Oct 2026 13:30:36 +1100
-Subject: [PATCH 9/9] libavcodec: v4l2m2m: adapt to the removal of
+Subject: [PATCH 9/10] libavcodec: v4l2m2m: adapt to the removal of
  AVCodec.pix_fmts
 
 FFmpeg 9 dropped the public pix_fmts field from AVCodec, so the
@@ -865,3 +865,93 @@ index 0dc848f..3d6a3a5 100644
          .hw_configs     = v4l2_m2m_hw_configs, \
      }
  
+
+From 081aff9ac3a5d87b9daced6edf0c7dcf44d81923 Mon Sep 17 00:00:00 2001
+From: Ramón Jesús Miranda <ramonjesusmiranda@gmail.com>
+Date: Sun, 25 Oct 2026 13:15:30 +0000
+Subject: [PATCH 10/10] libavcodec: v4l2m2m: resend DECODER_CMD START after the LAST
+ capture buffer
+
+Since "v4l2m2m: implement flush", avcodec_flush_buffers() restarts the
+OUTPUT queue and decoding resumes. When it resumes from the start of the
+stream (a seek back to 0, e.g. looped playback) the driver signals a
+source change with an unchanged capture format, and v4l2_handle_event()
+sends V4L2_DEC_CMD_START right away. The stateful decoder specification
+only allows that once the client has dequeued the capture buffer flagged
+V4L2_BUF_FLAG_LAST, and drivers that enforce it (qcom iris) fail the
+command with EBUSY. The error was ignored, the LAST buffer came out as a
+broken frame ("driver decode error") and the decoder produced no further
+frames.
+
+Remember the refused START and send it again when the LAST buffer is
+dequeued outside of draining, re-queueing that empty buffer instead of
+returning it.
+
+Signed-off-by: Ramón Jesús Miranda <ramonjesusmiranda@gmail.com>
+---
+ libavcodec/v4l2_context.c | 28 +++++++++++++++++++++++++++-
+ libavcodec/v4l2_m2m.h     |  5 +++++
+ 2 files changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/libavcodec/v4l2_context.c b/libavcodec/v4l2_context.c
+index 1f1fd6d..00e5818 100644
+--- a/libavcodec/v4l2_context.c
++++ b/libavcodec/v4l2_context.c
+@@ -206,7 +206,11 @@ static int v4l2_handle_event(V4L2Context *ctx)
+         s->capture.width = v4l2_get_width(&cap_fmt);
+         s->capture.sample_aspect_ratio = v4l2_get_sar(&s->capture);
+     } else {
+-        v4l2_start_decode(ctx);
++        /* The stateful decoder spec only allows START once the LAST capture
++         * buffer has been dequeued; drivers that enforce it (iris) return
++         * EBUSY here, so retry when that buffer shows up. */
++        if (v4l2_start_decode(ctx) == AVERROR(EBUSY))
++            s->start_pending = 1;
+         return 0;
+     }
+ 
+@@ -396,6 +400,28 @@ dequeue:
+             return NULL;
+         }
+ 
++#ifdef V4L2_BUF_FLAG_LAST
++        if (ctx_to_m2mctx(ctx)->start_pending && !ctx_to_m2mctx(ctx)->draining &&
++            !V4L2_TYPE_IS_OUTPUT(ctx->type) && (buf.flags & V4L2_BUF_FLAG_LAST)) {
++            /* end of the old sequence: resume decoding and give the empty
++             * buffer back to the driver instead of returning it as a frame */
++            ctx_to_m2mctx(ctx)->start_pending = 0;
++            ret = v4l2_start_decode(ctx);
++            if (ret < 0)
++                av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_DECODER_CMD start: %s\n",
++                       ctx->name, av_err2str(ret));
++            avbuf = &ctx->buffers[buf.index];
++            avbuf->status = V4L2BUF_AVAILABLE;
++            avbuf->buf = buf;
++            if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
++                memcpy(avbuf->planes, planes, sizeof(planes));
++                avbuf->buf.m.planes = avbuf->planes;
++            }
++            ff_v4l2_buffer_enqueue(avbuf);
++            goto start;
++        }
++#endif
++
+         if (ctx_to_m2mctx(ctx)->draining && !V4L2_TYPE_IS_OUTPUT(ctx->type)) {
+             int bytesused = V4L2_TYPE_IS_MULTIPLANAR(buf.type) ?
+                             buf.m.planes[0].bytesused : buf.bytesused;
+diff --git a/libavcodec/v4l2_m2m.h b/libavcodec/v4l2_m2m.h
+index 7b020e2..4f60d1f 100644
+--- a/libavcodec/v4l2_m2m.h
++++ b/libavcodec/v4l2_m2m.h
+@@ -57,6 +57,11 @@ typedef struct V4L2m2mContext {
+ 
+     /* null frame/packet received */
+     int draining;
++
++    /* source change without a format change: DECODER_CMD START was refused
++     * (EBUSY) because the driver had not returned the LAST capture buffer
++     * yet; send it again when that buffer is dequeued */
++    int start_pending;
+     AVPacket buf_pkt;
+ 
+     /* Reference to a frame. Only used during encoding */
