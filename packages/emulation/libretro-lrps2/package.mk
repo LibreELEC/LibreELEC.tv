@@ -2,8 +2,8 @@
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-lrps2"
-PKG_VERSION="d4908f40fb32f43c5055852ecaed3c52aa725dce"
-PKG_SHA256="e2756b4d650cbd15912d7ead03b8f97147247c50e76ec7652efd7d9e79eb0fd1"
+PKG_VERSION="8c2b679622d602fe656ceba646b2f1f3a981c717"
+PKG_SHA256="c4a00827c6f42402b3b28139492a9edd7e593729b260c2548a9c616bc31ff946"
 PKG_ARCH="x86_64"
 PKG_LICENSE="GPL-3.0-or-later"
 PKG_SITE="https://github.com/libretro/parallel-ps2"
