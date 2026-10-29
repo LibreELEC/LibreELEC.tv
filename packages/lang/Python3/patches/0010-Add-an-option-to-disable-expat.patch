@@ -21,10 +21,10 @@ Signed-off-by: Adam Duskett <aduskett@gmail.com>
  2 files changed, 17 insertions(+), 12 deletions(-)
 
 diff --git a/Makefile.pre.in b/Makefile.pre.in
-index e2291f1..438dbfd 100644
+index 4120965..66e0e5a 100644
 --- a/Makefile.pre.in
 +++ b/Makefile.pre.in
-@@ -2584,7 +2584,6 @@ LIBSUBDIRS=	asyncio \
+@@ -2657,7 +2657,6 @@ LIBSUBDIRS=	asyncio \
  		urllib \
  		venv venv/scripts venv/scripts/common venv/scripts/posix \
  		wsgiref \
@@ -32,7 +32,7 @@ index e2291f1..438dbfd 100644
  		xmlrpc \
  		zipfile zipfile/_path \
  		zoneinfo \
-@@ -2757,6 +2756,10 @@ ifeq (@SQLITE3@,yes)
+@@ -2855,6 +2854,10 @@ ifeq (@SQLITE3@,yes)
  LIBSUBDIRS += sqlite3
  endif
  
@@ -44,10 +44,10 @@ index e2291f1..438dbfd 100644
  
  .PHONY: libinstall
 diff --git a/configure.ac b/configure.ac
-index f19086b..48cd070 100644
+index f77fe82..addda64 100644
 --- a/configure.ac
 +++ b/configure.ac
-@@ -4142,17 +4142,19 @@ LIBS="$withval $LIBS"
+@@ -4266,17 +4266,19 @@ LIBS="$withval $LIBS"
  [AC_MSG_RESULT([no])])
  
  # Check for use of the system expat library
