@@ -12,10 +12,10 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus.c b/drivers/staging/media/sunxi/cedrus/cedrus.c
-index 52a9588462ce..b824bc68f0d2 100644
+index af28125ac95c..ac3a8abf37cf 100644
 --- a/drivers/staging/media/sunxi/cedrus/cedrus.c
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus.c
-@@ -646,7 +646,7 @@ static const struct cedrus_variant sun50i_h6_cedrus_variant = {
+@@ -691,7 +691,7 @@ static const struct cedrus_variant sun50i_h6_cedrus_variant = {
  			  CEDRUS_CAPABILITY_H265_DEC |
  			  CEDRUS_CAPABILITY_H265_10_DEC |
  			  CEDRUS_CAPABILITY_VP8_DEC,
@@ -23,7 +23,4 @@ index 52a9588462ce..b824bc68f0d2 100644
 +	.mod_rate	= 648000000,
  };
  
- static const struct of_device_id cedrus_dt_match[] = {
--- 
-2.43.0
-
+ static const struct cedrus_variant sun50i_h616_cedrus_variant = {

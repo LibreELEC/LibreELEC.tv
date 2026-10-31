@@ -1458,12 +1458,12 @@ index 000000000000..85538d9c3b1f
 +	.trigger	= cedrus_vc1_trigger,
 +};
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_video.c b/drivers/staging/media/sunxi/cedrus/cedrus_video.c
-index 9074ab8ac3ad..460a8df33db7 100644
+index 275a72424d68..0f90e1168c9e 100644
 --- a/drivers/staging/media/sunxi/cedrus/cedrus_video.c
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus_video.c
-@@ -74,6 +74,11 @@ static struct cedrus_format cedrus_formats[] = {
+@@ -98,6 +98,11 @@ static struct cedrus_format cedrus_formats[] = {
+ 				  CEDRUS_CAPABILITY_H265_10_DEC,
  		.depth		= 10,
- 		.src_format	= V4L2_PIX_FMT_HEVC_SLICE,
  	},
 +	{
 +		.pixelformat	= V4L2_PIX_FMT_VC1_SLICE,
@@ -1473,7 +1473,7 @@ index 9074ab8ac3ad..460a8df33db7 100644
  	{
  		.pixelformat	= V4L2_PIX_FMT_NV12,
  		.directions	= CEDRUS_DECODE_DST,
-@@ -191,10 +196,19 @@ void cedrus_prepare_format(struct v4l2_pix_format *pix_fmt)
+@@ -188,10 +193,19 @@ void cedrus_prepare_format(struct v4l2_pix_format *pix_fmt)
  	case V4L2_PIX_FMT_HEVC_SLICE:
  	case V4L2_PIX_FMT_VP8_FRAME:
  	case V4L2_PIX_FMT_VP9_FRAME:
@@ -1493,7 +1493,7 @@ index 9074ab8ac3ad..460a8df33db7 100644
  		break;
  
  	case V4L2_PIX_FMT_NV12_32L32:
-@@ -450,6 +464,7 @@ static int cedrus_s_fmt_vid_out_p(struct cedrus_ctx *ctx,
+@@ -447,6 +461,7 @@ static int cedrus_s_fmt_vid_out_p(struct cedrus_ctx *ctx,
  	switch (ctx->src_fmt.pixelformat) {
  	case V4L2_PIX_FMT_H264_SLICE:
  	case V4L2_PIX_FMT_HEVC_SLICE:
@@ -1501,7 +1501,7 @@ index 9074ab8ac3ad..460a8df33db7 100644
  		vq->subsystem_flags |=
  			VB2_V4L2_FL_SUPPORTS_M2M_HOLD_CAPTURE_BUF;
  		break;
-@@ -475,6 +490,9 @@ static int cedrus_s_fmt_vid_out_p(struct cedrus_ctx *ctx,
+@@ -472,6 +487,9 @@ static int cedrus_s_fmt_vid_out_p(struct cedrus_ctx *ctx,
  	case V4L2_PIX_FMT_VP9_FRAME:
  		ctx->current_codec = &cedrus_dec_ops_vp9;
  		break;
