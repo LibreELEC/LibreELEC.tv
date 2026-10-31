@@ -1,0 +1,316 @@
+Add the X96Q DDR3L v5.1 (hechuang, H313) device tree for LibreELEC.
+
+Carries the board-specific pieces the stock amediatech x96q DT lacks:
+the AC300 EPHY package for ethernet (this SoC variant integrates the
+AC300 EPHY rather than the AC200 one; the package node and its PWM
+clock are enabled directly since the bootloader here is not patched to
+do the SID-based selection), XR819 SDIO wifi, AXP313 regulators and the
+DDR3L DRAM rail on DCDC3.  The serial0 alias points at UART1 (PG6/PG7),
+where the debug header of this variant sits.
+
+---
+diff --git a/arch/arm64/boot/dts/allwinner/Makefile b/arch/arm64/boot/dts/allwinner/Makefile
+--- a/arch/arm64/boot/dts/allwinner/Makefile
++++ b/arch/arm64/boot/dts/allwinner/Makefile
+@@ -50,6 +50,7 @@
+ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h6-tanix-tx6.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h6-tanix-tx6-mini.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-tanix-tx1.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q.dtb
++dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h313-x96q-ddr3-v5.1.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h616-bigtreetech-cb1-manta.dtb
+ dtb-$(CONFIG_ARCH_SUNXI) += sun50i-h616-bigtreetech-pi.dtb
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h313-x96q-ddr3-v5.1.dts b/arch/arm64/boot/dts/allwinner/sun50i-h313-x96q-ddr3-v5.1.dts
+new file mode 100644
+--- /dev/null
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h313-x96q-ddr3-v5.1.dts
+@@ -0,0 +1,289 @@
++// SPDX-License-Identifier: (GPL-2.0+ or MIT)
++/*
++ * Author: piotr.oniszczuk@gmail.com
++ */
++
++/dts-v1/;
++
++#include "sun50i-h616.dtsi"
++#include "sun50i-h616-cpu-opp.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/leds/common.h>
++
++/ {
++	model = "hechuang,x96-q DDR3L v5.1";
++	compatible = "hechuang,x96-q", "allwinner,sun50i-h616";
++
++	aliases {
++		mmc0 = &mmc0;
++		mmc2 = &mmc2;
++		ethernet0 = &emac1;
++		ethernet1 = &wlan;
++		serial0 = &uart1;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	connector {
++		compatible = "hdmi-connector";
++		type = "d";
++
++		port {
++			hdmi_con_in: endpoint {
++				remote-endpoint = <&hdmi_out_con>;
++			};
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led-red {
++			function = LED_FUNCTION_DISK_ACTIVITY;
++			color = <LED_COLOR_ID_RED>;
++			gpios = <&pio 7 6 GPIO_ACTIVE_HIGH>; /* PH6 */
++			linux,default-trigger = "disk-activity";
++		};
++	};
++
++	reg_vcc5v: vcc5v {
++		/* board wide 5V supply directly from the USB-C socket */
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-5v";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++	};
++
++	reg_usb1_vbus: usb1-vbus {
++		compatible = "regulator-fixed";
++		regulator-name = "usb1-vbus";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&reg_vcc5v>;
++		enable-active-high;
++		/* gpio = <&pio 2 16 GPIO_ACTIVE_HIGH>; PC16 */
++		status = "okay";
++	};
++
++	reg_vcc_wifi: reg_vcc_wifi {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-wifi";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&pio 6 18 GPIO_ACTIVE_HIGH>; /* PG18 WL_REG_ON */
++		regulator-always-on;
++		enable-active-high;
++		status = "okay";
++	};
++
++	wifi_pwrseq: wifi-pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		clocks = <&rtc 1>;
++		clock-names = "osc32k-out";
++		reset-gpios = <&pio 6 18 GPIO_ACTIVE_LOW>; /* PG18 */
++		post-power-on-delay-ms = <200>;
++	};
++};
++
++&cpu0 {
++	cpu-supply = <&reg_dcdc2>;
++	status = "okay";
++};
++
++&de {
++	status = "okay";
++};
++
++&ehci0 {
++	status = "okay";
++};
++
++&ehci1 {
++	status = "okay";
++};
++
++&ehci2 {
++	status = "okay";
++};
++
++&ehci3 {
++	status = "okay";
++};
++
++&hdmi {
++	hvcc-supply = <&reg_aldo1>;
++	status = "okay";
++};
++
++&hdmi_out {
++	hdmi_out_con: endpoint {
++		remote-endpoint = <&hdmi_con_in>;
++	};
++};
++
++&gpu {
++	mali-supply = <&reg_dcdc1>;
++	status = "okay";
++};
++
++&ac200_pwm_clk {
++	status = "okay";
++};
++
++&ac300_ephy_package {
++	status = "okay";
++	vcc-supply = <&reg_dldo1>;
++};
++
++&emac1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&rmii_pins>;
++	phy-mode = "rmii";
++	phy-handle = <&ac300_ephy>;
++	phy-supply = <&reg_dldo1>;
++	allwinner,rx-delay-ps = <3100>;
++	allwinner,tx-delay-ps = <700>;
++	status = "okay";
++};
++
++
++&mmc0 {
++	vmmc-supply = <&reg_dldo1>;
++	broken-cd;
++	bus-width = <4>;
++	status = "okay";
++};
++
++&mmc1 {
++	vmmc-supply = <&reg_dldo1>;
++	vqmmc-supply = <&reg_vcc_wifi>;
++	mmc-pwrseq = <&wifi_pwrseq>;
++	bus-width = <4>;
++	non-removable;
++	status = "okay";
++
++	wlan: wifi@1 {
++		compatible = "xradio,xr819";
++		reg = <1>;
++		interrupt-parent = <&pio>;
++		interrupts = <6 15 IRQ_TYPE_EDGE_RISING>; /* PG15 WL_HOSTWAKE*/
++		interrupt-names = "host-wake";
++		local-mac-address = [dc 44 6d c0 ff 02];
++	};
++};
++
++&mmc2 {
++	vmmc-supply = <&reg_dldo1>;
++	bus-width = <8>;
++	non-removable;
++	cap-mmc-hw-reset;
++	status = "okay";
++};
++
++&ohci0 {
++	status = "okay";
++};
++
++&ohci1 {
++	status = "okay";
++};
++
++&ohci2 {
++	status = "okay";
++};
++
++&ohci3 {
++	status = "okay";
++};
++
++&r_i2c {
++	status = "okay";
++
++	axp313a: pmic@36 {
++		compatible = "x-powers,axp313a";
++		reg = <0x36>;
++		wakeup-source;
++		vin1-supply = <&reg_vcc5v>;
++		vin2-supply = <&reg_vcc5v>;
++		vin3-supply = <&reg_vcc5v>;
++
++		regulators {
++			reg_dcdc1: dcdc1 {
++				regulator-always-on;
++				regulator-min-microvolt = <810000>;
++				regulator-max-microvolt = <1160000>;
++				regulator-name = "vdd-gpu";
++			};
++
++			reg_dcdc2: dcdc2 {
++				regulator-always-on;
++				regulator-min-microvolt = <810000>;
++				regulator-max-microvolt = <1160000>;
++				regulator-name = "vdd-cpu";
++			};
++
++			reg_dcdc3: dcdc3 {
++				regulator-always-on;
++				regulator-min-microvolt = <1360000>;
++				regulator-max-microvolt = <1360000>;
++				regulator-name = "vdd-dram";
++			};
++
++			reg_aldo1: aldo1 {
++				regulator-always-on;
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
++				regulator-name = "vcc1v8";
++			};
++
++			reg_dldo1: dldo1 {
++				regulator-always-on;
++				regulator-min-microvolt = <3300000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-name = "vcc3v3";
++			};
++		};
++	};
++};
++
++&uart0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart0_ph_pins>;
++	status = "okay";
++};
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart1_pins>, <&uart1_rts_cts_pins>;
++	uart-has-rtscts;
++	status = "okay";
++
++};
++
++&usbotg {
++	dr_mode = "peripheral";
++	status = "okay";
++};
++
++&usbphy {
++	usb1_vbus-supply = <&reg_usb1_vbus>;
++	status = "okay";
++};
++
++&ir {
++	linux,rc-map-name = "rc-beelink-gs1";
++	status = "okay";
++};
++
++&codec {
++	allwinner,audio-routing =
++	        "Line Out", "LINEOUT";
++	status = "okay";
++};
++
++
++
