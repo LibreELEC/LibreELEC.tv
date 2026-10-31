@@ -1,0 +1,130 @@
+From a0f24a22b45f66ee822c12fefd7d704e6466903c Mon Sep 17 00:00:00 2001
+From: Chris <meischris39@hotmail.com>
+Date: Mon, 26 Oct 2026 20:08:56 +0000
+Subject: [PATCH] Memory: keep the code reservation in the core's image when no
+ hole is near
+
+When every hole within reach of the module is taken, the 305MB code
+reservation falls back to wherever the OS puts it. In Kodi on x86-64
+Linux that was about 2GB below the module, and the EE recompiler aborted
+at its first emission.
+
+Reserve space in the module's own .bss as well, and when the near search
+finds nothing, map the code reservation over it. Being part of the image,
+it is always within reach of the globals. It is handed back as plain
+memory when the reservation is released.
+---
+ pcsx2/Memory.cpp        | 22 ++++++++++++++++++++++
+ pcsx2/VirtualMemory.cpp | 24 ++++++++++++++++++++++++
+ pcsx2/VirtualMemory.h   |  8 ++++++++
+ 3 files changed, 54 insertions(+)
+
+diff --git a/pcsx2/Memory.cpp b/pcsx2/Memory.cpp
+index 793e6f086..8bd8ef3d4 100644
+--- a/pcsx2/Memory.cpp
++++ b/pcsx2/Memory.cpp
+@@ -184,6 +184,14 @@ static VirtualMemoryManagerPtr AllocateNearModule(const char* name, size_t size,
+ }
+ #endif
+ 
++#if defined(__x86_64__) && !defined(_WIN32) && !defined(__APPLE__)
++/* Room for the code reservation in this module's own image, for when no hole
++ * near the module is free: a host that has already run another large core can
++ * leave none. Being part of the image, it is always within reach of the
++ * module's globals. */
++alignas(0x10000) static u8 s_code_in_image[HostMemoryMap::CodeSize];
++#endif
++
+ /// Attempts to find a spot near this module's globals for the memory maps
+ static VirtualMemoryManagerPtr AllocateVirtualMemory(const char* name, size_t size, bool code)
+ {
+@@ -191,6 +199,20 @@ static VirtualMemoryManagerPtr AllocateVirtualMemory(const char* name, size_t si
+ 	if (mgr)
+ 		return mgr;
+ 
++#if defined(__x86_64__) && !defined(_WIN32) && !defined(__APPLE__)
++	if (code && size <= sizeof(s_code_in_image))
++	{
++		mgr = std::make_shared<VirtualMemoryManager>(s_code_in_image, size);
++		if (mgr->IsOk())
++		{
++			log_cb(RETRO_LOG_INFO, "No hole near the core for the %zu MB code reservation, so it is "
++			                       "in the core's own image.\n",
++			       size >> 20);
++			return mgr;
++		}
++	}
++#endif
++
+ 	mgr = std::make_shared<VirtualMemoryManager>(name, 0, size);
+ 	if (code && mgr->IsOk())
+ 		log_cb(RETRO_LOG_ERROR, "Could not place the %zu MB code reservation within 2GB of the core "
+diff --git a/pcsx2/VirtualMemory.cpp b/pcsx2/VirtualMemory.cpp
+index 4d5e07d1d..c8bcfd85c 100644
+--- a/pcsx2/VirtualMemory.cpp
++++ b/pcsx2/VirtualMemory.cpp
+@@ -112,6 +112,26 @@ VirtualMemoryManager::VirtualMemoryManager(const char* file_mapping_name, uptr b
+ 	m_pageuse = new retro_atomic_int_t[m_pages_reserved]();
+ }
+ 
++#ifndef _WIN32
++VirtualMemoryManager::VirtualMemoryManager(u8* image_space, size_t size)
++	: m_file_handle(nullptr)
++	, m_baseptr(0)
++	, m_pageuse(nullptr)
++	, m_pages_reserved(0)
++	, m_in_image(true)
++{
++	const size_t reserved_bytes = pcsx2_page_align(size);
++	void* p = mmap(image_space, reserved_bytes, PROT_READ | PROT_WRITE | PROT_EXEC,
++	               MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
++	if (p == MAP_FAILED)
++		return;
++
++	m_baseptr = static_cast<u8*>(p);
++	m_pages_reserved = reserved_bytes / __pagesize;
++	m_pageuse = new retro_atomic_int_t[m_pages_reserved]();
++}
++#endif
++
+ VirtualMemoryManager::~VirtualMemoryManager()
+ {
+ 	if (m_pageuse)
+@@ -135,6 +155,10 @@ VirtualMemoryManager::~VirtualMemoryManager()
+ 			host_munmap(m_baseptr, bytes);
+ #endif
+ 		}
++#ifndef _WIN32
++		else if (m_in_image)
++			mmap(m_baseptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
++#endif
+ 		else
+ 			host_munmap(m_baseptr, bytes);
+ 	}
+diff --git a/pcsx2/VirtualMemory.h b/pcsx2/VirtualMemory.h
+index f73eabc0e..c7cdc0197 100644
+--- a/pcsx2/VirtualMemory.h
++++ b/pcsx2/VirtualMemory.h
+@@ -47,11 +47,19 @@ class VirtualMemoryManager
+ 	// reserved memory (in pages)
+ 	u32 m_pages_reserved;
+ 
++	// The memory is part of the module's own image rather than a mapping of its own
++	bool m_in_image = false;
++
+ public:
+ 	// If upper_bounds is nonzero and the OS fails to allocate memory that is below it,
+ 	// calls to IsOk() will return false and Alloc() will always return null pointers
+ 	// strict indicates that the allocation should quietly fail if the memory can't be mapped at `base`
+ 	VirtualMemoryManager(const char* file_mapping_name, uptr base, size_t size, uptr upper_bounds = 0, bool strict = false);
++#ifndef _WIN32
++	// Executable memory over image_space, which has to be page-aligned space the
++	// module owns, such as a static array. It is handed back as plain memory.
++	VirtualMemoryManager(u8* image_space, size_t size);
++#endif
+ 	~VirtualMemoryManager();
+ 
+ 	void* GetFileHandle() const { return m_file_handle; }
+-- 
+2.53.0
+
