@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
+
+# Usage: ./mkpkg_dolphin [commit]
+
+set -e
+
+GIT_URL="https://github.com/libretro/dolphin.git"
+GIT_DIR="dolphin.git"
+
+# Submodules a libretro build needs that LibreELEC doesn't provide
+SUBMODULES="\
+  Externals/cpp-ipc/cpp-ipc \
+  Externals/cpp-optparse/cpp-optparse \
+  Externals/imgui/imgui \
+  Externals/implot/implot \
+  Externals/tinygltf/tinygltf \
+  Externals/watcher/watcher \
+  Externals/enet/enet \
+  Externals/fmt/fmt \
+  Externals/hidapi/hidapi-src \
+  Externals/libspng/libspng \
+  Externals/mGBA/mgba \
+  Externals/minizip-ng/minizip-ng \
+  Externals/SFML/SFML \
+  Externals/xxhash/xxHash \
+"
+
+echo "getting sources..."
+if [ ! -d "${GIT_DIR}" ]; then
+  git clone "${GIT_URL}" "${GIT_DIR}"
+fi
+
+cd "${GIT_DIR}"
+git fetch
+if [ $# -eq 1 ]; then
+  git checkout "$1"
+else
+  git checkout origin/master
+fi
+GIT_REV=$(git log -n1 --format=%H)
+
+echo "getting submodules..."
+for module in ${SUBMODULES}; do
+  if ! git ls-tree "${GIT_REV}" "${module}" | grep -q .; then
+    echo "error: ${module} is not a submodule of ${GIT_REV}" >&2
+    exit 1
+  fi
+  git submodule update --init --depth=1 "${module}"
+done
+cd ..
+
+PKG_DIR="libretro-dolphin-${GIT_REV}"
+
+echo "copying sources..."
+rm -rf "${PKG_DIR}"
+mkdir -p "${PKG_DIR}"
+(cd "${GIT_DIR}" && tar cf - --exclude-vcs .) | (cd "${PKG_DIR}" && tar xf -)
+
+echo "packing sources..."
+tar cJf "${PKG_DIR}.tar.xz" "${PKG_DIR}"
+
+echo "remove temporary sourcedir..."
+rm -rf "${PKG_DIR}"
+
+echo
+echo "${PKG_DIR}.tar.xz"
+sha256sum "${PKG_DIR}.tar.xz"
