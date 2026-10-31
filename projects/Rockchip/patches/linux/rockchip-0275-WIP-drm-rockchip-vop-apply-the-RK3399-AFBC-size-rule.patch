@@ -1,0 +1,53 @@
+From e6f0a4d1d8fa082efb41e48619913d6d9c41c996 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 10:35:34 +0000
+Subject: [PATCH 275/280] WIP: drm/rockchip: vop: apply the RK3399 AFBC size
+ rules
+
+The RK3399 AFBC decoder only decodes whole rows of 16x16 blocks and
+needs a 16 pixel aligned buffer width. A 1920x1080 buffer is passed
+with a partial last block row, as nothing checks either rule.
+
+Reject AFBC buffers with an unaligned width and round the source
+height down to a multiple of 16, as the vendor kernel does.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+index 3966f241c010..6b888065aafd 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+@@ -863,6 +863,7 @@ static int vop_plane_atomic_check(struct drm_plane *plane,
+ 	struct drm_framebuffer *fb = new_plane_state->fb;
+ 	struct vop_win *vop_win = to_vop_win(plane);
+ 	const struct vop_win_data *win = vop_win->data;
++	unsigned int src_h;
+ 	int ret;
+ 	int min_scale = win->phy->scl ? FRAC_16_16(1, 8) :
+ 					DRM_PLANE_NO_SCALING;
+@@ -934,6 +935,18 @@ static int vop_plane_atomic_check(struct drm_plane *plane,
+ 				      fb->width);
+ 			return -EINVAL;
+ 		}
++
++		if (!IS_ALIGNED(fb->width, 16)) {
++			DRM_DEBUG_KMS("AFBC width must be 16 aligned, fb width=%u\n",
++				      fb->width);
++			return -EINVAL;
++		}
++
++		/* The decoder only handles whole rows of 16x16 blocks */
++		src_h = drm_rect_height(&new_plane_state->src) >> 16;
++		if (!IS_ALIGNED(src_h, 16))
++			new_plane_state->src.y2 = new_plane_state->src.y1 +
++						  (ALIGN_DOWN(src_h, 16) << 16);
+ 	}
+ 
+ 	return 0;
+-- 
+2.43.0
+

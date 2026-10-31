@@ -1,0 +1,48 @@
+From ceb3a48ea14605a3a21fc4da549a03c39704c1eb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:11 +0200
+Subject: [PATCH 154/280] FROMLIST(v4): drm/bridge: dw-hdmi-qp: Forward
+ supported colorspaces from platform data
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Let platform glue drivers declare the supported colorspaces, the same
+way they already declare supported output formats and max bpc.
+
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 3 +++
+ include/drm/bridge/dw_hdmi_qp.h              | 2 ++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index 695047500533..e7b5b90249c5 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -1179,6 +1179,9 @@ struct dw_hdmi_qp *dw_hdmi_qp_bind(struct platform_device *pdev,
+ 	if (plat_data->supported_formats)
+ 		hdmi->bridge.supported_formats = plat_data->supported_formats;
+ 
++	if (plat_data->supported_colorspaces)
++		hdmi->bridge.supported_colorspaces = plat_data->supported_colorspaces;
++
+ 	if (plat_data->max_bpc)
+ 		hdmi->bridge.max_bpc = plat_data->max_bpc;
+ 
+diff --git a/include/drm/bridge/dw_hdmi_qp.h b/include/drm/bridge/dw_hdmi_qp.h
+index ad33f9cafdeb..c336bd40c9cb 100644
+--- a/include/drm/bridge/dw_hdmi_qp.h
++++ b/include/drm/bridge/dw_hdmi_qp.h
+@@ -28,6 +28,8 @@ struct dw_hdmi_qp_plat_data {
+ 	unsigned long ref_clk_rate;
+ 	/* Supported output formats: bitmask of @drm_output_color_format */
+ 	unsigned int supported_formats;
++	/* Supported colorspaces: bitmask of &enum drm_colorspace */
++	unsigned int supported_colorspaces;
+ 	/* Maximum bits per color channel: 8, 10 or 12 */
+ 	unsigned int max_bpc;
+ };
+-- 
+2.43.0
+

@@ -1,0 +1,123 @@
+From 1940f9e7278cc6144528485c79421d802a9b30cf Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 07:06:48 +0000
+Subject: [PATCH 1/2] LOCAL: rockchip: rk3399-roc-pc: Restore SD card IO
+ voltage in SPL
+
+Linux switches the SD card IO supply (vcc_sdio, RK808 LDO4) to 1.8V
+for UHS-I modes. The PMIC is not reset on a warm reboot, so SPL reads
+the card with the pads at 3.3V and the supply at 1.8V, and loading
+u-boot.itb fails with block read errors.
+
+Enable I2C, PMIC and RK8XX regulator support in SPL and include
+vcc_sdio, the i2c0 pins and the IO domains in the SPL devicetree, so
+dw_mmc sets vqmmc back to 3.0V before reading the card.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm/dts/rk3399-roc-pc-u-boot.dtsi    | 10 ++++++++++
+ configs/roc-pc-mezzanine-rk3399_defconfig |  6 ++++++
+ configs/roc-pc-rk3399_defconfig           |  6 ++++++
+ 3 files changed, 22 insertions(+)
+
+diff --git a/arch/arm/dts/rk3399-roc-pc-u-boot.dtsi b/arch/arm/dts/rk3399-roc-pc-u-boot.dtsi
+index 883d399a06a..48ad6207365 100644
+--- a/arch/arm/dts/rk3399-roc-pc-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-roc-pc-u-boot.dtsi
+@@ -44,6 +44,14 @@
+ 	bootph-pre-ram;
+ };
+ 
++&i2c0_xfer {
++	bootph-pre-ram;
++};
++
++&io_domains {
++	bootph-pre-ram;
++};
++
+ &spi1 {
+ 	flash@0 {
+ 		bootph-pre-ram;
+@@ -64,7 +72,9 @@
+ };
+ 
+ &vcc_sdio {
++	bootph-pre-ram;
+ 	regulator-always-on;
++	regulator-init-microvolt = <3000000>;
+ };
+ 
+ &vcc_sys {
+diff --git a/configs/roc-pc-mezzanine-rk3399_defconfig b/configs/roc-pc-mezzanine-rk3399_defconfig
+index 8b4d8c1b0aa..dd2ed89ba7b 100644
+--- a/configs/roc-pc-mezzanine-rk3399_defconfig
++++ b/configs/roc-pc-mezzanine-rk3399_defconfig
+@@ -27,6 +27,8 @@ CONFIG_DISPLAY_BOARDINFO_LATE=y
+ CONFIG_SPL_MAX_SIZE=0x40000
+ # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
+ CONFIG_SPL_ENV_SUPPORT=y
++CONFIG_SPL_I2C=y
++CONFIG_SPL_POWER=y
+ CONFIG_SPL_SPI_LOAD=y
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0xE0000
+ CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
+@@ -44,6 +46,7 @@ CONFIG_ENV_IS_IN_SPI_FLASH=y
+ CONFIG_ENV_RELOC_GD_ENV_ADDR=y
+ CONFIG_ROCKCHIP_GPIO=y
+ CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_SPL_ROCKCHIP_IODOMAIN=y
+ CONFIG_MMC_DW=y
+ CONFIG_MMC_DW_ROCKCHIP=y
+ CONFIG_MMC_SDHCI=y
+@@ -59,9 +62,12 @@ CONFIG_NVME_PCI=y
+ CONFIG_PHY_ROCKCHIP_INNO_USB2=y
+ CONFIG_PHY_ROCKCHIP_TYPEC=y
+ CONFIG_PMIC_RK8XX=y
++CONFIG_SPL_PMIC_RK8XX=y
++CONFIG_SPL_DM_REGULATOR=y
+ CONFIG_REGULATOR_PWM=y
+ CONFIG_SPL_DM_REGULATOR_FIXED=y
+ CONFIG_REGULATOR_RK8XX=y
++CONFIG_SPL_REGULATOR_RK8XX=y
+ CONFIG_PWM_ROCKCHIP=y
+ # CONFIG_RAM_ROCKCHIP_DEBUG is not set
+ CONFIG_RAM_ROCKCHIP_LPDDR4=y
+diff --git a/configs/roc-pc-rk3399_defconfig b/configs/roc-pc-rk3399_defconfig
+index 1df5cb03adb..570c7265030 100644
+--- a/configs/roc-pc-rk3399_defconfig
++++ b/configs/roc-pc-rk3399_defconfig
+@@ -26,6 +26,8 @@ CONFIG_DISPLAY_BOARDINFO_LATE=y
+ CONFIG_SPL_MAX_SIZE=0x40000
+ # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
+ CONFIG_SPL_ENV_SUPPORT=y
++CONFIG_SPL_I2C=y
++CONFIG_SPL_POWER=y
+ CONFIG_SPL_SPI_LOAD=y
+ CONFIG_SYS_SPI_U_BOOT_OFFS=0xE0000
+ CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
+@@ -42,6 +44,7 @@ CONFIG_ENV_IS_IN_SPI_FLASH=y
+ CONFIG_ENV_RELOC_GD_ENV_ADDR=y
+ CONFIG_ROCKCHIP_GPIO=y
+ CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_SPL_ROCKCHIP_IODOMAIN=y
+ CONFIG_MMC_DW=y
+ CONFIG_MMC_DW_ROCKCHIP=y
+ CONFIG_MMC_SDHCI=y
+@@ -56,9 +59,12 @@ CONFIG_PHY_REALTEK=y
+ CONFIG_PHY_ROCKCHIP_INNO_USB2=y
+ CONFIG_PHY_ROCKCHIP_TYPEC=y
+ CONFIG_PMIC_RK8XX=y
++CONFIG_SPL_PMIC_RK8XX=y
++CONFIG_SPL_DM_REGULATOR=y
+ CONFIG_REGULATOR_PWM=y
+ CONFIG_SPL_DM_REGULATOR_FIXED=y
+ CONFIG_REGULATOR_RK8XX=y
++CONFIG_SPL_REGULATOR_RK8XX=y
+ CONFIG_PWM_ROCKCHIP=y
+ # CONFIG_RAM_ROCKCHIP_DEBUG is not set
+ CONFIG_RAM_ROCKCHIP_LPDDR4=y
+-- 
+2.43.0
+

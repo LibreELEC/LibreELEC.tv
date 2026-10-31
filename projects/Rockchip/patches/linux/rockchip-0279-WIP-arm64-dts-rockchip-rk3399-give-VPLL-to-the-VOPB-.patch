@@ -1,0 +1,52 @@
+From a9706004f0e7abb590a5aa803ca829cf059968a4 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 11:16:15 +0000
+Subject: [PATCH 279/280] WIP: arm64: dts: rockchip: rk3399: give VPLL to the
+ VOPB pixel clock
+
+The big VOP drives HDMI, whose pixel clocks at 1000/1001 rates can only
+be made by VPLL, but dclk_vop0 is left on whichever PLL the bootloader
+chose and the little VOP pixel clock can also be parented to VPLL.
+
+Assign VPLL to the VOPB pixel clock and CPLL to the VOPL pixel clock, as
+the vendor TV box configuration does.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3399-base.dtsi | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+index 1dc6661f5102..096015e97448 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+@@ -1832,8 +1832,10 @@ vopl: vop@ff8f0000 {
+ 		compatible = "rockchip,rk3399-vop-lit";
+ 		reg = <0x0 0xff8f0000 0x0 0x2000>, <0x0 0xff8f2000 0x0 0x400>;
+ 		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH 0>;
+-		assigned-clocks = <&cru ACLK_VOP1>, <&cru HCLK_VOP1>;
+-		assigned-clock-rates = <400000000>, <100000000>;
++		assigned-clocks = <&cru ACLK_VOP1>, <&cru HCLK_VOP1>,
++				  <&cru DCLK_VOP1_DIV>;
++		assigned-clock-rates = <400000000>, <100000000>, <0>;
++		assigned-clock-parents = <0>, <0>, <&cru PLL_CPLL>;
+ 		clocks = <&cru ACLK_VOP1>, <&cru DCLK_VOP1>, <&cru HCLK_VOP1>;
+ 		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
+ 		iommus = <&vopl_mmu>;
+@@ -1888,8 +1890,10 @@ vopb: vop@ff900000 {
+ 		compatible = "rockchip,rk3399-vop-big";
+ 		reg = <0x0 0xff900000 0x0 0x2000>, <0x0 0xff902000 0x0 0x1000>;
+ 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH 0>;
+-		assigned-clocks = <&cru ACLK_VOP0>, <&cru HCLK_VOP0>;
+-		assigned-clock-rates = <400000000>, <100000000>;
++		assigned-clocks = <&cru ACLK_VOP0>, <&cru HCLK_VOP0>,
++				  <&cru DCLK_VOP0_DIV>;
++		assigned-clock-rates = <400000000>, <100000000>, <0>;
++		assigned-clock-parents = <0>, <0>, <&cru PLL_VPLL>;
+ 		clocks = <&cru ACLK_VOP0>, <&cru DCLK_VOP0>, <&cru HCLK_VOP0>;
+ 		clock-names = "aclk_vop", "dclk_vop", "hclk_vop";
+ 		iommus = <&vopb_mmu>;
+-- 
+2.43.0
+

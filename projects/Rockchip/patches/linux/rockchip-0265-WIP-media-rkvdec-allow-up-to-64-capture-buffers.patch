@@ -1,0 +1,39 @@
+From 2233fe87e30eea0301f8cda9fc9a7f8526aeca57 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 20:25:43 +0000
+Subject: [PATCH 265/280] WIP: media: rkvdec: allow up to 64 capture buffers
+
+The capture queue does not set max_num_buffers, so videobuf2 limits it to
+VB2_MAX_FRAME (32) buffers. Every reference frame must be a capture
+buffer, so a userspace that keeps decoded frames queued for display or
+further processing can exhaust that limit, and VIDIOC_CREATE_BUFS then
+fails with -ENOBUFS.
+
+Kodi's Dolby Vision profile 7 FEL playback holds up to 16 base layer
+pictures while it waits for the matching enhancement layer pictures,
+on top of the HEVC DPB and its render queue. The 4K base layer context
+reached 32 capture buffers, decoding failed and playback showed a black
+screen. Allow 64 capture buffers. They are still allocated on demand,
+and the IOMMU-backed single-page allocations do not use CMA.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 4365304b5411..8c515262896b 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -1479,6 +1479,7 @@ static int rkvdec_queue_init(void *priv,
+ 	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
+ 	dst_vq->lock = &rkvdec->vdev_lock;
+ 	dst_vq->dev = rkvdec->v4l2_dev.dev;
++	dst_vq->max_num_buffers = 64;
+ 
+ 	return vb2_queue_init(dst_vq);
+ }
+-- 
+2.43.0
+

@@ -1,0 +1,84 @@
+From de6421371096bc55506f65d2b663c5a6b2964537 Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 22 Sep 2026 10:01:14 +0200
+Subject: [PATCH 105/280] FROMLIST(v2): arm64: dts: rockchip: rk3588: add
+ passive cooling to the NPU thermal zone
+
+The NPU zone has had only a critical trip at 115 degrees, which is a
+shutdown and not a cooling policy. Now that the NPU can be throttled by
+capping its clock, give the zone a passive trip and a cooling map, in the
+same shape and at the same temperatures as the GPU zone right above it:
+85 degrees with 2 degrees of hysteresis, and a 100 ms passive polling
+delay.
+
+The #cooling-cells property goes on rknn_core_0, the first of the three
+core nodes, as the one node that stands for the shared clock as a cooling
+device. The other two cores have no clock of their own and cannot be
+throttled independently of it.
+
+The cooling map is inert until the driver registers a cooling device:
+thermal_of_should_bind() only resolves a map entry once a matching cdev
+appears, so this patch on its own changes nothing but the trip point. On a
+board that leaves the NPU disabled the passive trip has no cooling device
+to act on and only changes the polling rate above 85 degrees, as the GPU
+zone's trip already does on a board without the GPU.
+
+The thermal path itself has not been exercised on the board this was
+written on. Reaching 85 degrees on an NPU workload with the fan curve here
+has not been possible, so what is verified is that the zone parses and
+binds, not that throttling engages at temperature.
+
+Assisted-by: LLM checkpatch dtbs_check
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-base.dtsi | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+index c4b9f239c977..26eef178d9fb 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -1162,6 +1162,7 @@ rknn_core_0: npu@fdab0000 {
+ 		clock-names = "aclk", "hclk", "npu", "pclk";
+ 		assigned-clocks = <&scmi_clk SCMI_CLK_NPU>;
+ 		assigned-clock-rates = <200000000>;
++		#cooling-cells = <2>;
+ 		resets = <&cru SRST_A_RKNN0>, <&cru SRST_H_RKNN0>;
+ 		reset-names = "srst_a", "srst_h";
+ 		power-domains = <&power RK3588_PD_NPUTOP>;
+@@ -3228,17 +3229,31 @@ map0 {
+ 		};
+ 
+ 		npu_thermal: npu-thermal {
+-			polling-delay-passive = <0>;
++			polling-delay-passive = <100>;
+ 			polling-delay = <0>;
+ 			thermal-sensors = <&tsadc 6>;
+ 
+ 			trips {
++				npu_alert: npu-alert {
++					temperature = <85000>;
++					hysteresis = <2000>;
++					type = "passive";
++				};
++
+ 				npu_crit: npu-crit {
+ 					temperature = <115000>;
+ 					hysteresis = <0>;
+ 					type = "critical";
+ 				};
+ 			};
++
++			cooling-maps {
++				map0 {
++					trip = <&npu_alert>;
++					cooling-device =
++						<&rknn_core_0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++				};
++			};
+ 		};
+ 	};
+ 
+-- 
+2.43.0
+

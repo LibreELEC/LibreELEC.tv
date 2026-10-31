@@ -1,0 +1,125 @@
+From 882a8a28500bfd1fa70d80ebc6529d452caaa457 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 11:06:24 +0000
+Subject: [PATCH 229/280] WIP: drm/connector: add an HDMI Dolby Vision
+ connector property
+
+Add an experimental boolean connector property requesting standard
+(sink-led) Dolby Vision signalling, and the matching hdmi.dolby_vision
+connector state. It uses the name the CB1 player already looks for,
+DVBRIDGE_DV_STANDARD_LAB, and is only attached by drivers that opt in.
+---
+ drivers/gpu/drm/drm_atomic_uapi.c |  4 ++++
+ drivers/gpu/drm/drm_connector.c   | 33 +++++++++++++++++++++++++++++++
+ include/drm/drm_connector.h       | 15 ++++++++++++++
+ 3 files changed, 52 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_atomic_uapi.c b/drivers/gpu/drm/drm_atomic_uapi.c
+index 68d59e17ffc2..9eb91c964c86 100644
+--- a/drivers/gpu/drm/drm_atomic_uapi.c
++++ b/drivers/gpu/drm/drm_atomic_uapi.c
+@@ -960,6 +960,8 @@ static int drm_atomic_connector_set_property(struct drm_connector *connector,
+ 		state->privacy_screen_sw_state = val;
+ 	} else if (property == connector->broadcast_rgb_property) {
+ 		state->hdmi.broadcast_rgb = val;
++	} else if (property == connector->dolby_vision_property) {
++		state->hdmi.dolby_vision = val;
+ 	} else if (property == connector->color_format_property) {
+ 		state->color_format = val;
+ 	} else if (connector->funcs->atomic_set_property) {
+@@ -1047,6 +1049,8 @@ drm_atomic_connector_get_property(struct drm_connector *connector,
+ 		*val = state->privacy_screen_sw_state;
+ 	} else if (property == connector->broadcast_rgb_property) {
+ 		*val = state->hdmi.broadcast_rgb;
++	} else if (property == connector->dolby_vision_property) {
++		*val = state->hdmi.dolby_vision;
+ 	} else if (property == connector->color_format_property) {
+ 		*val = state->color_format;
+ 	} else if (connector->funcs->atomic_get_property) {
+diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
+index 263675006a6c..28d9c619154d 100644
+--- a/drivers/gpu/drm/drm_connector.c
++++ b/drivers/gpu/drm/drm_connector.c
+@@ -3114,6 +3114,39 @@ int drm_connector_attach_broadcast_rgb_property(struct drm_connector *connector)
+ }
+ EXPORT_SYMBOL(drm_connector_attach_broadcast_rgb_property);
+ 
++/**
++ * drm_connector_attach_hdmi_dolby_vision_property - attach the Dolby Vision property
++ * @connector: HDMI connector using the HDMI state helpers
++ *
++ * Experimental. Creates and attaches the boolean "DVBRIDGE_DV_STANDARD_LAB"
++ * property (the name used by the CB1 player). Setting it requests standard
++ * (sink-led) Dolby Vision: drm_atomic_helper_connector_hdmi_check() then
++ * validates the link, replaces the HDMI 1.4 vendor-specific InfoFrame with the
++ * Dolby one and requires bit-exact scanout, see
++ * drm_atomic_helper_hdmi_dolby_vision_check_crtc(). Only drivers whose CRTC
++ * output path can guarantee bit-exact RGB 8 bpc delivery may attach it.
++ *
++ * Returns:
++ * Zero on success, negative errno on failure.
++ */
++int drm_connector_attach_hdmi_dolby_vision_property(struct drm_connector *connector)
++{
++	struct drm_property *prop = connector->dolby_vision_property;
++
++	if (!prop) {
++		prop = drm_property_create_bool(connector->dev, DRM_MODE_PROP_ATOMIC,
++						"DVBRIDGE_DV_STANDARD_LAB");
++		if (!prop)
++			return -ENOMEM;
++		connector->dolby_vision_property = prop;
++	}
++
++	drm_object_attach_property(&connector->base, prop, 0);
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_connector_attach_hdmi_dolby_vision_property);
++
+ /**
+  * drm_connector_attach_colorspace_property - attach "Colorspace" property
+  * @connector: connector to attach the property on.
+diff --git a/include/drm/drm_connector.h b/include/drm/drm_connector.h
+index 89183b8583c6..cbbaf7e27ca3 100644
+--- a/include/drm/drm_connector.h
++++ b/include/drm/drm_connector.h
+@@ -1118,6 +1118,14 @@ struct drm_connector_hdmi_state {
+ 	 */
+ 	bool is_limited_range;
+ 
++	/**
++	 * @dolby_vision: Userspace requested standard (sink-led) Dolby
++	 * Vision signalling: the Dolby vendor-specific InfoFrame replaces
++	 * the HDMI 1.4 one and the scanout must reach the sink bit-exact,
++	 * see drm_connector_attach_hdmi_dolby_vision_property().
++	 */
++	bool dolby_vision;
++
+ 	/**
+ 	 * @output_bpc: Bits per color channel to output.
+ 	 */
+@@ -2449,6 +2457,12 @@ struct drm_connector {
+ 	 */
+ 	struct drm_property *broadcast_rgb_property;
+ 
++	/**
++	 * @dolby_vision_property: Experimental connector property to request
++	 * standard Dolby Vision signalling on an HDMI connector.
++	 */
++	struct drm_property *dolby_vision_property;
++
+ #define DRM_CONNECTOR_POLL_HPD (1 << 0)
+ #define DRM_CONNECTOR_POLL_CONNECT (1 << 1)
+ #define DRM_CONNECTOR_POLL_DISCONNECT (1 << 2)
+@@ -2825,6 +2839,7 @@ int drm_connector_attach_vrr_capable_property(
+ 		struct drm_connector *connector);
+ void drm_connector_attach_panel_type_property(struct drm_connector *connector);
+ int drm_connector_attach_broadcast_rgb_property(struct drm_connector *connector);
++int drm_connector_attach_hdmi_dolby_vision_property(struct drm_connector *connector);
+ int drm_connector_attach_colorspace_property(struct drm_connector *connector);
+ void drm_connector_attach_hdr_output_metadata_property(struct drm_connector *connector);
+ bool drm_connector_atomic_hdr_metadata_equal(struct drm_connector_state *old_state,
+-- 
+2.43.0
+

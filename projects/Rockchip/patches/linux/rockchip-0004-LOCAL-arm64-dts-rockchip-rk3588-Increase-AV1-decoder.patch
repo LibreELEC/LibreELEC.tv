@@ -1,0 +1,31 @@
+From 3f69ede97d4439a08f2e256f728592da7aa09eb5 Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Wed, 4 Mar 2026 14:12:48 -0500
+Subject: [PATCH 004/280] LOCAL: arm64: dts: rockchip: rk3588: Increase AV1
+ decoder clock to 500MHz
+
+Hack the AV1 decoder clock rate to improve performance. Without reference
+frame compression, we are not reaching 4K 60fps videos with 10bit videos.
+This was tested with Netflix Meridian AV1 video samples.
+
+Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-base.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+index c1f0ee03c4cb..f0e98a84cbd9 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -1471,7 +1471,7 @@ av1d: video-codec@fdc70000 {
+ 		interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH 0>;
+ 		interrupt-names = "vdpu";
+ 		assigned-clocks = <&cru ACLK_AV1>, <&cru PCLK_AV1>;
+-		assigned-clock-rates = <400000000>, <400000000>;
++		assigned-clock-rates = <500000000>, <400000000>;
+ 		clocks = <&cru ACLK_AV1>, <&cru PCLK_AV1>;
+ 		clock-names = "aclk", "hclk";
+ 		power-domains = <&power RK3588_PD_AV1>;
+-- 
+2.43.0
+

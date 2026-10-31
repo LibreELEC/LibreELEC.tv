@@ -1,0 +1,343 @@
+From b43164cd8f1452200891380ba384d0a0e88fc4df Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 18:56:09 +0000
+Subject: [PATCH] windowing/gbm: move a compressed gui off the only plane the
+ video can use
+
+The gui surface takes the first modifier the GBM implementation picks
+from the output plane formats, which can be a compressed one such as
+Arm AFBC. Its plane is then the only one that scans out that modifier.
+When the video is also compressed and only that plane accepts it, as
+with AFBC video on the RK3566 cluster window, no video plane is found
+and DRM PRIME rendering fails.
+
+When that is the case and a linear gui would leave a plane for the
+video, recreate the gui surface with a linear layout, move the gui to a
+plane that scans it out, and look for the video plane again. The gui
+stays linear for the rest of the session.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../HwDecRender/RendererDRMPRIME.cpp          |   9 +-
+ xbmc/windowing/gbm/WinSystemGbm.h             |   3 +
+ xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp | 149 ++++++++++--------
+ xbmc/windowing/gbm/WinSystemGbmEGLContext.h   |   7 +
+ xbmc/windowing/gbm/drm/DRMUtils.cpp           |  31 ++++
+ xbmc/windowing/gbm/drm/DRMUtils.h             |   5 +
+ 6 files changed, 139 insertions(+), 65 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIME.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIME.cpp
+index 40556ef057..97c69d6f9f 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIME.cpp
+@@ -82,7 +82,14 @@ CBaseRenderer* CRendererDRMPRIME::Create(CVideoBuffer* buffer)
+       return nullptr;
+ 
+     if (!drm->FindVideoAndGuiPlane(format, modifier, width, height))
+-      return nullptr;
++    {
++      // A compressed gui can hold the only plane that scans out the video
++      // format; moving the gui to a linear buffer frees it.
++      if (!drm->CanFindVideoPlaneWithLinearGui(format, modifier, width, height) ||
++          !winSystem->SetLinearGui() ||
++          !drm->FindVideoAndGuiPlane(format, modifier, width, height))
++        return nullptr;
++    }
+ 
+     return new CRendererDRMPRIME();
+   }
+diff --git a/xbmc/windowing/gbm/WinSystemGbm.h b/xbmc/windowing/gbm/WinSystemGbm.h
+index 2105a76716..3d1e9ed919 100644
+--- a/xbmc/windowing/gbm/WinSystemGbm.h
++++ b/xbmc/windowing/gbm/WinSystemGbm.h
+@@ -62,6 +62,9 @@ public:
+   void Unregister(IDispResource* resource) override;
+ 
+   bool SetVideoOutput(const VideoPicture* videoPicture) override;
++  // Move the gui to a linear surface, so it no longer needs a plane that
++  // scans out compressed buffers.
++  virtual bool SetLinearGui() { return false; }
+ 
+   void SetColorimetry(const VideoPicture* videoPicture) override;
+   KODI::UTILS::Colorimetry GetColorimetry() const override { return m_colorimetry; }
+diff --git a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
+index 6f19a9db3f..6d51caf112 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
++++ b/xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp
+@@ -119,20 +119,10 @@ bool CWinSystemGbmEGLContext::CreateNewWindow(const std::string& name,
+   }
+ 
+   uint32_t format = m_eglContext.GetConfigAttrib(EGL_NATIVE_VISUAL_ID);
+-  std::vector<uint64_t> fallbackModifiers = {DRM_FORMAT_MOD_LINEAR};
+-  std::vector<uint64_t>* modifiers = &fallbackModifiers;
++  std::vector<uint64_t> modifiers = GetGuiModifiers(format);
+ 
+-  for (auto& fmt : m_DRM->GetOutputFormats())
+-  {
+-    if (fmt.drm == format && fmt.active)
+-    {
+-      modifiers = &fmt.modifiers;
+-      break;
+-    }
+-  }
+-
+-  if (!m_GBM->GetDevice().CreateSurface(res.iWidth, res.iHeight, format, modifiers->data(),
+-                                        modifiers->size()))
++  if (!m_GBM->GetDevice().CreateSurface(res.iWidth, res.iHeight, format, modifiers.data(),
++                                        modifiers.size()))
+   {
+     CLog::Log(LOGERROR, "CWinSystemGbmEGLContext::{} - failed to initialize GBM", __FUNCTION__);
+     return false;
+@@ -219,76 +209,107 @@ bool CWinSystemGbmEGLContext::SetVideoOutput(const VideoPicture* videoPicture)
+ 
+   if (format != currentFormat)
+   {
+-    m_eglContext.DestroySurface();
++    if (!RecreateSurface(format))
++      return false;
++
++    CLog::LogF(LOGINFO, "Output surface recreated at {}-bit", bitDepth);
++  }
+ 
+-    std::vector<uint64_t> fallbackModifiers = {DRM_FORMAT_MOD_LINEAR};
+-    std::vector<uint64_t>* modifiers = &fallbackModifiers;
++  // Chain to base for the fine-plane part: routes through FindVideoPlane
++  // if videoPicture set or FindGuiPlane if videoPicture was nullptr, using
++  // the now-current cached format/modifier on the active plane.
++  return CWinSystemGbm::SetVideoOutput(videoPicture);
++}
+ 
++std::vector<uint64_t> CWinSystemGbmEGLContext::GetGuiModifiers(uint32_t format)
++{
++  if (!m_linearGui)
++  {
+     for (auto& fmt : m_DRM->GetOutputFormats())
+     {
+       if (fmt.drm == format && fmt.active)
+-      {
+-        modifiers = &fmt.modifiers;
+-        break;
+-      }
++        return fmt.modifiers;
+     }
++  }
+ 
+-    if (!m_GBM->GetDevice().CreateSurface(m_nWidth, m_nHeight, format, modifiers->data(),
+-                                          modifiers->size()))
+-    {
+-      CLog::LogF(LOGERROR, "failed to create GBM surface");
+-      return false;
+-    }
++  return {DRM_FORMAT_MOD_LINEAR};
++}
+ 
+-    if (!m_eglContext.CreatePlatformSurface(
+-            m_GBM->GetDevice().GetSurface().Get(),
+-            reinterpret_cast<khronos_uintptr_t>(m_GBM->GetDevice().GetSurface().Get())))
+-    {
+-      return false;
+-    }
++bool CWinSystemGbmEGLContext::RecreateSurface(uint32_t format)
++{
++  m_eglContext.DestroySurface();
+ 
+-    if (!m_eglContext.BindContext())
+-    {
+-      return false;
+-    }
++  std::vector<uint64_t> modifiers = GetGuiModifiers(format);
+ 
+-    if (!m_eglContext.TrySwapBuffers())
+-    {
+-      return false;
+-    }
++  if (!m_GBM->GetDevice().CreateSurface(m_nWidth, m_nHeight, format, modifiers.data(),
++                                        modifiers.size()))
++  {
++    CLog::LogF(LOGERROR, "failed to create GBM surface");
++    return false;
++  }
+ 
+-    CLog::LogF(LOGINFO, "Output surface recreated at {}-bit", bitDepth);
++  if (!m_eglContext.CreatePlatformSurface(
++          m_GBM->GetDevice().GetSurface().Get(),
++          reinterpret_cast<khronos_uintptr_t>(m_GBM->GetDevice().GetSurface().Get())))
++  {
++    return false;
++  }
++
++  if (!m_eglContext.BindContext())
++  {
++    return false;
++  }
++
++  if (!m_eglContext.TrySwapBuffers())
++  {
++    return false;
++  }
+ 
+-    // amdgpu disables the CRTC when RMFB removes a still-bound FB during
+-    // surface destroy (primary-plane invariant). Force a full modeset on
+-    // the next commit to re-enable the CRTC. No-op on drivers without the
+-    // quirk (Intel, RPi, etc.) so they keep the fast-flip path.
+-    if (m_DRM->HasQuirk(KODI::WINDOWING::GBM::QUIRK_NEEDSPRIMARY))
+-      m_DRM->SetActive(true);
+-
+-    // The chained base reads the active plane's cached format and
+-    // modifier to decide which DRM plane satisfies the new role.
+-    // After a surface rebuild that cache is stale, so refresh it from
+-    // the new GBM front buffer (made available by TrySwapBuffers above)
+-    // before chaining.
+-    if (auto* plane = m_DRM->GetGuiPlane() ? m_DRM->GetGuiPlane() : m_DRM->GetVideoPlane())
++  // amdgpu disables the CRTC when RMFB removes a still-bound FB during
++  // surface destroy (primary-plane invariant). Force a full modeset on
++  // the next commit to re-enable the CRTC. No-op on drivers without the
++  // quirk (Intel, RPi, etc.) so they keep the fast-flip path.
++  if (m_DRM->HasQuirk(KODI::WINDOWING::GBM::QUIRK_NEEDSPRIMARY))
++    m_DRM->SetActive(true);
++
++  // The chained base reads the active plane's cached format and
++  // modifier to decide which DRM plane satisfies the new role.
++  // After a surface rebuild that cache is stale, so refresh it from
++  // the new GBM front buffer (made available by TrySwapBuffers above)
++  // before chaining.
++  if (auto* plane = m_DRM->GetGuiPlane() ? m_DRM->GetGuiPlane() : m_DRM->GetVideoPlane())
++  {
++    if (struct gbm_bo* bo = m_GBM->GetDevice().GetSurface().LockFrontBuffer().Get())
+     {
+-      if (struct gbm_bo* bo = m_GBM->GetDevice().GetSurface().LockFrontBuffer().Get())
+-      {
+-        plane->SetFormat(gbm_bo_get_format(bo));
++      plane->SetFormat(gbm_bo_get_format(bo));
+ #if defined(HAS_GBM_MODIFIERS)
+-        plane->SetModifier(gbm_bo_get_modifier(bo));
++      plane->SetModifier(gbm_bo_get_modifier(bo));
+ #else
+-        plane->SetModifier(DRM_FORMAT_MOD_LINEAR);
++      plane->SetModifier(DRM_FORMAT_MOD_LINEAR);
+ #endif
+-      }
+     }
+   }
+ 
+-  // Chain to base for the fine-plane part: routes through FindVideoPlane
+-  // if videoPicture set or FindGuiPlane if videoPicture was nullptr, using
+-  // the now-current cached format/modifier on the active plane.
+-  return CWinSystemGbm::SetVideoOutput(videoPicture);
++  return true;
++}
++
++bool CWinSystemGbmEGLContext::SetLinearGui()
++{
++  if (m_linearGui)
++    return false;
++
++  m_linearGui = true;
++
++  const uint32_t format = m_eglContext.GetConfigAttrib(EGL_NATIVE_VISUAL_ID);
++  if (!RecreateSurface(format))
++    return false;
++
++  // the current gui plane may only scan out compressed buffers
++  if (!m_DRM->FindGuiPlane(format, DRM_FORMAT_MOD_LINEAR))
++    return false;
++
++  CLog::LogF(LOGINFO, "Output surface recreated with a linear layout");
++  return true;
+ }
+ 
+ bool CWinSystemGbmEGLContext::DestroyWindowSystem()
+diff --git a/xbmc/windowing/gbm/WinSystemGbmEGLContext.h b/xbmc/windowing/gbm/WinSystemGbmEGLContext.h
+index 1580be947e..1b7f42ea55 100644
+--- a/xbmc/windowing/gbm/WinSystemGbmEGLContext.h
++++ b/xbmc/windowing/gbm/WinSystemGbmEGLContext.h
+@@ -44,6 +44,7 @@ public:
+   bool HasContext() override;
+ 
+   bool SetVideoOutput(const VideoPicture* videoPicture) override;
++  bool SetLinearGui() override;
+ 
+ protected:
+   CWinSystemGbmEGLContext(EGLenum platform, std::string const& platformExtension)
+@@ -60,6 +61,8 @@ protected:
+   virtual bool CreateContext() = 0;
+ 
+   EGLint m_renderableType{0};
++  // once the gui has moved to a linear surface it stays there
++  bool m_linearGui{false};
+ 
+   std::unique_ptr<KODI::UTILS::EGL::CEGLFence> m_eglFence;
+ 
+@@ -68,6 +71,10 @@ protected:
+     void operator()(CVaapiProxy* p) const;
+   };
+   std::unique_ptr<CVaapiProxy, delete_CVaapiProxy> m_vaapiProxy;
++
++private:
++  std::vector<uint64_t> GetGuiModifiers(uint32_t format);
++  bool RecreateSurface(uint32_t format);
+ };
+ 
+ } // namespace GBM
+diff --git a/xbmc/windowing/gbm/drm/DRMUtils.cpp b/xbmc/windowing/gbm/drm/DRMUtils.cpp
+index 6985b887a9..073226af02 100644
+--- a/xbmc/windowing/gbm/drm/DRMUtils.cpp
++++ b/xbmc/windowing/gbm/drm/DRMUtils.cpp
+@@ -287,6 +287,37 @@ bool CDRMUtils::FindVideoPlane(uint32_t format, uint64_t modifier)
+   return false;
+ }
+ 
++bool CDRMUtils::CanFindVideoPlaneWithLinearGui(uint32_t format,
++                                               uint64_t modifier,
++                                               uint64_t width,
++                                               uint64_t height)
++{
++  if (m_gui_plane == nullptr || m_gui_plane->GetModifier() == DRM_FORMAT_MOD_LINEAR)
++    return false;
++
++  const PlaneType plane_type = HasQuirk(QUIRK_NEEDSPRIMARY) ? PLANE_TYPE_PRIMARY : PLANE_TYPE_ANY;
++  const RESOLUTION_INFO res = GetCurrentMode();
++
++  for (auto& crtc : m_encoder->GetPossibleCrtcs(m_crtcs, m_crtc))
++  {
++    for (auto& gui_plane : m_planes)
++    {
++      if (!gui_plane->Check(res.iWidth, res.iHeight, m_gui_plane->GetFormat(),
++                            DRM_FORMAT_MOD_LINEAR, crtc, plane_type))
++        continue;
++
++      for (auto& video_plane : m_planes)
++      {
++        if (video_plane->GetId() != gui_plane->GetId() &&
++            video_plane->Check(width, height, format, modifier, crtc, PLANE_TYPE_ANY))
++          return true;
++      }
++    }
++  }
++
++  return false;
++}
++
+ bool CDRMUtils::FindVideoAndGuiPlane(uint32_t format,
+                                      uint64_t modifier,
+                                      uint64_t width,
+diff --git a/xbmc/windowing/gbm/drm/DRMUtils.h b/xbmc/windowing/gbm/drm/DRMUtils.h
+index db4d756946..3afec8d4cc 100644
+--- a/xbmc/windowing/gbm/drm/DRMUtils.h
++++ b/xbmc/windowing/gbm/drm/DRMUtils.h
+@@ -72,6 +72,11 @@ public:
+   bool FindGuiPlane(uint32_t format, uint64_t modifier);
+   bool FindVideoPlane(uint32_t format, uint64_t modifier);
+   bool FindVideoAndGuiPlane(uint32_t format, uint64_t modifier, uint64_t width, uint64_t height);
++  // whether a video plane would be free if the gui used a linear buffer
++  bool CanFindVideoPlaneWithLinearGui(uint32_t format,
++                                      uint64_t modifier,
++                                      uint64_t width,
++                                      uint64_t height);
+   // FindGuiPlane never releases a D2P video plane reservation; a caller that
+   // means "video is over" states it here before revalidating the gui plane.
+   void ReleaseVideoPlane() { m_video_plane = nullptr; }
+-- 
+2.43.0
+

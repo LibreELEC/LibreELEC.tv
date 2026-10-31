@@ -1,0 +1,44 @@
+From 590cf9a4cdc98115d796f82f9c55e2cf7f15b6a5 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:25 +0300
+Subject: [PATCH 010/280] FROMGIT(7.4): video/hdmi: Introduce HDMI version enum
+
+Add an enum to represent HDMI specification versions.  This will be used
+by upcoming changes to associate HDMI connectors and bridges with a
+maximum supported version and to simplify handling of version-dependent
+features.
+
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-1-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ include/linux/hdmi.h | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/include/linux/hdmi.h b/include/linux/hdmi.h
+index 8dab78e1f61b..b80a5ee63bb2 100644
+--- a/include/linux/hdmi.h
++++ b/include/linux/hdmi.h
+@@ -27,6 +27,18 @@
+ #include <linux/types.h>
+ #include <linux/device.h>
+ 
++enum hdmi_version {
++	HDMI_VERSION_UNKNOWN,
++	HDMI_VERSION_1_0,
++	HDMI_VERSION_1_1,
++	HDMI_VERSION_1_2,
++	HDMI_VERSION_1_3,
++	HDMI_VERSION_1_4,
++	HDMI_VERSION_2_0,
++	HDMI_VERSION_2_1,
++	HDMI_VERSION_2_2,
++};
++
+ enum hdmi_packet_type {
+ 	HDMI_PACKET_TYPE_NULL = 0x00,
+ 	HDMI_PACKET_TYPE_AUDIO_CLOCK_REGEN = 0x01,
+-- 
+2.43.0
+

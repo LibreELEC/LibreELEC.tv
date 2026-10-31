@@ -1,0 +1,45 @@
+From 0e3b68611e21e4b089dfade83fb61326dc2c4646 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Fri, 20 Feb 2026 06:31:57 +0000
+Subject: [PATCH 245/280] WIP: ASoC: rockchip: i2s-tdm: Add IEC958 subframe
+ format support
+
+Add SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE to the supported formats and
+handle it in the hw_params switch as 32-bit VDW (same as S32_LE).
+
+This enables IEC958 pass-through for compressed audio formats over
+HDMI on RK3588/RK3576 when paired with the dw-hdmi-qp bridge driver
+which already handles the HDMI TX configuration for non-linear PCM
+(ref2stream, HBR mode, NONAUDIO bit).
+
+Assisted-by: Claude:claude-opus-4-6
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ sound/soc/rockchip/rockchip_i2s_tdm.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/sound/soc/rockchip/rockchip_i2s_tdm.c b/sound/soc/rockchip/rockchip_i2s_tdm.c
+index 5ef7f109706d..7e7dd9e33e09 100644
+--- a/sound/soc/rockchip/rockchip_i2s_tdm.c
++++ b/sound/soc/rockchip/rockchip_i2s_tdm.c
+@@ -698,6 +698,7 @@ static int rockchip_i2s_tdm_hw_params(struct snd_pcm_substream *substream,
+ 		val |= I2S_TXCR_VDW(24);
+ 		break;
+ 	case SNDRV_PCM_FORMAT_S32_LE:
++	case SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE:
+ 		val |= I2S_TXCR_VDW(32);
+ 		break;
+ 	default:
+@@ -1049,7 +1050,8 @@ static int rockchip_i2s_tdm_init_dai(struct rk_i2s_tdm_dev *i2s_tdm)
+ 	const char *dma_name;
+ 	u64 formats = (SNDRV_PCM_FMTBIT_S8 | SNDRV_PCM_FMTBIT_S16_LE |
+ 		       SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S24_LE |
+-		       SNDRV_PCM_FMTBIT_S32_LE);
++		       SNDRV_PCM_FMTBIT_S32_LE |
++		       SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE);
+ 	struct device_node *node = i2s_tdm->dev->of_node;
+ 
+ 	of_property_for_each_string(node, "dma-names", dma_names, dma_name) {
+-- 
+2.43.0
+

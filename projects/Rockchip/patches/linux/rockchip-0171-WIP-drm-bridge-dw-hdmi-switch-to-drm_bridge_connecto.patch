@@ -1,0 +1,231 @@
+From 20bdf3317ea94e1f9d402569da31c3b67dee6151 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 11 Apr 2026 11:44:16 +0000
+Subject: [PATCH 171/280] WIP: drm/bridge: dw-hdmi: switch to
+ drm_bridge_connector
+
+dw-hdmi already exposes hotplug detection and EDID handling through its
+bridge ops, so the private connector duplicates functionality that the
+generic bridge connector can provide.
+
+Switch dw-hdmi over to drm_bridge_connector_init() and drop the
+open-coded connector implementation. This removes the custom detect,
+mode enumeration, force handling and connector state plumbing in favor
+of the common bridge connector path.
+
+Minimal functional change intended, e.g. this will remove features like
+- HDR metadata mode_changed
+until dw-hdmi has fully been converted to a HDMI bridge.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 153 ++--------------------
+ 1 file changed, 10 insertions(+), 143 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index bcd472cab053..f9330758284b 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -27,12 +27,12 @@
+ #include <linux/videodev2.h>
+ 
+ #include <drm/bridge/dw_hdmi.h>
+-#include <drm/display/drm_hdmi_cec_helper.h>
+ #include <drm/display/drm_hdmi_helper.h>
+ #include <drm/display/drm_scdc_helper.h>
+ #include <drm/drm_atomic.h>
+ #include <drm/drm_atomic_helper.h>
+ #include <drm/drm_bridge.h>
++#include <drm/drm_bridge_connector.h>
+ #include <drm/drm_edid.h>
+ #include <drm/drm_of.h>
+ #include <drm/drm_print.h>
+@@ -147,7 +147,6 @@ struct dw_hdmi_phy_data {
+ };
+ 
+ struct dw_hdmi {
+-	struct drm_connector connector;
+ 	struct drm_bridge bridge;
+ 
+ 	unsigned int version;
+@@ -2395,16 +2394,6 @@ static void dw_hdmi_poweroff(struct dw_hdmi *hdmi)
+ 	}
+ }
+ 
+-static enum drm_connector_status dw_hdmi_detect(struct dw_hdmi *hdmi)
+-{
+-	enum drm_connector_status result;
+-
+-	result = hdmi->phy.ops->read_hpd(hdmi, hdmi->phy.data);
+-	hdmi->last_connector_result = result;
+-
+-	return result;
+-}
+-
+ static const struct drm_edid *dw_hdmi_edid_read(struct dw_hdmi *hdmi,
+ 						struct drm_connector *connector)
+ {
+@@ -2445,139 +2434,16 @@ dw_hdmi_connector_status_update(struct dw_hdmi *hdmi,
+ 		drm_connector_cec_phys_addr_set(connector);
+ }
+ 
+-static enum drm_connector_status
+-dw_hdmi_connector_detect(struct drm_connector *connector, bool force)
+-{
+-	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi, connector);
+-	enum drm_connector_status status;
+-
+-	status = dw_hdmi_detect(hdmi);
+-
+-	dw_hdmi_connector_status_update(hdmi, connector, status);
+-
+-	return status;
+-}
+-
+-static int dw_hdmi_connector_get_modes(struct drm_connector *connector)
+-{
+-	return drm_edid_connector_add_modes(connector);
+-}
+-
+-static int dw_hdmi_connector_atomic_check(struct drm_connector *connector,
+-					  struct drm_atomic_commit *state)
+-{
+-	struct drm_connector_state *old_state =
+-		drm_atomic_get_old_connector_state(state, connector);
+-	struct drm_connector_state *new_state =
+-		drm_atomic_get_new_connector_state(state, connector);
+-	struct drm_crtc *crtc = new_state->crtc;
+-	struct drm_crtc_state *crtc_state;
+-
+-	if (!crtc)
+-		return 0;
+-
+-	if (!drm_connector_atomic_hdr_metadata_equal(old_state, new_state)) {
+-		crtc_state = drm_atomic_get_crtc_state(state, crtc);
+-		if (IS_ERR(crtc_state))
+-			return PTR_ERR(crtc_state);
+-
+-		crtc_state->mode_changed = true;
+-	}
+-
+-	return 0;
+-}
+-
+-static void dw_hdmi_connector_force(struct drm_connector *connector)
+-{
+-	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi, connector);
+-
+-	mutex_lock(&hdmi->mutex);
+-	hdmi->last_connector_result = connector->status;
+-	mutex_unlock(&hdmi->mutex);
+-
+-	dw_hdmi_connector_status_update(hdmi, connector, connector->status);
+-}
+-
+-static void dw_hdmi_connector_enable_hpd(struct drm_connector *connector)
+-{
+-	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi, connector);
+-
+-	enable_delayed_work(&hdmi->hpd_work);
+-}
+-
+-static void dw_hdmi_connector_disable_hpd(struct drm_connector *connector)
+-{
+-	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi, connector);
+-
+-	disable_delayed_work_sync(&hdmi->hpd_work);
+-}
+-
+-static void dw_hdmi_connector_destroy(struct drm_connector *connector)
+-{
+-	struct dw_hdmi *hdmi = container_of(connector, struct dw_hdmi, connector);
+-
+-	drm_connector_cleanup(connector);
+-	drm_bridge_put(&hdmi->bridge);
+-}
+-
+-static const struct drm_connector_funcs dw_hdmi_connector_funcs = {
+-	.fill_modes = drm_helper_probe_single_connector_modes,
+-	.detect = dw_hdmi_connector_detect,
+-	.destroy = dw_hdmi_connector_destroy,
+-	.force = dw_hdmi_connector_force,
+-	.reset = drm_atomic_helper_connector_reset,
+-	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
+-	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state,
+-};
+-
+-static const struct drm_connector_helper_funcs dw_hdmi_connector_helper_funcs = {
+-	.get_modes = dw_hdmi_connector_get_modes,
+-	.atomic_check = dw_hdmi_connector_atomic_check,
+-	.enable_hpd = dw_hdmi_connector_enable_hpd,
+-	.disable_hpd = dw_hdmi_connector_disable_hpd,
+-};
+-
+ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ {
+-	struct drm_connector *connector = &hdmi->connector;
+-	int ret;
+-
+-	if (hdmi->version >= 0x200a &&
+-	    hdmi->plat_data->supported_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420))
+-		connector->ycbcr_420_allowed = true;
+-	else
+-		connector->ycbcr_420_allowed = false;
+-
+-	connector->interlace_allowed = 1;
+-	connector->polled = DRM_CONNECTOR_POLL_HPD;
+-
+-	drm_connector_helper_add(connector, &dw_hdmi_connector_helper_funcs);
+-
+-	ret = drm_connector_init_with_ddc(hdmi->bridge.dev, connector,
+-					  &dw_hdmi_connector_funcs,
+-					  DRM_MODE_CONNECTOR_HDMIA,
+-					  hdmi->ddc);
+-	if (ret)
+-		return ret;
+-
+-	drm_bridge_get(&hdmi->bridge);
+-
+-	/*
+-	 * drm_connector_attach_max_bpc_property() requires the
+-	 * connector to have a state.
+-	 */
+-	drm_atomic_helper_connector_reset(connector);
+-
+-	drm_connector_attach_max_bpc_property(connector, 8,
+-					      max(hdmi->plat_data->max_bpc, 8));
+-
+-	if (hdmi->version >= 0x200a && hdmi->plat_data->use_drm_infoframe)
+-		drm_connector_attach_hdr_output_metadata_property(connector);
++	struct drm_encoder *encoder = hdmi->bridge.encoder;
++	struct drm_connector *connector;
+ 
+-	drm_connector_attach_encoder(connector, hdmi->bridge.encoder);
++	connector = drm_bridge_connector_init(hdmi->bridge.dev, encoder);
++	if (IS_ERR(connector))
++		return PTR_ERR(connector);
+ 
+-	return drmm_connector_hdmi_cec_notifier_register(connector, NULL,
+-							 hdmi->dev);
++	return 0;
+ }
+ 
+ /* -----------------------------------------------------------------------------
+@@ -2986,11 +2852,12 @@ dw_hdmi_bridge_detect(struct drm_bridge *bridge, struct drm_connector *connector
+ 	struct dw_hdmi *hdmi = bridge->driver_private;
+ 	enum drm_connector_status status;
+ 
+-	status = dw_hdmi_detect(hdmi);
++	status = hdmi->phy.ops->read_hpd(hdmi, hdmi->phy.data);
++	hdmi->last_connector_result = status;
+ 
+ 	/*
+ 	 * Update EDID and CEC phys addr to match the behavior of a bridge
+-	 * connector with a HDMI bridge attached and the dw-hdmi connector.
++	 * connector with a HDMI bridge attached.
+ 	 */
+ 	dw_hdmi_connector_status_update(hdmi, connector, status);
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,57 @@
+From c95b06e25a408f93fbb79da6b8b6b53aa5ce22d8 Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 21 Jul 2026 08:41:12 +0200
+Subject: [PATCH 144/280] FROMLIST(v4): dt-bindings: media: snps,dw-hdmi-rx:
+ add #sound-dai-cells
+
+The HDMI RX controller can expose the audio embedded in the incoming
+HDMI stream as an ALSA capture device. Document the #sound-dai-cells
+property so that a sound card can reference the HDMI RX audio DAI.
+
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+Reviewed-by: Sebastian Reichel <sebastian.reichel@collabora.com>
+Reviewed-by: Krzysztof Kozlowski <krzysztof.kozlowski@oss.qualcomm.com>
+Reviewed-by: Dmitry Osipenko <dmitry.osipenko@collabora.com>
+---
+ .../devicetree/bindings/media/snps,dw-hdmi-rx.yaml  | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/media/snps,dw-hdmi-rx.yaml b/Documentation/devicetree/bindings/media/snps,dw-hdmi-rx.yaml
+index b7f6c87d0e06..b80660da1050 100644
+--- a/Documentation/devicetree/bindings/media/snps,dw-hdmi-rx.yaml
++++ b/Documentation/devicetree/bindings/media/snps,dw-hdmi-rx.yaml
+@@ -78,6 +78,13 @@ properties:
+       The phandle of the syscon node for the Video Output GRF register
+       to enable EDID transfer through SDAIN and SCLIN.
+ 
++  "#sound-dai-cells":
++    const: 1
++    description:
++      The HDMI RX controller has two digital audio interfaces, one for
++      I2S and one for S/PDIF. The DAI cell selects the interface, 0 for
++      I2S and 1 for S/PDIF.
++
+ required:
+   - compatible
+   - reg
+@@ -90,7 +97,10 @@ required:
+   - pinctrl-0
+   - hpd-gpios
+ 
+-additionalProperties: false
++allOf:
++  - $ref: /schemas/sound/dai-common.yaml#
++
++unevaluatedProperties: false
+ 
+ examples:
+   - |
+@@ -129,4 +139,5 @@ examples:
+       pinctrl-0 = <&hdmim1_rx_cec &hdmim1_rx_hpdin &hdmim1_rx_scl &hdmim1_rx_sda &hdmirx_5v_detection>;
+       pinctrl-names = "default";
+       hpd-gpios = <&gpio1 22 GPIO_ACTIVE_LOW>;
++      #sound-dai-cells = <1>;
+     };
+-- 
+2.43.0
+

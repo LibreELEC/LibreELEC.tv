@@ -1,0 +1,37 @@
+From 7fac985632e3c934756001d553844dc67252cf2e Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 16:05:45 +0000
+Subject: [PATCH 238/280] WIP: drm/rockchip: vop2: keep 10-bit output for
+ 10-bit bus formats
+
+Pre-dither-down reduces the 10-bit pipeline to 8 bits and is enabled
+for every output mode other than AAAA, which includes 10-bit YCbCr
+4:2:0 HDMI output. 10-bit content then shows the banding of 8-bit
+output although the link carries 10 bits per component.
+
+Leave dithering off for 10-bit bus formats, as the vendor driver does.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop2.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index 645b26ab0b3c..ac5cc90d8514 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -1887,6 +1887,10 @@ static void vop2_dither_setup(struct drm_crtc *crtc, u32 *dsp_ctrl)
+ 	case MEDIA_BUS_FMT_UYYVYY8_0_5X24:
+ 		*dsp_ctrl |= RK3568_VP_DSP_CTRL__PRE_DITHER_DOWN_EN;
+ 		break;
++	case MEDIA_BUS_FMT_RGB101010_1X30:
++	case MEDIA_BUS_FMT_YUV10_1X30:
++	case MEDIA_BUS_FMT_UYYVYY10_0_5X30:
++		return;
+ 	default:
+ 		break;
+ 	}
+-- 
+2.43.0
+

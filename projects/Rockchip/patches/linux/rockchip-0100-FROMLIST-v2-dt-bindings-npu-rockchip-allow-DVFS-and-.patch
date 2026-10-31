@@ -1,0 +1,77 @@
+From 6af9f70002f8c1ca7719e70af9292b17a20a4ddf Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 22 Sep 2026 10:01:09 +0200
+Subject: [PATCH 100/280] FROMLIST(v2): dt-bindings: npu: rockchip: allow DVFS
+ and thermal properties
+
+The three NPU cores on the RK3588 are fed by a single clock and a single
+supply, and the firmware accepts a fixed set of rates for that clock.
+Describing those rates as an operating-points-v2 table is what lets a
+driver scale the NPU instead of leaving it at whatever rate the bootloader
+set, so allow the property on the core node.
+
+Throttling the NPU from a thermal zone needs a core node to be usable as
+a cooling device, so allow #cooling-cells too.
+
+The OPP table belongs on every core, with opp-shared: the cores have no
+clock of their own, and one shared table for one shared clock is the same
+shape a CPU cluster uses. #cooling-cells goes on one core only, the one a
+thermal zone's cooling map names, because the cores cannot be throttled
+independently. Naming one representative node for a shared frequency
+domain is the established shape, as in "Cpufreq cooling device on CPU0"
+in Documentation/devicetree/bindings/thermal/thermal-cooling-devices.yaml.
+
+The schema cannot enforce which core carries #cooling-cells, because all
+three cores share a compatible string and a node name pattern, so that
+stays a devicetree convention. That is the same situation as for CPU
+cooling, where cpus.yaml does not restrict #cooling-cells to cpu@0
+either.
+
+The example gains #cooling-cells; the operating-points-v2 property is
+exercised by the RK3588 devicetree later in this series.
+
+Assisted-by: LLM checkpatch dt_binding_check
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+Acked-by: Conor Dooley <conor.dooley@microchip.com>
+---
+ .../bindings/npu/rockchip,rk3588-rknn-core.yaml        | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/npu/rockchip,rk3588-rknn-core.yaml b/Documentation/devicetree/bindings/npu/rockchip,rk3588-rknn-core.yaml
+index caca2a4903cd..beba1896156f 100644
+--- a/Documentation/devicetree/bindings/npu/rockchip,rk3588-rknn-core.yaml
++++ b/Documentation/devicetree/bindings/npu/rockchip,rk3588-rknn-core.yaml
+@@ -42,6 +42,13 @@ properties:
+       - const: npu
+       - const: pclk
+ 
++  "#cooling-cells":
++    description:
++      Present on one core only, the first, which stands for the shared NPU
++      clock as a cooling device. The other cores have no clock of their own
++      and cannot be throttled independently of it.
++    const: 2
++
+   interrupts:
+     maxItems: 1
+ 
+@@ -50,6 +57,8 @@ properties:
+ 
+   npu-supply: true
+ 
++  operating-points-v2: true
++
+   power-domains:
+     maxItems: 1
+ 
+@@ -100,6 +109,7 @@ examples:
+         clocks = <&cru ACLK_NPU0>, <&cru HCLK_NPU0>,
+                  <&scmi_clk SCMI_CLK_NPU>, <&cru PCLK_NPU_ROOT>;
+         clock-names = "aclk", "hclk", "npu", "pclk";
++        #cooling-cells = <2>;
+         interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH 0>;
+         iommus = <&rknn_mmu_0>;
+         npu-supply = <&vdd_npu_s0>;
+-- 
+2.43.0
+

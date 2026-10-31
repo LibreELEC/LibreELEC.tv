@@ -1,0 +1,213 @@
+From b13c14dab8688f75cc80fd79524e4cb9a4641a73 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 4 May 2025 10:00:16 +0000
+Subject: [PATCH 202/280] WIP: drm/panfrost: Do not set clk rate when device is
+ suspended
+
+On Rockchip RK3576 trying to change the SCMI_CLK_GPU rate when the GPU
+device is PM runtime suspended may cause a kernel panic:
+
+  $ echo 900000000 > /sys/class/devfreq/27800000.gpu/min_freq
+
+  SError Interrupt on CPU2, code 0x00000000bf000000 -- SError
+  CPU: 2 UID: 0 PID: 236 Comm: sh Not tainted 6.15.0-rc3 #1 VOLUNTARY
+  Hardware name: ArmSoM Sige5 (DT)
+  pstate: 60000005 (nZCv daif -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+  pc : smc_send_message+0x140/0x148
+  lr : smc_send_message+0xd8/0x148
+  sp : ffff8000823eb7a0
+  x29: ffff8000823eb7a0 x28: ffff0000c5283000 x27: 0000000000000000
+  x26: 0000000000000000 x25: 00000000ffffffff x24: ffff8000823eba08
+  x23: ffff0000c1dda810 x22: ffff0000c093a9a0 x21: ffff0000c0921280
+  x20: ffff0000c22af8c0 x19: ffff0000c093a980 x18: 0000000000000001
+  x17: 0000000000000001 x16: ffffffffffffffff x15: 0000000000000000
+  x14: ffff0000c5283080 x13: 0000000000000000 x12: 071c71c71c71c71c
+  x11: 0000000000000040 x10: ffff0000c091e138 x9 : ffff0000c091e130
+  x8 : ffff0000c07d8b90 x7 : 0000000000000000 x6 : 0000000000000000
+  x5 : 0000000000000000 x4 : 0000000000000000 x3 : 0000000000000000
+  x2 : 0000000000000000 x1 : 0000000000000000 x0 : 0000000000000000
+  Kernel panic - not syncing: Asynchronous SError Interrupt
+  CPU: 2 UID: 0 PID: 236 Comm: sh Not tainted 6.15.0-rc3 #1 VOLUNTARY
+  Hardware name: ArmSoM Sige5 (DT)
+  Call trace:
+   show_stack+0x28/0x78 (C)
+   dump_stack_lvl+0x58/0x74
+   dump_stack+0x14/0x1c
+   panic+0x14c/0x328
+   add_taint+0x0/0xc0
+   arm64_serror_panic+0x60/0x6c
+   do_serror+0x24/0x60
+   el1h_64_error_handler+0x2c/0x40
+   el1h_64_error+0x6c/0x70
+   smc_send_message+0x140/0x148 (P)
+   do_xfer+0xb0/0x1f8
+   scmi_clock_rate_set+0xc0/0x220
+   scmi_clk_set_rate+0x24/0x38
+   clk_change_rate+0x164/0x288
+   clk_core_set_rate_nolock+0x1dc/0x314
+   clk_set_rate+0x34/0x144
+   _opp_config_clk_single+0x2c/0x90
+   _set_opp+0x104/0x564
+   dev_pm_opp_set_rate+0x110/0x260
+   panfrost_devfreq_target+0x38/0x60
+   devfreq_set_target+0x84/0x180
+   devfreq_update_target+0xb4/0xcc
+   qos_min_notifier_call+0x2c/0x68
+   blocking_notifier_call_chain+0x68/0xa0
+   pm_qos_update_target+0xd8/0x150
+   freq_qos_apply+0x5c/0x64
+   apply_constraint+0x80/0x130
+   __dev_pm_qos_update_request+0x78/0xc4
+   dev_pm_qos_update_request+0x34/0x54
+   min_freq_store+0x74/0xbc
+   dev_attr_store+0x14/0x24
+   sysfs_kf_write+0x54/0x60
+   kernfs_fop_write_iter+0x118/0x1e0
+   vfs_write+0x224/0x390
+   ksys_write+0x68/0x100
+   __arm64_sys_write+0x18/0x20
+   invoke_syscall+0x44/0x100
+   el0_svc_common.constprop.0+0x3c/0xe0
+   do_el0_svc+0x18/0x20
+   el0_svc+0x2c/0xc0
+   el0t_64_sync_handler+0x104/0x130
+   el0t_64_sync+0x170/0x174
+  SMP: stopping secondary CPUs
+  Kernel Offset: disabled
+  CPU features: 0x0400,00041040,01000400,0200400b
+  Memory Limit: 3838 MB
+  ---[ end Kernel panic - not syncing: Asynchronous SError Interrupt ]---
+
+This typically happen when CLK_GPU is disabled or when PD_GPU is down.
+
+Add a config_clks ops that will not set core clk rate when the device is
+PM runtime suspended.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/panfrost/panfrost_devfreq.c | 47 +++++++++++++++++++++
+ drivers/gpu/drm/panfrost/panfrost_device.h  |  4 ++
+ drivers/gpu/drm/panfrost/panfrost_drv.c     | 13 ++++++
+ 3 files changed, 64 insertions(+)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_devfreq.c b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
+index b51c30778811..d6b2154fb3c6 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_devfreq.c
++++ b/drivers/gpu/drm/panfrost/panfrost_devfreq.c
+@@ -7,6 +7,7 @@
+ #include <linux/nvmem-consumer.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_opp.h>
++#include <linux/pm_runtime.h>
+ 
+ #include <drm/drm_print.h>
+ 
+@@ -91,6 +92,41 @@ static struct devfreq_dev_profile panfrost_devfreq_profile = {
+ 	.get_dev_status = panfrost_devfreq_get_dev_status,
+ };
+ 
++static int panfrost_devfreq_config_clks(struct device *dev,
++					struct opp_table *opp_table,
++					struct dev_pm_opp *opp,
++					void *data, bool scaling_down)
++{
++	struct panfrost_device *pfdev = dev_get_drvdata(dev);
++	struct devfreq *devfreq = pfdev->pfdevfreq.devfreq;
++	unsigned long *target = data;
++	unsigned long freq;
++	int ret = 0;
++
++	/* One of target and opp must be available */
++	if (target) {
++		freq = *target;
++	} else if (opp) {
++		freq = dev_pm_opp_get_freq(opp);
++	} else {
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
++	pm_runtime_get_noresume(dev);
++
++	if (!pm_runtime_suspended(dev) || !devfreq || !devfreq->suspend_freq) {
++		ret = clk_set_rate(pfdev->clock, freq);
++		if (ret)
++			dev_err(dev, "failed to set clock rate %lu: %d\n",
++				freq, ret);
++	}
++
++	pm_runtime_put_noidle(dev);
++
++	return ret;
++}
++
+ static int panfrost_read_speedbin(struct device *dev)
+ {
+ 	u32 val;
+@@ -140,6 +176,17 @@ int panfrost_devfreq_init(struct panfrost_device *pfdev)
+ 	if (ret)
+ 		return ret;
+ 
++	if (pfdev->comp->opp_clk_names) {
++		struct dev_pm_opp_config config = {
++			.clk_names = pfdev->comp->opp_clk_names,
++			.config_clks = panfrost_devfreq_config_clks,
++		};
++
++		ret = devm_pm_opp_set_config(dev, &config);
++		if (ret)
++			return ret;
++	}
++
+ 	ret = devm_pm_opp_set_regulators(dev, pfdev->comp->supply_names);
+ 	if (ret) {
+ 		/* Continue if the optional regulator is missing */
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.h b/drivers/gpu/drm/panfrost/panfrost_device.h
+index 1fe1554f2652..f4dcd3040e3b 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.h
++++ b/drivers/gpu/drm/panfrost/panfrost_device.h
+@@ -107,6 +107,10 @@ struct panfrost_compatible {
+ 	/* Only required if num_pm_domains > 1. */
+ 	const char * const *pm_domain_names;
+ 
++	/* OPP clock count and names. */
++	int num_opp_clocks;
++	const char * const *opp_clk_names;
++
+ 	/* Vendor implementation quirks callback */
+ 	void (*vendor_quirk)(struct panfrost_device *pfdev);
+ 
+diff --git a/drivers/gpu/drm/panfrost/panfrost_drv.c b/drivers/gpu/drm/panfrost/panfrost_drv.c
+index 36cc2e67a308..d75598a967d4 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_drv.c
++++ b/drivers/gpu/drm/panfrost/panfrost_drv.c
+@@ -1153,6 +1153,17 @@ static const struct panfrost_compatible mediatek_mt8370_data = {
+ 	.gpu_quirks = BIT(GPU_QUIRK_FORCE_AARCH64_PGTABLE),
+ };
+ 
++static const char * const rockchip_opp_clks[] = { "gpu", NULL };
++static const struct panfrost_compatible rockchip_data = {
++	.num_supplies = ARRAY_SIZE(default_supplies) - 1,
++	.supply_names = default_supplies,
++	.num_pm_domains = 1,
++	.pm_domain_names = NULL,
++	.num_opp_clocks = ARRAY_SIZE(rockchip_opp_clks) - 1,
++	.opp_clk_names = rockchip_opp_clks,
++	.pm_features = BIT(GPU_PM_CLK_DIS) | BIT(GPU_PM_VREG_OFF),
++};
++
+ static const struct of_device_id dt_match[] = {
+ 	/* Set first to probe before the generic compatibles */
+ 	{ .compatible = "amlogic,meson-gxm-mali",
+@@ -1179,6 +1190,8 @@ static const struct of_device_id dt_match[] = {
+ 	{ .compatible = "mediatek,mt8192-mali", .data = &mediatek_mt8192_data },
+ 	{ .compatible = "mediatek,mt8370-mali", .data = &mediatek_mt8370_data },
+ 	{ .compatible = "allwinner,sun50i-h616-mali", .data = &default_pm_rt_data },
++	{ .compatible = "rockchip,rk3568-mali", .data = &rockchip_data },
++	{ .compatible = "rockchip,rk3576-mali", .data = &rockchip_data },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, dt_match);
+-- 
+2.43.0
+

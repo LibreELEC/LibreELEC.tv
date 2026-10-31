@@ -1,0 +1,79 @@
+From 89b6b62893ca4b44eb7d2c50867c25be23ba355d Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 18:02:24 +0000
+Subject: [PATCH 269/280] WIP: media: Add YUV 4:2:0 AFBC 16x16 pixel formats
+
+The Rockchip video decoders can write Arm FBC compressed YUV 4:2:0 with
+16x16 superblocks and no block split, and V4L2 has no fourcc for it.
+
+Add 8-bit and 10-bit fourccs for this layout.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../media/v4l/pixfmt-reserved.rst             | 21 +++++++++++++++++++
+ drivers/media/v4l2-core/v4l2-ioctl.c          |  2 ++
+ include/uapi/linux/videodev2.h                |  2 ++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/Documentation/userspace-api/media/v4l/pixfmt-reserved.rst b/Documentation/userspace-api/media/v4l/pixfmt-reserved.rst
+index 1cf6c59f4bc4..db8d2292df6f 100644
+--- a/Documentation/userspace-api/media/v4l/pixfmt-reserved.rst
++++ b/Documentation/userspace-api/media/v4l/pixfmt-reserved.rst
+@@ -259,6 +259,27 @@ please make a proposal on the linux-media mailing list.
+         and it is used by various multimedia hardware blocks like GPU, display
+         controllers, ISP and video accelerators.
+         It contains four planes for progressive video.
++    * .. _V4L2-PIX-FMT-YUV420-8-AFBC-16X16:
++
++      - ``V4L2_PIX_FMT_YUV420_8_AFBC_16X16``
++      - 'AF12'
++      - Arm Frame Buffer Compression (AFBC) of 8-bit YUV 4:2:0, using 16x16
++        superblocks with no block split or YUV transform. It is the DRM format
++        ``DRM_FORMAT_YUV420_8BIT`` with the modifier
++        ``DRM_FORMAT_MOD_ARM_AFBC(AFBC_FORMAT_MOD_BLOCK_SIZE_16x16)``, and it
++        is used by the Rockchip video decoders. The single plane holds the
++        AFBC headers followed by the superblock bodies. ``bytesperline`` is the DRM framebuffer pitch: the
++        header row width in pixels multiplied by 12 bits. The decoder may
++        place the picture below the top of the buffer; the capture queue
++        ``V4L2_SEL_TGT_COMPOSE`` selection gives its position.
++    * .. _V4L2-PIX-FMT-YUV420-10-AFBC-16X16:
++
++      - ``V4L2_PIX_FMT_YUV420_10_AFBC_16X16``
++      - 'AF01'
++      - As ``V4L2_PIX_FMT_YUV420_8_AFBC_16X16``, for 10-bit YUV 4:2:0. It is
++        the DRM format ``DRM_FORMAT_YUV420_10BIT`` with the same modifier, and
++        ``bytesperline`` is the header row width in pixels multiplied by 15
++        bits.
+     * .. _V4L2-PIX-FMT-AJPG:
+ 
+       - ``V4L2_PIX_FMT_AJPG``
+diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
+index 17ba1ae70735..0878fb145afa 100644
+--- a/drivers/media/v4l2-core/v4l2-ioctl.c
++++ b/drivers/media/v4l2-core/v4l2-ioctl.c
+@@ -1544,6 +1544,8 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 		case V4L2_PIX_FMT_MT21C:	descr = "Mediatek Compressed Format"; break;
+ 		case V4L2_PIX_FMT_QC08C:	descr = "QCOM Compressed 8-bit Format"; break;
+ 		case V4L2_PIX_FMT_QC10C:	descr = "QCOM Compressed 10-bit Format"; break;
++		case V4L2_PIX_FMT_YUV420_8_AFBC_16X16:	descr = "YUV 4:2:0 (AFBC 16x16)"; break;
++		case V4L2_PIX_FMT_YUV420_10_AFBC_16X16:	descr = "10-bit YUV 4:2:0 (AFBC 16x16)"; break;
+ 		case V4L2_PIX_FMT_AJPG:		descr = "Aspeed JPEG"; break;
+ 		case V4L2_PIX_FMT_AV1_FRAME:	descr = "AV1 Frame"; break;
+ 		case V4L2_PIX_FMT_AV1:		descr = "AV1 OBU Stream"; break;
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index 5373dba640fa..dea08f4c84bc 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -820,6 +820,8 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_HI240    v4l2_fourcc('H', 'I', '2', '4') /* BTTV 8-bit dithered RGB */
+ #define V4L2_PIX_FMT_QC08C    v4l2_fourcc('Q', '0', '8', 'C') /* Qualcomm 8-bit compressed */
+ #define V4L2_PIX_FMT_QC10C    v4l2_fourcc('Q', '1', '0', 'C') /* Qualcomm 10-bit compressed */
++#define V4L2_PIX_FMT_YUV420_8_AFBC_16X16  v4l2_fourcc('A', 'F', '1', '2') /* YUV 4:2:0 8-bit AFBC, 16x16 superblocks */
++#define V4L2_PIX_FMT_YUV420_10_AFBC_16X16 v4l2_fourcc('A', 'F', '0', '1') /* YUV 4:2:0 10-bit AFBC, 16x16 superblocks */
+ #define V4L2_PIX_FMT_AJPG     v4l2_fourcc('A', 'J', 'P', 'G') /* Aspeed JPEG */
+ #define V4L2_PIX_FMT_HEXTILE  v4l2_fourcc('H', 'X', 'T', 'L') /* Hextile compressed */
+ 
+-- 
+2.43.0
+

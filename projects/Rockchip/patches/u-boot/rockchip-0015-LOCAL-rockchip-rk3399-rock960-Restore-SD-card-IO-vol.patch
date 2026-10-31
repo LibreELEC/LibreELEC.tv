@@ -1,0 +1,79 @@
+From 9f74cafe01a8b680544cbbbc22386f126d4d1455 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 07:28:29 +0000
+Subject: [PATCH 2/2] LOCAL: rockchip: rk3399-rock960: Restore SD card IO
+ voltage in SPL
+
+Linux switches the SD card IO supply (vcc_sd, RK808 LDO4) to 1.8V for
+UHS-I modes. The PMIC is not reset on a warm reboot, so SPL reads the
+card with the pads at 3.3V and the supply at 1.8V, and loading
+u-boot.itb fails with block read errors.
+
+Enable I2C, PMIC and RK8XX regulator support in SPL and include
+vcc_sd, the i2c0 pins and the IO domains in the SPL devicetree, so
+dw_mmc sets vqmmc back to 3.3V before reading the card.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm/dts/rk3399-rock960-u-boot.dtsi | 13 +++++++++++++
+ configs/rock960-rk3399_defconfig        |  6 ++++++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/arch/arm/dts/rk3399-rock960-u-boot.dtsi b/arch/arm/dts/rk3399-rock960-u-boot.dtsi
+index ef08d8987ce..917c10b6b01 100644
+--- a/arch/arm/dts/rk3399-rock960-u-boot.dtsi
++++ b/arch/arm/dts/rk3399-rock960-u-boot.dtsi
+@@ -29,3 +29,16 @@
+ 	bootph-pre-ram;
+ 	bootph-some-ram;
+ };
++
++&i2c0_xfer {
++	bootph-pre-ram;
++};
++
++&io_domains {
++	bootph-pre-ram;
++};
++
++&vcc_sd {
++	bootph-pre-ram;
++	regulator-init-microvolt = <3300000>;
++};
+diff --git a/configs/rock960-rk3399_defconfig b/configs/rock960-rk3399_defconfig
+index db121f03ae6..051c7db4d57 100644
+--- a/configs/rock960-rk3399_defconfig
++++ b/configs/rock960-rk3399_defconfig
+@@ -17,6 +17,8 @@ CONFIG_SYS_PBSIZE=1052
+ CONFIG_DISPLAY_BOARDINFO_LATE=y
+ CONFIG_SPL_MAX_SIZE=0x40000
+ # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
++CONFIG_SPL_I2C=y
++CONFIG_SPL_POWER=y
+ CONFIG_SPL_ATF_NO_PLATFORM_PARAM=y
+ CONFIG_TPL=y
+ CONFIG_SYS_PROMPT="rock960 => "
+@@ -40,6 +42,7 @@ CONFIG_ENV_MMC_DEVICE_INDEX=1
+ # CONFIG_USB_FUNCTION_FASTBOOT is not set
+ CONFIG_ROCKCHIP_GPIO=y
+ CONFIG_SYS_I2C_ROCKCHIP=y
++CONFIG_SPL_ROCKCHIP_IODOMAIN=y
+ CONFIG_MMC_DW=y
+ CONFIG_MMC_DW_ROCKCHIP=y
+ CONFIG_MMC_SDHCI=y
+@@ -49,8 +52,11 @@ CONFIG_NVME_PCI=y
+ CONFIG_PHY_ROCKCHIP_INNO_USB2=y
+ CONFIG_PHY_ROCKCHIP_TYPEC=y
+ CONFIG_PMIC_RK8XX=y
++CONFIG_SPL_PMIC_RK8XX=y
++CONFIG_SPL_DM_REGULATOR=y
+ CONFIG_REGULATOR_PWM=y
+ CONFIG_REGULATOR_RK8XX=y
++CONFIG_SPL_REGULATOR_RK8XX=y
+ CONFIG_PWM_ROCKCHIP=y
+ CONFIG_BAUDRATE=1500000
+ CONFIG_DEBUG_UART_SHIFT=2
+-- 
+2.43.0
+

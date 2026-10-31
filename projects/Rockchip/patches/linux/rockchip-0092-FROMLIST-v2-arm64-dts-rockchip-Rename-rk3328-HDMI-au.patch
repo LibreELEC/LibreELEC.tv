@@ -1,0 +1,32 @@
+From e695fc8f126a617c08d54b4c09746a5abc1244d8 Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Thu, 10 Sep 2026 09:34:46 -0400
+Subject: [PATCH 092/280] FROMLIST(v2): arm64: dts: rockchip: Rename rk3328
+ HDMI audio card
+
+Rename the card from "HDMI" to "RK3328 HDMI" so it identifies the SoC
+in user-visible ALSA fields and no longer collides with the identical
+"HDMI" string used by other Rockchip SoCs.
+
+Fixes: 29e8976e604f1 ("arm64: dts: rockchip: Add RK3328 audio pipelines")
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3328.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3328.dtsi b/arch/arm64/boot/dts/rockchip/rk3328.dtsi
+index 03b7c4313750..26c9f4558ed9 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3328.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3328.dtsi
+@@ -207,7 +207,7 @@ hdmi_sound: hdmi-sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <128>;
+-		simple-audio-card,name = "HDMI";
++		simple-audio-card,name = "RK3328 HDMI";
+ 		status = "disabled";
+ 
+ 		simple-audio-card,cpu {
+-- 
+2.43.0
+

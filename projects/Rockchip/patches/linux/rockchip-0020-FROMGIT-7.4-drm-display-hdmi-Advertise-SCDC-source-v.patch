@@ -1,0 +1,56 @@
+From 1e030b4a083a640302be2ff06efd8a34ecf87450 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:35 +0300
+Subject: [PATCH 020/280] FROMGIT(7.4): drm/display: hdmi: Advertise SCDC
+ source version when scrambling
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The HDMI 2.0 spec advises that compliant Source devices report their
+SCDC version in the Source Version register.  Do so when enabling
+scrambling by calling drm_scdc_set_source_version().
+
+Failures are non-fatal: SCDC version negotiation is purely informational
+and does not gate scrambling or any high-bitrate functionality, so a
+flaky DDC bus should not block scrambling setup.
+
+Acked-by: Maxime Ripard <mripard@kernel.org>
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-11-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/display/drm_hdmi_helper.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_helper.c b/drivers/gpu/drm/display/drm_hdmi_helper.c
+index bf1c7963b984..f85cce3d6254 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_helper.c
+@@ -16,6 +16,7 @@
+ #include <drm/drm_print.h>
+ #include <drm/drm_property.h>
+ 
++#define DRM_HDMI_SCDC_SOURCE_VERSION	1
+ #define DRM_HDMI_SCDC_POLL_DELAY_MS	1000
+ 
+ static inline bool is_eotf_supported(u8 output_eotf, u8 sink_eotf)
+@@ -556,6 +557,12 @@ int drm_connector_hdmi_enable_scrambling(struct drm_connector *connector,
+ 	if (!connector->ddc)
+ 		return -EINVAL;
+ 
++	/*
++	 * Advertise our SCDC source version. This is purely informational and
++	 * does not gate scrambling, so failures are non-fatal.
++	 */
++	drm_scdc_set_source_version(connector, DRM_HDMI_SCDC_SOURCE_VERSION);
++
+ 	drm_dbg_kms(dev, "Enabling scrambling\n");
+ 
+ 	if (!hdmi->scdc_work_initialized) {
+-- 
+2.43.0
+

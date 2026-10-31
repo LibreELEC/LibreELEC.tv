@@ -1,0 +1,65 @@
+From c70bfa06320de17f2fd20f52d71671ec42da0e35 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:09 +0200
+Subject: [PATCH 152/280] FROMLIST(v4): drm/connector: hdmi: Create the
+ colorspace property
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+HDMI connectors initialised through drmm_connector_hdmi_init() do not
+expose the colorspace property, so userspace cannot signal colorimetry
+such as BT.2020 for HDR output. KWin, for instance, does not offer HDR
+without it.
+
+Add a supported_colorspaces bitmask to struct drm_connector_hdmi_funcs.
+If a driver sets it, create and attach the colorspace property with
+the colorspaces it lists, next to the other HDMI properties.
+
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/drm_connector.c | 9 +++++++++
+ include/drm/drm_connector.h     | 7 +++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
+index d26575909b41..58a125f7408b 100644
+--- a/drivers/gpu/drm/drm_connector.c
++++ b/drivers/gpu/drm/drm_connector.c
+@@ -672,6 +672,15 @@ int drmm_connector_hdmi_init(struct drm_device *dev,
+ 	/* TODO: remove after conversion to new drmm_connector_hdmi_init() */
+ 	connector->max_bpc = hdmi_funcs->max_bpc;
+ 
++	if (hdmi_funcs->supported_colorspaces) {
++		ret = drm_mode_create_hdmi_colorspace_property(connector,
++							       hdmi_funcs->supported_colorspaces);
++		if (ret)
++			return ret;
++
++		drm_connector_attach_colorspace_property(connector);
++	}
++
+ 	if (hdmi_funcs->max_bpc > 8)
+ 		drm_connector_attach_hdr_output_metadata_property(connector);
+ 
+diff --git a/include/drm/drm_connector.h b/include/drm/drm_connector.h
+index 6b2cce2fa3af..89183b8583c6 100644
+--- a/include/drm/drm_connector.h
++++ b/include/drm/drm_connector.h
+@@ -1454,6 +1454,13 @@ struct drm_connector_hdmi_funcs {
+ 	 */
+ 	unsigned long supported_formats;
+ 
++	/**
++	 * @supported_colorspaces:
++	 *
++	 * Bitmask of &enum drm_colorspace listing supported color spaces.
++	 */
++	unsigned long supported_colorspaces;
++
+ 	/**
+ 	 * @max_bpc: Maximum bits per char the HDMI connector supports.
+ 	 */
+-- 
+2.43.0
+

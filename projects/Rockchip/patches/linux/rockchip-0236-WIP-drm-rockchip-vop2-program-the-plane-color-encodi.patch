@@ -1,0 +1,73 @@
+From 487db4931e139d0d9014ac1054f055cf8a7355c9 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 01:44:41 +0000
+Subject: [PATCH 236/280] WIP: drm/rockchip: vop2: program the plane color
+ encoding and range
+
+The planes expose COLOR_ENCODING and COLOR_RANGE, but YUV to RGB
+conversion always uses the BT.709 limited range matrix, so BT.601,
+full range and BT.2020 content is converted with the wrong matrix.
+
+Select the window CSC mode from the plane color encoding and range.
+The hardware has no full range BT.709 or BT.2020 mode, so those use
+limited range.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop2.c | 25 ++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index aebea00af498..645b26ab0b3c 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -715,6 +715,28 @@ static enum vop_csc_format vop2_convert_csc_mode(int csc_mode)
+  * 11. RGB       --> bypass                --> RGB_OUTPUT(709)
+  */
+ 
++/*
++ * The window CSC has no full-range BT.709 or BT.2020 mode, so those fall
++ * back to limited range.
++ */
++static enum vop_csc_format vop2_plane_csc_mode(struct vop2_win *win,
++					       struct drm_plane_state *pstate)
++{
++	bool full = pstate->color_range == DRM_COLOR_YCBCR_FULL_RANGE;
++
++	if (!win->base.color_encoding_property)
++		return CSC_BT709L;
++
++	switch (pstate->color_encoding) {
++	case DRM_COLOR_YCBCR_BT601:
++		return full ? CSC_BT601F : CSC_BT601L;
++	case DRM_COLOR_YCBCR_BT2020:
++		return CSC_BT2020L;
++	default:
++		return CSC_BT709L;
++	}
++}
++
+ static void vop2_setup_csc_mode(struct vop2_video_port *vp,
+ 				struct vop2_win *win,
+ 				struct drm_plane_state *pstate)
+@@ -722,7 +744,6 @@ static void vop2_setup_csc_mode(struct vop2_video_port *vp,
+ 	struct rockchip_crtc_state *vcstate = to_rockchip_crtc_state(vp->crtc.state);
+ 	int is_input_yuv = pstate->fb->format->is_yuv;
+ 	int is_output_yuv = is_yuv_output(vcstate->bus_format);
+-	int input_csc = V4L2_COLORSPACE_DEFAULT;
+ 	int output_csc = vcstate->color_space;
+ 	bool r2y_en, y2r_en;
+ 	enum vop_csc_format csc_mode;
+@@ -730,7 +751,7 @@ static void vop2_setup_csc_mode(struct vop2_video_port *vp,
+ 	if (is_input_yuv && !is_output_yuv) {
+ 		y2r_en = true;
+ 		r2y_en = false;
+-		csc_mode = vop2_convert_csc_mode(input_csc);
++		csc_mode = vop2_plane_csc_mode(win, pstate);
+ 	} else if (!is_input_yuv && is_output_yuv) {
+ 		y2r_en = false;
+ 		r2y_en = true;
+-- 
+2.43.0
+

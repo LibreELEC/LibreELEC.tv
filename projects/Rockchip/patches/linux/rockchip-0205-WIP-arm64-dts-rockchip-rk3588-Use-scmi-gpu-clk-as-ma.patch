@@ -1,0 +1,97 @@
+From 4e4a00771d727378379c035f7f67319fb9ce5a24 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 27 Apr 2025 20:34:55 +0000
+Subject: [PATCH 205/280] WIP: arm64: dts: rockchip: rk3588: Use scmi gpu clk
+ as main GPU clock
+
+CLK_GPU is the main clock for the GPU on RK3588, it's typical source
+pll can be one of gpll, cpll, aupll, npll or spll. For higher clock
+rates it is also possible to use the gpu pvtpll as pll source.
+
+The logic to switch between a normal pll and the pvtpll depending on
+rate is handled in TF-A firmware, and exposed to Linux as a scmi clock.
+TF-A will typically change to use normal pll for rates up to 200 MHz and
+use pvtpll for 300 MHz or more.
+
+Change to use the SCMI_CLK_GPU as the main GPU clock and add the normal
+CLK_GPU as a bus clk to model this in a similar way as on RK356x.
+
+Prior to this change the GPU clk rate was max 850 MHz:
+
+  $ glmark2-es2-gbm -b terrain
+  [...]
+    GL_VENDOR:      Mesa
+    GL_RENDERER:    Mali-G610 (Panfrost)
+    GL_VERSION:     OpenGL ES 3.1 Mesa 25.0.4
+    Surface Config: buf=32 r=8 g=8 b=8 a=8 depth=24 stencil=0 samples=0
+    Surface Size:   800x600 fullscreen
+  [...]
+  [terrain] <default>: FPS: 139 FrameTime: 7.231 ms
+
+After this the GPU clk rate can use the 1 GHz rate with PVTPLL:
+
+  [terrain] <default>: FPS: 152 FrameTime: 6.579 ms
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-base.dtsi | 10 +++++-----
+ arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi  |  5 +++++
+ arch/arm64/boot/dts/rockchip/rk3588j.dtsi     |  5 +++++
+ 3 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+index 26eef178d9fb..a055302b1170 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -450,11 +450,11 @@ gpu: gpu@fb000000 {
+ 		compatible = "rockchip,rk3588-mali", "arm,mali-valhall-csf";
+ 		reg = <0x0 0xfb000000 0x0 0x200000>;
+ 		#cooling-cells = <2>;
+-		assigned-clocks = <&scmi_clk SCMI_CLK_GPU>;
+-		assigned-clock-rates = <200000000>;
+-		clocks = <&cru CLK_GPU>, <&cru CLK_GPU_COREGROUP>,
+-			 <&cru CLK_GPU_STACKS>;
+-		clock-names = "core", "coregroup", "stacks";
++		assigned-clocks = <&cru CLK_GPU>, <&scmi_clk SCMI_CLK_GPU>;
++		assigned-clock-rates = <198000000>, <200000000>;
++		clocks = <&scmi_clk SCMI_CLK_GPU>, <&cru CLK_GPU_COREGROUP>,
++			 <&cru CLK_GPU_STACKS>, <&cru CLK_GPU>;
++		clock-names = "core", "coregroup", "stacks", "bus";
+ 		dynamic-power-coefficient = <2982>;
+ 		interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_HIGH 0>,
+ 			     <GIC_SPI 93 IRQ_TYPE_LEVEL_HIGH 0>,
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi
+index 59ecaef5101d..af706f0102bd 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-opp.dtsi
+@@ -118,6 +118,11 @@ opp-2400000000 {
+ 	gpu_opp_table: opp-table-gpu {
+ 		compatible = "operating-points-v2";
+ 
++		opp-200000000 {
++			opp-hz = /bits/ 64 <200000000>;
++			opp-microvolt = <675000 675000 850000>;
++			opp-suspend;
++		};
+ 		opp-300000000 {
+ 			opp-hz = /bits/ 64 <300000000>;
+ 			opp-microvolt = <675000 675000 850000>;
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588j.dtsi b/arch/arm64/boot/dts/rockchip/rk3588j.dtsi
+index e1e0e3fc0ca7..1ca74d4fb1cd 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588j.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588j.dtsi
+@@ -69,6 +69,11 @@ opp-1608000000 {
+ 	gpu_opp_table: opp-table-gpu {
+ 		compatible = "operating-points-v2";
+ 
++		opp-200000000 {
++			opp-hz = /bits/ 64 <200000000>;
++			opp-microvolt = <750000 750000 850000>;
++			opp-suspend;
++		};
+ 		opp-300000000 {
+ 			opp-hz = /bits/ 64 <300000000>;
+ 			opp-microvolt = <750000 750000 850000>;
+-- 
+2.43.0
+

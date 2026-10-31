@@ -1,0 +1,274 @@
+From 7e6fa9ddfcce5c9a7d6c63afa3c9f6b2f1f966ea Mon Sep 17 00:00:00 2001
+From: CroqueMr <82093548+CroqueMr@users.noreply.github.com>
+Date: Tue, 20 Oct 2026 11:05:54 +0000
+Subject: [PATCH 227/280] WIP: video: hdmi: add the Dolby Vision
+ vendor-specific InfoFrame
+
+Add struct hdmi_dolby_vendor_infoframe with init/check/pack and unpack
+for the 27-byte Dolby VSIF (IEEE OUI 00-D0-46) a source sends to signal
+Dolby Vision output to the sink. This is the link-level signal only, not
+the per-frame RPU, which the source embeds in the video data.
+
+From libreelec-x86-DV R1.0.0-Beta4 (linux-9900-08, linux-9900-09).
+---
+ drivers/video/hdmi.c | 153 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/hdmi.h |  31 +++++++++
+ 2 files changed, 182 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/hdmi.c b/drivers/video/hdmi.c
+index 45b42f14a750..61587c64d021 100644
+--- a/drivers/video/hdmi.c
++++ b/drivers/video/hdmi.c
+@@ -684,6 +684,131 @@ ssize_t hdmi_vendor_infoframe_pack(struct hdmi_vendor_infoframe *frame,
+ }
+ EXPORT_SYMBOL(hdmi_vendor_infoframe_pack);
+ 
++/**
++ * hdmi_dolby_vendor_infoframe_init() - initialize a modern Dolby vendor frame
++ * @frame: frame to initialize, with the Dolby signal disabled
++ */
++void hdmi_dolby_vendor_infoframe_init(struct hdmi_dolby_vendor_infoframe *frame)
++{
++	memset(frame, 0, sizeof(*frame));
++	frame->type = HDMI_INFOFRAME_TYPE_VENDOR;
++	frame->version = 1;
++	frame->length = HDMI_DOLBY_VENDOR_INFOFRAME_SIZE;
++	frame->oui = HDMI_DOLBY_IEEE_OUI;
++}
++EXPORT_SYMBOL(hdmi_dolby_vendor_infoframe_init);
++
++/**
++ * hdmi_dolby_vendor_infoframe_check() - validate a modern Dolby vendor frame
++ * @frame: frame to validate without mutation
++ *
++ * Only the supported fields may be present. A caller must negotiate sink
++ * capabilities separately; serializing a frame does not enable a DV output.
++ * Return: 0 or a negative error code.
++ */
++int hdmi_dolby_vendor_infoframe_check(const struct hdmi_dolby_vendor_infoframe *frame)
++{
++	if (frame->type != HDMI_INFOFRAME_TYPE_VENDOR || frame->version != 1 ||
++	    frame->length != HDMI_DOLBY_VENDOR_INFOFRAME_SIZE ||
++	    frame->oui != HDMI_DOLBY_IEEE_OUI || frame->effective_tmax_pq > 4095 ||
++	    frame->content_type > 15 || frame->content_subtype > 15 ||
++	    frame->intended_white_point > 15 || frame->crf > 15)
++		return -EINVAL;
++	if (!frame->signal && (frame->low_latency || frame->backlight_present ||
++	    frame->auxiliary_present || frame->l11_present))
++		return -EINVAL;
++	if (!frame->backlight_present && frame->effective_tmax_pq)
++		return -EINVAL;
++	if (!frame->auxiliary_present && (frame->auxiliary_runmode ||
++	    frame->auxiliary_version || frame->auxiliary_debug))
++		return -EINVAL;
++	if (!frame->l11_present && (frame->content_type || frame->content_subtype ||
++	    frame->intended_white_point || frame->crf || frame->l11_byte2 ||
++	    frame->l11_byte3))
++		return -EINVAL;
++	return 0;
++}
++EXPORT_SYMBOL(hdmi_dolby_vendor_infoframe_check);
++
++/**
++ * hdmi_dolby_vendor_infoframe_pack() - pack the modern 27-byte Dolby VSIF
++ * @frame: validated typed fields; not a raw vendor packet or movie RPU
++ * @buffer: destination including the four-byte infoframe header
++ * @size: destination capacity
++ *
++ * The reserved payload tail is zero. On failure, @buffer is left unchanged.
++ * Return: bytes packed or a negative error code.
++ */
++ssize_t hdmi_dolby_vendor_infoframe_pack(const struct hdmi_dolby_vendor_infoframe *frame,
++				       void *buffer, size_t size)
++{
++	u8 *ptr = buffer;
++	int ret = hdmi_dolby_vendor_infoframe_check(frame);
++
++	if (ret)
++		return ret;
++	if (size < HDMI_INFOFRAME_SIZE(DOLBY_VENDOR))
++		return -ENOSPC;
++	memset(buffer, 0, size);
++	ptr[0] = frame->type;
++	ptr[1] = frame->version;
++	ptr[2] = frame->length;
++	ptr[4] = 0x46;
++	ptr[5] = 0xd0;
++	ptr[7] = frame->low_latency | (frame->signal << 1);
++	ptr[8] = (frame->effective_tmax_pq >> 8) |
++		 (frame->l11_present << 5) | (frame->auxiliary_present << 6) |
++		 (frame->backlight_present << 7);
++	ptr[9] = frame->effective_tmax_pq;
++	ptr[10] = frame->auxiliary_runmode;
++	ptr[11] = frame->auxiliary_version;
++	ptr[12] = frame->auxiliary_debug;
++	ptr[13] = frame->content_type | (frame->content_subtype << 4);
++	ptr[14] = frame->intended_white_point | (frame->crf << 4);
++	ptr[15] = frame->l11_byte2;
++	ptr[16] = frame->l11_byte3;
++	hdmi_infoframe_set_checksum(buffer, HDMI_INFOFRAME_SIZE(DOLBY_VENDOR));
++	return HDMI_INFOFRAME_SIZE(DOLBY_VENDOR);
++}
++EXPORT_SYMBOL(hdmi_dolby_vendor_infoframe_pack);
++
++static int
++hdmi_dolby_vendor_infoframe_unpack(struct hdmi_dolby_vendor_infoframe *frame,
++				  const void *buffer, size_t size)
++{
++	struct hdmi_dolby_vendor_infoframe tmp;
++	u8 canonical[HDMI_INFOFRAME_SIZE(DOLBY_VENDOR)];
++	const u8 *ptr = buffer;
++
++	if (size < sizeof(canonical) || ptr[0] != HDMI_INFOFRAME_TYPE_VENDOR ||
++	    ptr[1] != 1 || ptr[2] != HDMI_DOLBY_VENDOR_INFOFRAME_SIZE ||
++	    ptr[4] != 0x46 || ptr[5] != 0xd0 || ptr[6] != 0 ||
++	    hdmi_infoframe_checksum(buffer, sizeof(canonical)))
++		return -EINVAL;
++	hdmi_dolby_vendor_infoframe_init(&tmp);
++	tmp.signal = (ptr[7] >> 1) & 1;
++	tmp.low_latency = ptr[7] & 1;
++	tmp.backlight_present = (ptr[8] >> 7) & 1;
++	tmp.auxiliary_present = (ptr[8] >> 6) & 1;
++	tmp.l11_present = (ptr[8] >> 5) & 1;
++	tmp.effective_tmax_pq = ((ptr[8] & 15) << 8) | ptr[9];
++	tmp.auxiliary_runmode = ptr[10];
++	tmp.auxiliary_version = ptr[11];
++	tmp.auxiliary_debug = ptr[12];
++	tmp.content_type = ptr[13] & 15;
++	tmp.content_subtype = ptr[13] >> 4;
++	tmp.intended_white_point = ptr[14] & 15;
++	tmp.crf = ptr[14] >> 4;
++	tmp.l11_byte2 = ptr[15];
++	tmp.l11_byte3 = ptr[16];
++	/* Canonical comparison also rejects unknown and reserved bits. */
++	if (hdmi_dolby_vendor_infoframe_pack(&tmp, canonical, sizeof(canonical)) < 0 ||
++	    memcmp(canonical, buffer, sizeof(canonical)))
++		return -EINVAL;
++	*frame = tmp;
++	return 0;
++}
++
+ static int
+ hdmi_vendor_any_infoframe_check_only(const union hdmi_vendor_any_infoframe *frame)
+ {
+@@ -850,7 +975,10 @@ hdmi_vendor_any_infoframe_check(union hdmi_vendor_any_infoframe *frame)
+ 	if (ret)
+ 		return ret;
+ 
+-	/* we only know about HDMI vendor infoframes */
++	if (frame->any.oui == HDMI_DOLBY_IEEE_OUI)
++		return hdmi_dolby_vendor_infoframe_check(&frame->dolby);
++
++	/* Keep the legacy HDMI vendor path unchanged. */
+ 	if (frame->any.oui != HDMI_IEEE_OUI)
+ 		return -EINVAL;
+ 
+@@ -870,7 +998,10 @@ hdmi_vendor_any_infoframe_pack_only(const union hdmi_vendor_any_infoframe *frame
+ 	if (ret)
+ 		return ret;
+ 
+-	/* we only know about HDMI vendor infoframes */
++	if (frame->any.oui == HDMI_DOLBY_IEEE_OUI)
++		return hdmi_dolby_vendor_infoframe_pack(&frame->dolby, buffer, size);
++
++	/* Keep the legacy HDMI vendor path unchanged. */
+ 	if (frame->any.oui != HDMI_IEEE_OUI)
+ 		return -EINVAL;
+ 
+@@ -1496,6 +1627,17 @@ hdmi_vendor_any_infoframe_log(const char *level,
+ 	hdmi_infoframe_log_header(level, dev,
+ 				  (const struct hdmi_any_infoframe *)frame);
+ 
++	if (frame->any.oui == HDMI_DOLBY_IEEE_OUI) {
++		const struct hdmi_dolby_vendor_infoframe *dv = &frame->dolby;
++
++		hdmi_log("    Dolby: signal %u, low latency %u, L11 %u\n",
++			 dv->signal, dv->low_latency, dv->l11_present);
++		hdmi_log("    backlight %u, max PQ %u, auxiliary %u\n",
++			 dv->backlight_present, dv->effective_tmax_pq,
++			 dv->auxiliary_present);
++		return;
++	}
++
+ 	if (frame->any.oui != HDMI_IEEE_OUI) {
+ 		hdmi_log("    not a HDMI vendor infoframe\n");
+ 		return;
+@@ -1725,6 +1867,13 @@ hdmi_vendor_any_infoframe_unpack(union hdmi_vendor_any_infoframe *frame,
+ 	u8 hdmi_video_format;
+ 	struct hdmi_vendor_infoframe *hvf = &frame->hdmi;
+ 
++	/* Inspect the OUI only after checking it is present. Legacy parsing below
++	 * is deliberately unchanged, including its length/error semantics.
++	 */
++	if (size >= HDMI_INFOFRAME_HEADER_SIZE + 3 &&
++	    ptr[4] == 0x46 && ptr[5] == 0xd0 && ptr[6] == 0)
++		return hdmi_dolby_vendor_infoframe_unpack(&frame->dolby, buffer, size);
++
+ 	if (size < HDMI_INFOFRAME_HEADER_SIZE)
+ 		return -EINVAL;
+ 
+diff --git a/include/linux/hdmi.h b/include/linux/hdmi.h
+index b80a5ee63bb2..aad8acefa2a1 100644
+--- a/include/linux/hdmi.h
++++ b/include/linux/hdmi.h
+@@ -70,12 +70,14 @@ enum hdmi_infoframe_type {
+ 
+ #define HDMI_IEEE_OUI 0x000c03
+ #define HDMI_FORUM_IEEE_OUI 0xc45dd8
++#define HDMI_DOLBY_IEEE_OUI 0x00d046
+ #define HDMI_INFOFRAME_HEADER_SIZE  4
+ #define HDMI_AVI_INFOFRAME_SIZE    13
+ #define HDMI_SPD_INFOFRAME_SIZE    25
+ #define HDMI_AUDIO_INFOFRAME_SIZE  10
+ #define HDMI_DRM_INFOFRAME_SIZE    26
+ #define HDMI_VENDOR_INFOFRAME_SIZE  4
++#define HDMI_DOLBY_VENDOR_INFOFRAME_SIZE 27
+ 
+ /*
+  * HDMI 1.3a table 5-14 states that the largest InfoFrame_length is 27,
+@@ -427,6 +429,34 @@ ssize_t hdmi_vendor_infoframe_pack_only(const struct hdmi_vendor_infoframe *fram
+ 					void *buffer, size_t size);
+ int hdmi_vendor_infoframe_check(struct hdmi_vendor_infoframe *frame);
+ 
++/* Modern Dolby VSIF only. This is not the per-frame movie RPU payload. */
++struct hdmi_dolby_vendor_infoframe {
++	enum hdmi_infoframe_type type;
++	unsigned char version;
++	unsigned char length;
++	unsigned int oui;
++	bool signal;
++	bool low_latency;
++	bool backlight_present;
++	bool auxiliary_present;
++	bool l11_present;
++	u16 effective_tmax_pq;
++	u8 auxiliary_runmode;
++	u8 auxiliary_version;
++	u8 auxiliary_debug;
++	u8 content_type;
++	u8 content_subtype;
++	u8 intended_white_point;
++	u8 crf;
++	u8 l11_byte2;
++	u8 l11_byte3;
++};
++
++void hdmi_dolby_vendor_infoframe_init(struct hdmi_dolby_vendor_infoframe *frame);
++int hdmi_dolby_vendor_infoframe_check(const struct hdmi_dolby_vendor_infoframe *frame);
++ssize_t hdmi_dolby_vendor_infoframe_pack(const struct hdmi_dolby_vendor_infoframe *frame,
++				       void *buffer, size_t size);
++
+ union hdmi_vendor_any_infoframe {
+ 	struct {
+ 		enum hdmi_infoframe_type type;
+@@ -435,6 +465,7 @@ union hdmi_vendor_any_infoframe {
+ 		unsigned int oui;
+ 	} any;
+ 	struct hdmi_vendor_infoframe hdmi;
++	struct hdmi_dolby_vendor_infoframe dolby;
+ };
+ 
+ /**
+-- 
+2.43.0
+

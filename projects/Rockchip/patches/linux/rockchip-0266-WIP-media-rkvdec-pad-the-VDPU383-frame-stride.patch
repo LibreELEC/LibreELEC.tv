@@ -1,0 +1,83 @@
+From 03caf2ad87eb361f8cc7159d290c96f70071452c Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 10:46:37 +0000
+Subject: [PATCH 266/280] WIP: media: rkvdec: pad the VDPU383 frame stride
+
+The VDPU383 decodes into frames whose stride is the line width. For
+common widths such as 3840 and 1920 that is an even multiple of 128
+bytes, so the rows of a reference block land in the same DRAM bank and
+cache set, which slows motion compensation.
+
+Pad the stride to an odd multiple of 128 bytes plus 64, as the vendor
+MPP library does, through a variant hook used only by VDPU383. The H.264
+and HEVC code already program the hardware stride from bytesperline.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../media/platform/rockchip/rkvdec/rkvdec.c   | 22 +++++++++++++++++++
+ .../media/platform/rockchip/rkvdec/rkvdec.h   |  1 +
+ 2 files changed, 23 insertions(+)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 8c515262896b..059335334825 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -100,13 +100,34 @@ static u32 vdpu383_colmv_size(u16 width, u16 height)
+ 	return ALIGN(width, 64) * ALIGN(height, 16);
+ }
+ 
++/*
++ * Keep the line stride an odd multiple of 128 bytes plus 64, so the rows of a
++ * reference block do not all map to the same DRAM bank and cache set.
++ */
++static u32 vdpu383_hor_stride(u32 bytesperline)
++{
++	bytesperline = ALIGN(bytesperline, 64);
++	if ((bytesperline - 64) % 256 == 128)
++		return bytesperline;
++
++	return (ALIGN(bytesperline, 128) | 128) + 64;
++}
++
+ static void rkvdec_fill_decoded_pixfmt(struct rkvdec_ctx *ctx,
+ 				       struct v4l2_pix_format_mplane *pix_mp)
+ {
+ 	const struct rkvdec_variant *variant = ctx->dev->variant;
++	struct v4l2_plane_pix_format *plane = &pix_mp->plane_fmt[0];
+ 
+ 	v4l2_fill_pixfmt_mp(pix_mp, pix_mp->pixelformat, pix_mp->width, pix_mp->height);
+ 
++	if (variant->ops->hor_stride) {
++		u32 lines = plane->sizeimage / plane->bytesperline;
++
++		plane->bytesperline = variant->ops->hor_stride(plane->bytesperline);
++		plane->sizeimage = plane->bytesperline * lines;
++	}
++
+ 	ctx->colmv_offset = pix_mp->plane_fmt[0].sizeimage;
+ 
+ 	pix_mp->plane_fmt[0].sizeimage += variant->ops->colmv_size(pix_mp->width, pix_mp->height);
+@@ -1949,6 +1970,7 @@ static const struct rcb_size_info vdpu383_rcb_sizes[] = {
+ static const struct rkvdec_variant_ops vdpu383_variant_ops = {
+ 	.irq_handler = vdpu383_irq_handler,
+ 	.colmv_size = vdpu383_colmv_size,
++	.hor_stride = vdpu383_hor_stride,
+ 	.flatten_matrices = vdpu383_flatten_matrices,
+ };
+ 
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+index 338ce1efb3cd..d3b8831961d5 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+@@ -75,6 +75,7 @@ vb2_to_rkvdec_decoded_buf(struct vb2_buffer *buf)
+ struct rkvdec_variant_ops {
+ 	irqreturn_t (*irq_handler)(struct rkvdec_ctx *ctx);
+ 	u32 (*colmv_size)(u16 width, u16 height);
++	u32 (*hor_stride)(u32 bytesperline);
+ 	void (*flatten_matrices)(u8 *output, const u8 *input, int matrices, int row_length);
+ };
+ 
+-- 
+2.43.0
+

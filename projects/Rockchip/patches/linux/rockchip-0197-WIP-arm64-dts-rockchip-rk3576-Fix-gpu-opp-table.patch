@@ -1,0 +1,77 @@
+From d166e64aded7893fd94cd6dc04da1853c647e697 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 4 May 2025 09:58:29 +0000
+Subject: [PATCH 197/280] WIP: arm64: dts: rockchip: rk3576: Fix gpu opp table
+
+The Rockchip RK3576 datasheet v1.5 Recommended Operating Conditions
+table list Max GPU frequency as 900 MHz.
+
+The recommended Voltage for GPU is listed as min 0.675 and max 0.918,
+with a typical voltage of 0.75.
+
+Update the GPU OPP table to remove 950 MHz and adjust the voltages to
+match the highest voltages used by vendor kernel to ensure stability.
+
+Fixes: 57b1ce903966 ("arm64: dts: rockchip: Add rk3576 SoC base DT")
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm64/boot/dts/rockchip/rk3576.dtsi | 19 +++++++------------
+ 1 file changed, 7 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3576.dtsi b/arch/arm64/boot/dts/rockchip/rk3576.dtsi
+index 3f077880ae4b..5f32915f44b8 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3576.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3576.dtsi
+@@ -349,42 +349,37 @@ gpu_opp_table: opp-table-gpu {
+ 
+ 		opp-300000000 {
+ 			opp-hz = /bits/ 64 <300000000>;
+-			opp-microvolt = <700000 700000 850000>;
++			opp-microvolt = <712500 712500 875000>;
+ 		};
+ 
+ 		opp-400000000 {
+ 			opp-hz = /bits/ 64 <400000000>;
+-			opp-microvolt = <700000 700000 850000>;
++			opp-microvolt = <712500 712500 875000>;
+ 		};
+ 
+ 		opp-500000000 {
+ 			opp-hz = /bits/ 64 <500000000>;
+-			opp-microvolt = <700000 700000 850000>;
++			opp-microvolt = <712500 712500 875000>;
+ 		};
+ 
+ 		opp-600000000 {
+ 			opp-hz = /bits/ 64 <600000000>;
+-			opp-microvolt = <700000 700000 850000>;
++			opp-microvolt = <712500 712500 875000>;
+ 		};
+ 
+ 		opp-700000000 {
+ 			opp-hz = /bits/ 64 <700000000>;
+-			opp-microvolt = <725000 725000 850000>;
++			opp-microvolt = <750000 750000 875000>;
+ 		};
+ 
+ 		opp-800000000 {
+ 			opp-hz = /bits/ 64 <800000000>;
+-			opp-microvolt = <775000 775000 850000>;
++			opp-microvolt = <812500 812500 875000>;
+ 		};
+ 
+ 		opp-900000000 {
+ 			opp-hz = /bits/ 64 <900000000>;
+-			opp-microvolt = <825000 825000 850000>;
+-		};
+-
+-		opp-950000000 {
+-			opp-hz = /bits/ 64 <950000000>;
+-			opp-microvolt = <850000 850000 850000>;
++			opp-microvolt = <875000 875000 875000>;
+ 		};
+ 	};
+ 
+-- 
+2.43.0
+

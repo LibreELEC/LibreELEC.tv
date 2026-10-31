@@ -1,0 +1,56 @@
+From 326283774058ed78c59af5f178dc2f0e3d2300eb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:10 +0200
+Subject: [PATCH 153/280] FROMLIST(v4): drm/bridge-connector: Pass supported
+ colorspaces to the HDMI helpers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add a supported_colorspaces field to struct drm_bridge so HDMI bridges
+can declare the colorimetries they support, and pass it on to
+drmm_connector_hdmi_init() so the colorspace property gets created.
+
+Suggested-by: Javier Martinez Canillas <javierm@redhat.com>
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/display/drm_bridge_connector.c | 4 ++++
+ include/drm/drm_bridge.h                       | 7 +++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/drivers/gpu/drm/display/drm_bridge_connector.c b/drivers/gpu/drm/display/drm_bridge_connector.c
+index 707d7143e475..5165d8ec8a9a 100644
+--- a/drivers/gpu/drm/display/drm_bridge_connector.c
++++ b/drivers/gpu/drm/display/drm_bridge_connector.c
+@@ -1041,6 +1041,10 @@ struct drm_connector *drm_bridge_connector_init(struct drm_device *drm,
+ 			bridge_connector->hdmi_funcs.supported_formats =
+ 				bridge_connector->bridge_hdmi->supported_formats;
+ 
++		if (bridge_connector->bridge_hdmi->supported_colorspaces)
++			bridge_connector->hdmi_funcs.supported_colorspaces =
++				bridge_connector->bridge_hdmi->supported_colorspaces;
++
+ 		if (!connector->ycbcr_420_allowed)
+ 			bridge_connector->hdmi_funcs.supported_formats &=
+ 				~BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420);
+diff --git a/include/drm/drm_bridge.h b/include/drm/drm_bridge.h
+index 77b3ffe69230..4a7601eaf4a3 100644
+--- a/include/drm/drm_bridge.h
++++ b/include/drm/drm_bridge.h
+@@ -1129,6 +1129,13 @@ struct drm_bridge {
+ 	 */
+ 	unsigned int supported_formats;
+ 
++	/**
++	 * @supported_colorspaces: Bitmask of &enum drm_colorspace listing
++	 * supported color spaces. This is only relevant if @DRM_BRIDGE_OP_HDMI
++	 * is set.
++	 */
++	unsigned int supported_colorspaces;
++
+ 	/**
+ 	 * @max_tmds_char_rate: Maximum TMDS character rate, in Hz, the HDMI
+ 	 * bridge supports. A value of 0 means the core should use the default
+-- 
+2.43.0
+

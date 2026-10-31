@@ -1,0 +1,44 @@
+From ff0eb0b7dbbf503a29f8c7c5653ccc3723f4d87d Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 18:28:40 +0000
+Subject: [PATCH 270/280] WIP: media: rkvdec: vdpu381: read VP9 reference
+ motion vectors at the colmv offset
+
+The reference motion vector address is derived from the reference
+frame height and the line stride, but the motion vectors of every
+capture buffer are written at the colmv offset, after the whole image.
+The two differ when a reference is smaller than the capture format, or
+when the image size is not a plain line stride multiple.
+
+Use the colmv offset for the reference motion vectors too.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../media/platform/rockchip/rkvdec/rkvdec-vdpu381-vp9.c  | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu381-vp9.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu381-vp9.c
+index 4fddd547a11f..ddec4a5ee4b4 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu381-vp9.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu381-vp9.c
+@@ -416,15 +416,8 @@ static void rkvdec_write_regs(struct rkvdec_ctx *ctx)
+ 
+ static dma_addr_t get_mv_base_addr(struct rkvdec_ctx *ctx, struct rkvdec_decoded_buffer *buf)
+ {
+-	unsigned int aligned_pitch, aligned_height, yuv_len;
+-
+-	aligned_height = round_up(buf->vp9.height, 64);
+-
+-	aligned_pitch = ctx->decoded_fmt.fmt.pix_mp.plane_fmt[0].bytesperline;
+-	yuv_len = (aligned_height * aligned_pitch * 3) / 2;
+-
+ 	return vb2_dma_contig_plane_dma_addr(&buf->base.vb.vb2_buf, 0) +
+-	       yuv_len;
++	       ctx->colmv_offset;
+ }
+ 
+ static void config_registers(struct rkvdec_ctx *ctx,
+-- 
+2.43.0
+

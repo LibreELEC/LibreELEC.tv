@@ -1,0 +1,163 @@
+From d96e79f896c8171e62c44183d7c286325929a927 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 10 May 2025 23:59:20 +0000
+Subject: [PATCH 201/280] WIP: drm/lima: Do not set clk rate when device is
+ suspended
+
+On Rockchip RK3528 trying to change the SCMI_CLK_GPU rate when the GPU
+device is PM runtime suspended may cause a freeze or kernel panic:
+
+  $ echo performance > /sys/class/devfreq/ff700000.gpu/governor
+
+  SError Interrupt on CPU1, code 0x00000000bf000000 -- SError
+  CPU: 1 UID: 0 PID: 190 Comm: sh Not tainted 6.15.0-rc6 #1 VOLUNTARY
+  Hardware name: Radxa E20C (DT)
+  pstate: 60000005 (nZCv daif -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+  pc : smc_send_message+0x140/0x148
+  lr : smc_send_message+0xd8/0x148
+  sp : ffff800082ebb880
+  x29: ffff800082ebb880 x28: ffff0000015a6000 x27: 0000000000000000
+  x26: 0000000000000000 x25: 00000000ffffffff x24: ffff800082ebbae8
+  x23: ffff000004adcc10 x22: ffff0000007d04a0 x21: ffff000004b93680
+  x20: ffff000000e51380 x19: ffff0000007d0480 x18: 0000000000000000
+  x17: 0000000000000000 x16: 0000000000000000 x15: 0000000000000008
+  x14: ffff0000015a6080 x13: 0000000000000000 x12: 0000000000000018
+  x11: 0000000000000040 x10: ffff000004ae2138 x9 : ffff000004ae2130
+  x8 : ffff000001fe1b88 x7 : 0000000000000000 x6 : 0000000000000000
+  x5 : 0000000000000000 x4 : 0000000000000000 x3 : 0000000000000000
+  x2 : 0000000000000000 x1 : 0000000000000000 x0 : 0000000000000000
+  Kernel panic - not syncing: Asynchronous SError Interrupt
+  CPU: 1 UID: 0 PID: 190 Comm: sh Not tainted 6.15.0-rc6 #1 VOLUNTARY
+  Hardware name: Radxa E20C (DT)
+  Call trace:
+   show_stack+0x28/0x78 (C)
+   dump_stack_lvl+0x58/0x74
+   dump_stack+0x14/0x1c
+   panic+0x14c/0x328
+   add_taint+0x0/0xc0
+   arm64_serror_panic+0x60/0x6c
+   do_serror+0x24/0x60
+   el1h_64_error_handler+0x2c/0x40
+   el1h_64_error+0x6c/0x70
+   smc_send_message+0x140/0x148 (P)
+   do_xfer+0xb0/0x200
+   scmi_clock_rate_set+0xc0/0x220
+   scmi_clk_set_rate+0x24/0x38
+   clk_change_rate+0x164/0x288
+   clk_core_set_rate_nolock+0x1dc/0x314
+   clk_set_rate+0x34/0x144
+   _opp_config_clk_single+0x2c/0x90
+   _set_opp+0x104/0x564
+   dev_pm_oppset_rate+0x110/0x260
+   lima_devfreq_target+0x30/0x40
+   devfre_set_target+0x84/0x180
+   devfreq_update_target+0xb4/0xcc
+   update_devfreq+0x10/0x18
+   devfreq_performance_handler+0x40/0x70
+   governor_store+0xe4/0x260
+   dev_attr_store+0x14/0x24
+   sysfs_kf_write+0x54/0x60
+   kernfs_fop_write_iter+0x118/0x1e0
+   vfs_write+0x224/0x390
+   ksys_write+0x68/0x100
+   __arm64_sys_write+0x18/0x20
+   invoke_syscall+0x44/0x100
+   el0_svc_common.constprop.0+0x3c/0xe0
+   do_el0_svc+0x18/0x20
+   el0_svc+0x2c/0xc0
+   el0t_64_sync_handler+0x104/0x130
+   el0t_64_sync+0x170/0x174
+  SMP: stopping secondary CPUs
+  Kernel Offset: disabled
+  CPU fetures: 0x0000,00001000,00000400,0200400b
+  Memory Limit: none
+  ---[ end Kernel panic - not syncing: Asynchronous SError Interrupt ]---
+
+This typically happen when CLK_GPU is disabled or when PD_GPU is down.
+
+Add a config_clks ops that will not set core clk rate when the device is
+PM runtime suspended.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/lima/lima_devfreq.c | 43 ++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/lima/lima_devfreq.c b/drivers/gpu/drm/lima/lima_devfreq.c
+index bc8fb4e38d0a..303da7ed09a8 100644
+--- a/drivers/gpu/drm/lima/lima_devfreq.c
++++ b/drivers/gpu/drm/lima/lima_devfreq.c
+@@ -11,6 +11,7 @@
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_opp.h>
++#include <linux/pm_runtime.h>
+ #include <linux/property.h>
+ 
+ #include "lima_device.h"
+@@ -87,6 +88,41 @@ static struct devfreq_dev_profile lima_devfreq_profile = {
+ 	.get_dev_status = lima_devfreq_get_dev_status,
+ };
+ 
++static int lima_devfreq_config_clks(struct device *dev,
++				    struct opp_table *opp_table,
++				    struct dev_pm_opp *opp,
++				    void *data, bool scaling_down)
++{
++	struct lima_device *ldev = dev_get_drvdata(dev);
++	struct devfreq *devfreq = ldev->devfreq.devfreq;
++	unsigned long *target = data;
++	unsigned long freq;
++	int ret = 0;
++
++	/* One of target and opp must be available */
++	if (target) {
++		freq = *target;
++	} else if (opp) {
++		freq = dev_pm_opp_get_freq(opp);
++	} else {
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
++	pm_runtime_get_noresume(dev);
++
++	if (!pm_runtime_suspended(dev) || !devfreq || !devfreq->suspend_freq) {
++		ret = clk_set_rate(ldev->clk_gpu, freq);
++		if (ret)
++			dev_err(dev, "failed to set clock rate %lu: %d\n",
++				freq, ret);
++	}
++
++	pm_runtime_put_noidle(dev);
++
++	return ret;
++}
++
+ void lima_devfreq_fini(struct lima_device *ldev)
+ {
+ 	struct lima_devfreq *devfreq = &ldev->devfreq;
+@@ -112,6 +148,11 @@ int lima_devfreq_init(struct lima_device *ldev)
+ 	unsigned long cur_freq;
+ 	int ret;
+ 	const char *regulator_names[] = { "mali", NULL };
++	const char *clk_names[] = { "core", NULL };
++	struct dev_pm_opp_config config = {
++		.clk_names = clk_names,
++		.config_clks = lima_devfreq_config_clks,
++	};
+ 
+ 	if (!device_property_present(dev, "operating-points-v2"))
+ 		/* Optional, continue without devfreq */
+@@ -123,7 +164,7 @@ int lima_devfreq_init(struct lima_device *ldev)
+ 	 * clkname is set separately so it is not affected by the optional
+ 	 * regulator setting which may return error.
+ 	 */
+-	ret = devm_pm_opp_set_clkname(dev, "core");
++	ret = devm_pm_opp_set_config(dev, &config);
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.43.0
+

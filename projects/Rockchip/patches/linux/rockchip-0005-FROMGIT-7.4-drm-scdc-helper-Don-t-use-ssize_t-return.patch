@@ -1,0 +1,74 @@
+From d026add10b9265f1e25a6be829cc9c81f4fee1e6 Mon Sep 17 00:00:00 2001
+From: Nicolas Frattaroli <nicolas.frattaroli@collabora.com>
+Date: Fri, 24 Jul 2026 16:22:36 +0200
+Subject: [PATCH 005/280] FROMGIT(7.4): drm/scdc-helper: Don't use ssize_t
+ return type for scdc_read/write
+
+drm_scdc_read and drm_scdc_write, both of which are only used within
+drm_scdc_helper (although exported), use a ssize_t as their return type.
+
+This would make sense if they returned the number of bytes read/written
+on success, and negative errno otherwise. However, they return 0 on
+success.
+
+Demote them to "int" as their return type, in order to avoid needlessly
+using 64 bits when less suffices.
+
+No functional change.
+
+Reviewed-by: Luca Ceresoli <luca.ceresoli@bootlin.com>
+Reviewed-by: Hans Verkuil <hverkuil+cisco@kernel.org>
+Signed-off-by: Nicolas Frattaroli <nicolas.frattaroli@collabora.com>
+---
+ drivers/gpu/drm/display/drm_scdc_helper.c | 8 ++++----
+ include/drm/display/drm_scdc_helper.h     | 8 ++++----
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/display/drm_scdc_helper.c b/drivers/gpu/drm/display/drm_scdc_helper.c
+index df878aad4a36..8403f2390ab6 100644
+--- a/drivers/gpu/drm/display/drm_scdc_helper.c
++++ b/drivers/gpu/drm/display/drm_scdc_helper.c
+@@ -67,8 +67,8 @@
+  * Returns:
+  * 0 on success, negative error code on failure.
+  */
+-ssize_t drm_scdc_read(struct i2c_adapter *adapter, u8 offset, void *buffer,
+-		      size_t size)
++int drm_scdc_read(struct i2c_adapter *adapter, u8 offset, void *buffer,
++		  size_t size)
+ {
+ 	int ret;
+ 	struct i2c_msg msgs[2] = {
+@@ -107,8 +107,8 @@ EXPORT_SYMBOL(drm_scdc_read);
+  * Returns:
+  * 0 on success, negative error code on failure.
+  */
+-ssize_t drm_scdc_write(struct i2c_adapter *adapter, u8 offset,
+-		       const void *buffer, size_t size)
++int drm_scdc_write(struct i2c_adapter *adapter, u8 offset, const void *buffer,
++		   size_t size)
+ {
+ 	struct i2c_msg msg = {
+ 		.addr = SCDC_I2C_SLAVE_ADDRESS,
+diff --git a/include/drm/display/drm_scdc_helper.h b/include/drm/display/drm_scdc_helper.h
+index 34600476a1b9..e9ccaeba56dd 100644
+--- a/include/drm/display/drm_scdc_helper.h
++++ b/include/drm/display/drm_scdc_helper.h
+@@ -31,10 +31,10 @@
+ struct drm_connector;
+ struct i2c_adapter;
+ 
+-ssize_t drm_scdc_read(struct i2c_adapter *adapter, u8 offset, void *buffer,
+-		      size_t size);
+-ssize_t drm_scdc_write(struct i2c_adapter *adapter, u8 offset,
+-		       const void *buffer, size_t size);
++int drm_scdc_read(struct i2c_adapter *adapter, u8 offset, void *buffer,
++		  size_t size);
++int drm_scdc_write(struct i2c_adapter *adapter, u8 offset, const void *buffer,
++		   size_t size);
+ 
+ /**
+  * drm_scdc_readb - read a single byte from SCDC
+-- 
+2.43.0
+

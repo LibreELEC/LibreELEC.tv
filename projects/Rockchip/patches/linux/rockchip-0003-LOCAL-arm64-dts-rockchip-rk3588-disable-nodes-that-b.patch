@@ -1,0 +1,64 @@
+From 83c663286a473d7e46352840382e1b8952832cb6 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sat, 28 Feb 2026 07:33:10 +0000
+Subject: [PATCH 003/280] LOCAL: arm64: dts: rockchip: rk3588: disable nodes
+ that block sync_state()
+
+Disable secondary multi-core nodes (rga3_core1 and vepu121_1/2/3) that
+the rockchip-rga and hantro-vpu drivers explicitly reject with "missing
+multi-core support, ignoring this instance". These nodes match a driver
+but probe returns -ENODEV, leaving fw_devlink consumer links unsatisfied
+and permanently blocking the power domain controller's sync_state().
+
+With CONFIG_FW_DEVLINK_SYNC_STATE_TIMEOUT unset (strict mode), these
+unprobed consumers prevent sync_state() from ever completing, keeping
+unused power domains energised indefinitely.
+
+NB: This is a hack and will be dropped in the future once multicore
+support has been enabled in the kernel.
+
+Assisted-by: Claude:claude-opus-4-6
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3588-base.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+index 376ad04e0786..c1f0ee03c4cb 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -1294,6 +1294,7 @@ rga3_core1: rga@fdb70000 {
+ 		reset-names = "core", "axi", "ahb";
+ 		power-domains = <&power RK3588_PD_RGA31>;
+ 		iommus = <&rga3_1_mmu>;
++		status = "disabled";
+ 	};
+ 
+ 	rga3_1_mmu: iommu@fdb70f00 {
+@@ -1345,6 +1346,7 @@ vepu121_1: video-codec@fdba4000 {
+ 		clock-names = "aclk", "hclk";
+ 		iommus = <&vepu121_1_mmu>;
+ 		power-domains = <&power RK3588_PD_VDPU>;
++		status = "disabled";
+ 	};
+ 
+ 	vepu121_1_mmu: iommu@fdba4800 {
+@@ -1365,6 +1367,7 @@ vepu121_2: video-codec@fdba8000 {
+ 		clock-names = "aclk", "hclk";
+ 		iommus = <&vepu121_2_mmu>;
+ 		power-domains = <&power RK3588_PD_VDPU>;
++		status = "disabled";
+ 	};
+ 
+ 	vepu121_2_mmu: iommu@fdba8800 {
+@@ -1385,6 +1388,7 @@ vepu121_3: video-codec@fdbac000 {
+ 		clock-names = "aclk", "hclk";
+ 		iommus = <&vepu121_3_mmu>;
+ 		power-domains = <&power RK3588_PD_VDPU>;
++		status = "disabled";
+ 	};
+ 
+ 	vepu121_3_mmu: iommu@fdbac800 {
+-- 
+2.43.0
+

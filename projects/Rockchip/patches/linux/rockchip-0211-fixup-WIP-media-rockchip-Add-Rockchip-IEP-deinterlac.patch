@@ -1,0 +1,157 @@
+From 016d48d7e5a383dcbdae68ea86cd74a3ded3dbb7 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 27 Oct 2026 14:11:14 +0000
+Subject: [PATCH 211/280] fixup! WIP: media: rockchip: Add Rockchip IEP
+ deinterlace driver
+
+rk_iep_prepare_format() always sets bytesperline to the width, and the
+plane offsets and the virtual width registers are computed from the
+width. Decoders that pad the line stride, such as RK3576 rkvdec (1984
+bytes for 1920-wide frames), then produce sheared, discoloured output.
+
+Accept a bytesperline of at least the width, aligned to 16 and up to
+8192, and compute sizeimage, the plane offsets and the IEP and IEP2
+stride registers from it. Recompute the capture format when the output
+format or the forced capture size changes it.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../media/platform/rockchip/iep/iep-common.c  | 39 ++++++++++++-------
+ .../media/platform/rockchip/iep/iep-common.h  |  1 +
+ drivers/media/platform/rockchip/iep/iep.c     |  3 +-
+ 3 files changed, 27 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/media/platform/rockchip/iep/iep-common.c b/drivers/media/platform/rockchip/iep/iep-common.c
+index 61114b2cdd0a..a6ed5c52350f 100644
+--- a/drivers/media/platform/rockchip/iep/iep-common.c
++++ b/drivers/media/platform/rockchip/iep/iep-common.c
+@@ -45,7 +45,7 @@ EXPORT_SYMBOL_GPL(rk_iep_check_pix_format);
+ void rk_iep_prepare_format(struct v4l2_pix_format *pix_fmt,
+ 			   struct rk_iep_fmt *fmts, unsigned int nfmts)
+ {
+-	unsigned int width, height;
++	unsigned int width, height, bytesperline;
+ 	struct rk_iep_fmt *hw_fmt;
+ 
+ 	hw_fmt = rk_iep_fmt_find(fmts, nfmts, pix_fmt->pixelformat);
+@@ -59,10 +59,14 @@ void rk_iep_prepare_format(struct v4l2_pix_format *pix_fmt,
+ 	height = ALIGN(clamp(pix_fmt->height, RK_IEP_MIN_HEIGHT,
+ 			     RK_IEP_MAX_HEIGHT), 16);
+ 
++	/* all formats are 8-bit (semi-)planar: the luma stride in bytes */
++	bytesperline = ALIGN(clamp(pix_fmt->bytesperline, width,
++				   RK_IEP_MAX_STRIDE), 16);
++
+ 	pix_fmt->width = width;
+ 	pix_fmt->height = height;
+-	pix_fmt->bytesperline = width;
+-	pix_fmt->sizeimage = height * (width * hw_fmt->depth) >> 3;
++	pix_fmt->bytesperline = bytesperline;
++	pix_fmt->sizeimage = height * (bytesperline * hw_fmt->depth) >> 3;
+ }
+ EXPORT_SYMBOL_GPL(rk_iep_prepare_format);
+ 
+@@ -358,9 +362,9 @@ int rk_iep_s_fmt_vid_out(struct file *file, void *priv,
+ 	ctx->src_fmt.hw_fmt = rk_iep_fmt_find(iep_dev->formats,
+ 					       iep_dev->num_formats,
+ 					       f->fmt.pix.pixelformat);
+-	ctx->src_fmt.y_stride = RK_IEP_Y_STRIDE(f->fmt.pix.width,
++	ctx->src_fmt.y_stride = RK_IEP_Y_STRIDE(f->fmt.pix.bytesperline,
+ 						  f->fmt.pix.height);
+-	ctx->src_fmt.uv_stride = RK_IEP_UV_STRIDE(f->fmt.pix.width,
++	ctx->src_fmt.uv_stride = RK_IEP_UV_STRIDE(f->fmt.pix.bytesperline,
+ 						    f->fmt.pix.height,
+ 						    ctx->src_fmt.hw_fmt->uv_factor);
+ 
+@@ -373,10 +377,13 @@ int rk_iep_s_fmt_vid_out(struct file *file, void *priv,
+ 	/* scaling is not supported */
+ 	ctx->dst_fmt.pix.width = f->fmt.pix.width;
+ 	ctx->dst_fmt.pix.height = f->fmt.pix.height;
+-	ctx->dst_fmt.y_stride = RK_IEP_Y_STRIDE(f->fmt.pix.width,
+-						  f->fmt.pix.height);
+-	ctx->dst_fmt.uv_stride = RK_IEP_UV_STRIDE(f->fmt.pix.width,
+-						    f->fmt.pix.height,
++	ctx->dst_fmt.pix.bytesperline = 0;
++	rk_iep_prepare_format(&ctx->dst_fmt.pix, iep_dev->formats,
++			      iep_dev->num_formats);
++	ctx->dst_fmt.y_stride = RK_IEP_Y_STRIDE(ctx->dst_fmt.pix.bytesperline,
++						  ctx->dst_fmt.pix.height);
++	ctx->dst_fmt.uv_stride = RK_IEP_UV_STRIDE(ctx->dst_fmt.pix.bytesperline,
++						    ctx->dst_fmt.pix.height,
+ 						    ctx->dst_fmt.hw_fmt->uv_factor);
+ 
+ 	if (iep_dev->post_set_fmt)
+@@ -407,15 +414,17 @@ int rk_iep_s_fmt_vid_cap(struct file *file, void *priv,
+ 	/* scaling is not supported */
+ 	f->fmt.pix.width = ctx->src_fmt.pix.width;
+ 	f->fmt.pix.height = ctx->src_fmt.pix.height;
++	rk_iep_prepare_format(&f->fmt.pix, iep_dev->formats,
++			      iep_dev->num_formats);
+ 
+ 	ctx->dst_fmt.pix = f->fmt.pix;
+ 	ctx->dst_fmt.hw_fmt = rk_iep_fmt_find(iep_dev->formats,
+ 					       iep_dev->num_formats,
+ 					       f->fmt.pix.pixelformat);
+ 
+-	ctx->dst_fmt.y_stride = RK_IEP_Y_STRIDE(f->fmt.pix.width,
++	ctx->dst_fmt.y_stride = RK_IEP_Y_STRIDE(f->fmt.pix.bytesperline,
+ 						  f->fmt.pix.height);
+-	ctx->dst_fmt.uv_stride = RK_IEP_UV_STRIDE(f->fmt.pix.width,
++	ctx->dst_fmt.uv_stride = RK_IEP_UV_STRIDE(f->fmt.pix.bytesperline,
+ 						    f->fmt.pix.height,
+ 						    ctx->dst_fmt.hw_fmt->uv_factor);
+ 
+@@ -495,9 +504,9 @@ int rk_iep_open(struct file *file)
+ 	rk_iep_prepare_format(&ctx->src_fmt.pix, iep_dev->formats,
+ 			      iep_dev->num_formats);
+ 	ctx->src_fmt.hw_fmt = &iep_dev->formats[0];
+-	ctx->src_fmt.y_stride = RK_IEP_Y_STRIDE(ctx->src_fmt.pix.width,
++	ctx->src_fmt.y_stride = RK_IEP_Y_STRIDE(ctx->src_fmt.pix.bytesperline,
+ 						  ctx->src_fmt.pix.height);
+-	ctx->src_fmt.uv_stride = RK_IEP_UV_STRIDE(ctx->src_fmt.pix.width,
++	ctx->src_fmt.uv_stride = RK_IEP_UV_STRIDE(ctx->src_fmt.pix.bytesperline,
+ 						    ctx->src_fmt.pix.height,
+ 						    ctx->src_fmt.hw_fmt->uv_factor);
+ 
+@@ -509,9 +518,9 @@ int rk_iep_open(struct file *file)
+ 	rk_iep_prepare_format(&ctx->dst_fmt.pix, iep_dev->formats,
+ 			      iep_dev->num_formats);
+ 	ctx->dst_fmt.hw_fmt = &iep_dev->formats[0];
+-	ctx->dst_fmt.y_stride = RK_IEP_Y_STRIDE(ctx->dst_fmt.pix.width,
++	ctx->dst_fmt.y_stride = RK_IEP_Y_STRIDE(ctx->dst_fmt.pix.bytesperline,
+ 						  ctx->dst_fmt.pix.height);
+-	ctx->dst_fmt.uv_stride = RK_IEP_UV_STRIDE(ctx->dst_fmt.pix.width,
++	ctx->dst_fmt.uv_stride = RK_IEP_UV_STRIDE(ctx->dst_fmt.pix.bytesperline,
+ 						    ctx->dst_fmt.pix.height,
+ 						    ctx->dst_fmt.hw_fmt->uv_factor);
+ 
+diff --git a/drivers/media/platform/rockchip/iep/iep-common.h b/drivers/media/platform/rockchip/iep/iep-common.h
+index e16b88f09227..58716d291757 100644
+--- a/drivers/media/platform/rockchip/iep/iep-common.h
++++ b/drivers/media/platform/rockchip/iep/iep-common.h
+@@ -23,6 +23,7 @@
+ #define RK_IEP_MAX_WIDTH	1920U
+ #define RK_IEP_MIN_HEIGHT	240U
+ #define RK_IEP_MAX_HEIGHT	1088U
++#define RK_IEP_MAX_STRIDE	8192U
+ 
+ #define RK_IEP_DEFAULT_WIDTH	320U
+ #define RK_IEP_DEFAULT_HEIGHT	240U
+diff --git a/drivers/media/platform/rockchip/iep/iep.c b/drivers/media/platform/rockchip/iep/iep.c
+index d1f8fc11c6e0..283be0cba11e 100644
+--- a/drivers/media/platform/rockchip/iep/iep.c
++++ b/drivers/media/platform/rockchip/iep/iep.c
+@@ -84,7 +84,8 @@ static void iep_setup_formats(struct rk_iep_ctx *ctx)
+ 
+ 	/* setup virtual width */
+ 	iep_write(iep, IEP_VIR_IMG_WIDTH,
+-		  IEP_VIR_WIDTH(ctx->src_fmt.pix.width, ctx->dst_fmt.pix.width));
++		  IEP_VIR_WIDTH(ctx->src_fmt.pix.bytesperline,
++				ctx->dst_fmt.pix.bytesperline));
+ 
+ 	/* setup src format */
+ 	iep_shadow_mod(iep, IEP_CONFIG1, IEP_RAW_CONFIG1,
+-- 
+2.43.0
+

@@ -532,6 +532,10 @@ devices = \
         'config': 'orangepi-5-max-rk3588_defconfig',
         'dtb': ''
       },
+      'orangepi-5-pro': {
+        'config': 'orangepi-5-pro-rk3588s_defconfig',
+        'dtb': ''
+      },
       'orangepi-5-plus': {
         'config': 'orangepi-5-plus-rk3588_defconfig',
         'dtb': ''

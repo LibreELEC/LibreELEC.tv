@@ -1,0 +1,57 @@
+From 484b7fe4afa505b7a34ba4d9fffe47a1dba06264 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 14:59:35 +0000
+Subject: [PATCH 260/280] WIP: drm/bridge: dw-hdmi: keep the audio ELD across a
+ modeset
+
+The audio ELD was read from the current connector, which is cleared in
+atomic_disable() and set again in atomic_enable(). A stream opened
+during a modeset therefore saw an empty ELD, and hdmi-codec limited
+the rate to 48 kHz, so 192 kHz IEC 61937 streams such as E-AC3 were
+sent at the wrong rate.
+
+Read the ELD from the connector set by the last atomic_enable(), which
+is kept while the bridge is disabled.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index cd29b1ee01e4..c85568e5ed2e 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -184,6 +184,7 @@ struct dw_hdmi {
+ 
+ 	struct mutex mutex;		/* for state below */
+ 	struct drm_connector *curr_conn;/* current connector (only valid when !disabled) */
++	struct drm_connector *eld_conn;	/* connector the audio ELD is read from */
+ 	u8 mc_clkdis;			/* clock disable register */
+ 
+ 	spinlock_t audio_lock;
+@@ -711,10 +712,10 @@ static void hdmi_enable_audio_clk(struct dw_hdmi *hdmi, bool enable)
+ 
+ static u8 *hdmi_audio_get_eld(struct dw_hdmi *hdmi)
+ {
+-	if (!hdmi->curr_conn)
++	if (!hdmi->eld_conn)
+ 		return NULL;
+ 
+-	return hdmi->curr_conn->eld;
++	return hdmi->eld_conn->eld;
+ }
+ 
+ static void dw_hdmi_gp_audio_enable(struct dw_hdmi *hdmi)
+@@ -2524,6 +2525,7 @@ static void dw_hdmi_bridge_atomic_enable(struct drm_bridge *bridge,
+ 
+ 	mutex_lock(&hdmi->mutex);
+ 	hdmi->curr_conn = connector;
++	hdmi->eld_conn = connector;
+ 	dw_hdmi_poweron(hdmi, connector, mode, state);
+ 	handle_plugged_change(hdmi, true);
+ 	mutex_unlock(&hdmi->mutex);
+-- 
+2.43.0
+

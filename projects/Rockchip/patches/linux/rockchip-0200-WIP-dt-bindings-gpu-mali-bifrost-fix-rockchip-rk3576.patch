@@ -1,0 +1,33 @@
+From 468ac39f26a9c8b53184ddf486caf4f7f12cdca6 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 27 Apr 2025 20:39:15 +0000
+Subject: [PATCH 200/280] WIP: dt-bindings: gpu: mali-bifrost: fix
+ rockchip,rk3576-mali binding
+
+A scmi clk is used as the main GPU clock for RK3576, similar to RK356x.
+
+Update the RK3576 binding to match the RK356x binding.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ Documentation/devicetree/bindings/gpu/arm,mali-bifrost.yaml | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/gpu/arm,mali-bifrost.yaml b/Documentation/devicetree/bindings/gpu/arm,mali-bifrost.yaml
+index 9db9f84ad964..c34adfdc1ad7 100644
+--- a/Documentation/devicetree/bindings/gpu/arm,mali-bifrost.yaml
++++ b/Documentation/devicetree/bindings/gpu/arm,mali-bifrost.yaml
+@@ -268,7 +268,9 @@ allOf:
+       properties:
+         compatible:
+           contains:
+-            const: rockchip,rk3568-mali
++            enum:
++              - rockchip,rk3568-mali
++              - rockchip,rk3576-mali
+     then:
+       properties:
+         clocks:
+-- 
+2.43.0
+

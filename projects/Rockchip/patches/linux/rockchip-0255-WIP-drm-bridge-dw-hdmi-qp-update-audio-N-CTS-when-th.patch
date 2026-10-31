@@ -1,0 +1,70 @@
+From 8e639d921ada13e7cfe8a3a673f6dcfc10743790 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 19:43:59 +0000
+Subject: [PATCH 255/280] WIP: drm/bridge: dw-hdmi-qp: update audio N/CTS when
+ the TMDS rate changes
+
+The audio clock regeneration N/CTS values are only programmed in
+.hdmi_audio_prepare(), from the TMDS character rate current at that time.
+When a modeset changes the TMDS rate while an audio stream stays open,
+the controller keeps sending the old CTS and the sink derives the wrong
+sample rate.
+
+This happens when Kodi switches 2160p24 from 10 bpc (371.25 MHz) to RGB
+8 bpc (297 MHz) for Dolby Vision playback with E-AC3 passthrough already
+running: CTS stayed at 371250, the AVR derived 153.6 kHz instead of
+192 kHz, and reported the stream as 'Unknown' with no audio. Writing the
+correct CTS (297000) restored audio.
+
+Remember the prepared sample rate, clear it on audio shutdown, and
+reprogram N/CTS for the new TMDS rate in atomic_enable().
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index 4ab8badfe18b..cfe17f901ee2 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -86,6 +86,7 @@ struct dw_hdmi_qp {
+ 	struct mutex mutex;
+ 	struct drm_connector *curr_conn;
+ 	unsigned long tmds_char_rate;
++	unsigned int sample_rate;
+ 	bool no_hpd;
+ };
+ 
+@@ -303,6 +304,7 @@ static int dw_hdmi_qp_audio_prepare(struct drm_bridge *bridge,
+ 
+ 	dw_hdmi_qp_set_audio_interface(hdmi, fmt, hparms);
+ 	dw_hdmi_qp_set_sample_rate(hdmi, hdmi->tmds_char_rate, hparms->sample_rate);
++	hdmi->sample_rate = hparms->sample_rate;
+ 	dw_hdmi_qp_set_channel_status(hdmi, hparms->iec.status, ref2stream);
+ 	drm_atomic_helper_connector_hdmi_update_audio_infoframe(connector, &hparms->cea);
+ 
+@@ -335,6 +337,8 @@ static void dw_hdmi_qp_audio_disable(struct drm_bridge *bridge,
+ 
+ 	drm_atomic_helper_connector_hdmi_clear_audio_infoframe(connector);
+ 
++	hdmi->sample_rate = 0;
++
+ 	if (hdmi->tmds_char_rate)
+ 		dw_hdmi_qp_audio_disable_regs(hdmi);
+ }
+@@ -573,6 +577,10 @@ static void dw_hdmi_qp_bridge_atomic_enable(struct drm_bridge *bridge,
+ 		op_mode = 0;
+ 		hdmi->tmds_char_rate = conn_state->hdmi.tmds_char_rate;
+ 
++		if (hdmi->sample_rate)
++			dw_hdmi_qp_set_sample_rate(hdmi, hdmi->tmds_char_rate,
++						   hdmi->sample_rate);
++
+ 		ret = drm_connector_hdmi_enable_scrambling(connector, conn_state);
+ 		if (ret)
+ 			dev_warn(hdmi->dev, "Failed to enable scrambling: %d\n", ret);
+-- 
+2.43.0
+

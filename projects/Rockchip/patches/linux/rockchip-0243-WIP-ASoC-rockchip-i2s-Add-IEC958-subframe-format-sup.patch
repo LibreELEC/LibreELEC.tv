@@ -1,0 +1,54 @@
+From 03bdadcb24ca60e3df6deae4b326caee8745123e Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Fri, 20 Feb 2026 10:43:56 +0000
+Subject: [PATCH 243/280] WIP: ASoC: rockchip: i2s: Add IEC958 subframe format
+ support
+
+Add SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE to the supported formats and
+handle it in the hw_params switch as 32-bit VDW (same as S32_LE).
+
+This enables IEC958 pass-through for compressed audio formats over
+HDMI on RK3566/RK3568 when paired with the dw-hdmi bridge driver
+which already handles the HDMI TX configuration for non-linear PCM
+(ref2stream, HBR mode, NONAUDIO bit).
+
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ sound/soc/rockchip/rockchip_i2s.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
+index 261f36d4c2fd..be1a166998ea 100644
+--- a/sound/soc/rockchip/rockchip_i2s.c
++++ b/sound/soc/rockchip/rockchip_i2s.c
+@@ -388,6 +388,7 @@ static int rockchip_i2s_hw_params(struct snd_pcm_substream *substream,
+ 		val |= I2S_TXCR_VDW(24);
+ 		break;
+ 	case SNDRV_PCM_FORMAT_S32_LE:
++	case SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE:
+ 		val |= I2S_TXCR_VDW(32);
+ 		break;
+ 	default:
+@@ -702,7 +703,8 @@ static int rockchip_i2s_init_dai(struct rk_i2s_dev *i2s, struct resource *res,
+ 					SNDRV_PCM_FMTBIT_S16_LE |
+ 					SNDRV_PCM_FMTBIT_S20_3LE |
+ 					SNDRV_PCM_FMTBIT_S24_LE |
+-					SNDRV_PCM_FMTBIT_S32_LE;
++					SNDRV_PCM_FMTBIT_S32_LE |
++					SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE;
+ 
+ 		i2s->playback_dma_data.addr = res->start + I2S_TXDR;
+ 		i2s->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+@@ -723,7 +725,8 @@ static int rockchip_i2s_init_dai(struct rk_i2s_dev *i2s, struct resource *res,
+ 				       SNDRV_PCM_FMTBIT_S16_LE |
+ 				       SNDRV_PCM_FMTBIT_S20_3LE |
+ 				       SNDRV_PCM_FMTBIT_S24_LE |
+-				       SNDRV_PCM_FMTBIT_S32_LE;
++				       SNDRV_PCM_FMTBIT_S32_LE |
++				       SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE;
+ 
+ 		i2s->capture_dma_data.addr = res->start + I2S_RXDR;
+ 		i2s->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-- 
+2.43.0
+

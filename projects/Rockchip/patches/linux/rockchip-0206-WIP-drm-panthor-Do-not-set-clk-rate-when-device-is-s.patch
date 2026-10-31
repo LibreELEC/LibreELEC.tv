@@ -1,0 +1,158 @@
+From aa51eae990ea57eb46fb8d91869ba184a72ed025 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 27 Apr 2025 21:20:00 +0000
+Subject: [PATCH 206/280] WIP: drm/panthor: Do not set clk rate when device is
+ suspended
+
+On Rockchip RK3588 trying to change the SCMI_CLK_GPU rate when the GPU
+device is PM runtime suspended may cause a kernel panic:
+
+  $ echo 1000000000 > /sys/class/devfreq/fb000000.gpu/min_freq
+
+  SError Interrupt on CPU4, code 0x00000000be000411 -- SError
+  CPU: 4 UID: 0 PID: 241 Comm: sh Not tainted 6.15.0-rc3 #1 VOLUNTARY
+  Hardware name: Radxa ROCK 5B (DT)
+  pstate: 60400009 (nZCv daif +PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+  pc : smc_send_message+0x140/0x148
+  lr : smc_send_message+0xd8/0x148
+  sp : ffff8000827138c0
+  x29: ffff8000827138c0 x28: ffff000008764000 x27: 0000000000000000
+  x26: 0000000000000000 x25: 00000000ffffffff x24: ffff800082713b28
+  x23: ffff00000696b010 x22: ffff000003db4da0 x21: ffff000003fdae80
+  x20: ffff0000053f22c0 x19: ffff000003db4d80 x18: 0000000000000000
+  x17: 0000000000000000 x16: 0000000000000000 x15: 00000000245df550
+  x14: 0000000000000000 x13: 0000000000000000 x12: 0000000000000000
+  x11: 0000000000000040 x10: ffff000003fde138 x9 : ffff000003fde130
+  x8 : ffff000005e5c948 x7 : 0000000000000000 x6 : 0000000000000000
+  x5 : 0000000000000000 x4 : 0000000000000000 x3 : 0000000000000000
+  x2 : 0000000000000000 x1 : 0000000000000000 x0 : 0000000000000000
+  Kernel panic - not syncing: Asynchronous SError Interrupt
+  CPU: 4 UID: 0 PID: 241 Comm: sh Not tainted 6.15.0-rc3 #1 VOLUNTARY
+  Hardware name: Radxa ROCK 5B (DT)
+  Call trace:
+   show_stack+0x28/0x78 (C)
+   dump_stack_lvl+0x58/0x74
+   dump_stack+0x14/0x1c
+   panic+0x14c/0x328
+   add_taint+0x0/0xc0
+   arm64_serror_panic+0x60/0x6c
+   do_serror+0x24/0x60
+   el1h_64_error_handler+0x2c/0x40
+   el1h_64_error+0x6c/0x70
+   smc_send_message+0x140/0x148 (P)
+   do_xfer+0xb0/0x1f8
+   scmi_clock_rate_set+0xc0/0x220
+   scmi_clk_set_rate+0x24/0x38
+   clk_change_rate+0x164/0x288
+   clk_core_set_rate_nolock+0x1dc/0x314
+   clk_set_rate+0x34/0x144
+   _opp_config_clk_single+0x2c/0x90
+   _set_opp+0x104/0x564
+   dev_pm_opp_set_rate+0x110/0x260
+   panthor_devfreq_target+0x38/0x60 [panthor]
+   devfreq_set_target+0x84/0x180
+   devfreq_update_target+0xb4/0xcc
+   update_devfreq+0x10/0x18
+   set_freq_store+0x6c/0xb4
+   dev_attr_store+0x14/0x24
+   sysfs_kf_write+0x54/0x60
+   kernfs_fop_write_iter+0x118/0x1e0
+   vfs_write+0x224/0x390
+   ksys_write+0x68/0x100
+   __arm64_sys_write+0x18/0x20
+   invoke_syscall+0x44/0x100
+   el0_svc_common.constprop.0+0x3c/0xe0
+   do_el0_svc+0x18/0x20
+   el0_svc+0x2c/0xc0
+   el0t_64_sync_handler+0x104/0x130
+   el0t_64_sync+0x170/0x174
+  SMP: stopping secondary CPUs
+  Kernel Offset: disabled
+  CPU features: 0x0e00,000000e0,01202650,8201700b
+  Memory Limit: 3838 MB
+  ---[ end Kernel panic - not syncing: Asynchronous SError Interrupt ]---
+
+This typically happen when CLK_GPU is disabled or when PD_GPU is down.
+
+Add a config_clks ops that will not set core clk rate when the device is
+PM runtime suspended.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+This could possible be limited to the rockchip,rk3588-mali compaible.
+---
+ drivers/gpu/drm/panthor/panthor_devfreq.c | 44 +++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/drivers/gpu/drm/panthor/panthor_devfreq.c b/drivers/gpu/drm/panthor/panthor_devfreq.c
+index 2249b41ca4af..4529c79e5388 100644
+--- a/drivers/gpu/drm/panthor/panthor_devfreq.c
++++ b/drivers/gpu/drm/panthor/panthor_devfreq.c
+@@ -130,6 +130,41 @@ static struct devfreq_dev_profile panthor_devfreq_profile = {
+ 	.get_cur_freq = panthor_devfreq_get_cur_freq,
+ };
+ 
++static int panthor_devfreq_config_clks(struct device *dev,
++				       struct opp_table *opp_table,
++				       struct dev_pm_opp *opp,
++				       void *data, bool scaling_down)
++{
++	struct panthor_device *ptdev = dev_get_drvdata(dev);
++	struct devfreq *devfreq = ptdev->devfreq->devfreq;
++	unsigned long *target = data;
++	unsigned long freq;
++	int ret = 0;
++
++	/* One of target and opp must be available */
++	if (target) {
++		freq = *target;
++	} else if (opp) {
++		freq = dev_pm_opp_get_freq(opp);
++	} else {
++		WARN_ON(1);
++		return -EINVAL;
++	}
++
++	pm_runtime_get_noresume(dev);
++
++	if (!pm_runtime_suspended(dev) || !devfreq || !devfreq->suspend_freq) {
++		ret = clk_set_rate(ptdev->clks.core, freq);
++		if (ret)
++			dev_err(dev, "failed to set clock rate %lu: %d\n",
++				freq, ret);
++	}
++
++	pm_runtime_put_noidle(dev);
++
++	return ret;
++}
++
+ int panthor_devfreq_init(struct panthor_device *ptdev)
+ {
+ 	/* There's actually 2 regulators (mali and sram), but the OPP core only
+@@ -139,6 +174,11 @@ int panthor_devfreq_init(struct panthor_device *ptdev)
+ 	 * the coupling logic deal with voltage updates.
+ 	 */
+ 	static const char * const reg_names[] = { "mali", NULL };
++	static const char * const clk_names[] = { "core", NULL };
++	struct dev_pm_opp_config config = {
++		.clk_names = clk_names,
++		.config_clks = panthor_devfreq_config_clks,
++	};
+ 	struct thermal_cooling_device *cooling;
+ 	struct device *dev = ptdev->base.dev;
+ 	struct panthor_devfreq *pdevfreq;
+@@ -164,6 +204,10 @@ int panthor_devfreq_init(struct panthor_device *ptdev)
+ 	 */
+ 	table = dev_pm_opp_get_opp_table(dev);
+ 	if (IS_ERR_OR_NULL(table)) {
++		ret = devm_pm_opp_set_config(dev, &config);
++		if (ret)
++			return ret;
++
+ 		ret = devm_pm_opp_set_regulators(dev, reg_names);
+ 		if (ret && ret != -ENODEV) {
+ 			if (ret != -EPROBE_DEFER)
+-- 
+2.43.0
+

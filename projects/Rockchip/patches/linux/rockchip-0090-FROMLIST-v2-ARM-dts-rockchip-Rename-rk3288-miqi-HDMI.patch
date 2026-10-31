@@ -1,0 +1,32 @@
+From 6f3387e144d78e60dde51424077e70295bbf258b Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Thu, 10 Sep 2026 09:34:44 -0400
+Subject: [PATCH 090/280] FROMLIST(v2): ARM: dts: rockchip: Rename rk3288-miqi
+ HDMI audio card
+
+Rename the card from "HDMI" to "RK3288 HDMI" so it identifies the SoC
+in user-visible ALSA fields and no longer collides with the identical
+"HDMI" string used by other Rockchip SoCs.
+
+Fixes: 2a91dcd5be9d ("ARM: dts: rockchip: add HDMI audio to rk3288-miqi")
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ arch/arm/boot/dts/rockchip/rk3288-miqi.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/rockchip/rk3288-miqi.dts b/arch/arm/boot/dts/rockchip/rk3288-miqi.dts
+index a5f5c6d38f80..090255244c86 100644
+--- a/arch/arm/boot/dts/rockchip/rk3288-miqi.dts
++++ b/arch/arm/boot/dts/rockchip/rk3288-miqi.dts
+@@ -82,7 +82,7 @@ vcc_sys: regulator-vsys {
+ 	sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+-		simple-audio-card,name = "HDMI";
++		simple-audio-card,name = "RK3288 HDMI";
+ 		simple-audio-card,mclk-fs = <512>;
+ 
+ 		simple-audio-card,codec {
+-- 
+2.43.0
+

@@ -1,0 +1,112 @@
+From 1423745d9a10f9d91fe52e21520c1dec1941e022 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 10:52:21 +0000
+Subject: [PATCH 267/280] WIP: media: rkvdec: enable the VDPU383 read cache
+
+The VDPU383 read cache is configured through the "cache" register region,
+which the RK3576 device tree describes but the driver does not map. In
+its reset state reference fetches bypass the cache, and inter frames
+decode slowly.
+
+Map the region when present. Before each H.264 and HEVC job, enable
+cacheable access, read allocation and 64-byte lines, clear the cache and
+set the maximum number of outstanding reads, as the vendor kernel driver
+does.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../rockchip/rkvdec/rkvdec-vdpu383-h264.c     |  2 ++
+ .../rockchip/rkvdec/rkvdec-vdpu383-hevc.c     |  1 +
+ .../media/platform/rockchip/rkvdec/rkvdec.c   | 22 +++++++++++++++++++
+ .../media/platform/rockchip/rkvdec/rkvdec.h   |  2 ++
+ 4 files changed, 27 insertions(+)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-h264.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-h264.c
+index a737a7799b71..648a68b757ed 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-h264.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-h264.c
+@@ -441,6 +441,8 @@ static int rkvdec_h264_run(struct rkvdec_ctx *ctx)
+ 	timeout_threshold = h264_ctx->regs.common.reg013_core_timeout_threshold;
+ 	rkvdec_schedule_watchdog(core, timeout_threshold);
+ 
++	rkvdec_vdpu383_config_cache(core);
++
+ 	/* Start decoding! */
+ 	writel(timeout_threshold, core->link + VDPU383_LINK_TIMEOUT_THRESHOLD);
+ 	writel(0, core->link + VDPU383_LINK_IP_ENABLE);
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-hevc.c b/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-hevc.c
+index d29de4e6c5d7..c00fb8bf408a 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-hevc.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec-vdpu383-hevc.c
+@@ -569,6 +569,7 @@ static int rkvdec_hevc_run(struct rkvdec_ctx *ctx)
+ 	rkvdec_schedule_watchdog(core, timeout_threshold);
+ 
+ 	/* Start decoding! */
++	rkvdec_vdpu383_config_cache(core);
+ 	writel(timeout_threshold, core->link + VDPU383_LINK_TIMEOUT_THRESHOLD);
+ 	writel(VDPU383_IP_CRU_MODE, core->link + VDPU383_LINK_IP_ENABLE);
+ 	writel(VDPU383_DEC_E_BIT, core->link + VDPU383_LINK_DEC_ENABLE);
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 059335334825..51ac275045e2 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -100,6 +100,24 @@ static u32 vdpu383_colmv_size(u16 width, u16 height)
+ 	return ALIGN(width, 64) * ALIGN(height, 16);
+ }
+ 
++#define VDPU383_CACHE_CLR		0x10
++#define VDPU383_CACHE_MAX_READS		0x18
++#define VDPU383_CACHE_SIZE		0x1c
++#define VDPU383_CACHE_ACCESS		BIT(0)
++#define VDPU383_CACHE_READ_ALLOCATE	BIT(1)
++#define VDPU383_CACHE_LINE_64B		BIT(4)
++
++void rkvdec_vdpu383_config_cache(struct rkvdec_core *core)
++{
++	if (!core->cache)
++		return;
++
++	writel(VDPU383_CACHE_ACCESS | VDPU383_CACHE_READ_ALLOCATE |
++	       VDPU383_CACHE_LINE_64B, core->cache + VDPU383_CACHE_SIZE);
++	writel(1, core->cache + VDPU383_CACHE_CLR);
++	writel(0x1c, core->cache + VDPU383_CACHE_MAX_READS);
++}
++
+ /*
+  * Keep the line stride an odd multiple of 128 bytes plus 64, so the rows of a
+  * reference block do not all map to the same DRAM bank and cache set.
+@@ -2092,6 +2110,10 @@ static int rkvdec_core_probe(struct platform_device *pdev)
+ 		core->link = devm_platform_ioremap_resource_byname(pdev, "link");
+ 		if (IS_ERR(core->link))
+ 			return PTR_ERR(core->link);
++
++		core->cache = devm_platform_ioremap_resource_byname(pdev, "cache");
++		if (IS_ERR(core->cache))
++			core->cache = NULL;
+ 	}
+ 
+ 	if (iommu_get_domain_for_dev(&pdev->dev)) {
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.h b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+index d3b8831961d5..83bac901f7c4 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.h
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.h
+@@ -134,6 +134,7 @@ struct rkvdec_core {
+ 	struct clk *axi_clk;
+ 	void __iomem *regs;
+ 	void __iomem *link;
++	void __iomem *cache;
+ 	struct delayed_work watchdog_work;
+ 	struct gen_pool *sram_pool;
+ 	struct iommu_domain *empty_domain;
+@@ -193,6 +194,7 @@ struct rkvdec_aux_buf {
+ void rkvdec_run_preamble(struct rkvdec_ctx *ctx, struct rkvdec_run *run);
+ void rkvdec_run_postamble(struct rkvdec_ctx *ctx, struct rkvdec_run *run);
+ void rkvdec_memcpy_toio(void __iomem *dst, void *src, size_t len);
++void rkvdec_vdpu383_config_cache(struct rkvdec_core *core);
+ void rkvdec_schedule_watchdog(struct rkvdec_core *core, u32 timeout_threshold);
+ 
+ void rkvdec_quirks_disable_qos(struct rkvdec_ctx *ctx);
+-- 
+2.43.0
+

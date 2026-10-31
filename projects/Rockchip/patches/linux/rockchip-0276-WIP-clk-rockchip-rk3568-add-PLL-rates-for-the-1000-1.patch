@@ -1,0 +1,56 @@
+From 7e73fe2789fdb44467722921689cfe4f55676761 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 12:12:02 +0000
+Subject: [PATCH 276/280] WIP: clk: rockchip: rk3568: add PLL rates for the
+ 1000/1001 HDMI clocks
+
+The HPLL rate table has the integer HDMI pixel clocks but none of their
+1000/1001 variants. The PLL rounds a request down to the next table
+rate, so 148.352 MHz becomes 135 MHz, and the dw-hdmi glue rejects the
+mode because that is more than 0.1% away. Every 59.94, 29.97 and
+23.976 Hz mode is removed.
+
+Add fractional entries at the rates DRM uses for these modes: 593.407,
+296.703, 148.352 and 74.176 MHz. Each runs the VCO of its integer
+counterpart scaled by 1000/1001.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/clk/rockchip/clk-rk3568.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/clk/rockchip/clk-rk3568.c b/drivers/clk/rockchip/clk-rk3568.c
+index d571c4b0c35f..0a6d6e803969 100644
+--- a/drivers/clk/rockchip/clk-rk3568.c
++++ b/drivers/clk/rockchip/clk-rk3568.c
+@@ -69,15 +69,18 @@ static struct rockchip_pll_rate_table rk3568_pll_rates[] = {
+ 	RK3036_PLL_RATE(696000000, 1, 116, 4, 1, 1, 0),
+ 	RK3036_PLL_RATE(600000000, 1, 100, 4, 1, 1, 0),
+ 	RK3036_PLL_RATE(594000000, 1, 99, 4, 1, 1, 0),
++	RK3036_PLL_RATE(593407000, 1, 98, 4, 1, 0, 15119070),
+ 	RK3036_PLL_RATE(500000000, 1, 125, 6, 1, 1, 0),
+ 	RK3036_PLL_RATE(408000000, 1, 68, 2, 2, 1, 0),
+ 	RK3036_PLL_RATE(312000000, 1, 78, 6, 1, 1, 0),
+ 	RK3036_PLL_RATE(297000000, 2, 99, 4, 1, 1, 0),
++	RK3036_PLL_RATE(296703000, 2, 98, 4, 1, 0, 15116277),
+ 	RK3036_PLL_RATE(292500000, 1, 195, 4, 4, 1, 0),
+ 	RK3036_PLL_RATE(241500000, 2, 161, 4, 2, 1, 0),
+ 	RK3036_PLL_RATE(216000000, 1, 72, 4, 2, 1, 0),
+ 	RK3036_PLL_RATE(200000000, 1, 100, 3, 4, 1, 0),
+ 	RK3036_PLL_RATE(148500000, 1, 99, 4, 4, 1, 0),
++	RK3036_PLL_RATE(148352000, 1, 98, 4, 4, 0, 15121875),
+ 	RK3036_PLL_RATE(135000000, 2, 45, 4, 1, 1, 0),
+ 	RK3036_PLL_RATE(132000000, 1, 66, 6, 2, 1, 0),
+ 	RK3036_PLL_RATE(128000000, 1, 16, 3, 1, 1, 0),
+@@ -90,6 +93,7 @@ static struct rockchip_pll_rate_table rk3568_pll_rates[] = {
+ 	RK3036_PLL_RATE(96000000, 1, 96, 6, 4, 1, 0),
+ 	RK3036_PLL_RATE(78750000, 4, 315, 6, 4, 1, 0),
+ 	RK3036_PLL_RATE(74250000, 2, 99, 4, 4, 1, 0),
++	RK3036_PLL_RATE(74176000, 2, 98, 4, 4, 0, 15121886),
+ 	RK3036_PLL_RATE(33300000, 4, 111, 5, 4, 1, 0),
+ 	{ /* sentinel */ },
+ };
+-- 
+2.43.0
+

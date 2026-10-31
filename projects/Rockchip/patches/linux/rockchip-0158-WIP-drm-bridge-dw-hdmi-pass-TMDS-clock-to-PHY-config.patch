@@ -1,0 +1,110 @@
+From cb4fa6c0087aaf8512895faea860b6b213a477ee Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Mon, 20 Jul 2020 18:00:44 +0000
+Subject: [PATCH 158/280] WIP: drm/bridge: dw-hdmi: pass TMDS clock to PHY
+ configure ops
+
+dw-hdmi already computes both the pixel clock and the TMDS clock, but
+the PHY configuration callbacks only receive the pixel clock today.
+That works while both clocks match, but they diverge for deep-color and
+YUV420 modes.
+
+Pass mtmdsclock to the PHY configure callbacks so platform PHY code can
+pick its settings based on the effective TMDS rate.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c      | 16 ++++++++++------
+ drivers/gpu/drm/bridge/th1520-dw-hdmi.c        |  3 ++-
+ drivers/gpu/drm/renesas/rcar-du/rcar_dw_hdmi.c |  3 ++-
+ include/drm/bridge/dw_hdmi.h                   |  3 ++-
+ 4 files changed, 16 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 60abafca2a1e..83d6d262678e 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -125,7 +125,8 @@ struct dw_hdmi_phy_data {
+ 	bool has_svsret;
+ 	int (*configure)(struct dw_hdmi *hdmi,
+ 			 const struct dw_hdmi_plat_data *pdata,
+-			 unsigned long mpixelclock);
++			 unsigned long mpixelclock,
++			 unsigned long mtmdsclock);
+ };
+ 
+ struct dw_hdmi {
+@@ -1562,7 +1563,8 @@ static int dw_hdmi_phy_power_on(struct dw_hdmi *hdmi)
+  */
+ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+ 		const struct dw_hdmi_plat_data *pdata,
+-		unsigned long mpixelclock)
++		unsigned long mpixelclock,
++		unsigned long mtmdsclock)
+ {
+ 	const struct dw_hdmi_mpll_config *mpll_config = pdata->mpll_cfg;
+ 	const struct dw_hdmi_curr_ctrl *curr_ctrl = pdata->cur_ctr;
+@@ -1637,12 +1639,14 @@ static int hdmi_phy_configure(struct dw_hdmi *hdmi,
+ 
+ 	/* Write to the PHY as configured by the platform */
+ 	if (pdata->configure_phy)
+-		ret = pdata->configure_phy(hdmi, pdata->priv_data, mpixelclock);
++		ret = pdata->configure_phy(hdmi, pdata->priv_data,
++					   mpixelclock, mtmdsclock);
+ 	else
+-		ret = phy->configure(hdmi, pdata, mpixelclock);
++		ret = phy->configure(hdmi, pdata, mpixelclock, mtmdsclock);
+ 	if (ret) {
+-		dev_err(hdmi->dev, "PHY configuration failed (clock %lu)\n",
+-			mpixelclock);
++		dev_err(hdmi->dev,
++			"PHY configuration failed (pixclk %lu, tmdsclock %lu)\n",
++			mpixelclock, mtmdsclock);
+ 		return ret;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/bridge/th1520-dw-hdmi.c b/drivers/gpu/drm/bridge/th1520-dw-hdmi.c
+index 2fa7f2d46b3d..e99555737f79 100644
+--- a/drivers/gpu/drm/bridge/th1520-dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/th1520-dw-hdmi.c
+@@ -87,7 +87,8 @@ static void th1520_hdmi_phy_set_params(struct dw_hdmi *hdmi,
+ }
+ 
+ static int th1520_hdmi_phy_configure(struct dw_hdmi *hdmi, void *data,
+-				     unsigned long mpixelclock)
++				     unsigned long mpixelclock,
++				     unsigned long mtmdsclock)
+ {
+ 	unsigned int i;
+ 
+diff --git a/drivers/gpu/drm/renesas/rcar-du/rcar_dw_hdmi.c b/drivers/gpu/drm/renesas/rcar-du/rcar_dw_hdmi.c
+index 8e7fac7a893b..16d871487fc4 100644
+--- a/drivers/gpu/drm/renesas/rcar-du/rcar_dw_hdmi.c
++++ b/drivers/gpu/drm/renesas/rcar-du/rcar_dw_hdmi.c
+@@ -52,7 +52,8 @@ rcar_hdmi_mode_valid(struct dw_hdmi *hdmi, void *data,
+ }
+ 
+ static int rcar_hdmi_phy_configure(struct dw_hdmi *hdmi, void *data,
+-				   unsigned long mpixelclock)
++				   unsigned long mpixelclock,
++				   unsigned long mtmdsclock)
+ {
+ 	const struct rcar_hdmi_phy_params *params = rcar_hdmi_phy_params;
+ 
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 10013b8d3adb..dfc5b8d07d48 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -169,7 +169,8 @@ struct dw_hdmi_plat_data {
+ 	const struct dw_hdmi_curr_ctrl *cur_ctr;
+ 	const struct dw_hdmi_phy_config *phy_config;
+ 	int (*configure_phy)(struct dw_hdmi *hdmi, void *data,
+-			     unsigned long mpixelclock);
++			     unsigned long mpixelclock,
++			     unsigned long mtmdsclock);
+ 
+ 	unsigned int disable_cec : 1;
+ };
+-- 
+2.43.0
+

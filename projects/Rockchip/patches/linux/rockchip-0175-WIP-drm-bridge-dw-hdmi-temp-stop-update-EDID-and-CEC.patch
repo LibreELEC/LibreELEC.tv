@@ -1,0 +1,90 @@
+From 8aaa443c61dc37c60ae724d84ff2c088d75643bd Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Thu, 14 May 2026 18:27:01 +0000
+Subject: [PATCH 175/280] WIP: drm/bridge: dw-hdmi: temp stop update EDID and
+ CEC phys addr
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 47 ++---------------------
+ 1 file changed, 4 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 32c2544a5f52..ee00e82e2520 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2402,46 +2402,10 @@ static void dw_hdmi_poweroff(struct dw_hdmi *hdmi)
+ 	}
+ }
+ 
+-static const struct drm_edid *dw_hdmi_edid_read(struct dw_hdmi *hdmi,
+-						struct drm_connector *connector)
+-{
+-	const struct drm_edid *drm_edid;
+-
+-	if (!hdmi->ddc)
+-		return NULL;
+-
+-	drm_edid = drm_edid_read_ddc(connector, hdmi->ddc);
+-	if (!drm_edid)
+-		dev_dbg(hdmi->dev, "failed to get edid\n");
+-
+-	return drm_edid;
+-}
+-
+ /* -----------------------------------------------------------------------------
+  * DRM Connector Operations
+  */
+ 
+-static void
+-dw_hdmi_connector_status_update(struct dw_hdmi *hdmi,
+-				struct drm_connector *connector,
+-				enum drm_connector_status status)
+-{
+-	const struct drm_edid *drm_edid;
+-
+-	if (status == connector_status_disconnected) {
+-		drm_edid_connector_update(connector, NULL);
+-		drm_connector_cec_phys_addr_invalidate(connector);
+-		return;
+-	}
+-
+-	drm_edid = dw_hdmi_edid_read(hdmi, connector);
+-	drm_edid_connector_update(connector, drm_edid);
+-	drm_edid_free(drm_edid);
+-
+-	if (status == connector_status_connected)
+-		drm_connector_cec_phys_addr_set(connector);
+-}
+-
+ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ {
+ 	struct drm_encoder *encoder = hdmi->bridge.encoder;
+@@ -2863,12 +2827,6 @@ dw_hdmi_bridge_detect(struct drm_bridge *bridge, struct drm_connector *connector
+ 	status = hdmi->phy.ops->read_hpd(hdmi, hdmi->phy.data);
+ 	hdmi->last_connector_result = status;
+ 
+-	/*
+-	 * Update EDID and CEC phys addr to match the behavior of a bridge
+-	 * connector with a HDMI bridge attached.
+-	 */
+-	dw_hdmi_connector_status_update(hdmi, connector, status);
+-
+ 	return status;
+ }
+ 
+@@ -2877,7 +2835,10 @@ static const struct drm_edid *dw_hdmi_bridge_edid_read(struct drm_bridge *bridge
+ {
+ 	struct dw_hdmi *hdmi = bridge->driver_private;
+ 
+-	return dw_hdmi_edid_read(hdmi, connector);
++	if (!hdmi->ddc)
++		return NULL;
++
++	return drm_edid_read_ddc(connector, hdmi->ddc);
+ }
+ 
+ static void dw_hdmi_bridge_hpd_enable(struct drm_bridge *bridge)
+-- 
+2.43.0
+

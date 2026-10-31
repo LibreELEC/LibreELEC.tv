@@ -1,0 +1,88 @@
+From 69cdd9679a1b180ff29ac85d79ade017a692c4c9 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sat, 11 Apr 2026 17:11:17 +0000
+Subject: [PATCH 180/280] WIP: drm/bridge: dw-hdmi: attach HDMI Colorspace
+ property
+
+Attach the HDMI Colorspace connector property to the dw-hmi bridge
+connector.
+
+dw-hdmi now uses conn_state->colorspace to select the YCbCr encoding for
+RGB to YCbCr conversion. Expose the standard connector property so
+userspace can request the intended output colorimetry instead of relying
+only on the VIC-based BT.601/BT.709 selection.
+
+Keep the existing BT.601 selection for SD CEA modes.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 36 +++++++++++++++++++++--
+ 1 file changed, 34 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 40477b3fe9b0..d02ec0f882b4 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2180,13 +2180,38 @@ static int dw_hdmi_poweron(struct dw_hdmi *hdmi,
+ 		dev_dbg(hdmi->dev, "CEA mode used vic=%d\n", hdmi->vic);
+ 	}
+ 
++	switch (conn_state->colorspace) {
++	case DRM_MODE_COLORIMETRY_SMPTE_170M_YCC:
++	case DRM_MODE_COLORIMETRY_XVYCC_601:
++	case DRM_MODE_COLORIMETRY_SYCC_601:
++	case DRM_MODE_COLORIMETRY_OPYCC_601:
++	case DRM_MODE_COLORIMETRY_BT601_YCC:
++		hdmi->hdmi_data.enc_out_encoding = V4L2_YCBCR_ENC_601;
++		break;
++
++	default:
++	case DRM_MODE_COLORIMETRY_NO_DATA:
++	case DRM_MODE_COLORIMETRY_BT709_YCC:
++	case DRM_MODE_COLORIMETRY_XVYCC_709:
++	case DRM_MODE_COLORIMETRY_RGB_WIDE_FIXED:
++	case DRM_MODE_COLORIMETRY_RGB_WIDE_FLOAT:
++		hdmi->hdmi_data.enc_out_encoding = V4L2_YCBCR_ENC_709;
++		break;
++
++	case DRM_MODE_COLORIMETRY_BT2020_CYCC:
++	case DRM_MODE_COLORIMETRY_BT2020_YCC:
++	case DRM_MODE_COLORIMETRY_BT2020_RGB:
++	case DRM_MODE_COLORIMETRY_DCI_P3_RGB_D65:
++	case DRM_MODE_COLORIMETRY_DCI_P3_RGB_THEATER:
++		hdmi->hdmi_data.enc_out_encoding = V4L2_YCBCR_ENC_BT2020;
++		break;
++	}
++
+ 	if ((hdmi->vic == 6) || (hdmi->vic == 7) ||
+ 	    (hdmi->vic == 21) || (hdmi->vic == 22) ||
+ 	    (hdmi->vic == 2) || (hdmi->vic == 3) ||
+ 	    (hdmi->vic == 17) || (hdmi->vic == 18))
+ 		hdmi->hdmi_data.enc_out_encoding = V4L2_YCBCR_ENC_601;
+-	else
+-		hdmi->hdmi_data.enc_out_encoding = V4L2_YCBCR_ENC_709;
+ 
+ 	if (hdmi->hdmi_data.enc_in_bus_format == MEDIA_BUS_FMT_FIXED)
+ 		hdmi->hdmi_data.enc_in_bus_format = MEDIA_BUS_FMT_RGB888_1X24;
+@@ -2316,11 +2341,18 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ {
+ 	struct drm_encoder *encoder = hdmi->bridge.encoder;
+ 	struct drm_connector *connector;
++	int ret;
+ 
+ 	connector = drm_bridge_connector_init(hdmi->bridge.dev, encoder);
+ 	if (IS_ERR(connector))
+ 		return PTR_ERR(connector);
+ 
++	ret = drm_mode_create_hdmi_colorspace_property(connector, 0);
++	if (ret)
++		return ret;
++
++	drm_connector_attach_colorspace_property(connector);
++
+ 	return drm_connector_attach_broadcast_rgb_property(connector);
+ }
+ 
+-- 
+2.43.0
+

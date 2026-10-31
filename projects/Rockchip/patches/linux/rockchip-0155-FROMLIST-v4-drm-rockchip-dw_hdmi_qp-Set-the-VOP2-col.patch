@@ -1,0 +1,67 @@
+From 650c231513562e4969548ea584cfd3d6e3c2c8d5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:12 +0200
+Subject: [PATCH 155/280] FROMLIST(v4): drm/rockchip: dw_hdmi_qp: Set the VOP2
+ color space from the connector
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+VOP2 converts RGB to YCbCr using the matrix selected by the CRTC
+state's color_space, but the HDMI encoder never sets it, so VOP2
+always converts with BT.709. Once the colorspace property can
+signal BT.2020 colorimetry to the sink, a YCbCr output would be
+encoded with BT.709 and decoded with BT.2020.
+
+Derive color_space from the connector colorspace before the early
+return, so that a colorspace change alone is applied.
+
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index 176a1472d394..ce751f2721b9 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -17,6 +17,7 @@
+ #include <linux/phy/phy.h>
+ #include <linux/phy/phy-hdmi.h>
+ #include <linux/regmap.h>
++#include <linux/videodev2.h>
+ #include <linux/workqueue.h>
+ 
+ #include <drm/bridge/dw_hdmi_qp.h>
+@@ -190,6 +191,19 @@ static int dw_hdmi_qp_rockchip_get_vop_format(struct drm_encoder *encoder,
+ 	return bstate->output_bus_cfg.format;
+ }
+ 
++static u32
++dw_hdmi_qp_rockchip_color_space(const struct drm_connector_state *conn_state)
++{
++	switch (conn_state->colorspace) {
++	case DRM_MODE_COLORIMETRY_BT2020_RGB:
++	case DRM_MODE_COLORIMETRY_BT2020_YCC:
++	case DRM_MODE_COLORIMETRY_BT2020_CYCC:
++		return V4L2_COLORSPACE_BT2020;
++	default:
++		return V4L2_COLORSPACE_DEFAULT;
++	}
++}
++
+ static int
+ dw_hdmi_qp_rockchip_encoder_atomic_check(struct drm_encoder *encoder,
+ 					 struct drm_crtc_state *crtc_state,
+@@ -205,6 +219,8 @@ dw_hdmi_qp_rockchip_encoder_atomic_check(struct drm_encoder *encoder,
+ 	if (ingest_fmt < 0)
+ 		return -EINVAL;
+ 
++	s->color_space = dw_hdmi_qp_rockchip_color_space(conn_state);
++
+ 	if (hdmi->tmds_char_rate == conn_state->hdmi.tmds_char_rate &&
+ 	    s->output_bpc == conn_state->hdmi.output_bpc &&
+ 	    s->bus_format == ingest_fmt)
+-- 
+2.43.0
+

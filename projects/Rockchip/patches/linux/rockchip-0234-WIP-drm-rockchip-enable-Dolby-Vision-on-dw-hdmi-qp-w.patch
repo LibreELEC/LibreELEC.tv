@@ -1,0 +1,51 @@
+From deba2b1fa37338a98b8b31ceeaa961a7cec8b072 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 11:08:55 +0000
+Subject: [PATCH 234/280] WIP: drm/rockchip: enable Dolby Vision on dw-hdmi-qp
+ with VOP2
+
+Call drm_atomic_helper_check_crtc_dolby_vision() from the VOP2 CRTC check
+and enable the capability on RK3588 and RK3576 HDMI. For HDMI RGB 8 bpc
+output the video port uses its 10-bit AAAA bus with no dither, and RGB
+planes get no colour space conversion, so the shared check covers the
+remaining processing. Bit-exactness still has to be confirmed with an
+HDMI analyser on hardware.
+---
+ drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c | 2 ++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop2.c   | 7 ++++++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index 8e690075db4b..aeba16ffa80c 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -661,6 +661,8 @@ static int dw_hdmi_qp_rockchip_bind(struct device *dev, struct device *master,
+ 	plat_data.phy_ops = cfg->phy_ops;
+ 	plat_data.phy_data = hdmi;
+ 	plat_data.max_bpc = 10;
++	/* VOP2 enforces bit-exact scanout via drm_atomic_helper_check_crtc_dolby_vision() */
++	plat_data.dolby_vision = true;
+ 
+ 	plat_data.supported_formats = BIT(DRM_OUTPUT_COLOR_FORMAT_RGB444) |
+ 				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444) |
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+index 9d34d6623cb6..aebea00af498 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -2271,7 +2271,12 @@ static int vop2_crtc_atomic_check(struct drm_crtc *crtc,
+ 	if (nplanes > vp->nlayers)
+ 		return -EINVAL;
+ 
+-	return 0;
++	/*
++	 * HDMI RGB 8 bpc leaves the VP on its 10-bit AAAA bus with no dither or
++	 * colour space conversion for an RGB plane, so the remaining processing
++	 * that could alter Dolby Vision's tunnelled bits is common to all CRTCs.
++	 */
++	return drm_atomic_helper_check_crtc_dolby_vision(state, crtc);
+ }
+ 
+ static void vop2_crtc_atomic_begin(struct drm_crtc *crtc,
+-- 
+2.43.0
+

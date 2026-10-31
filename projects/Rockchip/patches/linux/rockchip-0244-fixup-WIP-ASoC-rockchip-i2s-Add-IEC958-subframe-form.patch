@@ -1,0 +1,42 @@
+From 737d098236c7797026e3cc53ba6d3d4b56a7c3d8 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 07:49:00 +0000
+Subject: [PATCH 244/280] fixup! WIP: ASoC: rockchip: i2s: Add IEC958 subframe
+ format support
+
+The DAI format masks take SNDRV_PCM_FMTBIT_* bits, not the format
+number. OR-ing in SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE (24) advertised
+S16_BE and U16_LE instead of IEC958 subframes, so the format was never
+offered.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ sound/soc/rockchip/rockchip_i2s.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
+index be1a166998ea..346b634a7006 100644
+--- a/sound/soc/rockchip/rockchip_i2s.c
++++ b/sound/soc/rockchip/rockchip_i2s.c
+@@ -704,7 +704,7 @@ static int rockchip_i2s_init_dai(struct rk_i2s_dev *i2s, struct resource *res,
+ 					SNDRV_PCM_FMTBIT_S20_3LE |
+ 					SNDRV_PCM_FMTBIT_S24_LE |
+ 					SNDRV_PCM_FMTBIT_S32_LE |
+-					SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE;
++					SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE;
+ 
+ 		i2s->playback_dma_data.addr = res->start + I2S_TXDR;
+ 		i2s->playback_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+@@ -726,7 +726,7 @@ static int rockchip_i2s_init_dai(struct rk_i2s_dev *i2s, struct resource *res,
+ 				       SNDRV_PCM_FMTBIT_S20_3LE |
+ 				       SNDRV_PCM_FMTBIT_S24_LE |
+ 				       SNDRV_PCM_FMTBIT_S32_LE |
+-				       SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE;
++				       SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE;
+ 
+ 		i2s->capture_dma_data.addr = res->start + I2S_RXDR;
+ 		i2s->capture_dma_data.addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+-- 
+2.43.0
+

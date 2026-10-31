@@ -1,0 +1,76 @@
+From 598a5a2656632c7bd6e418bc5f094215c27ad80b Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 13:15:54 +0000
+Subject: [PATCH 271/280] WIP: media: rkvdec: check the VP9 frame profile
+ against the profile control
+
+Each variant declares the VP9 profiles it decodes in its
+V4L2_CID_MPEG_VIDEO_VP9_PROFILE control (RK3399: profile 0 only), but
+the frame control is not checked against it, and the RK3399 VP9 frame
+control has no ops so try_ctrl is never called for it. RK3399 rejects
+other profiles per frame in run(), so userspace that sets a profile 2
+frame header at init still selects the decoder and gets no pictures.
+
+Give the RK3399 VP9 frame control the rkvdec control ops and reject a
+VP9 frame control whose profile is outside the variant's profile
+control range or in its skip mask, so the decoder is refused up front.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../media/platform/rockchip/rkvdec/rkvdec.c   | 28 +++++++++++++++++++
+ 1 file changed, 28 insertions(+)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 51ac275045e2..b68cf4c7bbe7 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -176,10 +176,37 @@ static void rkvdec_reset_decoded_fmt(struct rkvdec_ctx *ctx)
+ 	rkvdec_fill_decoded_pixfmt(ctx, &f->fmt.pix_mp);
+ }
+ 
++static int rkvdec_check_vp9_profile(const struct rkvdec_coded_fmt_desc *desc,
++				    u8 profile)
++{
++	const struct v4l2_ctrl_config *cfg;
++	unsigned int i;
++
++	for (i = 0; i < desc->ctrls->num_ctrls; i++) {
++		cfg = &desc->ctrls->ctrls[i].cfg;
++		if (cfg->id != V4L2_CID_MPEG_VIDEO_VP9_PROFILE)
++			continue;
++
++		if (profile < cfg->min || profile > cfg->max ||
++		    (cfg->menu_skip_mask & BIT_ULL(profile)))
++			return -EINVAL;
++		break;
++	}
++
++	return 0;
++}
++
+ static int rkvdec_try_ctrl(struct v4l2_ctrl *ctrl)
+ {
+ 	struct rkvdec_ctx *ctx = container_of(ctrl->handler, struct rkvdec_ctx, ctrl_hdl);
+ 	const struct rkvdec_coded_fmt_desc *desc = ctx->coded_fmt_desc;
++	int ret;
++
++	if (ctrl->id == V4L2_CID_STATELESS_VP9_FRAME) {
++		ret = rkvdec_check_vp9_profile(desc, ctrl->p_new.p_vp9_frame->profile);
++		if (ret)
++			return ret;
++	}
+ 
+ 	if (desc->ops->try_ctrl)
+ 		return desc->ops->try_ctrl(ctx, ctrl);
+@@ -516,6 +543,7 @@ static const struct rkvdec_decoded_fmt_desc rkvdec_h264_decoded_fmts[] = {
+ static const struct rkvdec_ctrl_desc rkvdec_vp9_ctrl_descs[] = {
+ 	{
+ 		.cfg.id = V4L2_CID_STATELESS_VP9_FRAME,
++		.cfg.ops = &rkvdec_ctrl_ops,
+ 	},
+ 	{
+ 		.cfg.id = V4L2_CID_STATELESS_VP9_COMPRESSED_HDR,
+-- 
+2.43.0
+

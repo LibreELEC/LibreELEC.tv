@@ -1,0 +1,35 @@
+From ca70be4df70b2034c216b5f91ce68913804c7ac7 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 11:16:04 +0000
+Subject: [PATCH 278/280] WIP: clk: rockchip: rk3399: let dclk_vop0 set the
+ VPLL rate
+
+The VOP rounds its pixel clock before the HDMI encoder sets VPLL, and
+dclk_vop0_div cannot change the rate of its parent. A pixel clock that
+VPLL is not already running at is rounded to a CPLL or GPLL divider, so
+296.703 MHz becomes 266.667 MHz and the sink loses sync.
+
+Propagate the rate request to the parent, as the vendor kernel does.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/clk/rockchip/clk-rk3399.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/rockchip/clk-rk3399.c b/drivers/clk/rockchip/clk-rk3399.c
+index 01360084113f..44141ff59b08 100644
+--- a/drivers/clk/rockchip/clk-rk3399.c
++++ b/drivers/clk/rockchip/clk-rk3399.c
+@@ -1166,7 +1166,7 @@ static struct rockchip_clk_branch rk3399_clk_branches[] __initdata = {
+ 	GATE(HCLK_VOP0_NOC, "hclk_vop0_noc", "hclk_vop0_pre", CLK_IGNORE_UNUSED,
+ 			RK3399_CLKGATE_CON(28), 0, GFLAGS),
+ 
+-	COMPOSITE(DCLK_VOP0_DIV, "dclk_vop0_div", mux_pll_src_vpll_cpll_gpll_p, 0,
++	COMPOSITE(DCLK_VOP0_DIV, "dclk_vop0_div", mux_pll_src_vpll_cpll_gpll_p, CLK_SET_RATE_PARENT,
+ 			RK3399_CLKSEL_CON(49), 8, 2, MFLAGS, 0, 8, DFLAGS,
+ 			RK3399_CLKGATE_CON(10), 12, GFLAGS),
+ 
+-- 
+2.43.0
+

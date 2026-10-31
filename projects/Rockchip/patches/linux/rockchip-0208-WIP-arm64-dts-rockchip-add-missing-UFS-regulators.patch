@@ -1,0 +1,30 @@
+From 64cba44552cc8ff49d92c9cdbaf7a65a18084d84 Mon Sep 17 00:00:00 2001
+From: Sebastian Reichel <sebastian.reichel@collabora.com>
+Date: Wed, 8 Oct 2025 18:15:24 +0200
+Subject: [PATCH 208/280] WIP: arm64: dts: rockchip: add missing UFS regulators
+
+Add missing regulator information for the ROCK 4D UFS interface.
+
+Signed-off-by: Sebastian Reichel <sebastian.reichel@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3576-rock-4d.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3576-rock-4d.dts b/arch/arm64/boot/dts/rockchip/rk3576-rock-4d.dts
+index b7007dadf0d9..593fd6704a13 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3576-rock-4d.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3576-rock-4d.dts
+@@ -862,6 +862,10 @@ &uart0 {
+ };
+ 
+ &ufshc {
++	vcc-supply = <&vcc_3v3_s0>;
++	vccq-supply = <&vcc_1v2_ufs_vccq_s0>;
++	vccq2-supply = <&vcc_1v8_ufs_vccq2_s0>;
++	vdd-hba-supply = <&vdda_1v2_s0>;
+ 	status = "okay";
+ };
+ 
+-- 
+2.43.0
+

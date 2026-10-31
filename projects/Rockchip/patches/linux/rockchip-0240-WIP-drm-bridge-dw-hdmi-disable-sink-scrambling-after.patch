@@ -1,0 +1,44 @@
+From 2de86bab397641e165369ab3012b3bab43c4326b Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 13:01:36 +0000
+Subject: [PATCH 240/280] WIP: drm/bridge: dw-hdmi: disable sink scrambling
+ after the PHY is off
+
+On a modeset from a scrambled mode to an unscrambled one, e.g. 2160p23.976
+at 10 bpc to 1080p60, atomic_disable() reset the sink SCDC scrambling and
+TMDS_Bit_Clock_Ratio bits while the PHY was still transmitting the old
+scrambled signal. HDMI 2.0 requires TMDS clock and data to be suspended
+while the sink clock ratio is changed, and some sinks lose sync.
+
+Power off the PHY first and disable scrambling afterwards, as the vendor
+driver does by updating SCDC only while the PHY is off.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index a91ebeb93f18..cd29b1ee01e4 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2499,13 +2499,14 @@ static void dw_hdmi_bridge_atomic_disable(struct drm_bridge *bridge,
+ 
+ 	connector = drm_atomic_get_old_connector_for_encoder(state,
+ 							     bridge->encoder);
+-	drm_connector_hdmi_disable_scrambling(connector);
+ 
+ 	mutex_lock(&hdmi->mutex);
+ 	hdmi->curr_conn = NULL;
+ 	dw_hdmi_poweroff(hdmi);
+ 	handle_plugged_change(hdmi, false);
+ 	mutex_unlock(&hdmi->mutex);
++
++	drm_connector_hdmi_disable_scrambling(connector);
+ }
+ 
+ static void dw_hdmi_bridge_atomic_enable(struct drm_bridge *bridge,
+-- 
+2.43.0
+

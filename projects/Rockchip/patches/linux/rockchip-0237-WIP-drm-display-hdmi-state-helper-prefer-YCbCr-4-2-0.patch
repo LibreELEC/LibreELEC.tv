@@ -1,0 +1,60 @@
+From a3a68074ed87478dd0b730219b2f827a22390386 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 15:46:52 +0000
+Subject: [PATCH 237/280] WIP: drm/display: hdmi-state-helper: prefer YCbCr
+ 4:2:0 for higher bpc
+
+In the automatic color format selection, RGB is tried from the maximum
+bpc down to 8 bpc, and YCbCr 4:2:0 only when RGB fails entirely. For
+2160p50/60 the HDMI 2.0 TMDS limit then reduces RGB to 8 bpc, even when
+the sink accepts 10 bpc YCbCr 4:2:0, so 10-bit HDR content is sent with
+8 bits per component.
+
+When RGB only fits below the maximum bpc, also try YCbCr 4:2:0 and use
+it if it carries more bits per component.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../gpu/drm/display/drm_hdmi_state_helper.c   | 22 ++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 6d5a369f7c54..2d190be45d56 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -717,10 +717,30 @@ hdmi_compute_config(const struct drm_connector *connector,
+ 
+ 	/*
+ 	 * For %DRM_CONNECTOR_COLOR_FORMAT_AUTO, try RGB first, and fall back
+-	 * to the less bandwidth-intensive YCBCR420 if RGB fails.
++	 * to the less bandwidth-intensive YCBCR420 if RGB fails, or if it
++	 * carries more bits per component than RGB can.
+ 	 */
+ 	ret = hdmi_compute_format_bpc(connector, conn_state, mode, max_bpc,
+ 				      DRM_OUTPUT_COLOR_FORMAT_RGB444);
++	if (!ret && conn_state->hdmi.output_bpc < max_bpc &&
++	    connector->ycbcr_420_allowed) {
++		unsigned int rgb_bpc = conn_state->hdmi.output_bpc;
++		unsigned long long rgb_rate = conn_state->hdmi.tmds_char_rate;
++		bool rgb_scrambler = conn_state->hdmi.scrambler_needed;
++
++		if (!hdmi_compute_format_bpc(connector, conn_state, mode,
++					     max_bpc,
++					     DRM_OUTPUT_COLOR_FORMAT_YCBCR420) &&
++		    conn_state->hdmi.output_bpc > rgb_bpc)
++			return 0;
++
++		conn_state->hdmi.output_bpc = rgb_bpc;
++		conn_state->hdmi.output_format = DRM_OUTPUT_COLOR_FORMAT_RGB444;
++		conn_state->hdmi.tmds_char_rate = rgb_rate;
++		conn_state->hdmi.scrambler_needed = rgb_scrambler;
++		return 0;
++	}
++
+ 	if (ret) {
+ 		if (connector->ycbcr_420_allowed) {
+ 			ret = hdmi_compute_format_bpc(connector, conn_state,
+-- 
+2.43.0
+
