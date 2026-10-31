@@ -22,10 +22,10 @@ Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
  1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 25d42ce..14bab63 100644
+index b3c6088..405e829 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -189,15 +189,13 @@ pkgconfig.generate(
+@@ -196,15 +196,13 @@ pkgconfig.generate(
  	filebase: 'wayland-protocols',
  	name: 'Wayland Protocols',
  	description: 'Wayland protocol files',
