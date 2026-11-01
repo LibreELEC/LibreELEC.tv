@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 01 Oct 2026 11:00:00 +0200
+Subject: [PATCH] Input: axp20x-pek: support the AXP313A power key
+
+The AXP313A MFD registers its power key cell as axp313a-pek, which the
+driver doesn't match, so the key never works. Match it as well. The
+AXP313A doesn't have the AXP20X_PEK_KEY register, so hide the startup
+and shutdown timing attributes on PMICs without timing tables.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/input/misc/axp20x-pek.c | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/misc/axp20x-pek.c b/drivers/input/misc/axp20x-pek.c
+index 521fcd626f74..4cb0b680d781 100644
+--- a/drivers/input/misc/axp20x-pek.c
++++ b/drivers/input/misc/axp20x-pek.c
+@@ -85,6 +85,9 @@ static const struct axp20x_info axp221_info = {
+ 	.shutdown_mask = AXP20X_PEK_SHUTDOWN_MASK,
+ };
+ 
++/* The AXP313A has no AXP20X_PEK_KEY register, so no timing controls. */
++static const struct axp20x_info axp313a_info = { };
++
+ static ssize_t axp20x_show_attr(struct device *dev,
+ 				const struct axp20x_time *time,
+ 				unsigned int mask, char *buf)
+@@ -193,7 +196,26 @@ static struct attribute *axp20x_attrs[] = {
+ 	&dev_attr_shutdown.attr,
+ 	NULL,
+ };
+-ATTRIBUTE_GROUPS(axp20x);
++
++static umode_t axp20x_attr_is_visible(struct kobject *kobj,
++				      struct attribute *attr, int n)
++{
++	struct axp20x_pek *axp20x_pek = dev_get_drvdata(kobj_to_dev(kobj));
++
++	if (attr == &dev_attr_startup.attr && !axp20x_pek->info->startup_time)
++		return 0;
++
++	if (attr == &dev_attr_shutdown.attr && !axp20x_pek->info->shutdown_time)
++		return 0;
++
++	return attr->mode;
++}
++
++static const struct attribute_group axp20x_group = {
++	.attrs = axp20x_attrs,
++	.is_visible = axp20x_attr_is_visible,
++};
++__ATTRIBUTE_GROUPS(axp20x);
+ 
+ static irqreturn_t axp20x_pek_irq(int irq, void *pwr)
+ {
+@@ -398,6 +420,10 @@ static const struct platform_device_id axp_pek_id_match[] = {
+ 		.name = "axp221-pek",
+ 		.driver_data = (kernel_ulong_t)&axp221_info,
+ 	},
++	{
++		.name = "axp313a-pek",
++		.driver_data = (kernel_ulong_t)&axp313a_info,
++	},
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(platform, axp_pek_id_match);
+-- 
+2.43.0
+
