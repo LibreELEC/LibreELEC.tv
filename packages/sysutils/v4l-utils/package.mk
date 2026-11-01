@@ -82,6 +82,8 @@ post_makeinstall_target() {
 *		rc-rc6-mce	libreelec_multi.toml
 # multi-table for amlogic devices
 meson-ir	rc-empty	libreelec_multi.toml
+# multi-table for allwinner devices
+sunxi-ir	rc-empty	libreelec_multi.toml
 EOF
 
   fi

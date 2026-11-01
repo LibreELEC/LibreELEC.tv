@@ -168,10 +168,6 @@ devices = \
         'dtb': 'sun50i-h618-orangepi-zero3.dtb',
         'config': 'orangepi_zero3_defconfig',
       },
-      'tanix-tx1': {
-        'dtb': 'sun50i-h313-tanix-tx1.dtb',
-        'config': 'tanix_tx1_defconfig',
-      },
       'transpeed-8k618-t': {
         'dtb': 'sun50i-h618-transpeed-8k618-t.dtb',
         'config': 'transpeed-8k618-t_defconfig',

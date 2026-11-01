@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 20:56:31 +0200
+Subject: [PATCH] arm64: dts: allwinner: h6: orangepi: Enable CPU frequency scaling
+
+The Orange Pi One Plus and Lite2 lack the CPU OPP table and CPU supply,
+so the CPU never scales its frequency. Add both, like on Orange Pi 3.
+OPPs above the regulator constraints stay unused.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi.dtsi | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi.dtsi b/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi.dtsi
+index eacd89dde6ca..03a69afac6d4 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi.dtsi
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-orangepi.dtsi
+@@ -5,6 +5,7 @@
+ /dts-v1/;
+ 
+ #include "sun50i-h6.dtsi"
++#include "sun50i-h6-cpu-opp.dtsi"
+ #include "sun50i-h6-gpu-opp.dtsi"
+ 
+ #include <dt-bindings/gpio/gpio.h>
+@@ -65,6 +66,10 @@ reg_vcc5v: vcc5v {
+ 	};
+ };
+ 
++&cpu0 {
++	cpu-supply = <&reg_dcdca>;
++};
++
+ &de {
+ 	status = "okay";
+ };
+-- 
+2.43.0
+

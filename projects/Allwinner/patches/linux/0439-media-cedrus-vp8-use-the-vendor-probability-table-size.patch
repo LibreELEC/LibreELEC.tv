@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Sat, 31 Oct 2026 06:29:22 +0100
+Subject: [PATCH] staging: media: cedrus: vp8: use the vendor probability table
+ size
+
+The driver allocates the VP8 probability table with 0x2400 bytes, which
+is the size the old Allwinner A10 library uses. All newer vendor
+libraries allocate 0x5400 bytes and never write the area past 0x11b0
+from the CPU. The hardware uses that area as scratch space, most likely
+for the segment map, and its usage grows with the frame size: a
+3840x2160 stream makes the hardware access memory past 0x2400 and
+causes IOMMU page faults.
+
+Allocate the table with 0x5400 bytes, like the vendor libraries do.
+
+Fixes: 3c39a16d30d8 ("media: cedrus: Add support for VP8 decoding")
+Assisted-by: LLM
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/staging/media/sunxi/cedrus/cedrus_vp8.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_vp8.c b/drivers/staging/media/sunxi/cedrus/cedrus_vp8.c
+index 969677a3bbf9..6b00efa77c22 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus_vp8.c
++++ b/drivers/staging/media/sunxi/cedrus/cedrus_vp8.c
+@@ -25,7 +25,7 @@
+ #include "cedrus_hw.h"
+ #include "cedrus_regs.h"
+ 
+-#define CEDRUS_ENTROPY_PROBS_SIZE 0x2400
++#define CEDRUS_ENTROPY_PROBS_SIZE 0x5400
+ #define VP8_PROB_HALF 128
+ #define QUANT_DELTA_COUNT 5
+ 

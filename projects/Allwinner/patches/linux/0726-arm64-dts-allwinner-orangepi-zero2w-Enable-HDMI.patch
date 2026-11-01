@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 20:55:49 +0200
+Subject: [PATCH] arm64: dts: allwinner: orangepi-zero2w: Enable HDMI
+
+The board has a mini HDMI connector. Enable the display pipeline, HDMI
+and HDMI audio, like on the other H616 boards.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ .../allwinner/sun50i-h618-orangepi-zero2w.dts | 34 +++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h618-orangepi-zero2w.dts b/arch/arm64/boot/dts/allwinner/sun50i-h618-orangepi-zero2w.dts
+index b340bbcb710d..f73ec2fcb3a7 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h618-orangepi-zero2w.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h618-orangepi-zero2w.dts
+@@ -24,6 +24,17 @@ chosen {
+ 		stdout-path = "serial0:115200n8";
+ 	};
+ 
++	connector {
++		compatible = "hdmi-connector";
++		type = "c";
++
++		port {
++			hdmi_con_in: endpoint {
++				remote-endpoint = <&hdmi_out_con>;
++			};
++		};
++	};
++
+ 	leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -54,6 +65,10 @@ reg_vcc3v3: vcc3v3 {
+ 	};
+ };
+ 
++&ahub {
++	status = "okay";
++};
++
+ &codec {
+ 	allwinner,audio-routing = "Line Out", "LINEOUT";
+ 	status = "okay";
+@@ -63,6 +78,10 @@ &cpu0 {
+ 	cpu-supply = <&reg_dcdc2>;
+ };
+ 
++&de {
++	status = "okay";
++};
++
+ &ehci1 {
+ 	status = "okay";
+ };
+@@ -74,6 +93,21 @@ &gpu {
+ 	status = "okay";
+ };
+ 
++&hdmi {
++	hvcc-supply = <&reg_aldo1>;
++	status = "okay";
++};
++
++&hdmi_out {
++	hdmi_out_con: endpoint {
++		remote-endpoint = <&hdmi_con_in>;
++	};
++};
++
++&hdmi_sound {
++	status = "okay";
++};
++
+ &mmc0 {
+ 	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>;	/* PF6 */
+ 	bus-width = <4>;
+-- 
+2.43.0
+

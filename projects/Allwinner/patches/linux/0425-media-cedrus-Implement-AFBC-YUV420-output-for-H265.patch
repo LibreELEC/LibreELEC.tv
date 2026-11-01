@@ -3,11 +3,11 @@ From: Jernej Skrabec <jernej.skrabec@gmail.com>
 Date: Thu, 24 Sep 2026 23:30:00 +0200
 Subject: [PATCH] media: cedrus: Implement AFBC YUV420 output for H265
 
-Make AFBC the default capture format for 10-bit H.265, as the display
-engine scans it out directly and it saves memory bandwidth. Unlike VP9,
-the H.265 decoder still writes the low-2-bit plane in AFBC mode, so
-append it after the compressed body and point the decoder at it. 8-bit
-AFBC output is also available on request.
+Make AFBC the default capture format for 8-bit and 10-bit H.265, as the
+display engine scans it out directly and it saves memory bandwidth.
+Linear output is too slow for 4K at 60 Hz. Unlike VP9, the H.265
+decoder still writes the low-2-bit plane in AFBC mode, so append it
+after the compressed body and point the decoder at it.
 
 Size the low-2-bit plane for whole 16 line blocks, like it is for
 linear formats.
@@ -15,8 +15,8 @@ linear formats.
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
  .../staging/media/sunxi/cedrus/cedrus_h265.c  | 31 ++++++++++++++++---
- .../staging/media/sunxi/cedrus/cedrus_video.c | 26 ++++++++++++++--
- 2 files changed, 50 insertions(+), 7 deletions(-)
+ .../staging/media/sunxi/cedrus/cedrus_video.c | 24 +++++++++++---
+ 2 files changed, 47 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_h265.c b/drivers/staging/media/sunxi/cedrus/cedrus_h265.c
 index da5d322bcce7..51e7eb327798 100644
@@ -77,17 +77,22 @@ index da5d322bcce7..51e7eb327798 100644
  	.irq_disable	= cedrus_h265_irq_disable,
  	.irq_status	= cedrus_h265_irq_status,
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_video.c b/drivers/staging/media/sunxi/cedrus/cedrus_video.c
-index 86cbf63526f2..e43d1dbf4aed 100644
+index c709245b9460..bfcd3b9d9d07 100644
 --- a/drivers/staging/media/sunxi/cedrus/cedrus_video.c
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus_video.c
-@@ -60,6 +60,18 @@ static struct cedrus_format cedrus_formats[] = {
- 		.directions	= CEDRUS_DECODE_SRC,
- 		.capabilities	= CEDRUS_CAPABILITY_VC1_DEC,
+@@ -56,11 +56,19 @@ static struct cedrus_format cedrus_formats[] = {
+ 		.capabilities	= CEDRUS_CAPABILITY_VP9_DEC,
  	},
-+	/*
-+	 * 10-bit H.265 defaults to AFBC output, which the display engine
-+	 * scans out directly and which saves memory bandwidth.
-+	 */
+ 	/*
+-	 * AFBC-compressed output is the default, so it is listed before the
+-	 * plain formats. The display engine scans it out directly, and it
+-	 * saves the memory bandwidth which makes the linear output too slow
+-	 * for 4K at 60 Hz.
++	 * AFBC-compressed output of H.265 and VP9 is the default, so it is
++	 * listed before the plain formats. The display engine scans it out
++	 * directly, and it saves the memory bandwidth which makes the linear
++	 * output too slow for 4K at 60 Hz.
+ 	 */
 +	{
 +		.pixelformat	= V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT,
 +		.directions	= CEDRUS_DECODE_DST,
@@ -97,19 +102,12 @@ index 86cbf63526f2..e43d1dbf4aed 100644
 +		.src_format	= V4L2_PIX_FMT_HEVC_SLICE,
 +	},
  	{
- 		.pixelformat	= V4L2_PIX_FMT_P010,
+ 		.pixelformat	= V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT,
  		.directions	= CEDRUS_DECODE_DST,
-@@ -92,10 +104,18 @@ static struct cedrus_format cedrus_formats[] = {
- 		.capabilities	= CEDRUS_CAPABILITY_UNTILED,
+@@ -68,6 +76,14 @@ static struct cedrus_format cedrus_formats[] = {
+ 		.depth		= 10,
+ 		.src_format	= V4L2_PIX_FMT_VP9_FRAME,
  	},
- 	/*
--	 * AFBC-compressed output. Only wired up for VP9 (H616) so far and
--	 * opt-in: placed after the plain formats so P010/NV12 stay the
--	 * default capture format. Selected explicitly via S_FMT.
-+	 * Remaining AFBC-compressed output is opt-in: placed after the plain
-+	 * formats so P010/NV12 stay the default capture format. Selected
-+	 * explicitly via S_FMT.
- 	 */
 +	{
 +		.pixelformat	= V4L2_PIX_FMT_YUV420_8_AFBC_16X16_SPLIT,
 +		.directions	= CEDRUS_DECODE_DST,
@@ -119,8 +117,5 @@ index 86cbf63526f2..e43d1dbf4aed 100644
 +		.src_format	= V4L2_PIX_FMT_HEVC_SLICE,
 +	},
  	{
- 		.pixelformat	= V4L2_PIX_FMT_YUV420_10_AFBC_16X16_SPLIT,
+ 		.pixelformat	= V4L2_PIX_FMT_YUV420_8_AFBC_16X16_SPLIT,
  		.directions	= CEDRUS_DECODE_DST,
--- 
-2.43.0
-

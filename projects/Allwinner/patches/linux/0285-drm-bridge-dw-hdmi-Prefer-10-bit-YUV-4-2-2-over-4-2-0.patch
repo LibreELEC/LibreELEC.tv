@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 01 Oct 2026 12:58:21 +0200
+Subject: [PATCH] drm/bridge: dw-hdmi: Prefer 10-bit YUV 4:2:2 over 4:2:0
+
+4K at 50 and 60 Hz doesn't fit the 600 MHz TMDS limit with deep color
+RGB, so it ends up as 10-bit YUV 4:2:0 at best. YUV 4:2:2 carries
+up to 12 bits at the 8-bit rate, so it fits at 594 MHz and keeps
+twice the chroma resolution. On platforms which ask for deep color,
+offer 10-bit YUV 4:2:2 after deep color RGB and ahead of YUV 4:2:0
+and 8-bit RGB, if the sink supports it and the pixel rate fits the
+platform and sink limits. This also gives HDMI 1.4 sinks 10-bit 4K
+at up to 30 Hz, where 10-bit RGB would exceed 340 MHz. Modes which
+only allow YUV 4:2:0 are left alone.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 53 ++++++++++++++---------
+ include/drm/bridge/dw_hdmi.h              |  9 ++--
+ 2 files changed, 38 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 252f272933aa..de4fce66db14 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2710,7 +2710,8 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ 
+ /*
+  * Check whether RGB at the given color depth fits within the TMDS character
+- * rate limit of both the platform and the sink. Sinks without a declared
++ * rate limit of both the platform and the sink. YUV 4:2:2 always runs at
++ * the 8-bit rate. Sinks without a declared
+  * limit are assumed to support the HDMI 1.x default of 165 MHz.
+  */
+ static bool dw_hdmi_deep_color_fits(struct dw_hdmi *hdmi,
+@@ -2749,7 +2750,7 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+ 	u8 max_bpc = conn_state->max_requested_bpc;
+ 	bool is_hdmi2_sink = info->hdmi.scdc.supported ||
+ 			     (info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420));
+-	bool rgb12_first = false, rgb10_first = false;
++	bool rgb12_first = false, rgb10_first = false, yuv422_first = false;
+ 	u32 *output_fmts;
+ 	unsigned int i = 0;
+ 
+@@ -2769,6 +2770,34 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+ 		return output_fmts;
+ 	}
+ 
++	/*
++	 * Prefer deep color over 8-bit output where the platform asks for
++	 * it, so that e.g. HDR content isn't quantized to 8 bits: RGB at
++	 * the highest depth the TMDS rate allows, and otherwise YUV 4:2:2,
++	 * which carries up to 12 bits at the pixel rate and keeps twice the
++	 * chroma resolution of YUV 4:2:0.
++	 */
++	if (hdmi->plat_data->deep_color_max_tmds_clock &&
++	    !(conn->ycbcr_420_allowed && drm_mode_is_420_only(info, mode))) {
++		rgb12_first = max_bpc >= 12 && info->bpc >= 12 &&
++			      dw_hdmi_deep_color_fits(hdmi, info, mode, 12);
++		rgb10_first = max_bpc >= 10 && info->bpc >= 10 &&
++			      dw_hdmi_deep_color_fits(hdmi, info, mode, 10);
++		yuv422_first = max_bpc >= 10 && info->bpc >= 10 &&
++			       (info->color_formats &
++				BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422)) &&
++			       dw_hdmi_deep_color_fits(hdmi, info, mode, 8);
++	}
++
++	if (rgb12_first)
++		output_fmts[i++] = MEDIA_BUS_FMT_RGB121212_1X36;
++
++	if (rgb10_first)
++		output_fmts[i++] = MEDIA_BUS_FMT_RGB101010_1X30;
++
++	if (yuv422_first)
++		output_fmts[i++] = MEDIA_BUS_FMT_UYVY10_1X20;
++
+ 	/*
+ 	 * If the current mode enforces 4:2:0, force the output bus format
+ 	 * to 4:2:0 and do not add the YUV422/444/RGB formats
+@@ -2804,23 +2833,6 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+ 	 * if supported. In any case the default RGB888 format is added
+ 	 */
+ 
+-	/*
+-	 * Prefer deep color RGB over 8-bit RGB where the platform asks for
+-	 * it, so that e.g. HDR content isn't quantized to 8 bits.
+-	 */
+-	if (hdmi->plat_data->deep_color_max_tmds_clock) {
+-		rgb12_first = max_bpc >= 12 && info->bpc >= 12 &&
+-			      dw_hdmi_deep_color_fits(hdmi, info, mode, 12);
+-		rgb10_first = max_bpc >= 10 && info->bpc >= 10 &&
+-			      dw_hdmi_deep_color_fits(hdmi, info, mode, 10);
+-	}
+-
+-	if (rgb12_first)
+-		output_fmts[i++] = MEDIA_BUS_FMT_RGB121212_1X36;
+-
+-	if (rgb10_first)
+-		output_fmts[i++] = MEDIA_BUS_FMT_RGB101010_1X30;
+-
+ 	/* Default 8bit RGB fallback */
+ 	output_fmts[i++] = MEDIA_BUS_FMT_RGB888_1X24;
+ 
+@@ -2843,7 +2855,8 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+ 	}
+ 
+ 	if (max_bpc >= 10 && info->bpc >= 10) {
+-		if (info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422))
++		if ((info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422)) &&
++		    !yuv422_first)
+ 			output_fmts[i++] = MEDIA_BUS_FMT_UYVY10_1X20;
+ 
+ 		if (info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444))
+diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
+index 3bd94437cdae..aca06165db94 100644
+--- a/include/drm/bridge/dw_hdmi.h
++++ b/include/drm/bridge/dw_hdmi.h
+@@ -158,10 +158,11 @@ struct dw_hdmi_plat_data {
+ 	bool phy_max_tmds_msm_ctrl_quirk;
+ 
+ 	/*
+-	 * Highest TMDS character rate in kHz up to which deep color RGB is
+-	 * preferred over 8-bit RGB, if the sink and max_bpc allow it. Zero
+-	 * keeps the default of only using deep color when nothing else in
+-	 * the bridge chain accepts 8-bit RGB.
++	 * Highest TMDS character rate in kHz up to which deep color RGB, or
++	 * otherwise 10-bit YUV 4:2:2, is preferred over 8-bit RGB and YUV
++	 * 4:2:0, if the sink and max_bpc allow it. Zero keeps the default of
++	 * only using deep color when nothing else in the bridge chain accepts
++	 * 8-bit RGB.
+ 	 */
+ 	unsigned int deep_color_max_tmds_clock;
+ 
+-- 
+2.43.0
+

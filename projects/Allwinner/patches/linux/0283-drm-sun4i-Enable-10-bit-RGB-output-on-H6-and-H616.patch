@@ -1,0 +1,136 @@
+From eac593ea05f14c3d387566b8bc5992eef524e223 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 1 Oct 2026 12:55:15 +0200
+Subject: [PATCH] drm/sun4i: Enable 10-bit RGB output on H6 and H616
+
+The DE3 and DE33 pipeline is 10 bits wide and the formatter can output
+either 8 or 10 bits per channel. Accept MEDIA_BUS_FMT_RGB101010_1X30 on
+mixers with the formatter, enable the formatter with 10-bit depth and
+no clamping for it, and apply the deep color 5/4 factor to the HDMI
+TMDS clock. Let dw-hdmi prefer deep color RGB up to the controller's
+594 MHz TMDS limit, so 4K at up to 30 Hz and 1080p get 10-bit RGB on
+capable sinks instead of 8-bit RGB. 4K at 50 and 60 Hz needs 742.5
+MHz for that and keeps using YUV 4:2:0.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/sun4i/sun50i_fmt.c    | 18 ++++++++++++------
+ drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c |  6 ++++++
+ drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h |  1 +
+ drivers/gpu/drm/sun4i/sun8i_mixer.c   |  3 ++-
+ 4 files changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/sun4i/sun50i_fmt.c b/drivers/gpu/drm/sun4i/sun50i_fmt.c
+index 3dd302c76e83..b9d7a21e3705 100644
+--- a/drivers/gpu/drm/sun4i/sun50i_fmt.c
++++ b/drivers/gpu/drm/sun4i/sun50i_fmt.c
+@@ -7,6 +7,7 @@
+ 
+ #include "sun50i_fmt.h"
+ #include "sun8i_rdma.h"
++#include "sunxi_engine.h"
+ 
+ static const struct reg_region sun50i_fmt_regions[] = {
+ 	{ SUN50I_FMT_CTRL, 6 },
+@@ -27,25 +28,26 @@ static u32 sun50i_fmt_get_colorspace(u32 format)
+ 
+ static bool sun50i_fmt_is_10bit(u32 format)
+ {
+-	return format == MEDIA_BUS_FMT_UYYVYY10_0_5X30;
++	return format == MEDIA_BUS_FMT_UYYVYY10_0_5X30 ||
++	       format == MEDIA_BUS_FMT_RGB101010_1X30;
+ }
+ 
+ void sun50i_fmt_setup(struct sun8i_mixer *mixer, u16 width,
+ 		      u16 height, u32 format)
+ {
+ 	u32 colorspace = sun50i_fmt_get_colorspace(format);
+-	bool bypass = colorspace == SUN50I_FMT_CS_YUV444RGB;
++	bool yuv = sunxi_engine_format_is_yuv(format);
++	bool is_10bit = sun50i_fmt_is_10bit(format);
+ 	bool de3 = mixer->cfg->de_type == SUN8I_MIXER_DE3;
+ 
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_SIZE,
+ 			 SUN8I_MIXER_SIZE(width, height));
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_SWAP, 0);
+-	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_DEPTH,
+-			 sun50i_fmt_is_10bit(format));
++	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_DEPTH, is_10bit);
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_FORMAT, colorspace);
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_COEF, 0);
+ 
+-	if (bypass) {
++	if (!yuv) {
+ 		sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_LMT_Y,
+ 				 SUN50I_FMT_LIMIT_BYPASS);
+ 		sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_LMT_C0,
+@@ -61,7 +63,11 @@ void sun50i_fmt_setup(struct sun8i_mixer *mixer, u16 width,
+ 		sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_LMT_C1, limit_c);
+ 	}
+ 
+-	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_CTRL, !bypass);
++	/*
++	 * 8-bit RGB bypasses the formatter, which keeps the upper 8 bits of
++	 * the 10-bit pipeline. Deep color RGB needs it for the 10-bit output.
++	 */
++	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_CTRL, yuv || is_10bit);
+ }
+ 
+ int sun50i_fmt_init(struct sun8i_mixer *mixer)
+diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
+index 46145ef81dcd..8bebe7ec6739 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
++++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
+@@ -173,6 +173,9 @@ sun8i_dw_hdmi_encoder_atomic_mode_set(struct drm_encoder *encoder,
+ 	 * again since two horizontal samples share one TMDS period.
+ 	 */
+ 	switch (scrtc_state->format) {
++	case MEDIA_BUS_FMT_RGB101010_1X30:
++		rate = rate * 5 / 4;
++		break;
+ 	case MEDIA_BUS_FMT_UYYVYY10_0_5X30:
+ 		rate = rate * 5 / 4 / 2;
+ 		break;
+@@ -369,6 +372,8 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
+ 	plat_data->mode_valid = hdmi->quirks->mode_valid;
+ 	plat_data->use_drm_infoframe = hdmi->quirks->use_drm_infoframe;
+ 	plat_data->ycbcr_420_allowed = hdmi->quirks->ycbcr_420_allowed;
++	plat_data->deep_color_max_tmds_clock =
++		hdmi->quirks->deep_color_max_tmds_clock;
+ 	plat_data->output_port = 1;
+ 	/*
+ 	 * The controller shares the same distinct video mapping code for
+@@ -489,6 +494,7 @@ static const struct sun8i_dw_hdmi_quirks sun50i_h6_quirks = {
+ 	.mode_valid = sun8i_dw_hdmi_mode_valid_h6,
+ 	.use_drm_infoframe = true,
+ 	.ycbcr_420_allowed = true,
++	.deep_color_max_tmds_clock = 594000,
+ };
+ 
+ static const struct of_device_id sun8i_dw_hdmi_dt_ids[] = {
+diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h
+index 2e6a8cfdbf68..4348d807e005 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h
++++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h
+@@ -177,6 +177,7 @@ struct sun8i_dw_hdmi_quirks {
+ 					   const struct drm_display_mode *mode);
+ 	unsigned int use_drm_infoframe : 1;
+ 	unsigned int ycbcr_420_allowed : 1;
++	unsigned int deep_color_max_tmds_clock;
+ };
+ 
+ struct sun8i_dw_hdmi {
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+index 5ebcf892421e..f2c2bef25f83 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+@@ -504,7 +504,8 @@ static bool sun8i_mixer_format_valid(struct sunxi_engine *engine, u32 format)
+ 
+ 	if (mixer->cfg->has_formatter &&
+ 	    (format == MEDIA_BUS_FMT_UYYVYY8_0_5X24 ||
+-	     format == MEDIA_BUS_FMT_UYYVYY10_0_5X30))
++	     format == MEDIA_BUS_FMT_UYYVYY10_0_5X30 ||
++	     format == MEDIA_BUS_FMT_RGB101010_1X30))
+ 		return true;
+ 
+ 	return format == MEDIA_BUS_FMT_RGB888_1X24;
