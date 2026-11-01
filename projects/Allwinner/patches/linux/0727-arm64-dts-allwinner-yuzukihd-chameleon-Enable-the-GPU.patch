@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 20:56:03 +0200
+Subject: [PATCH] arm64: dts: allwinner: yuzukihd-chameleon: Enable the GPU
+
+The Mali GPU is supplied by DCDC1, like on other AXP313a based H618
+boards. Enable it.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ .../boot/dts/allwinner/sun50i-h618-yuzukihd-chameleon.dts    | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h618-yuzukihd-chameleon.dts b/arch/arm64/boot/dts/allwinner/sun50i-h618-yuzukihd-chameleon.dts
+index 2cae96c757df..241126834eac 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h618-yuzukihd-chameleon.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h618-yuzukihd-chameleon.dts
+@@ -87,6 +87,11 @@ &ehci3 {
+ 	status = "okay";
+ };
+ 
++&gpu {
++	mali-supply = <&reg_dcdc1>;
++	status = "okay";
++};
++
+ &hdmi {
+ 	hvcc-supply = <&reg_aldo1>;
+ 	status = "okay";
+-- 
+2.43.0
+
