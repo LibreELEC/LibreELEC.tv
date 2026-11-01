@@ -30,8 +30,8 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
  sound/soc/sunxi/Kconfig            |   18 +-
  sound/soc/sunxi/Makefile           |    1 +
- sound/soc/sunxi/sun50i-h616-ahub.c | 1298 ++++++++++++++++++++++++++++
- 3 files changed, 1314 insertions(+), 3 deletions(-)
+ sound/soc/sunxi/sun50i-h616-ahub.c | 1299 ++++++++++++++++++++++++++++
+ 3 files changed, 1315 insertions(+), 3 deletions(-)
  create mode 100644 sound/soc/sunxi/sun50i-h616-ahub.c
 
 diff --git a/sound/soc/sunxi/Kconfig b/sound/soc/sunxi/Kconfig
@@ -84,10 +84,10 @@ index 9171c8e25722..2029f13c1bf9 100644
  obj-$(CONFIG_SND_SUN8I_CODEC_ANALOG) += sun8i-codec-analog.o
 diff --git a/sound/soc/sunxi/sun50i-h616-ahub.c b/sound/soc/sunxi/sun50i-h616-ahub.c
 new file mode 100644
-index 000000000000..6ef7e7ea448e
+index 000000000000..6016e2dd30ad
 --- /dev/null
 +++ b/sound/soc/sunxi/sun50i-h616-ahub.c
-@@ -0,0 +1,1298 @@
+@@ -0,0 +1,1299 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Allwinner H616 audio hub (AHUB) driver
@@ -853,6 +853,9 @@ index 000000000000..6ef7e7ea448e
 +	u32 enable;
 +
 +	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		/* The application pointer starts over from zero. */
++		sdai->hdmi_appl = 0;
++
 +		regmap_update_bits(ahub->regmap,
 +				   SUN50I_AHUB_APBIF_TX_FIFO_CTRL_REG(sdai->apbif),
 +				   SUN50I_AHUB_APBIF_TX_FIFO_CTRL_FLUSH,
@@ -951,8 +954,6 @@ index 000000000000..6ef7e7ea448e
 +					   formats);
 +	if (ret)
 +		return ret;
-+
-+	sdai->hdmi_appl = 0;
 +
 +	sun50i_ahub_client_enable(ahub, SUN50I_AHUB_CLIENT_I2S(sdai->i2s), true);
 +	if (playback)

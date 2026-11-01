@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 21:12:10 +0200
+Subject: [PATCH] clk: sunxi-ng: h6: Let the SPDIF clock set the audio PLL rate
+
+Unlike the I2S clocks, the SPDIF clock can't change the audio PLL rate,
+so it can only divide whatever rate the PLL runs at. After playing 48 kHz
+content, 44.1 kHz content is then sent at the wrong rate. Propagate rate
+changes to the parent, like the I2S clocks do.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/clk/sunxi-ng/ccu-sun50i-h6.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/sunxi-ng/ccu-sun50i-h6.c b/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
+index b74622839a67..ed79603ea6a5 100644
+--- a/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
++++ b/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
+@@ -573,7 +573,7 @@ static struct ccu_div spdif_clk = {
+ 		.hw.init	= CLK_HW_INIT_PARENTS("spdif",
+ 						      audio_parents,
+ 						      &ccu_div_ops,
+-						      0),
++						      CLK_SET_RATE_PARENT),
+ 	},
+ };
+ 
+-- 
+2.43.0
+
