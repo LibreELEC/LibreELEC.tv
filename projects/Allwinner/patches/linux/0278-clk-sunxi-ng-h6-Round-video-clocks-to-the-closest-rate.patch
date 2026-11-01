@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 21:02:34 +0200
+Subject: [PATCH] clk: sunxi-ng: h6: Round video clocks to the closest rate
+
+Rounding video clocks down makes fractional refresh rates much less
+accurate than necessary. Round the video PLLs, TCON TV and HDMI clocks
+to the closest rate, like on A64.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/clk/sunxi-ng/ccu-sun50i-h6.c | 30 +++++++++++++++-------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/clk/sunxi-ng/ccu-sun50i-h6.c b/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
+index 7fccda96d444..78cb8ee876fb 100644
+--- a/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
++++ b/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
+@@ -125,7 +125,8 @@ static struct ccu_nm pll_video0_clk = {
+ 	.max_rate	= 2400000000UL,
+ 	.common		= {
+ 		.reg		= 0x040,
+-		.features	= CCU_FEATURE_FIXED_POSTDIV,
++		.features	= CCU_FEATURE_FIXED_POSTDIV |
++				  CCU_FEATURE_CLOSEST_RATE,
+ 		.hw.init	= CLK_HW_INIT("pll-video0", "osc24M",
+ 					      &ccu_nm_ops,
+ 					      CLK_SET_RATE_UNGATE),
+@@ -143,7 +144,8 @@ static struct ccu_nm pll_video1_clk = {
+ 	.max_rate	= 2400000000UL,
+ 	.common		= {
+ 		.reg		= 0x048,
+-		.features	= CCU_FEATURE_FIXED_POSTDIV,
++		.features	= CCU_FEATURE_FIXED_POSTDIV |
++				  CCU_FEATURE_CLOSEST_RATE,
+ 		.hw.init	= CLK_HW_INIT("pll-video1", "osc24M",
+ 					      &ccu_nm_ops,
+ 					      CLK_SET_RATE_UNGATE),
+@@ -655,11 +657,11 @@ static SUNXI_CCU_GATE(bus_pcie_clk, "bus-pcie", "psi-ahb1-ahb2",
+ 
+ static const char * const hdmi_parents[] = { "pll-video0", "pll-video1",
+ 					      "pll-video1-4x" };
+-static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
+-				 0, 4,		/* M */
+-				 24, 2,		/* mux */
+-				 BIT(31),	/* gate */
+-				 0);
++static SUNXI_CCU_M_WITH_MUX_GATE_CLOSEST(hdmi_clk, "hdmi", hdmi_parents, 0xb00,
++					 0, 4,		/* M */
++					 24, 2,		/* mux */
++					 BIT(31),	/* gate */
++					 0);
+ 
+ static SUNXI_CCU_GATE(hdmi_slow_clk, "hdmi-slow", "osc24M", 0xb04, BIT(31), 0);
+ 
+@@ -711,13 +713,13 @@ static const char * const tcon_tv0_parents[] = { "pll-video0",
+ 						 "pll-video0-4x",
+ 						 "pll-video1",
+ 						 "pll-video1-4x" };
+-static SUNXI_CCU_MP_WITH_MUX_GATE(tcon_tv0_clk, "tcon-tv0",
+-				  tcon_tv0_parents, 0xb80,
+-				  0, 4,		/* M */
+-				  8, 2,		/* P */
+-				  24, 3,	/* mux */
+-				  BIT(31),	/* gate */
+-				  CLK_SET_RATE_PARENT);
++static SUNXI_CCU_MP_WITH_MUX_GATE_CLOSEST(tcon_tv0_clk, "tcon-tv0",
++					  tcon_tv0_parents, 0xb80,
++					  0, 4,		/* M */
++					  8, 2,		/* P */
++					  24, 3,	/* mux */
++					  BIT(31),	/* gate */
++					  CLK_SET_RATE_PARENT);
+ 
+ static SUNXI_CCU_GATE(bus_tcon_tv0_clk, "bus-tcon-tv0", "ahb3",
+ 		      0xb9c, BIT(0), 0);
+-- 
+2.43.0
+

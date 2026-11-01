@@ -16,11 +16,11 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
  drivers/gpu/drm/sun4i/sun4i_crtc.c        | 12 ++++++++
  drivers/gpu/drm/sun4i/sun4i_framebuffer.c | 35 +++++++++++++++++++++++
- drivers/gpu/drm/sun4i/sun8i_mixer.c       | 34 ++++++++++++++++++++++
+ drivers/gpu/drm/sun4i/sun8i_mixer.c       | 26 +++++++++++++++++
  drivers/gpu/drm/sun4i/sun8i_ui_layer.c    |  9 ++++++
  drivers/gpu/drm/sun4i/sun8i_vi_layer.c    |  9 ++++++
  drivers/gpu/drm/sun4i/sunxi_engine.h      | 19 ++++++++++++
- 6 files changed, 118 insertions(+)
+ 6 files changed, 110 insertions(+)
 
 diff --git a/drivers/gpu/drm/sun4i/sun4i_crtc.c b/drivers/gpu/drm/sun4i/sun4i_crtc.c
 index 921bf4edebe4..041d399937c4 100644
@@ -51,7 +51,7 @@ index 921bf4edebe4..041d399937c4 100644
  
  	sun4i_tcon_set_status(scrtc->tcon, encoder, false);
 diff --git a/drivers/gpu/drm/sun4i/sun4i_framebuffer.c b/drivers/gpu/drm/sun4i/sun4i_framebuffer.c
-index 385c8536488d..746e04aa001d 100644
+index b3d76ef9a1ab..f7b726cda205 100644
 --- a/drivers/gpu/drm/sun4i/sun4i_framebuffer.c
 +++ b/drivers/gpu/drm/sun4i/sun4i_framebuffer.c
 @@ -13,8 +13,10 @@
@@ -63,9 +63,9 @@ index 385c8536488d..746e04aa001d 100644
  #include "sun4i_framebuffer.h"
 +#include "sunxi_engine.h"
  
- static int sun4i_de_atomic_check(struct drm_device *dev,
- 				 struct drm_atomic_commit *state)
-@@ -74,9 +76,32 @@ static const struct drm_mode_config_funcs sun4i_de_mode_config_funcs = {
+ static const struct drm_framebuffer_funcs sun4i_fb_funcs = {
+ 	.destroy	= drm_gem_fb_destroy,
+@@ -58,9 +60,32 @@ static const struct drm_mode_config_funcs sun4i_de_mode_config_funcs = {
  	.fb_create		= sun4i_fb_create,
  };
  
@@ -98,7 +98,7 @@ index 385c8536488d..746e04aa001d 100644
  
  	drm_atomic_helper_commit_modeset_disables(dev, state);
  	drm_atomic_helper_commit_crtc_enable(dev, state);
-@@ -95,6 +120,16 @@ static void sun4i_de_atomic_commit_tail(struct drm_atomic_commit *state)
+@@ -79,6 +104,16 @@ static void sun4i_de_atomic_commit_tail(struct drm_atomic_commit *state)
  	 * scans out from them for one more frame.
  	 */
  	drm_atomic_helper_wait_for_vblanks(dev, state);
@@ -116,7 +116,7 @@ index 385c8536488d..746e04aa001d 100644
  }
  
 diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
-index 0115e9f9a17c..26384587fedc 100644
+index 0115e9f9a17c..db93566cf205 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
 @@ -9,6 +9,7 @@
@@ -127,15 +127,7 @@ index 0115e9f9a17c..26384587fedc 100644
  #include <linux/module.h>
  #include <linux/of.h>
  #include <linux/of_device.h>
-@@ -24,6 +25,7 @@
- #include <drm/drm_gem_dma_helper.h>
- #include <drm/drm_print.h>
- #include <drm/drm_probe_helper.h>
-+#include <drm/drm_vblank.h>
- 
- #include "sun4i_drv.h"
- #include "sun50i_planes.h"
-@@ -485,6 +487,29 @@ static void sun8i_mixer_sync(struct sunxi_engine *engine)
+@@ -485,6 +486,22 @@ static void sun8i_mixer_sync(struct sunxi_engine *engine)
  	sun8i_rdma_sync(mixer->rdma);
  }
  
@@ -153,19 +145,12 @@ index 0115e9f9a17c..26384587fedc 100644
 +	if (ret)
 +		pr_warn("sun8i-mixer %pOF: double buffer sync timed out\n",
 +			mixer->engine.node);
-+
-+	/*
-+	 * DE3 clears DBUFF when the new registers are latched, but DMA
-+	 * requests for the old frame can remain in flight until the next
-+	 * vblank.
-+	 */
-+	drm_crtc_wait_one_vblank(crtc);
 +}
 +
  static const struct sunxi_engine_ops sun50i_engine_ops = {
  	.sync		= sun8i_mixer_sync,
  	.commit		= sun8i_mixer_commit,
-@@ -492,6 +517,13 @@ static const struct sunxi_engine_ops sun50i_engine_ops = {
+@@ -492,6 +509,13 @@ static const struct sunxi_engine_ops sun50i_engine_ops = {
  	.mode_set	= sun8i_mixer_mode_set,
  };
  
@@ -179,7 +164,7 @@ index 0115e9f9a17c..26384587fedc 100644
  static int sun8i_mixer_of_get_id(struct device_node *node)
  {
  	struct device_node *ep, *remote;
-@@ -649,6 +681,8 @@ static int sun8i_mixer_bind(struct device *dev, struct device *master,
+@@ -649,6 +673,8 @@ static int sun8i_mixer_bind(struct device *dev, struct device *master,
  
  	if (mixer->cfg->de_type == SUN8I_MIXER_DE33)
  		mixer->engine.ops = &sun50i_engine_ops;
@@ -279,6 +264,3 @@ index de4eb2f3810f..a82b4c93c16e 100644
  /**
   * sunxi_engine_commit() - commit all changes of the engine
   * @engine:	pointer to the engine
--- 
-2.43.0
-

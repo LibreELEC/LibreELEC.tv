@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 21:02:34 +0200
+Subject: [PATCH] clk: sunxi-ng: mp: Support closest rate rounding
+
+MP clocks always pick the closest rate below the requested one, while
+other clock types can be told to round to the closest rate instead.
+Use ccu_is_better_rate() for MP clocks too, so they honour
+CCU_FEATURE_CLOSEST_RATE, and add a macro for such clocks.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/clk/sunxi-ng/ccu_mp.c | 23 +++++++++++++----------
+ drivers/clk/sunxi-ng/ccu_mp.h | 20 ++++++++++++++++++++
+ 2 files changed, 33 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/clk/sunxi-ng/ccu_mp.c b/drivers/clk/sunxi-ng/ccu_mp.c
+index 7cdb0eedc69b..00ea3dea4221 100644
+--- a/drivers/clk/sunxi-ng/ccu_mp.c
++++ b/drivers/clk/sunxi-ng/ccu_mp.c
+@@ -17,7 +17,8 @@ static unsigned int next_div(unsigned int div, bool shift)
+ 	return div + 1;
+ }
+ 
+-static unsigned long ccu_mp_find_best(unsigned long parent, unsigned long rate,
++static unsigned long ccu_mp_find_best(struct ccu_common *common,
++				      unsigned long parent, unsigned long rate,
+ 				      unsigned int max_m, unsigned int max_p,
+ 				      bool shift,
+ 				      unsigned int *m, unsigned int *p)
+@@ -30,10 +31,8 @@ static unsigned long ccu_mp_find_best(unsigned long parent, unsigned long rate,
+ 		for (_m = 1; _m <= max_m; _m++) {
+ 			unsigned long tmp_rate = parent / _p / _m;
+ 
+-			if (tmp_rate > rate)
+-				continue;
+-
+-			if ((rate - tmp_rate) < (rate - best_rate)) {
++			if (ccu_is_better_rate(common, rate, tmp_rate,
++					       best_rate)) {
+ 				best_rate = tmp_rate;
+ 				best_m = _m;
+ 				best_p = _p;
+@@ -47,7 +46,8 @@ static unsigned long ccu_mp_find_best(unsigned long parent, unsigned long rate,
+ 	return best_rate;
+ }
+ 
+-static unsigned long ccu_mp_find_best_with_parent_adj(struct clk_hw *hw,
++static unsigned long ccu_mp_find_best_with_parent_adj(struct ccu_common *common,
++						      struct clk_hw *hw,
+ 						      unsigned long *parent,
+ 						      unsigned long rate,
+ 						      unsigned int max_m,
+@@ -90,7 +90,7 @@ static unsigned long ccu_mp_find_best_with_parent_adj(struct clk_hw *hw,
+ 			parent_rate = clk_hw_round_rate(hw, rate * div);
+ 			now = parent_rate / div;
+ 
+-			if (now <= rate && now > best_rate) {
++			if (ccu_is_better_rate(common, rate, now, best_rate)) {
+ 				best_rate = now;
+ 				*parent = parent_rate;
+ 
+@@ -125,10 +125,12 @@ static int ccu_mp_determine_rate_helper(struct ccu_mux_internal *mux,
+ 		max_p = cmp->p.max ?: 1 << cmp->p.width;
+ 
+ 	if (!clk_hw_can_set_rate_parent(&cmp->common.hw)) {
+-		req->rate = ccu_mp_find_best(req->best_parent_rate, req->rate,
++		req->rate = ccu_mp_find_best(&cmp->common,
++					     req->best_parent_rate, req->rate,
+ 					     max_m, max_p, shift, &m, &p);
+ 	} else {
+-		req->rate = ccu_mp_find_best_with_parent_adj(req->best_parent_hw,
++		req->rate = ccu_mp_find_best_with_parent_adj(&cmp->common,
++							     req->best_parent_hw,
+ 							     &req->best_parent_rate,
+ 							     req->rate, max_m, max_p,
+ 							     shift);
+@@ -231,7 +233,8 @@ static int ccu_mp_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	if (cmp->common.features & CCU_FEATURE_FIXED_POSTDIV)
+ 		rate = rate * cmp->fixed_post_div;
+ 
+-	ccu_mp_find_best(parent_rate, rate, max_m, max_p, shift, &m, &p);
++	ccu_mp_find_best(&cmp->common, parent_rate, rate, max_m, max_p, shift,
++			 &m, &p);
+ 
+ 	spin_lock_irqsave(cmp->common.lock, flags);
+ 
+diff --git a/drivers/clk/sunxi-ng/ccu_mp.h b/drivers/clk/sunxi-ng/ccu_mp.h
+index bb09c649bfa3..f1534f0952f5 100644
+--- a/drivers/clk/sunxi-ng/ccu_mp.h
++++ b/drivers/clk/sunxi-ng/ccu_mp.h
+@@ -93,6 +93,26 @@ struct ccu_mp {
+ 		}							\
+ 	}
+ 
++#define SUNXI_CCU_MP_WITH_MUX_GATE_CLOSEST(_struct, _name, _parents,	\
++					   _reg, _mshift, _mwidth,	\
++					   _pshift, _pwidth,		\
++					   _muxshift, _muxwidth,	\
++					   _gate, _flags)		\
++	struct ccu_mp _struct = {					\
++		.enable	= _gate,					\
++		.m	= _SUNXI_CCU_DIV(_mshift, _mwidth),		\
++		.p	= _SUNXI_CCU_DIV(_pshift, _pwidth),		\
++		.mux	= _SUNXI_CCU_MUX(_muxshift, _muxwidth),		\
++		.common	= {						\
++			.reg		= _reg,				\
++			.features	= CCU_FEATURE_CLOSEST_RATE,	\
++			.hw.init	= CLK_HW_INIT_PARENTS(_name,	\
++							      _parents, \
++							      &ccu_mp_ops, \
++							      _flags),	\
++		}							\
++	}
++
+ #define SUNXI_CCU_MP_WITH_MUX(_struct, _name, _parents, _reg,		\
+ 			      _mshift, _mwidth,				\
+ 			      _pshift, _pwidth,				\
+-- 
+2.43.0
+
