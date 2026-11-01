@@ -22,8 +22,8 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
  .../staging/media/sunxi/cedrus/cedrus_regs.h  |  141 ++
  .../staging/media/sunxi/cedrus/cedrus_video.c |   29 +-
  .../staging/media/sunxi/cedrus/cedrus_video.h |    5 +
- .../staging/media/sunxi/cedrus/cedrus_vp9.c   | 1297 +++++++++++++++++
- 9 files changed, 1552 insertions(+), 7 deletions(-)
+ .../staging/media/sunxi/cedrus/cedrus_vp9.c   | 1304 +++++++++++++++++
+ 9 files changed, 1559 insertions(+), 7 deletions(-)
  create mode 100644 drivers/staging/media/sunxi/cedrus/cedrus_vp9.c
 
 diff --git a/drivers/staging/media/sunxi/cedrus/Makefile b/drivers/staging/media/sunxi/cedrus/Makefile
@@ -37,7 +37,7 @@ index a647b3690bf8..6660898ad80f 100644
 -		 cedrus_vp8.o
 +		 cedrus_vp8.o cedrus_vp9.o
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus.c b/drivers/staging/media/sunxi/cedrus/cedrus.c
-index a754874e996f..ab295ed4ba59 100644
+index c3331b4f3f02..af28125ac95c 100644
 --- a/drivers/staging/media/sunxi/cedrus/cedrus.c
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus.c
 @@ -77,6 +77,34 @@ static int cedrus_try_ctrl(struct v4l2_ctrl *ctrl)
@@ -95,8 +95,8 @@ index a754874e996f..ab295ed4ba59 100644
  	{
  		.cfg = {
  			.id = V4L2_CID_STATELESS_HEVC_DECODE_PARAMS,
-@@ -651,6 +692,17 @@ static const struct cedrus_variant sun50i_h6_cedrus_variant = {
- 	.mod_rate	= 648000000,
+@@ -653,6 +694,17 @@ static const struct cedrus_variant sun50i_h6_cedrus_variant = {
+ 	.mod_rate	= 600000000,
  };
  
 +static const struct cedrus_variant sun50i_h616_cedrus_variant = {
@@ -113,7 +113,7 @@ index a754874e996f..ab295ed4ba59 100644
  static const struct of_device_id cedrus_dt_match[] = {
  	{
  		.compatible = "allwinner,sun4i-a10-video-engine",
-@@ -698,7 +750,7 @@ static const struct of_device_id cedrus_dt_match[] = {
+@@ -700,7 +752,7 @@ static const struct of_device_id cedrus_dt_match[] = {
  	},
  	{
  		.compatible = "allwinner,sun50i-h616-video-engine",
@@ -474,10 +474,10 @@ index 8e1afc16a6a1..367e52158f01 100644
  int cedrus_queue_init(void *priv, struct vb2_queue *src_vq,
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c b/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c
 new file mode 100644
-index 000000000000..c079179e98d1
+index 000000000000..97fc461c7968
 --- /dev/null
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c
-@@ -0,0 +1,1297 @@
+@@ -0,0 +1,1304 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Cedrus VPU driver
@@ -1476,9 +1476,16 @@ index 000000000000..c079179e98d1
 +	/* 10-bit output: lower-2-bit plane offset and stride. */
 +	if (dec->bit_depth > 8) {
 +		u32 stride = ctx->dst_fmt.bytesperline;
-+		u32 h = ctx->dst_fmt.height;
 +		u32 stride2 = ALIGN(stride >> 2, 32);
-+		u32 off = (u32)(chroma - luma) + stride * (h >> 1);
++		u32 off;
++
++		/*
++		 * The hardware expects the 2-bit plane right after the chroma
++		 * rows of the frame, rounded up to whole 8x8 blocks, and not
++		 * after the chroma plane of the buffer, also when it reads
++		 * the references.
++		 */
++		off = (u32)(chroma - luma) + stride * (ALIGN(cur_h, 8) / 2);
 +
 +		cedrus_write(dev, VE_DEC_VP9_FIRST_OUT_OFFSET,
 +			     off & GENMASK(27, 0));
@@ -1775,6 +1782,3 @@ index 000000000000..c079179e98d1
 +	.stop		= cedrus_vp9_stop,
 +	.trigger	= cedrus_vp9_trigger,
 +};
--- 
-2.43.0
-

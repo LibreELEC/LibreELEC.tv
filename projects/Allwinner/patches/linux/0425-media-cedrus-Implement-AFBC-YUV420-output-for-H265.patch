@@ -9,14 +9,17 @@ the H.265 decoder still writes the low-2-bit plane in AFBC mode, so
 append it after the compressed body and point the decoder at it. 8-bit
 AFBC output is also available on request.
 
+Size the low-2-bit plane for whole 16 line blocks, like it is for
+linear formats.
+
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- .../staging/media/sunxi/cedrus/cedrus_h265.c  | 28 ++++++++++++++++---
- .../staging/media/sunxi/cedrus/cedrus_video.c | 26 +++++++++++++++--
- 2 files changed, 47 insertions(+), 7 deletions(-)
+ .../staging/media/sunxi/cedrus/cedrus_h265.c  | 31 ++++++++++++++++---
+ .../staging/media/sunxi/cedrus/cedrus_video.c | 26 ++++++++++++++--
+ 2 files changed, 50 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_h265.c b/drivers/staging/media/sunxi/cedrus/cedrus_h265.c
-index da5d322bcce7..595b0a47996f 100644
+index da5d322bcce7..51e7eb327798 100644
 --- a/drivers/staging/media/sunxi/cedrus/cedrus_h265.c
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus_h265.c
 @@ -107,7 +107,8 @@ static void cedrus_h265_frame_info_write_single(struct cedrus_ctx *ctx,
@@ -29,7 +32,7 @@ index da5d322bcce7..595b0a47996f 100644
  	dma_addr_t mv_col_buf_addr[2] = {
  		cedrus_h265_frame_info_mv_col_buf_addr(buf, 0),
  		cedrus_h265_frame_info_mv_col_buf_addr(buf, field_pic ? 1 : 0)
-@@ -806,9 +807,14 @@ static int cedrus_h265_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
+@@ -806,9 +807,15 @@ static int cedrus_h265_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
  
  		/*
  		 * Offset of the appended low-2-bit reconstruction plane from
@@ -40,13 +43,14 @@ index da5d322bcce7..595b0a47996f 100644
 -		reg = recon.bytesperline * recon.height * 3 / 2;
 +		if (cedrus_dst_is_afbc(ctx))
 +			reg = ctx->dst_fmt.sizeimage -
-+			      cedrus_dst_2bit_size(recon.width, recon.height);
++			      cedrus_dst_2bit_size(recon.width,
++						   ALIGN(recon.height, 16));
 +		else
 +			reg = recon.bytesperline * recon.height * 3 / 2;
  		cedrus_write(dev, VE_DEC_H265_OFFSET_ADDR_FIRST_OUT, reg);
  
  		reg = VE_DEC_H265_10BIT_CONFIGURE_FIRST_2BIT_STRIDE(stride);
-@@ -909,8 +915,22 @@ static void cedrus_h265_trigger(struct cedrus_ctx *ctx)
+@@ -909,8 +916,24 @@ static void cedrus_h265_trigger(struct cedrus_ctx *ctx)
  	cedrus_write(dev, VE_DEC_H265_TRIGGER, VE_DEC_H265_TRIGGER_DEC_SLICE);
  }
  
@@ -56,10 +60,12 @@ index da5d322bcce7..595b0a47996f 100644
 +	/*
 +	 * Unlike VP9, the H.265 decoder still writes the low-2-bit plane
 +	 * when producing 10-bit AFBC output, so append it after the
-+	 * compressed body.
++	 * compressed body. Size it for whole 16 line blocks, like for linear
++	 * formats, whose height is already aligned.
 +	 */
 +	if (ctx->bit_depth > 8 && cedrus_is_afbc_format(pix_fmt->pixelformat))
-+		return cedrus_dst_2bit_size(pix_fmt->width, pix_fmt->height);
++		return cedrus_dst_2bit_size(pix_fmt->width,
++					    ALIGN(pix_fmt->height, 16));
 +
 +	return cedrus_dst_10bit_extra_size(ctx, pix_fmt);
 +}

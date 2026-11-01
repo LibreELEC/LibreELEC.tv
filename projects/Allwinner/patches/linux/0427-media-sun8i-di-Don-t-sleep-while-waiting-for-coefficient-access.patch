@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 20:54:43 +0200
+Subject: [PATCH] media: sun8i-di: Don't sleep while waiting for coefficient access
+
+deinterlace_device_run() also runs from the interrupt handler, to
+process the second field, but uses readl_poll_timeout(), which may
+sleep. Use the atomic variant instead. The wait is at most 40 us.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/media/platform/sunxi/sun8i-di/sun8i-di.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/sunxi/sun8i-di/sun8i-di.c b/drivers/media/platform/sunxi/sun8i-di/sun8i-di.c
+index 65bc426e5aac..bb90e0efa4d1 100644
+--- a/drivers/media/platform/sunxi/sun8i-di/sun8i-di.c
++++ b/drivers/media/platform/sunxi/sun8i-di/sun8i-di.c
+@@ -163,8 +163,8 @@ static void deinterlace_device_run(void *priv)
+ 	/* neutral filter coefficients */
+ 	deinterlace_set_bits(dev, DEINTERLACE_FRM_CTRL,
+ 			     DEINTERLACE_FRM_CTRL_COEF_ACCESS);
+-	readl_poll_timeout(dev->base + DEINTERLACE_STATUS, val,
+-			   val & DEINTERLACE_STATUS_COEF_STATUS, 2, 40);
++	readl_poll_timeout_atomic(dev->base + DEINTERLACE_STATUS, val,
++				  val & DEINTERLACE_STATUS_COEF_STATUS, 2, 40);
+ 
+ 	for (i = 0; i < 32; i++) {
+ 		deinterlace_write(dev, DEINTERLACE_CH0_HORZ_COEF0 + i * 4,
+-- 
+2.43.0
+
