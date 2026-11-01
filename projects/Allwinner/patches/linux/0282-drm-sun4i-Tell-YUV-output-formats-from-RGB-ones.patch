@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 01 Oct 2026 12:55:15 +0200
+Subject: [PATCH] drm/sun4i: Tell YUV output formats from RGB ones
+
+Several places treat every output format other than RGB888 as
+YUV, which only holds as long as 8-bit RGB is the only RGB output
+format. Add a helper which checks for the YUV formats instead and
+use it, so deep color RGB is handled as RGB.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/sun4i/sun50i_wb.c    |  5 ++---
+ drivers/gpu/drm/sun4i/sun8i_csc.c    |  2 +-
+ drivers/gpu/drm/sun4i/sun8i_mixer.c  |  2 +-
+ drivers/gpu/drm/sun4i/sunxi_engine.h | 12 ++++++++++++
+ 4 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/sun4i/sun50i_wb.c b/drivers/gpu/drm/sun4i/sun50i_wb.c
+index 9e267679da7e..b76f771097a9 100644
+--- a/drivers/gpu/drm/sun4i/sun50i_wb.c
++++ b/drivers/gpu/drm/sun4i/sun50i_wb.c
+@@ -414,7 +414,7 @@ static void sun50i_wb_set_csc(struct sun50i_wb *wb, u32 in_format,
+ 	if (!wb->cfg->has_rcq)
+ 		return;
+ 
+-	if (in_format == MEDIA_BUS_FMT_RGB888_1X24) {
++	if (!sunxi_engine_format_is_yuv(in_format)) {
+ 		if (format->is_yuv) {
+ 			encoding = width <= 736 && height <= 576 ?
+ 				   DRM_COLOR_YCBCR_BT601 :
+@@ -505,8 +505,7 @@ static int sun50i_wb_encoder_atomic_check(struct drm_encoder *encoder,
+ 	 * output, which is only meaningful when the engine outputs RGB.
+ 	 */
+ 	if (!wb->cfg->has_rcq &&
+-	    drm_crtc_state_to_sun4i_crtc_state(crtc_state)->format !=
+-	    MEDIA_BUS_FMT_RGB888_1X24)
++	    sunxi_engine_format_is_yuv(drm_crtc_state_to_sun4i_crtc_state(crtc_state)->format))
+ 		return -EINVAL;
+ 
+ 	fb = conn_state->writeback_job->fb;
+diff --git a/drivers/gpu/drm/sun4i/sun8i_csc.c b/drivers/gpu/drm/sun4i/sun8i_csc.c
+index 778501d46516..806e06a54c74 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_csc.c
++++ b/drivers/gpu/drm/sun4i/sun8i_csc.c
+@@ -328,7 +328,7 @@ static const u32 *sun8i_csc_get_de3_table(enum sun8i_csc_mode mode,
+ 					  u32 out_format,
+ 					  enum drm_color_encoding out_encoding)
+ {
+-	if (out_format != MEDIA_BUS_FMT_RGB888_1X24) {
++	if (sunxi_engine_format_is_yuv(out_format)) {
+ 		if (mode == SUN8I_CSC_MODE_RGB)
+ 			return rgb2yuv_de3[out_encoding];
+ 
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+index 9a6b6c07c975..5ebcf892421e 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+@@ -483,7 +483,7 @@ static void sun8i_mixer_mode_set(struct sunxi_engine *engine,
+ 			 interlaced ? "on" : "off");
+ 
+ 	/* Background and bottom plane fill color must match output format. */
+-	if (engine->format == MEDIA_BUS_FMT_RGB888_1X24)
++	if (!sunxi_engine_format_is_yuv(engine->format))
+ 		val = SUN8I_MIXER_BLEND_COLOR_BLACK;
+ 	else
+ 		val = SUN8I_MIXER_BLEND_COLOR_BLACK_YUV;
+diff --git a/drivers/gpu/drm/sun4i/sunxi_engine.h b/drivers/gpu/drm/sun4i/sunxi_engine.h
+index c4ca604f8adc..3e7bcb695e1b 100644
+--- a/drivers/gpu/drm/sun4i/sunxi_engine.h
++++ b/drivers/gpu/drm/sun4i/sunxi_engine.h
+@@ -295,4 +295,16 @@ sunxi_engine_format_valid(struct sunxi_engine *engine, u32 format)
+ 
+ 	return format == MEDIA_BUS_FMT_RGB888_1X24;
+ }
++
++/**
++ * sunxi_engine_format_is_yuv - Check if an output format is YUV
++ * @format:	output media bus format
++ *
++ * Engines only ever output RGB or YUV 4:2:0, so anything else is RGB.
++ */
++static inline bool sunxi_engine_format_is_yuv(u32 format)
++{
++	return format == MEDIA_BUS_FMT_UYYVYY8_0_5X24 ||
++	       format == MEDIA_BUS_FMT_UYYVYY10_0_5X30;
++}
+ #endif /* _SUNXI_ENGINE_H_ */
+-- 
+2.43.0
+

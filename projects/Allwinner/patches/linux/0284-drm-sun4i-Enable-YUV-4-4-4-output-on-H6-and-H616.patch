@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 01 Oct 2026 12:58:21 +0200
+Subject: [PATCH] drm/sun4i: Enable YUV 4:4:4 output on H6 and H616
+
+Accept 8-bit and 10-bit YUV 4:4:4 on mixers with the formatter. Like
+the vendor driver, pass YUV 4:4:4 through the formatter without
+clamping, at the requested depth. dw-hdmi doesn't prefer YUV 4:4:4
+over RGB on the link, but takes it as input when it outputs YUV 4:2:2,
+which its CSC block decimates from 4:4:4, which is also how the vendor
+driver drives YUV 4:2:2. The link then runs at a different rate than
+the engine output suggests, so derive the TMDS clock from the dw-hdmi
+output format. YUV 4:2:2 uses 12-bit containers at the pixel rate,
+without the deep color factor.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/sun4i/sun4i_crtc.c    |  2 ++
+ drivers/gpu/drm/sun4i/sun4i_crtc.h    |  1 +
+ drivers/gpu/drm/sun4i/sun50i_fmt.c    |  8 +++++---
+ drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c | 24 +++++++++++++++++++++---
+ drivers/gpu/drm/sun4i/sun8i_mixer.c   |  4 +++-
+ drivers/gpu/drm/sun4i/sunxi_engine.h  |  7 +++++--
+ 6 files changed, 37 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/sun4i/sun4i_crtc.c b/drivers/gpu/drm/sun4i/sun4i_crtc.c
+index 730057149161..13d447800ed2 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_crtc.c
++++ b/drivers/gpu/drm/sun4i/sun4i_crtc.c
+@@ -249,6 +249,7 @@ static void sun4i_crtc_reset(struct drm_crtc *crtc)
+ 		return;
+ 
+ 	state->format = MEDIA_BUS_FMT_RGB888_1X24;
++	state->link_format = MEDIA_BUS_FMT_RGB888_1X24;
+ 	state->encoding = DRM_COLOR_YCBCR_BT709;
+ 	__drm_atomic_helper_crtc_reset(crtc, &state->base);
+ }
+@@ -266,6 +267,7 @@ sun4i_crtc_duplicate_state(struct drm_crtc *crtc)
+ 
+ 	__drm_atomic_helper_crtc_duplicate_state(crtc, &state->base);
+ 	state->format = current_state->format;
++	state->link_format = current_state->link_format;
+ 	state->encoding = current_state->encoding;
+ 
+ 	return &state->base;
+diff --git a/drivers/gpu/drm/sun4i/sun4i_crtc.h b/drivers/gpu/drm/sun4i/sun4i_crtc.h
+index b9b27f06d6d9..18d2e26c1528 100644
+--- a/drivers/gpu/drm/sun4i/sun4i_crtc.h
++++ b/drivers/gpu/drm/sun4i/sun4i_crtc.h
+@@ -27,6 +27,7 @@ struct sun4i_crtc {
+ struct sun4i_crtc_state {
+ 	struct drm_crtc_state		base;
+ 	u32				format;
++	u32				link_format;
+ 	enum drm_color_encoding		encoding;
+ };
+ 
+diff --git a/drivers/gpu/drm/sun4i/sun50i_fmt.c b/drivers/gpu/drm/sun4i/sun50i_fmt.c
+index b9d7a21e3705..f81e257f9c40 100644
+--- a/drivers/gpu/drm/sun4i/sun50i_fmt.c
++++ b/drivers/gpu/drm/sun4i/sun50i_fmt.c
+@@ -29,7 +29,8 @@ static u32 sun50i_fmt_get_colorspace(u32 format)
+ static bool sun50i_fmt_is_10bit(u32 format)
+ {
+ 	return format == MEDIA_BUS_FMT_UYYVYY10_0_5X30 ||
+-	       format == MEDIA_BUS_FMT_RGB101010_1X30;
++	       format == MEDIA_BUS_FMT_RGB101010_1X30 ||
++	       format == MEDIA_BUS_FMT_YUV10_1X30;
+ }
+ 
+ void sun50i_fmt_setup(struct sun8i_mixer *mixer, u16 width,
+@@ -47,7 +48,8 @@ void sun50i_fmt_setup(struct sun8i_mixer *mixer, u16 width,
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_FORMAT, colorspace);
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_COEF, 0);
+ 
+-	if (!yuv) {
++	/* Like the vendor driver, only clamp when subsampling chroma. */
++	if (colorspace == SUN50I_FMT_CS_YUV444RGB) {
+ 		sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_LMT_Y,
+ 				 SUN50I_FMT_LIMIT_BYPASS);
+ 		sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_LMT_C0,
+@@ -65,7 +67,7 @@ void sun50i_fmt_setup(struct sun8i_mixer *mixer, u16 width,
+ 
+ 	/*
+ 	 * 8-bit RGB bypasses the formatter, which keeps the upper 8 bits of
+-	 * the 10-bit pipeline. Deep color RGB needs it for the 10-bit output.
++	 * the 10-bit pipeline. YUV and deep color output go through it.
+ 	 */
+ 	sun8i_rdma_write(mixer->fmt_rdma, SUN50I_FMT_CTRL, yuv || is_10bit);
+ }
+diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
+index 565beaf4ddd9..79753277d764 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
++++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
+@@ -80,6 +80,8 @@ static int sun8i_hdmi_enc_atomic_check(struct drm_bridge *bridge,
+ 	struct sun4i_crtc_state *scrtc_state =
+ 		drm_crtc_state_to_sun4i_crtc_state(crtc_state);
+ 	const struct sun4i_crtc_state *old_scrtc_state;
++	struct sun8i_dw_hdmi *hdmi = bridge_to_sun8i_dw_hdmi(bridge);
++	struct drm_bridge_state *hdmi_state;
+ 	struct drm_connector_state *old_conn_state =
+ 		drm_atomic_get_old_connector_state(conn_state->state,
+ 						   conn_state->connector);
+@@ -117,6 +119,18 @@ static int sun8i_hdmi_enc_atomic_check(struct drm_bridge *bridge,
+ 
+ 	scrtc_state->format = bridge_state->output_bus_cfg.format;
+ 
++	/*
++	 * The TMDS rate depends on what goes over the link, which differs
++	 * from the engine output when dw-hdmi subsamples YUV 4:4:4 to 4:2:2.
++	 * Bus formats are already negotiated here, and the atomic state is
++	 * not available anymore in atomic_mode_set().
++	 */
++	hdmi_state = drm_atomic_get_new_bridge_state(crtc_state->state,
++						     hdmi->next_bridge);
++	scrtc_state->link_format = hdmi_state ?
++				   hdmi_state->output_bus_cfg.format :
++				   scrtc_state->format;
++
+ 	/*
+ 	 * The channel CSC units depend on the output format and encoding, so
+ 	 * planes that are not part of this commit must be updated as well.
+@@ -178,14 +192,18 @@ sun8i_dw_hdmi_encoder_atomic_mode_set(struct drm_encoder *encoder,
+ 	struct sun8i_dw_hdmi *hdmi = encoder_to_sun8i_dw_hdmi(encoder);
+ 	struct drm_display_mode *mode = &crtc_state->adjusted_mode;
+ 	unsigned long rate = mode->crtc_clock * 1000UL;
++	u32 format = scrtc_state->link_format;
+ 
+ 	/*
+ 	 * The TMDS character rate is derived from the pixel clock: deep
+-	 * color multiplies it (10-bit: 5/4), and YUV 4:2:0 halves it
+-	 * again since two horizontal samples share one TMDS period.
++	 * color multiplies it (10-bit: 5/4), except for YUV 4:2:2, which
++	 * always uses 12-bit containers at the pixel rate, and YUV 4:2:0
++	 * halves it again since two horizontal samples share one TMDS
++	 * period.
+ 	 */
+-	switch (scrtc_state->format) {
++	switch (format) {
+ 	case MEDIA_BUS_FMT_RGB101010_1X30:
++	case MEDIA_BUS_FMT_YUV10_1X30:
+ 		rate = rate * 5 / 4;
+ 		break;
+ 	case MEDIA_BUS_FMT_UYYVYY10_0_5X30:
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+index f2c2bef25f83..6e4d5b5e44b3 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+@@ -505,7 +505,9 @@ static bool sun8i_mixer_format_valid(struct sunxi_engine *engine, u32 format)
+ 	if (mixer->cfg->has_formatter &&
+ 	    (format == MEDIA_BUS_FMT_UYYVYY8_0_5X24 ||
+ 	     format == MEDIA_BUS_FMT_UYYVYY10_0_5X30 ||
+-	     format == MEDIA_BUS_FMT_RGB101010_1X30))
++	     format == MEDIA_BUS_FMT_RGB101010_1X30 ||
++	     format == MEDIA_BUS_FMT_YUV8_1X24 ||
++	     format == MEDIA_BUS_FMT_YUV10_1X30))
+ 		return true;
+ 
+ 	return format == MEDIA_BUS_FMT_RGB888_1X24;
+diff --git a/drivers/gpu/drm/sun4i/sunxi_engine.h b/drivers/gpu/drm/sun4i/sunxi_engine.h
+index 3e7bcb695e1b..45a4fe422aa6 100644
+--- a/drivers/gpu/drm/sun4i/sunxi_engine.h
++++ b/drivers/gpu/drm/sun4i/sunxi_engine.h
+@@ -300,11 +300,14 @@ sunxi_engine_format_valid(struct sunxi_engine *engine, u32 format)
+  * sunxi_engine_format_is_yuv - Check if an output format is YUV
+  * @format:	output media bus format
+  *
+- * Engines only ever output RGB or YUV 4:2:0, so anything else is RGB.
++ * Engines only ever output RGB, YUV 4:4:4 or YUV 4:2:0, so anything else
++ * is RGB.
+  */
+ static inline bool sunxi_engine_format_is_yuv(u32 format)
+ {
+-	return format == MEDIA_BUS_FMT_UYYVYY8_0_5X24 ||
++	return format == MEDIA_BUS_FMT_YUV8_1X24 ||
++	       format == MEDIA_BUS_FMT_YUV10_1X30 ||
++	       format == MEDIA_BUS_FMT_UYYVYY8_0_5X24 ||
+ 	       format == MEDIA_BUS_FMT_UYYVYY10_0_5X30;
+ }
+ #endif /* _SUNXI_ENGINE_H_ */

@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 01 Oct 2026 12:55:15 +0200
+Subject: [PATCH] drm/bridge: dw-hdmi: Size output bus format array for all candidates
+
+dw_hdmi_bridge_atomic_get_output_bus_fmts() can add four YUV 4:2:0
+formats for modes which also allow other formats, followed by RGB888
+and up to ten deep color and YUV 4:2:2/4:4:4 ones, so 15 in total
+for a sink with 16-bit and YUV support. The array only has room for
+11 of them. Size it for all candidates.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index ec346c550ac2..f15f7522fdac 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2699,8 +2699,12 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+  * - MEDIA_BUS_FMT_YUV8_1X24,
+  */
+ 
+-/* Can return a maximum of 11 possible output formats for a mode/connector */
+-#define MAX_OUTPUT_SEL_FORMATS	11
++/*
++ * Can return a maximum of 15 possible output formats for a mode/connector:
++ * four YUV 4:2:0 ones for modes which also allow other formats, followed
++ * by RGB888, two 16-bit, three 12-bit, three 10-bit and two 8-bit ones.
++ */
++#define MAX_OUTPUT_SEL_FORMATS	15
+ 
+ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+ 					struct drm_bridge_state *bridge_state,
+-- 
+2.43.0
+
