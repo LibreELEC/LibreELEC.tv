@@ -6,8 +6,8 @@ Subject: [PATCH 413/419] media: cedrus: Add VP9 P010 output support
 ---
  .../staging/media/sunxi/cedrus/cedrus_regs.h  |  1 +
  .../staging/media/sunxi/cedrus/cedrus_video.c |  2 +
- .../staging/media/sunxi/cedrus/cedrus_vp9.c   | 59 +++++++++----------
- 3 files changed, 31 insertions(+), 31 deletions(-)
+ .../staging/media/sunxi/cedrus/cedrus_vp9.c   | 57 +++++++++----------
+ 3 files changed, 30 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_regs.h b/drivers/staging/media/sunxi/cedrus/cedrus_regs.h
 index 2b9110999a6b..d58d24b63a55 100644
@@ -35,7 +35,7 @@ index ac09c45519d9..c0a37ebbfd33 100644
  		return false;
  	}
 diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c b/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c
-index c079179e98d1..c0dc05cc32d8 100644
+index 97fc461c7968..d8e84accab45 100644
 --- a/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c
 +++ b/drivers/staging/media/sunxi/cedrus/cedrus_vp9.c
 @@ -745,7 +745,7 @@ static int cedrus_vp9_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
@@ -64,7 +64,7 @@ index c079179e98d1..c0dc05cc32d8 100644
  
  		fmt.width = ALIGN(cur_w, 16);
  		fmt.height = ALIGN(cur_h, 16);
-@@ -968,42 +969,50 @@ static int cedrus_vp9_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
+@@ -968,35 +969,41 @@ static int cedrus_vp9_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
  		cedrus_write(dev, VE_DEC_VP9_ALTREF_SCALE1, s1);
  
  		cedrus_write(dev, VE_DEC_VP9_LAST_LUMA_ADDR,
@@ -110,17 +110,20 @@ index c079179e98d1..c0dc05cc32d8 100644
  	/* 10-bit output: lower-2-bit plane offset and stride. */
  	if (dec->bit_depth > 8) {
 -		u32 stride = ctx->dst_fmt.bytesperline;
--		u32 h = ctx->dst_fmt.height;
 +		struct v4l2_pix_format fmt = cedrus_dst_frame_fmt(ctx);
 +		u32 stride = fmt.bytesperline;
-+		u32 h = fmt.height;
  		u32 stride2 = ALIGN(stride >> 2, 32);
- 		u32 off = (u32)(chroma - luma) + stride * (h >> 1);
 +		u32 cfg = VE_DEC_VP9_10BIT_CFG_STRIDE(stride2);
-+
+ 		u32 off;
+ 
+ 		/*
+@@ -1007,10 +1014,12 @@ static int cedrus_vp9_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
+ 		 */
+ 		off = (u32)(chroma - luma) + stride * (ALIGN(cur_h, 8) / 2);
+ 
 +		if (p010)
 +			cfg |= VE_DEC_10BIT_CFG_P010;
- 
++
  		cedrus_write(dev, VE_DEC_VP9_FIRST_OUT_OFFSET,
  			     off & GENMASK(27, 0));
 -		cedrus_write(dev, VE_DEC_VP9_10BIT_CFG,
@@ -129,7 +132,7 @@ index c079179e98d1..c0dc05cc32d8 100644
  	}
  
  	/* Side buffers and segment feature register. */
-@@ -1054,6 +1063,8 @@ static int cedrus_vp9_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
+@@ -1061,6 +1070,8 @@ static int cedrus_vp9_setup(struct cedrus_ctx *ctx, struct cedrus_run *run)
  		if ((wa - 0x81u) < 0x40 && ha > 64)
  			fc |= VE_DEC_VP9_FUNC_CTRL_DDR_CONS;
  	}
@@ -138,7 +141,7 @@ index c079179e98d1..c0dc05cc32d8 100644
  	cedrus_write(dev, VE_DEC_VP9_FUNC_CTRL, fc);
  
  	cedrus_write(dev, VE_DEC_VP9_DEC_CTB_NUM, 0);
-@@ -1271,22 +1282,8 @@ static void cedrus_vp9_irq_clear_and_adapt(struct cedrus_ctx *ctx)
+@@ -1278,22 +1289,8 @@ static void cedrus_vp9_irq_clear_and_adapt(struct cedrus_ctx *ctx)
  	cedrus_vp9_irq_clear(ctx);
  }
  
@@ -162,6 +165,3 @@ index c079179e98d1..c0dc05cc32d8 100644
  	.irq_clear	= cedrus_vp9_irq_clear_and_adapt,
  	.irq_disable	= cedrus_vp9_irq_disable,
  	.irq_status	= cedrus_vp9_irq_status,
--- 
-2.43.0
-

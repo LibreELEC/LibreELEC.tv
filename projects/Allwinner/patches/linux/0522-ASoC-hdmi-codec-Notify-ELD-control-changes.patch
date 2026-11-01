@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 21:09:49 +0200
+Subject: [PATCH] ASoC: hdmi-codec: Notify ELD control changes
+
+The ELD changes whenever the sink is plugged in or removed, but the ELD
+control never notifies userspace about it. Applications which watch the
+control, like Kodi, therefore never learn about a TV or AV receiver
+connected or switched on after they started, and keep using stale
+audio capabilities.
+
+Emit a value change event on the ELD controls whenever the plug state
+is updated.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ sound/soc/codecs/hdmi-codec.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/sound/soc/codecs/hdmi-codec.c b/sound/soc/codecs/hdmi-codec.c
+index 5eb1770765e7..5d4e94d4fef9 100644
+--- a/sound/soc/codecs/hdmi-codec.c
++++ b/sound/soc/codecs/hdmi-codec.c
+@@ -290,6 +290,9 @@ struct hdmi_codec_priv {
+ 	unsigned int jack_status;
+ 	u8 iec_status[AES_IEC958_STATUS_SIZE];
+ 	struct snd_info_entry *proc_entry;
++	struct snd_card *card;
++	/* ELD controls of the I2S and S/PDIF PCMs, for change notifications */
++	struct snd_kcontrol *eld_ctl[2];
+ };
+ 
+ static const struct snd_soc_dapm_widget hdmi_widgets[] = {
+@@ -827,6 +830,11 @@ static int hdmi_codec_pcm_new(struct snd_soc_pcm_runtime *rtd,
+ 
+ 		kctl->id.device = rtd->pcm->device;
+ 		ret = snd_ctl_add(rtd->card->snd_card, kctl);
++		if (!ret && !strcmp(hdmi_codec_controls[i].name, "ELD") &&
++		    dai->id < ARRAY_SIZE(hcp->eld_ctl)) {
++			hcp->card = rtd->card->snd_card;
++			hcp->eld_ctl[dai->id] = kctl;
++		}
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+@@ -952,6 +960,16 @@ static void hdmi_codec_jack_report(struct hdmi_codec_priv *hcp,
+ 	}
+ }
+ 
++static void hdmi_codec_eld_notify(struct hdmi_codec_priv *hcp)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(hcp->eld_ctl); i++)
++		if (hcp->eld_ctl[i])
++			snd_ctl_notify(hcp->card, SNDRV_CTL_EVENT_MASK_VALUE,
++				       &hcp->eld_ctl[i]->id);
++}
++
+ static void plugged_cb(struct device *dev, bool plugged)
+ {
+ 	struct hdmi_codec_priv *hcp = dev_get_drvdata(dev);
+@@ -973,6 +991,9 @@ static void plugged_cb(struct device *dev, bool plugged)
+ 		hdmi_codec_jack_report(hcp, 0);
+ 		memset(hcp->eld, 0, sizeof(hcp->eld));
+ 	}
++
++	/* Let userspace know that it should re-read the sink capabilities. */
++	hdmi_codec_eld_notify(hcp);
+ }
+ 
+ static int hdmi_codec_set_jack(struct snd_soc_component *component,
+-- 
+2.43.0
+

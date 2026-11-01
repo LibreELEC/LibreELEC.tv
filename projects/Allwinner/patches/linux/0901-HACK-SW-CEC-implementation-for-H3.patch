@@ -9,11 +9,11 @@ instead. That makes it usable, albeit sensitive to cpufreq changes.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/sun4i/Kconfig          |  2 +
- drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c  |  4 ++
- drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h  | 14 ++++
- drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c | 97 +++++++++++++++++++++++++-
- 4 files changed, 115 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/sun4i/Kconfig          |   2 +
+ drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c  |   4 +
+ drivers/gpu/drm/sun4i/sun8i_dw_hdmi.h  |  14 ++++
+ drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c | 105 ++++++++++++++++++++++++-
+ 4 files changed, 123 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/sun4i/Kconfig b/drivers/gpu/drm/sun4i/Kconfig
 index e96c240f0933..588976c2afcd 100644
@@ -96,7 +96,7 @@ index 2e6a8cfdbf68..d2943a687eb9 100644
  
  #endif /* _SUN8I_DW_HDMI_H_ */
 diff --git a/drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c b/drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c
-index 482241fa2ea0..9296c58e3ae1 100644
+index 482241fa2ea0..91a87a390e94 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_hdmi_phy.c
 @@ -567,8 +567,9 @@ static void sun8i_hdmi_phy_init_h3(struct sun8i_hdmi_phy *phy)
@@ -159,7 +159,7 @@ index 482241fa2ea0..9296c58e3ae1 100644
  static const struct regmap_config sun8i_hdmi_phy_regmap_config = {
  	.reg_bits	= 32,
  	.val_bits	= 32,
-@@ -740,6 +780,41 @@ struct sun8i_hdmi_phy *sun8i_hdmi_phy_get(struct device_node *node)
+@@ -740,6 +780,49 @@ struct sun8i_hdmi_phy *sun8i_hdmi_phy_get(struct device_node *node)
  	return phy;
  }
  
@@ -167,15 +167,22 @@ index 482241fa2ea0..9296c58e3ae1 100644
 +{
 +	int ret;
 +
-+	if (!phy->bit_bang_cec)
++	/*
++	 * The PHY outlives HDMI binds. Keep the adapter across rebinds,
++	 * instead of registering another one each time.
++	 */
++	if (!phy->bit_bang_cec || phy->cec_adapter)
 +		return 0;
 +
 +	phy->cec_adapter =
 +		cec_pin_allocate_adapter(&sun8i_hdmi_phy_cec_pin_ops,
 +						phy, "sun8i-cec",
 +						CEC_CAP_DEFAULTS);
-+	if (IS_ERR(phy->cec_adapter))
-+		return PTR_ERR(phy->cec_adapter);
++	if (IS_ERR(phy->cec_adapter)) {
++		ret = PTR_ERR(phy->cec_adapter);
++		phy->cec_adapter = NULL;
++		return ret;
++	}
 +
 +	phy->cec_notifier = cec_notifier_cec_adap_register(dev, NULL,
 +							   phy->cec_adapter);
@@ -194,6 +201,7 @@ index 482241fa2ea0..9296c58e3ae1 100644
 +	cec_notifier_cec_adap_unregister(phy->cec_notifier, phy->cec_adapter);
 +err_delete_cec_adapter:
 +	cec_delete_adapter(phy->cec_adapter);
++	phy->cec_adapter = NULL;
 +
 +	return ret;
 +}
@@ -201,7 +209,7 @@ index 482241fa2ea0..9296c58e3ae1 100644
  static int sun8i_hdmi_phy_probe(struct platform_device *pdev)
  {
  	struct device *dev = &pdev->dev;
-@@ -752,6 +827,15 @@ static int sun8i_hdmi_phy_probe(struct platform_device *pdev)
+@@ -752,6 +835,15 @@ static int sun8i_hdmi_phy_probe(struct platform_device *pdev)
  
  	phy->variant = of_device_get_match_data(dev);
  	phy->dev = dev;
@@ -217,7 +225,7 @@ index 482241fa2ea0..9296c58e3ae1 100644
  
  	regs = devm_platform_ioremap_resource(pdev, 0);
  	if (IS_ERR(regs))
-@@ -798,8 +882,17 @@ static int sun8i_hdmi_phy_probe(struct platform_device *pdev)
+@@ -798,8 +890,17 @@ static int sun8i_hdmi_phy_probe(struct platform_device *pdev)
  	return 0;
  }
  
@@ -235,6 +243,5 @@ index 482241fa2ea0..9296c58e3ae1 100644
  	.driver = {
  		.name = "sun8i-hdmi-phy",
  		.of_match_table = sun8i_hdmi_phy_of_table,
--- 
 -- 
 2.43.0

@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Tue, 6 Oct 2026 22:27:49 +0200
+Subject: [PATCH] staging: media: cedrus: reject too large H.264/HEVC SPS
+
+The hardware decodes whatever picture size the SPS describes. An SPS
+beyond CEDRUS_MAX_WIDTH/HEIGHT, or beyond the capture buffers once they
+are allocated, makes the hardware overrun memory and hang. On H616, the
+JCT-VC PICSIZE_A..D streams (1056x8440, 8440x1056, 528x4216 and
+4216x528) leave the hardware wedged, so that every following job times
+out until reboot.
+
+Validate the SPS picture size in try_ctrl. Move the size limits to
+cedrus_video.h for that.
+
+Fixes: 6eb9b758e307 ("media: cedrus: Add H264 decoding support")
+Fixes: 86caab29da78 ("media: cedrus: Add HEVC/H.265 decoding support")
+Assisted-by: LLM
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/staging/media/sunxi/cedrus/cedrus.c | 41 ++++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus.c b/drivers/staging/media/sunxi/cedrus/cedrus.c
+index 3d2ef4b7893a..4f5c626bdbfd 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus.c
++++ b/drivers/staging/media/sunxi/cedrus/cedrus.c
+@@ -29,10 +29,38 @@
+ #include "cedrus_hw.h"
+ #include "cedrus_regs.h"
+ 
++/*
++ * The hardware decodes whatever picture size the bitstream headers describe.
++ * Reject sizes beyond the hardware limits, or beyond the capture buffers once
++ * they are allocated, instead of letting the hardware overrun memory and hang.
++ */
++static int cedrus_check_pic_size(struct cedrus_ctx *ctx, u32 width, u32 height)
++{
++	struct vb2_queue *vq;
++
++	if (width > CEDRUS_MAX_WIDTH || height > CEDRUS_MAX_HEIGHT)
++		return -EINVAL;
++
++	/*
++	 * The hardware decodes whole 16x16 macroblocks, and all capture
++	 * formats pad the buffers to at least 16 pixels in both directions.
++	 */
++	vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
++	if (vb2_is_busy(vq) &&
++	    (width > ALIGN(ctx->src_fmt.width, 16) ||
++	     height > ALIGN(ctx->src_fmt.height, 16)))
++		return -EINVAL;
++
++	return 0;
++}
++
+ static int cedrus_try_ctrl(struct v4l2_ctrl *ctrl)
+ {
++	struct cedrus_ctx *ctx = container_of(ctrl->handler, struct cedrus_ctx, hdl);
++
+ 	if (ctrl->id == V4L2_CID_STATELESS_H264_SPS) {
+ 		const struct v4l2_ctrl_h264_sps *sps = ctrl->p_new.p_h264_sps;
++		u32 height;
+ 
+ 		if (sps->chroma_format_idc != 1)
+ 			/* Only 4:2:0 is supported */
+@@ -43,9 +71,15 @@ static int cedrus_try_ctrl(struct v4l2_ctrl *ctrl)
+ 		if (sps->bit_depth_luma_minus8 != 0)
+ 			/* Only 8-bit is supported */
+ 			return -EINVAL;
++		height = (sps->pic_height_in_map_units_minus1 + 1) * 16;
++		if (!(sps->flags & V4L2_H264_SPS_FLAG_FRAME_MBS_ONLY))
++			height *= 2;
++		if (cedrus_check_pic_size(ctx,
++					  (sps->pic_width_in_mbs_minus1 + 1) * 16,
++					  height))
++			return -EINVAL;
+ 	} else if (ctrl->id == V4L2_CID_STATELESS_HEVC_SPS) {
+ 		const struct v4l2_ctrl_hevc_sps *sps = ctrl->p_new.p_hevc_sps;
+-		struct cedrus_ctx *ctx = container_of(ctrl->handler, struct cedrus_ctx, hdl);
+ 		unsigned int bit_depth, max_depth;
+ 		struct vb2_queue *vq;
+ 
+@@ -53,6 +87,10 @@ static int cedrus_try_ctrl(struct v4l2_ctrl *ctrl)
+ 			/* Only 4:2:0 is supported */
+ 			return -EINVAL;
+ 
++		if (cedrus_check_pic_size(ctx, sps->pic_width_in_luma_samples,
++					  sps->pic_height_in_luma_samples))
++			return -EINVAL;
++
+ 		bit_depth = max(sps->bit_depth_luma_minus8,
+ 				sps->bit_depth_chroma_minus8) + 8;
+ 
+@@ -80,7 +118,6 @@ static int cedrus_try_ctrl(struct v4l2_ctrl *ctrl)
+ 		}
+ 	} else if (ctrl->id == V4L2_CID_STATELESS_VP9_FRAME) {
+ 		const struct v4l2_ctrl_vp9_frame *dec = ctrl->p_new.p_vp9_frame;
+-		struct cedrus_ctx *ctx = container_of(ctrl->handler, struct cedrus_ctx, hdl);
+ 		unsigned int max_depth;
+ 		struct vb2_queue *vq;
+ 

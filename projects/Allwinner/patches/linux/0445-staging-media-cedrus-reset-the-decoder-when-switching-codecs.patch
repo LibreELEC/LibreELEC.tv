@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Sun, 1 Nov 2026 08:31:41 +0100
+Subject: [PATCH] staging: media: cedrus: reset the decoder when switching
+ codecs
+
+Some decoder state survives both the end of a job and the bus reset
+line, and part of it is shared between codecs. On H3, after a VP8
+frame, the next H.264 stream decodes corrupted until the next IDR frame
+and VC-1 P frames hang the engine, which then needs a power cycle to
+recover.
+
+The vendor library resets the decoder through the video engine's own
+reset register each time it sets up a decoder, after waiting for the
+engine to finish its memory accesses. Do the same whenever a job uses a
+different codec than the previous one, and after a timeout.
+
+Fixes: 3c39a16d30d8 ("media: cedrus: Add support for VP8 decoding")
+Assisted-by: LLM
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/staging/media/sunxi/cedrus/cedrus.h   |  3 +++
+ .../staging/media/sunxi/cedrus/cedrus_dec.c   |  6 +++++
+ .../staging/media/sunxi/cedrus/cedrus_hw.c    | 27 +++++++++++++++++++
+ .../staging/media/sunxi/cedrus/cedrus_hw.h    |  1 +
+ .../staging/media/sunxi/cedrus/cedrus_regs.h  |  6 +++++
+ 5 files changed, 43 insertions(+)
+
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus.h b/drivers/staging/media/sunxi/cedrus/cedrus.h
+index 6780067dd6b4..6ab13f09f5b0 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus.h
++++ b/drivers/staging/media/sunxi/cedrus/cedrus.h
+@@ -261,6 +261,9 @@ struct cedrus_dev {
+ 	u32			ve_mode_ddr;
+ 
+ 	struct delayed_work	watchdog_work;
++
++	/* Codec of the last job, to reset the decoder on codec switches */
++	struct cedrus_dec_ops	*last_codec;
+ };
+ 
+ extern struct cedrus_dec_ops cedrus_dec_ops_mpeg2;
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_dec.c b/drivers/staging/media/sunxi/cedrus/cedrus_dec.c
+index 0d3b41b63ccb..7e1ae7b5ed34 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus_dec.c
++++ b/drivers/staging/media/sunxi/cedrus/cedrus_dec.c
+@@ -121,6 +121,12 @@ void cedrus_device_run(void *priv)
+ 
+ 	v4l2_m2m_buf_copy_metadata(run.src, run.dst);
+ 
++	/* Don't let the previous codec's state affect this one. */
++	if (dev->last_codec != ctx->current_codec) {
++		cedrus_engine_reset(dev);
++		dev->last_codec = ctx->current_codec;
++	}
++
+ 	cedrus_dst_format_set(dev, &ctx->dst_fmt);
+ 
+ 	error = ctx->current_codec->setup(ctx, &run);
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_hw.c b/drivers/staging/media/sunxi/cedrus/cedrus_hw.c
+index 163771a12505..f004b85d7dc2 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus_hw.c
++++ b/drivers/staging/media/sunxi/cedrus/cedrus_hw.c
+@@ -108,6 +108,31 @@ void cedrus_engine_disable(struct cedrus_dev *dev)
+ 	cedrus_write(dev, VE_MODE, VE_MODE_DISABLED);
+ }
+ 
++/*
++ * Reset the decoder core through the video engine's own reset register.
++ *
++ * Decoding state survives the bus reset line and some of it is shared
++ * between codecs: after a VP8 frame, for example, VC-1 P frames hang the
++ * engine. The vendor library resets the decoder this way whenever it sets
++ * up a new decoder, after waiting for outstanding memory accesses.
++ */
++void cedrus_engine_reset(struct cedrus_dev *dev)
++{
++	u32 reg;
++
++	/* The vendor library resets the decoder anyway on timeout. */
++	readl_poll_timeout_atomic(dev->base + VE_RESET, reg,
++				  reg & VE_RESET_SYNC_IDLE, 1, 1000);
++
++	reg = cedrus_read(dev, VE_RESET);
++	cedrus_write(dev, VE_RESET,
++		     reg | VE_RESET_DEC | VE_RESET_DEC_REQ_MASK);
++	/* Read back to make sure the reset is asserted for a few cycles. */
++	cedrus_read(dev, VE_RESET);
++	cedrus_write(dev, VE_RESET,
++		     reg & ~(VE_RESET_DEC | VE_RESET_DEC_REQ_MASK));
++}
++
+ void cedrus_dst_format_set(struct cedrus_dev *dev,
+ 			   struct v4l2_pix_format *fmt)
+ {
+@@ -252,6 +277,8 @@ void cedrus_watchdog(struct work_struct *work)
+ 
+ 
+ 	reset_control_reset(dev->rstc);
++	cedrus_engine_reset(dev);
++	dev->last_codec = NULL;
+ 	v4l2_m2m_buf_done_and_job_finish(ctx->dev->m2m_dev, ctx->fh.m2m_ctx,
+ 					 VB2_BUF_STATE_ERROR);
+ }
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_hw.h b/drivers/staging/media/sunxi/cedrus/cedrus_hw.h
+index 6f3dea749149..00dda917e237 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus_hw.h
++++ b/drivers/staging/media/sunxi/cedrus/cedrus_hw.h
+@@ -18,6 +18,7 @@
+ 
+ int cedrus_engine_enable(struct cedrus_ctx *ctx);
+ void cedrus_engine_disable(struct cedrus_dev *dev);
++void cedrus_engine_reset(struct cedrus_dev *dev);
+ 
+ void cedrus_dst_format_set(struct cedrus_dev *dev,
+ 			   struct v4l2_pix_format *fmt);
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus_regs.h b/drivers/staging/media/sunxi/cedrus/cedrus_regs.h
+index f666c533bf5c..817da00a067e 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus_regs.h
++++ b/drivers/staging/media/sunxi/cedrus/cedrus_regs.h
+@@ -66,6 +66,12 @@
+ #define VE_DEC_COUNTER				0x08
+ #define VE_DEC_COUNTER_EN			BIT(31)
+ 
++#define VE_RESET				0x04
++
++#define VE_RESET_DEC_REQ_MASK			BIT(17)
++#define VE_RESET_DEC				BIT(16)
++#define VE_RESET_SYNC_IDLE			BIT(9)
++
+ #define VE_BUF_CTRL				0x50
+ 
+ #define VE_BUF_CTRL_INTRAPRED_EXT_RAM		(0x02 << 2)

@@ -4,5 +4,16 @@
 # Copyright (C) 2009-2014 Stephan Raue (stephan@openelec.tv)
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
-TEMP="$(cat /sys/class/thermal/thermal_zone0/temp)"
-echo "$(($TEMP / 1000)) C"
+# Zone numbering follows the sensor order, which differs between SoCs,
+# so look the zone up by its type.
+for zone in /sys/class/thermal/thermal_zone*; do
+  if [ "$(cat "${zone}/type" 2>/dev/null)" = "cpu-thermal" ]; then
+    TEMP="$(cat "${zone}/temp")"
+    break
+  fi
+done
+
+if [ -z "${TEMP}" ]; then
+  TEMP="$(cat /sys/class/thermal/thermal_zone0/temp)"
+fi
+echo "$((${TEMP} / 1000)) C"

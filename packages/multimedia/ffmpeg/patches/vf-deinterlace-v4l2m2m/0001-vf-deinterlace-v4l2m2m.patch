@@ -40,7 +40,7 @@ new file mode 100644
 index 000000000000..ef015bb76453
 --- /dev/null
 +++ b/libavfilter/vf_deinterlace_v4l2m2m.c
-@@ -0,0 +1,1037 @@
+@@ -0,0 +1,1042 @@
 +/*
 + * This file is part of FFmpeg.
 + *
@@ -968,38 +968,38 @@ index 000000000000..ef015bb76453
 +                                       ctx->orig_width, ctx->orig_height,
 +                                       ctx->drm_in_format);
 +        if (ret)
-+            return ret;
++            goto fail;
 +
 +	ret = deint_v4l2m2m_set_format(capture, V4L2_FIELD_NONE,
 +	                               ctx->orig_width, ctx->orig_height,
 +	                               ctx->drm_out_format);
 +        if (ret)
-+            return ret;
++            goto fail;
 +
 +        ret = deint_v4l2m2m_allocate_buffers(capture);
 +        if (ret)
-+            return ret;
++            goto fail;
 +
 +        ret = deint_v4l2m2m_streamon(capture);
 +        if (ret)
-+            return ret;
++            goto fail;
 +
 +        ret = deint_v4l2m2m_allocate_buffers(output);
 +        if (ret)
-+            return ret;
++            goto fail;
 +
 +        ret = deint_v4l2m2m_streamon(output);
 +        if (ret)
-+            return ret;
++            goto fail;
 +    }
 +
 +    ret = deint_v4l2m2m_enqueue(output, in);
 +    if (ret)
-+        return ret;
++        goto fail;
 +
 +    ret = deint_v4l2m2m_dequeue(avctx, in);
 +    if (ret)
-+        return ret;
++        goto fail;
 +
 +    if (ctx->prev_in_frame)
 +	av_frame_free(&ctx->prev_in_frame);
@@ -1008,6 +1008,11 @@ index 000000000000..ef015bb76453
 +    ctx->cur_in_frame = NULL;
 +
 +    return 0;
++
++fail:
++    ctx->cur_in_frame = NULL;
++    av_frame_free(&in);
++    return ret;
 +}
 +
 +static av_cold int deint_v4l2m2m_init(AVFilterContext *avctx)

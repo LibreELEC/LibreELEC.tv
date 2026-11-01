@@ -8,8 +8,8 @@ Allwinner I2S controller to the DesignWare HDMI codec.
 
 Configure the CPU as clock provider using I2S with inverted frame
 polarity, two 32-bit slots and a 128fs MCLK. Keep these SoC integration
-details out of board DT. The CPU DAI derives IEC958 capability and access
-constraints from the completed ASoC runtime.
+details out of board DT. The CPU DAI derives IEC958 capability from the
+completed ASoC runtime.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---

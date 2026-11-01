@@ -6,21 +6,19 @@ Subject: [PATCH 270/273] drm/bridge: dw-hdmi: Use distinct video mapping code
 
 hdmi_video_sample() maps packed YUV 4:4:4 (MEDIA_BUS_FMT_YUVn_1X..)
 and subsampled YUV 4:2:0 (MEDIA_BUS_FMT_UYYVYYn_0_5X..) to the same
-HDMI_TX_INVID0 video mapping code at each color depth. The video
-sampler needs to know which of the two packing conventions is on the
-bus to correctly demux pixels; the two are not interchangeable even
-though the DE gets to pick the same nominal color depth for both.
-Without a distinct code, the sampler is told to treat 4:2:0's packed
-Y/Y/Cb/Cr pairs as if they were regular full-rate 4:4:4 samples,
-which does not produce a working picture.
+HDMI_TX_INVID0 video mapping code at each color depth, as documented
+for controllers with the standard video interface.
 
-meson_dw_hdmi.c also sets ycbcr_420_allowed and negotiates plain YUV
-4:4:4 through this same shared function today, so unconditionally
-changing the 4:4:4 codes is not safe without knowing whether that
-platform's controller instance needs the same distinction or already
-relies on the shared code. Gate the new codes behind a plat_data
-flag instead of changing the default for every platform sharing this
-function, and set it for sun8i, where the split is confirmed needed.
+The Allwinner integration needs the codes the RK3399 TRM lists as
+"YCbCr 4:4:4 (IPI)" for packed YUV 4:4:4 instead: 0x17, 0x18, 0x19 and
+0x1a for 8, 10, 12 and 16 bits. The vendor driver uses the same 8-bit
+and 10-bit codes for YUV 4:4:4, while it keeps the standard codes for
+YUV 4:2:0.
+
+meson_dw_hdmi.c also negotiates plain YUV 4:4:4 through this shared
+function, so gate the alternative codes behind a plat_data flag
+instead of changing the default for every platform, and set it for
+sun8i.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
@@ -61,13 +59,13 @@ index 7459c174d298..17c57998d459 100644
 +		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x17 : 0x09;
 +		break;
 +	case MEDIA_BUS_FMT_YUV10_1X30:
-+		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x19 : 0x0B;
++		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x18 : 0x0B;
 +		break;
 +	case MEDIA_BUS_FMT_YUV12_1X36:
-+		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x1B : 0x0D;
++		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x19 : 0x0D;
 +		break;
 +	case MEDIA_BUS_FMT_YUV16_1X48:
-+		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x1D : 0x0F;
++		color_format = hdmi->plat_data->ycbcr444_alt_vmap ? 0x1A : 0x0F;
 +		break;
 +
  	default:

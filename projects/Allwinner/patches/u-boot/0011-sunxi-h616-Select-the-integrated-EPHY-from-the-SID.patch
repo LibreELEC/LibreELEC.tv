@@ -10,17 +10,20 @@ of the EPHY configuration word in the SID.
 Add an option for boards which use the integrated EPHY. On those, the
 kernel DT describes the AC200 EPHY and a disabled AC300 EPHY package.
 If the SID reports an AC300, enable the package, point EMAC1 to its PHY
-and disable the AC200 nodes. Enable it on X96 Mate, X96Q and Transpeed
-8K618-T.
+and disable the AC200 nodes. Leave the DT alone when EMAC1 is disabled,
+as on boards where the EPHY is only used by an add-on board through an
+overlay. Enable it on X96 Mate, X96Q, Transpeed 8K618-T and Orange Pi
+Zero2W.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
  arch/arm/mach-sunxi/Kconfig         | 10 +++++
- board/sunxi/board.c                 | 65 +++++++++++++++++++++++++++++
+ board/sunxi/board.c                 | 68 +++++++++++++++++++++++++++++
+ configs/orangepi_zero2w_defconfig   |  1 +
  configs/transpeed-8k618-t_defconfig |  1 +
  configs/x96_mate_defconfig          |  1 +
  configs/x96q_defconfig              |  1 +
- 5 files changed, 78 insertions(+)
+ 6 files changed, 82 insertions(+)
 
 diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
 index a79a1ee54423..d973459c0937 100644
@@ -44,10 +47,10 @@ index a79a1ee54423..d973459c0937 100644
  	bool "Enable DIPs detection for CHIP board"
  	select SUPPORT_EXTENSION_SCAN
 diff --git a/board/sunxi/board.c b/board/sunxi/board.c
-index 3d1afec7c669..a79fbbdcdc92 100644
+index 3d1afec7c669..fbf0889e78f0 100644
 --- a/board/sunxi/board.c
 +++ b/board/sunxi/board.c
-@@ -928,6 +928,70 @@ static void board_dt_fixup(void *blob)
+@@ -928,6 +928,73 @@ static void board_dt_fixup(void *blob)
  	}
  }
  
@@ -72,6 +75,12 @@ index 3d1afec7c669..a79fbbdcdc92 100644
 +	      SUN50I_H616_EPHY_CFG_AC300))
 +		return;
 +
++	/* EMAC1 may only be enabled by an overlay, e.g. for an add-on board. */
++	emac = fdt_node_offset_by_compatible(blob, -1,
++					     "allwinner,sun50i-h616-emac1");
++	if (emac < 0 || !fdtdec_get_is_enabled(blob, emac))
++		return;
++
 +	node = fdt_node_offset_by_compatible(blob, -1,
 +					     "x-powers,ac300-ephy-package");
 +	if (node >= 0)
@@ -88,9 +97,6 @@ index 3d1afec7c669..a79fbbdcdc92 100644
 +	/* Disable the AC200 EPHY and point EMAC1 to the AC300 one. */
 +	emac = fdt_node_offset_by_compatible(blob, -1,
 +					     "allwinner,sun50i-h616-emac1");
-+	if (emac < 0)
-+		return;
-+
 +	handle = fdt_getprop(blob, emac, "phy-handle", NULL);
 +	if (handle) {
 +		node = fdt_node_offset_by_phandle(blob, fdt32_to_cpu(*handle));
@@ -118,7 +124,7 @@ index 3d1afec7c669..a79fbbdcdc92 100644
  int ft_board_setup(void *blob, struct bd_info *bd)
  {
  	int __maybe_unused r;
-@@ -941,6 +1005,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
+@@ -941,6 +1008,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
  	fdt_fixup_ethernet(blob);
  
  	bluetooth_dt_fixup(blob);
@@ -126,6 +132,18 @@ index 3d1afec7c669..a79fbbdcdc92 100644
  	board_dt_fixup(blob);
  
  #ifdef CONFIG_VIDEO_DT_SIMPLEFB
+diff --git a/configs/orangepi_zero2w_defconfig b/configs/orangepi_zero2w_defconfig
+index d874a9d99824..27aab20968d0 100644
+--- a/configs/orangepi_zero2w_defconfig
++++ b/configs/orangepi_zero2w_defconfig
+@@ -12,6 +12,7 @@ CONFIG_DRAM_SUNXI_TPR10=0x402f6663
+ CONFIG_DRAM_SUNXI_TPR11=0x26262524
+ CONFIG_DRAM_SUNXI_TPR12=0x100f100f
+ CONFIG_MACH_SUN50I_H616=y
++CONFIG_SUNXI_H616_INTERNAL_EPHY=y
+ CONFIG_SUNXI_DRAM_H616_LPDDR4=y
+ CONFIG_R_I2C_ENABLE=y
+ CONFIG_SPL_SPI_SUNXI=y
 diff --git a/configs/transpeed-8k618-t_defconfig b/configs/transpeed-8k618-t_defconfig
 index e672d8f8df9a..c174e866ade5 100644
 --- a/configs/transpeed-8k618-t_defconfig

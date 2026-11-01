@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 7 Oct 2026 00:19:00 +0200
+Subject: [PATCH] staging: media: cedrus: validate VP8 frame size
+
+A VP8 key frame can change the frame size. If userspace doesn't
+reallocate the capture buffers, the hardware writes and reads past the
+buffers, which shows up as IOMMU page faults and decode timeouts.
+
+Check the frame size in try_ctrl, like for the H.264 and HEVC SPS.
+
+Fixes: 3c39a16d30d8 ("media: cedrus: Add support for VP8 decoding")
+Assisted-by: LLM
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/staging/media/sunxi/cedrus/cedrus.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/staging/media/sunxi/cedrus/cedrus.c b/drivers/staging/media/sunxi/cedrus/cedrus.c
+index 4f5c626bdbfd..cb3935a5d812 100644
+--- a/drivers/staging/media/sunxi/cedrus/cedrus.c
++++ b/drivers/staging/media/sunxi/cedrus/cedrus.c
+@@ -78,6 +78,11 @@ static int cedrus_try_ctrl(struct v4l2_ctrl *ctrl)
+ 					  (sps->pic_width_in_mbs_minus1 + 1) * 16,
+ 					  height))
+ 			return -EINVAL;
++	} else if (ctrl->id == V4L2_CID_STATELESS_VP8_FRAME) {
++		const struct v4l2_ctrl_vp8_frame *frame = ctrl->p_new.p_vp8_frame;
++
++		if (cedrus_check_pic_size(ctx, frame->width, frame->height))
++			return -EINVAL;
+ 	} else if (ctrl->id == V4L2_CID_STATELESS_HEVC_SPS) {
+ 		const struct v4l2_ctrl_hevc_sps *sps = ctrl->p_new.p_hevc_sps;
+ 		unsigned int bit_depth, max_depth;
+@@ -342,6 +347,7 @@ static const struct cedrus_control cedrus_controls[] = {
+ 	{
+ 		.cfg = {
+ 			.id	= V4L2_CID_STATELESS_VP8_FRAME,
++			.ops	= &cedrus_ctrl_ops,
+ 		},
+ 		.capabilities	= CEDRUS_CAPABILITY_VP8_DEC,
+ 	},

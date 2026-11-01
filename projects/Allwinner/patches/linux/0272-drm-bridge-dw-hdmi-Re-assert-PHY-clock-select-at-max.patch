@@ -16,28 +16,32 @@ unconditionally, since other platforms sharing this PHY configure
 function can also legitimately reach 594 MHz and have not been
 verified to need or tolerate the extra write.
 
+Also match the 1000/1001 variant of 594 MHz used by 59.94 Hz modes.
+
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 11 +++++++++++
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 13 +++++++++++++
  drivers/gpu/drm/bridge/synopsys/dw-hdmi.h |  1 +
  drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c     |  1 +
  include/drm/bridge/dw_hdmi.h              |  9 +++++++++
- 4 files changed, 22 insertions(+)
+ 4 files changed, 24 insertions(+)
 
 diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-index d675c734a591..c5f6e35517cb 100644
+index d675c734a591..b4d37a25b584 100644
 --- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
 +++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-@@ -1642,6 +1642,17 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+@@ -1642,6 +1642,19 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
  	dw_hdmi_phy_i2c_write(hdmi, HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
  			      HDMI_3D_TX_PHY_MSM_CTRL);
  
 +	/*
 +	 * At 594 MHz, the highest TMDS rate this PHY supports, some
 +	 * instances need the clock select re-asserted together with the
-+	 * override bit for it to actually latch.
++	 * override bit for it to actually latch. Include the 1000/1001
++	 * variant used by 59.94 Hz modes.
 +	 */
-+	if (pdata->phy_max_tmds_msm_ctrl_quirk && mtmdsclock == 594000000UL)
++	if (pdata->phy_max_tmds_msm_ctrl_quirk &&
++	    mtmdsclock >= 594000000UL / 1001 * 1000)
 +		dw_hdmi_phy_i2c_write(hdmi,
 +				      HDMI_3D_TX_PHY_MSM_CTRL_OVERRIDE |
 +				      HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
@@ -90,6 +94,5 @@ index d029a32c03a5..791e9f2617c5 100644
  	/*
  	 * Private data passed to all the .mode_valid() and .configure_phy()
  	 * callback functions.
--- 
 -- 
 2.43.0

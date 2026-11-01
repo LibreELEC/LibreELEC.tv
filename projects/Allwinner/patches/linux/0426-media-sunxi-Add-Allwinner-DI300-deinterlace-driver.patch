@@ -39,9 +39,9 @@ Signed-off-by: Jernej Skrabec <jernej.skrabec@siol.net>
  drivers/media/platform/sunxi/Makefile         |    1 +
  .../media/platform/sunxi/sun50i-di300/Kconfig |   15 +
  .../platform/sunxi/sun50i-di300/Makefile      |    2 +
- .../sunxi/sun50i-di300/sun50i-di300.c         | 1168 +++++++++++++++++
+ .../sunxi/sun50i-di300/sun50i-di300.c         | 1169 +++++++++++++++++
  .../sunxi/sun50i-di300/sun50i-di300.h         |  196 +++
- 6 files changed, 1383 insertions(+)
+ 6 files changed, 1384 insertions(+)
  create mode 100644 drivers/media/platform/sunxi/sun50i-di300/Kconfig
  create mode 100644 drivers/media/platform/sunxi/sun50i-di300/Makefile
  create mode 100644 drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.c
@@ -98,10 +98,10 @@ index 000000000000..4268c8ee6c80
 +obj-$(CONFIG_VIDEO_SUN50I_DI300) += sun50i-di300.o
 diff --git a/drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.c b/drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.c
 new file mode 100644
-index 000000000000..8f4469223d3e
+index 000000000000..9cc51c502d66
 --- /dev/null
 +++ b/drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.c
-@@ -0,0 +1,1168 @@
+@@ -0,0 +1,1169 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Allwinner DI300 deinterlace driver
@@ -391,6 +391,7 @@ index 000000000000..8f4469223d3e
 +	deinterlace_write(dev, DEINTERLACE_IN_FLAG_ADDR, ctx->flag1_buf_dma);
 +	deinterlace_write(dev, DEINTERLACE_OUT_FLAG_ADDR, ctx->flag2_buf_dma);
 +	deinterlace_write(dev, DEINTERLACE_FLAG_HADDR, 0);
++	swap(ctx->flag1_buf, ctx->flag2_buf);
 +	swap(ctx->flag1_buf_dma, ctx->flag2_buf_dma);
 +
 +	/*
@@ -1272,7 +1273,7 @@ index 000000000000..8f4469223d3e
 +MODULE_DESCRIPTION("Allwinner DI300 deinterlace driver");
 diff --git a/drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.h b/drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.h
 new file mode 100644
-index 000000000000..b4bce369e9a1
+index 000000000000..a4ea138b9e1a
 --- /dev/null
 +++ b/drivers/media/platform/sunxi/sun50i-di300/sun50i-di300.h
 @@ -0,0 +1,196 @@

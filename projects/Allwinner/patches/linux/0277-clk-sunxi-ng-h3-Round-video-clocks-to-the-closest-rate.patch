@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Wed, 30 Sep 2026 21:02:34 +0200
+Subject: [PATCH] clk: sunxi-ng: h3: Round video clocks to the closest rate
+
+Rounding video clocks down makes fractional refresh rates much less
+accurate than necessary, e.g. 1080p at 59.94 Hz ends up at 148 MHz.
+Round the video PLL, TCON and HDMI clocks to the closest rate, like on
+A64.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/clk/sunxi-ng/ccu-sun8i-h3.c | 38 ++++++++++++++---------------
+ 1 file changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/clk/sunxi-ng/ccu-sun8i-h3.c b/drivers/clk/sunxi-ng/ccu-sun8i-h3.c
+index 935aef02593f..ade856975f22 100644
+--- a/drivers/clk/sunxi-ng/ccu-sun8i-h3.c
++++ b/drivers/clk/sunxi-ng/ccu-sun8i-h3.c
+@@ -64,19 +64,19 @@ static SUNXI_CCU_NM_WITH_SDM_GATE_LOCK(pll_audio_base_clk, "pll-audio-base",
+ 				       BIT(28),	/* lock */
+ 				       CLK_SET_RATE_UNGATE);
+ 
+-static SUNXI_CCU_NM_WITH_FRAC_GATE_LOCK_MIN_MAX(pll_video_clk, "pll-video",
+-						"osc24M", 0x0010,
+-						192000000, /* Minimum rate */
+-						912000000, /* Maximum rate */
+-						8, 7,      /* N */
+-						0, 4,	   /* M */
+-						BIT(24),   /* frac enable */
+-						BIT(25),   /* frac select */
+-						270000000, /* frac rate 0 */
+-						297000000, /* frac rate 1 */
+-						BIT(31),   /* gate */
+-						BIT(28),   /* lock */
+-						CLK_SET_RATE_UNGATE);
++static SUNXI_CCU_NM_WITH_FRAC_GATE_LOCK_MIN_MAX_CLOSEST(pll_video_clk, "pll-video",
++							"osc24M", 0x0010,
++							192000000, /* Minimum rate */
++							912000000, /* Maximum rate */
++							8, 7,      /* N */
++							0, 4,	   /* M */
++							BIT(24),   /* frac enable */
++							BIT(25),   /* frac select */
++							270000000, /* frac rate 0 */
++							297000000, /* frac rate 1 */
++							BIT(31),   /* gate */
++							BIT(28),   /* lock */
++							CLK_SET_RATE_UNGATE);
+ 
+ static SUNXI_CCU_NM_WITH_FRAC_GATE_LOCK(pll_ve_clk, "pll-ve",
+ 					"osc24M", 0x0018,
+@@ -458,9 +458,9 @@ static SUNXI_CCU_M_WITH_MUX_GATE(de_clk, "de", de_parents,
+ 				 CLK_SET_RATE_PARENT);
+ 
+ static const char * const tcon_parents[] = { "pll-video" };
+-static SUNXI_CCU_M_WITH_MUX_GATE(tcon_clk, "tcon", tcon_parents,
+-				 0x118, 0, 4, 24, 3, BIT(31),
+-				 CLK_SET_RATE_PARENT);
++static SUNXI_CCU_M_WITH_MUX_GATE_CLOSEST(tcon_clk, "tcon", tcon_parents,
++					 0x118, 0, 4, 24, 3, BIT(31),
++					 CLK_SET_RATE_PARENT);
+ 
+ static const char * const tve_parents[] = { "pll-de", "pll-periph1" };
+ struct ccu_div tve_clk = {
+@@ -500,9 +500,9 @@ static SUNXI_CCU_GATE(avs_clk,		"avs",		"osc24M",
+ 		      0x144, BIT(31), 0);
+ 
+ static const char * const hdmi_parents[] = { "pll-video" };
+-static SUNXI_CCU_M_WITH_MUX_GATE(hdmi_clk, "hdmi", hdmi_parents,
+-				 0x150, 0, 4, 24, 2, BIT(31),
+-				 CLK_SET_RATE_PARENT);
++static SUNXI_CCU_M_WITH_MUX_GATE_CLOSEST(hdmi_clk, "hdmi", hdmi_parents,
++					 0x150, 0, 4, 24, 2, BIT(31),
++					 CLK_SET_RATE_PARENT);
+ 
+ static SUNXI_CCU_GATE(hdmi_ddc_clk,	"hdmi-ddc",	"osc24M",
+ 		      0x154, BIT(31), 0);
+-- 
+2.43.0
+

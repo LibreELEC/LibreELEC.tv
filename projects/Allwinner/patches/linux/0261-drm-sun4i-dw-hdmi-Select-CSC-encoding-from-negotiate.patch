@@ -12,16 +12,29 @@ target whatever encoding (BT.601/709/2020) userspace actually
 requested, instead of the previous hardcoded BT.709 assumption, so
 the pixel data and the colorimetry signaled to the sink always match.
 
+The channel CSC units depend on the output format and encoding, so
+add all planes of the CRTC to the commit when either changes. Otherwise
+planes that are not part of the commit, like the fbcon plane after a
+modeset, keep converting for the previous output format.
+
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c | 28 +++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c | 40 +++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
 diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
-index 4172ea1c8a7e..dbba6714ba37 100644
+index 5b4ea0d922e5..e4860613fa06 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
-@@ -86,6 +86,34 @@ static int sun8i_hdmi_enc_atomic_check(struct drm_bridge *bridge,
+@@ -78,6 +78,7 @@ static int sun8i_hdmi_enc_atomic_check(struct drm_bridge *bridge,
+ {
+ 	struct sun4i_crtc_state *scrtc_state =
+ 		drm_crtc_state_to_sun4i_crtc_state(crtc_state);
++	const struct sun4i_crtc_state *old_scrtc_state;
+ 	struct drm_connector_state *old_conn_state =
+ 		drm_atomic_get_old_connector_state(conn_state->state,
+ 						   conn_state->connector);
+@@ -85,8 +86,47 @@ static int sun8i_hdmi_enc_atomic_check(struct drm_bridge *bridge,
  	if (!drm_connector_atomic_hdr_metadata_equal(old_conn_state, conn_state))
  		crtc_state->mode_changed = true;
  
@@ -55,7 +68,17 @@ index 4172ea1c8a7e..dbba6714ba37 100644
 +
  	scrtc_state->format = bridge_state->output_bus_cfg.format;
  
++	/*
++	 * The channel CSC units depend on the output format and encoding, so
++	 * planes that are not part of this commit must be updated as well.
++	 */
++	old_scrtc_state = drm_crtc_state_to_sun4i_crtc_state(
++		drm_atomic_get_old_crtc_state(crtc_state->state, crtc_state->crtc));
++	if (scrtc_state->format != old_scrtc_state->format ||
++	    scrtc_state->encoding != old_scrtc_state->encoding)
++		return drm_atomic_add_affected_planes(crtc_state->state,
++						      crtc_state->crtc);
++
  	return 0;
--- 
--- 
-2.43.0
+ }
+ 
