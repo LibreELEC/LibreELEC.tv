@@ -1,0 +1,63 @@
+From d18aed7ffed3035d3be8d5c216e4640beabe181d Mon Sep 17 00:00:00 2001
+From: zildan <zildan@users.noreply.github.com>
+Date: Mon, 2 Nov 2026 10:13:12 +0200
+Subject: [PATCH] media: dvb-usb-dib0700: fix Xbox One Tuner FIFO stall on
+ high-bitrate DVB-C QAM-256
+
+On the Microsoft Xbox One Digital TV Tuner (045e:02d5, DiB0700 bridge +
+Panasonic MN88472 demodulator + NXP TDA18250 tuner), high-bitrate DVB-C
+QAM-256 transponders (SR 6900, 50.87 Mbps total / ~49.5 Mbps active
+video payload) suffer from MPEG-TS Continuity Counter errors on every
+periodic FE_READ_STATUS poll.
+
+With fw_use_new_i2c_api = 1, dib0700_i2c_xfer_new() splits each
+2-message I2C register read (write reg_addr + read val) into two
+separate USB Endpoint 0 control transfers with en_stop = 0 on the write
+transfer, holding the single-threaded DiB0700 8051 microcontroller
+mid-I2C transaction across USB frames while waiting for
+REQUEST_NEW_I2C_READ. At 49.5 Mbps (1 TS packet every 29.5 us), this
+stalls the DiB0700 slave TS FIFO long enough to drop a packet per
+status poll.
+
+Fix this in xbox_one_attach() by:
+1. Setting fw_use_new_i2c_api = 0 so combined write+read I2C
+   transactions execute atomically in a single USB EP0 control transfer
+   (REQUEST_I2C_READ).
+2. Calling dib0700_ctrl_clock(adap->dev, 72, 1) and
+   dib0700_set_i2c_speed(adap->dev, 1000) to run the I2C bus at high
+   speed.
+3. Setting mn88472_config.ts_clock = VARIABLE_TS_CLOCK for smoother TS
+   FIFO pacing.
+
+Signed-off-by: zildan <zildan@users.noreply.github.com>
+---
+ drivers/media/usb/dvb-usb/dib0700_devices.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/usb/dvb-usb/dib0700_devices.c b/drivers/media/usb/dvb-usb/dib0700_devices.c
+index 3af5941..2493101 100644
+--- a/drivers/media/usb/dvb-usb/dib0700_devices.c
++++ b/drivers/media/usb/dvb-usb/dib0700_devices.c
+@@ -3732,8 +3732,10 @@ static int xbox_one_attach(struct dvb_usb_adapter *adap)
+ 	struct tda18250_config tda18250_config;
+ 	struct i2c_board_info info;
+ 
+-	st->fw_use_new_i2c_api = 1;
++	st->fw_use_new_i2c_api = 0;
+ 	st->disable_streaming_master_mode = 1;
++	dib0700_ctrl_clock(adap->dev, 72, 1);
++	dib0700_set_i2c_speed(adap->dev, 1000);
+ 
+ 	/* fe power enable */
+ 	dib0700_set_gpio(adap->dev, GPIO6, GPIO_OUT, 0);
+@@ -3754,7 +3756,7 @@ static int xbox_one_attach(struct dvb_usb_adapter *adap)
+ 	mn88472_config.i2c_wr_max = 22;
+ 	mn88472_config.xtal = 20500000;
+ 	mn88472_config.ts_mode = PARALLEL_TS_MODE;
+-	mn88472_config.ts_clock = FIXED_TS_CLOCK;
++	mn88472_config.ts_clock = VARIABLE_TS_CLOCK;
+ 	memset(&info, 0, sizeof(struct i2c_board_info));
+ 	strscpy(info.type, "mn88472", I2C_NAME_SIZE);
+ 	info.addr = 0x18;
+-- 
+2.54.0.windows.1
