@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libiconv"
-PKG_VERSION="1.19"
-PKG_SHA256="88dd96a8c0464eca144fc791ae60cd31cd8ee78321e67397e25fc095c4a19aa6"
+PKG_VERSION="1.19.1"
+PKG_SHA256="9a06844846d664d7122161700c10a64480d7c7bcead3091925a785b38c91edab"
 PKG_LICENSE="LGPL-2.0-or-later AND GPL-3.0-or-later"
 PKG_SITE="https://savannah.gnu.org/projects/libiconv/"
 PKG_URL="https://ftp.gnu.org/pub/gnu/libiconv/${PKG_NAME}-${PKG_VERSION}.tar.gz"

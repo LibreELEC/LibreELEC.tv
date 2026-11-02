@@ -2,8 +2,8 @@
 # Copyright (C) 2019-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libwebsockets"
-PKG_VERSION="5.0.0"
-PKG_SHA256="f853c6582101cfcee3a5a9e28ae92ab19d9735c5f31f0bb2e9794b5106123962"
+PKG_VERSION="5.1.0"
+PKG_SHA256="9acbba00aaa9e6178ae09c6f920d95449b527c1417e81d2cdd4103bc6d64d13f"
 PKG_LICENSE="MIT"
 PKG_SITE="https://libwebsockets.org"
 PKG_URL="https://github.com/warmcat/libwebsockets/archive/v${PKG_VERSION}.tar.gz"
