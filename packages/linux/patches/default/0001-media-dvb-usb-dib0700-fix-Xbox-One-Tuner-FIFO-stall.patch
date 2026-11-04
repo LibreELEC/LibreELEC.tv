@@ -1,5 +1,5 @@
 From d18aed7ffed3035d3be8d5c216e4640beabe181d Mon Sep 17 00:00:00 2001
-From: zildan <zildan@users.noreply.github.com>
+From: zildan <zil.dan@yandex.com>
 Date: Mon, 2 Nov 2026 10:13:12 +0200
 Subject: [PATCH] media: dvb-usb-dib0700: fix Xbox One Tuner FIFO stall on
  high-bitrate DVB-C QAM-256
@@ -29,7 +29,9 @@ Fix this in xbox_one_attach() by:
 3. Setting mn88472_config.ts_clock = VARIABLE_TS_CLOCK for smoother TS
    FIFO pacing.
 
-Signed-off-by: zildan <zildan@users.noreply.github.com>
+Fixes: c4d84547d5ae ("[media] dib0700: add support for Xbox One Digital TV Tuner")
+Cc: stable@vger.kernel.org
+Signed-off-by: zildan <zil.dan@yandex.com>
 ---
  drivers/media/usb/dvb-usb/dib0700_devices.c | 6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
@@ -41,13 +43,13 @@ index 3af5941..2493101 100644
 @@ -3732,8 +3732,10 @@ static int xbox_one_attach(struct dvb_usb_adapter *adap)
  	struct tda18250_config tda18250_config;
  	struct i2c_board_info info;
- 
+
 -	st->fw_use_new_i2c_api = 1;
 +	st->fw_use_new_i2c_api = 0;
  	st->disable_streaming_master_mode = 1;
 +	dib0700_ctrl_clock(adap->dev, 72, 1);
 +	dib0700_set_i2c_speed(adap->dev, 1000);
- 
+
  	/* fe power enable */
  	dib0700_set_gpio(adap->dev, GPIO6, GPIO_OUT, 0);
 @@ -3754,7 +3756,7 @@ static int xbox_one_attach(struct dvb_usb_adapter *adap)
