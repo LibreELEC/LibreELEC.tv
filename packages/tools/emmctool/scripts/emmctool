@@ -9,9 +9,13 @@
 # receive no support to restore your device. You have been warned!
 
 do_backup() {
+  if [ -z "${2}" ]; then
+    echo "usage: emmctool (b)ackup <filename>"
+    exit 1
+  fi
   do_umount
   echo "info: compressing ${EMMC} to ${2}, this will take time"
-  dd if="${EMMC}" | gzip >of="${2}"
+  dd if="${EMMC}" | gzip >"${2}"
   echo "info: compressing completed"
 }
 
@@ -74,10 +78,10 @@ do_resize() {
   do_umount
   echo "info: resizing partition ${EMMC}p2 to 100%"
   parted -s -m "${EMMC}" resizepart 2 100% || parted -s -m "${EMMC}" resizepart 2 yes 100%
-  sleep 5
+  udevadm settle
   do_umount
   echo "info: checking filesystem"
-  e2fsck -f "${EMMC}p2"
+  e2fsck -f -p "${EMMC}p2"
   sleep 1
   echo "info: resizing filesystem"
   resize2fs "${EMMC}p2"
@@ -103,7 +107,8 @@ do_storage() {
   echo "info: converting emmc for /storage use"
   parted -s "${EMMC}" mklabel gpt
   parted -s "${EMMC}" -a min unit s mkpart EMMC_STORAGE ext4 34 100%
-  sleep 1
+  udevadm settle
+  do_umount
   mkfs.ext4 "${EMMC}p1"
   sleep 1
   e2label "${EMMC}p1" EMMC_STORAGE
@@ -120,12 +125,40 @@ do_storage() {
   echo ""
 }
 
+do_stop_samba() {
+  if [ -n "${SAMBA_UNITS}" ]; then
+    return
+  fi
+  for unit in smbd.service nmbd.service; do
+    if systemctl -q is-active "${unit}"; then
+      SAMBA_UNITS="${SAMBA_UNITS} ${unit}"
+    fi
+  done
+  if [ -n "${SAMBA_UNITS}" ]; then
+    echo "info: stopping samba"
+    systemctl stop ${SAMBA_UNITS}
+  fi
+}
+
+do_start_samba() {
+  if [ -n "${SAMBA_UNITS}" ]; then
+    echo "info: starting samba"
+    systemctl start ${SAMBA_UNITS}
+  fi
+}
+
 do_umount() {
-  for mount in $(grep "${EMMC}" /proc/mounts | awk '{print $1}'); do
+  do_stop_samba
+  for mount in $(grep "^${EMMC}" /proc/mounts | awk '{print $1}'); do
     echo "info: unmounting $mount"
     umount -f "$mount"
     sleep 2
   done
+  if grep -q "^${EMMC}" /proc/mounts; then
+    echo "error: ${EMMC} is still mounted, aborting!"
+    grep "^${EMMC}" /proc/mounts
+    exit 1
+  fi
 }
 
 do_writeprotect() {
@@ -196,6 +229,9 @@ if [ -z "${EMMC}" ]; then
   echo "error: no emmc module detected!"
   exit 1
 fi
+
+SAMBA_UNITS=""
+trap do_start_samba EXIT
 
 case $(dtname) in
   azw* | bananapi* | firefly* | friendlyarm* | hardkernel* | khadas* | libretech* | radxa* | wetek*)
