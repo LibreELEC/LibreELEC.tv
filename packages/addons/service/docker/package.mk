@@ -2,7 +2,7 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="docker"
-PKG_REV="21"
+PKG_REV="22"
 PKG_ARCH="any"
 PKG_LICENSE="Apache-2.0"
 PKG_SITE="http://www.docker.com/"
