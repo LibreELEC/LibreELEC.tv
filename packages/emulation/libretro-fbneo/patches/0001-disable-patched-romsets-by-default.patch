@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris <meischris39@hotmail.com>
+Date: Thu, 5 Nov 2026 22:30:24 +0000
+Subject: [PATCH] Disable patched romsets by default
+
+RetroAchievements doesn't allow patched romsets in hardcore mode. The
+add-on has no settings to turn the option off, so by default no game
+could be played in hardcore.
+---
+ src/burner/libretro/retro_common.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/burner/libretro/retro_common.cpp b/src/burner/libretro/retro_common.cpp
+index 305aab6..cd62ac9 100644
+--- a/src/burner/libretro/retro_common.cpp
++++ b/src/burner/libretro/retro_common.cpp
+@@ -269,7 +269,7 @@ static struct retro_core_option_v2_definition var_fbneo_allow_patched_romsets =
+ 		{ "enabled",  NULL },
+ 		{ NULL,       NULL },
+ 	},
+-	"enabled"
++	"disabled"
+ };
+ static struct retro_core_option_v2_definition var_fbneo_samplerate = {
+ 	"fbneo-samplerate",
+-- 
+2.53.0
+
