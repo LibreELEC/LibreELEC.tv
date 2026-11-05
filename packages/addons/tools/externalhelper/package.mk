@@ -3,7 +3,7 @@
 
 PKG_NAME="externalhelper"
 PKG_VERSION="0"
-PKG_REV="11"
+PKG_REV="12"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://libreelec.tv"
 PKG_URL=""
