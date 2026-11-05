@@ -74,7 +74,7 @@ PKG_MESON_OPTS_TARGET="-Ddaemon=true \
                        -Dwebrtc-aec=disabled"
 
 pre_configure_target() {
-  sed -e 's|; remixing-use-all-sink-channels = yes|; remixing-use-all-sink-channels = no|' \
+  sed -e 's|; remixing-use-all-sink-channels = yes|remixing-use-all-sink-channels = no|' \
       -i ${PKG_BUILD}/src/daemon/daemon.conf.in
 }
 
