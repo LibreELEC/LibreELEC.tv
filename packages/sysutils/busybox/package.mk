@@ -54,6 +54,13 @@ configure_target() {
       sed -i -e "s|^CONFIG_FEATURE_MOUNT_CIFS=.*$|# CONFIG_FEATURE_MOUNT_CIFS is not set|" .config
     fi
 
+    if [ ! "${FORCE_ROOT_PASSWORD_CHANGE}" = "yes" ]; then
+      sed -i -e "s|^CONFIG_FEATURE_PASSWD_LOGIN_FORCE_CHG=.*$|# CONFIG_FEATURE_PASSWD_LOGIN_FORCE_CHG is not set|" .config
+    fi
+
+    # optimize for size
+    CFLAGS=$(echo ${CFLAGS} | sed -e "s|-Ofast|-Os|")
+    CFLAGS=$(echo ${CFLAGS} | sed -e "s|-O.|-Os|")
     CFLAGS+=" -I${SYSROOT_PREFIX}/usr/include/tirpc"
 
     LDFLAGS+=" -fwhole-program"
@@ -147,6 +154,10 @@ post_install() {
   echo "chmod 000 ${INSTALL}/usr/cache/shadow" >>${FAKEROOT_SCRIPT}
 
   add_user root "${ROOT_PASSWORD}" 0 0 "Root User" "/storage" "/bin/sh"
+  if [ "${FORCE_ROOT_PASSWORD_CHANGE}" = "yes" ]; then
+    # last password change 0: the password must be changed at first login
+    sed -e "s|^\(root:[^:]*\):[^:]*:|\1:0:|" -i ${INSTALL}/usr/cache/shadow
+  fi
   add_group root 0
   add_group users 100
 
