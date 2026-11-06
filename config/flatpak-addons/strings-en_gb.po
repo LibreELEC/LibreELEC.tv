@@ -1,0 +1,93 @@
+# Kodi Media Center language file
+# Addon Name: @ADDON_NAME@
+# Addon id: @PKG_ADDON_ID@
+# Addon Provider: LibreELEC
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# settings.xml texts
+msgctxt "#30100"
+msgid "General"
+msgstr ""
+
+msgctxt "#30101"
+msgid "Display"
+msgstr ""
+
+msgctxt "#30102"
+msgid "Audio"
+msgstr ""
+
+# display settings
+msgctxt "#30120"
+msgid "Use custom display settings"
+msgstr ""
+
+msgctxt "#30121"
+msgid "Display configuration"
+msgstr ""
+
+msgctxt "#30122"
+msgid "Configuration override files and custom configurations are read from /storage/.config/kanshi"
+msgstr ""
+
+msgctxt "#30123"
+msgid "Default"
+msgstr ""
+
+msgctxt "#30124"
+msgid "3840x2160"
+msgstr ""
+
+msgctxt "#30125"
+msgid "1920x1080"
+msgstr ""
+
+msgctxt "#30126"
+msgid "1280x720"
+msgstr ""
+
+msgctxt "#30127"
+msgid "Custom..."
+msgstr ""
+
+msgctxt "#30128"
+msgid "Custom display configuration file"
+msgstr ""
+
+# audio settings
+
+msgctxt "#30140"
+msgid "Number of audio channels"
+msgstr ""
+
+msgctxt "#30141"
+msgid "Default"
+msgstr ""
+
+msgctxt "#30142"
+msgid "Stereo"
+msgstr ""
+
+msgctxt "#30143"
+msgid "5.1"
+msgstr ""
+
+msgctxt "#30144"
+msgid "7.1"
+msgstr ""
+
+msgctxt "#30145"
+msgid "Use custom audio device"
+msgstr ""
+
+msgctxt "#30146"
+msgid "Custom audio device"
+msgstr ""
+
+msgctxt "#30147"
+msgid "For ALSA devices enter 'ALSA:' followed by the full PCM name like shown in aplay -L\neg ALSA:sysdefault:CARD=MyCard or ALSA:iec958:CARD=MyCard,DEV=1"
+msgstr ""
