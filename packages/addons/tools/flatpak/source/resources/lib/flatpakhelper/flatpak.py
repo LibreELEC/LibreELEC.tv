@@ -169,6 +169,7 @@ class Flatpak:
         pulseaudio: bool = True,
         pulseaudio_channels: int | None = None,
         audiodevice: str | None = None,
+        displayconfig: str | None = None,
     ) -> bool:
 
         info = self.get_application_info(appid)
@@ -202,7 +203,13 @@ class Flatpak:
             flatpak_run_env.update(run_env)
 
         return eh.run_external_program(
-            executable=self.flatpak_run, args=runargs, env=flatpak_run_env, name=name, wayland=wayland, audiodevice=audiodevice
+            executable=self.flatpak_run,
+            args=runargs,
+            env=flatpak_run_env,
+            name=name,
+            wayland=wayland,
+            audiodevice=audiodevice,
+            displayconfig=displayconfig,
         )
 
     def find_application_icon(self, appid: str) -> str | None:
