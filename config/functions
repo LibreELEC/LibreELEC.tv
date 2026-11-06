@@ -1708,6 +1708,53 @@ done
       -i "$addon_xml"
 }
 
+install_flatpak_addon_files() {
+  local dest_dir="$1"
+  local default_py_file="${dest_dir}/default.py"
+  local settings_xml_file="${dest_dir}/resources/settings.xml"
+  local strings_po_file="${dest_dir}/resources/language/resource.language.en_gb/strings.po"
+  local start_args=""
+  local audio_settings="" 
+
+  if [ ! -f "${default_py_file}" ]; then
+    if [ -z "${PKG_FLATPAK_APPID}" ]; then
+      die "ERROR: ${PKG_NAME}: PKG_FLATPAK_APPID is not defined"
+    fi
+
+    if [ "${PKG_FLATPAK_AUDIO_SETTINGS}" = "yes" ]; then
+      audio_settings=", audio_settings=True"
+    fi
+
+    if [ -n "${PKG_FLATPAK_START_ARGS}" ]; then
+      start_args="args=[${PKG_FLATPAK_START_ARGS}]"
+    fi
+
+    sed -e "s|@APPID@|${PKG_FLATPAK_APPID}|g" \
+        -e "s|@AUDIO_SETTINGS@|${audio_settings}|g" \
+        -e "s|@START_ARGS@|${start_args}|g" \
+        "${ROOT}/config/flatpak-addons/default.py" \
+        > "${default_py_file}"
+  fi 
+
+  if [ ! -f "${settings_xml_file}" ]; then
+    mkdir -p "${dest_dir}/resources/"
+    sed -e "s|@PKG_ADDON_ID@|${PKG_ADDON_ID}|g" \
+        "${ROOT}/config/flatpak-addons/settings.xml" \
+        > "${settings_xml_file}"
+    if [ "${PKG_FLATPAK_AUDIO_SETTINGS}" != "yes" ]; then
+      xmlstarlet ed --inplace -d "//group[@id='2']" "${settings_xml_file}"
+    fi
+  fi 
+
+  if [ ! -f "${strings_po_file}" ]; then
+    mkdir -p "${dest_dir}/resources/language/resource.language.en_gb/"
+    sed -e "s|@PKG_ADDON_ID@|${PKG_ADDON_ID}|g" \
+        -e "s|@ADDON_NAME@|${PKG_ADDON_NAME}|g" \
+        "${ROOT}/config/flatpak-addons/strings-en_gb.po" \
+        > "${strings_po_file}"
+  fi 
+}
+
 install_addon_files() {
   mkdir -p "$1"
 
@@ -1718,6 +1765,10 @@ install_addon_files() {
 
   if pkg_call_exists_opt post_install_addon; then
     INSTALL="$1" pkg_call
+  fi
+
+  if [ "${PKG_IS_FLATPAK_ADDON}" = "yes" ]; then
+    install_flatpak_addon_files "$1"
   fi
 }
 

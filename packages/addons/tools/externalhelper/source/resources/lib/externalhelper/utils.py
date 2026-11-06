@@ -11,8 +11,13 @@ import xbmcgui
 
 ADDON_ID = 'tools.externalhelper'
 addon = xbmcaddon.Addon(ADDON_ID)
+settings = addon.getSettings()
 RUN_EXTERNAL = os.path.join(addon.getAddonInfo('path'), 'bin', 'kodi-run-external')
 
+DISPLAYCONFIG_DEFAULT = 'default'
+DISPLAYCONFIG_4K = '3840x2160'
+DISPLAYCONFIG_HD = '1920x1080'
+DISPLAYCONFIG_720 = '1280x720'
 
 def get_kodi_setting(setting: str):
     query = '{"jsonrpc":"2.0", "method":"Settings.GetSettingValue", "params":{"setting":"' + setting + '"}, "id":1}'
@@ -27,31 +32,22 @@ def get_kodi_setting(setting: str):
 
 
 def get_confirm_start_setting() -> bool:
-    confirm = addon.getSettingBool('confirmstart')
-    if confirm is None:
-        return True
-    else:
-        return confirm
+    return settings.getBool('confirmstart')
 
 
 def get_display_config_setting() -> str | None:
-    config = addon.getSettingInt('displayconfig')
+    config = settings.getInt('displayconfig')
     match config:
-        case None:
-            return None
         case 0:
-            return 'default'
+            return DISPLAYCONFIG_DEFAULT
         case 1:
-            return '3840x2160'
+            return DISPLAYCONFIG_4K
         case 2:
-            return '1920x1080'
+            return DISPLAYCONFIG_HD
         case 3:
-            return '1280x720'
+            return DISPLAYCONFIG_720
         case 999:
-            custom = addon.getSettingString('customdisplayconfig')
-            if custom is None:
-                return None
-            custom = custom.strip()
+            custom = settings.getString('customdisplayconfig').strip()
             if custom == '':
                 return None
             else:
@@ -101,8 +97,8 @@ def get_kodi_audio_device() -> str | None:
 
 
 def get_audio_device() -> str | None:
-    if addon.getSettingBool('customaudio'):
-        audiodev = addon.getSettingString('customaudiodevice')
+    if settings.getBool('customaudio'):
+        audiodev = settings.getString('customaudiodevice')
         if audiodev is None:
             return None
         audiodev = audiodev.strip()
@@ -121,6 +117,7 @@ def run_external_program(
     name: str = '',
     wayland: bool = True,
     audiodevice: str | None = None,
+    displayconfig: str | None = None,
 ) -> bool:
     addon = xbmcaddon.Addon(ADDON_ID)
 
@@ -134,7 +131,8 @@ def run_external_program(
     layout = get_kodi_keyboard_layout()
     if audiodevice is None:
         audiodevice = get_audio_device()
-    displayconfig = get_display_config_setting()
+    if displayconfig is None:
+        displayconfig = get_display_config_setting()
 
     environment = {}
 

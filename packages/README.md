@@ -90,6 +90,10 @@ Additional options used when the package builds an addon.
 | PKG_DISCLAIMER | -    | no       | [Disclaimer](https://kodi.wiki/view/Addon.xml#.3Cdisclaimer.3E) in addon-xml |
 | PKG_ADDON_IS_STANDALONE | - | no | Defines if an addon depends on Kodi (on) or is standalone (yes) |
 | PKG_ADDON_BROKEN | -  | no       | Marks an addon as broken for the user |
+| PKG_IS_FLATPAK_ADDON | - | no | If set to 'yes' missing default.py, settings.xml and strings.po files are generated from PKG_FLATPAK_... options |
+| PKG_FLATPAK_APPID | - | no | Flatpak appid to use in default.py, must be set if default.py is auto-generated |
+| PKG_FLATPAK_AUDIO_SETTINGS | - | no | If set to 'yes' audio settings are enabled |
+| PKG_FLATPAK_START_ARGS | - | no | Optional args to use for starting the flatpak |
 
 #### Detailed Information for Options
 

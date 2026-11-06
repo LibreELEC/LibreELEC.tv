@@ -147,6 +147,7 @@ class FlatpakGui:
         pulseaudio: bool = True,
         pulseaudio_channels: int | None = None,
         audiodevice: str | None = None,
+        displayconfig: str | None = None,
     ) -> bool:
 
         if not self.flatpak.get_commit(appid):
@@ -176,6 +177,7 @@ class FlatpakGui:
             pulseaudio=pulseaudio,
             pulseaudio_channels=pulseaudio_channels,
             audiodevice=audiodevice,
+            displayconfig=displayconfig,
         )
 
     def show_info(self, appid: str) -> None:

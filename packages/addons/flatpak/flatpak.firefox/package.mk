@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.firefox"
 PKG_VERSION="0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="MPL-2.0"
 PKG_SITE="https://www.mozilla.org/"
@@ -18,6 +18,9 @@ PKG_ADDON_TYPE="xbmc.python.script"
 PKG_ADDON_PROJECTS="any !Generic-legacy"
 PKG_ADDON_PROVIDES="executable"
 PKG_ADDON_REQUIRES="tools.flatpak:0.0.0"
+
+PKG_IS_FLATPAK_ADDON="yes"
+PKG_FLATPAK_APPID="org.mozilla.firefox"
 
 addon() {
   :

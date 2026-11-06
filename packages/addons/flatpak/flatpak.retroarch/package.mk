@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.retroarch"
 PKG_VERSION="0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="GPL-3.0-or-later"
 PKG_SITE="https://supertuxkart.net/"
@@ -19,6 +19,9 @@ PKG_ADDON_ICON_SIZE="300"
 PKG_ADDON_PROJECTS="any !Generic-legacy"
 PKG_ADDON_PROVIDES="executable"
 PKG_ADDON_REQUIRES="tools.flatpak:0.0.0"
+
+PKG_IS_FLATPAK_ADDON="yes"
+PKG_FLATPAK_APPID="org.libretro.RetroArch"
 
 addon() {
   :

@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.mame"
 PKG_VERSION="0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="GPL-2.0-only"
 PKG_SITE="https://www.mamedev.org/"
@@ -21,6 +21,9 @@ PKG_ADDON_ICON_OFFSET='+5'
 PKG_ADDON_PROJECTS="any !Generic-legacy"
 PKG_ADDON_PROVIDES="executable"
 PKG_ADDON_REQUIRES="tools.flatpak:0.0.0"
+
+PKG_IS_FLATPAK_ADDON="yes"
+PKG_FLATPAK_APPID="org.mamedev.MAME"
 
 addon() {
   :
