@@ -30,6 +30,7 @@ uninstall_services() {
 
 setup_pulse() {
   PA_UNLOAD=""
+  CHANNELS=""
 
   [ "${KODI_FLATPAK_PULSEAUDIO}" = "no" ] && return
   [ "${KODI_AUDIO_DEVICE%%:*}" != "ALSA" ] && return
@@ -37,9 +38,13 @@ setup_pulse() {
   AUDIODEV="${KODI_AUDIO_DEVICE#ALSA:}"
   AUDIODEV="${AUDIODEV:-sysdefault}"
   
+  if [ -n "${KODI_FLATPAK_PULSEAUDIO_CHANNELS}" ]; then
+    CHANNELS="channels=${KODI_FLATPAK_PULSEAUDIO_CHANNELS}"
+  fi
+
   echo "using ALSA audio device $AUDIODEV"
 
-  PA_UNLOAD=$(pactl load-module module-alsa-sink device="${AUDIODEV}" name="flatpak")
+  PA_UNLOAD=$(pactl load-module module-alsa-sink device="${AUDIODEV}" name="flatpak" ${CHANNELS})
   if [ $? -ne 0 ]; then
     echo "failed to load pulseaudio module for alsa device ${AUDIODEV}"
     PA_UNLOAD=""

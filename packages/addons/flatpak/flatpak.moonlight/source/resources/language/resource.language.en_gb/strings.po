@@ -1,0 +1,46 @@
+# Kodi Media Center language file
+# Addon Name: External programs helper
+# Addon id: flatpak.moonlight
+# Addon Provider: LibreELEC
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# settings.xml texts
+msgctxt "#30100"
+msgid "General"
+msgstr ""
+
+msgctxt "#30101"
+msgid "Number of audio channels"
+msgstr ""
+
+msgctxt "#30102"
+msgid "Default"
+msgstr ""
+
+msgctxt "#30103"
+msgid "Stereo"
+msgstr ""
+
+msgctxt "#30104"
+msgid "5.1"
+msgstr ""
+
+msgctxt "#30105"
+msgid "7.1"
+msgstr ""
+
+msgctxt "#30110"
+msgid "Use custom audio device"
+msgstr ""
+
+msgctxt "#30111"
+msgid "Custom audio device"
+msgstr ""
+
+msgctxt "#30112"
+msgid "For ALSA devices enter 'ALSA:' followed by the full PCM name like shown in aplay -L\neg ALSA:sysdefault:CARD=MyCard or ALSA:iec958:CARD=MyCard,DEV=1"
+msgstr ""
