@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.chrome"
 PKG_VERSION="0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="LicenseRef-nonfree"
 PKG_SITE="https://www.google.com/chrome/"
@@ -18,6 +18,10 @@ PKG_ADDON_TYPE="xbmc.python.script"
 PKG_ADDON_PROJECTS="any !Generic-legacy"
 PKG_ADDON_PROVIDES="executable"
 PKG_ADDON_REQUIRES="tools.flatpak:0.0.0"
+
+PKG_IS_FLATPAK_ADDON="yes"
+PKG_FLATPAK_APPID="com.google.Chrome"
+PKG_FLATPAK_START_ARGS="'--no-sandbox'"
 
 addon() {
   :
