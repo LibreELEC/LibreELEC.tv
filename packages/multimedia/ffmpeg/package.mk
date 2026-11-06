@@ -112,7 +112,9 @@ if [ "${TARGET_ARCH}" = "x86_64" ]; then
   PKG_DEPENDS_TARGET+=" nasm:host"
 fi
 
-if target_has_feature "(neon|sse)"; then
+# riscv64: no SIMD feature flag, but dav1d has RVV assembly and is the only AV1
+# decoder there (e.g. the SpacemiT K1 VPU has no AV1 support).
+if target_has_feature "(neon|sse)" || [ "${TARGET_ARCH}" = "riscv64" ]; then
   PKG_DEPENDS_TARGET+=" dav1d"
   PKG_NEED_UNPACK+=" $(get_pkg_directory dav1d)"
   PKG_FFMPEG_AV1="--enable-libdav1d"
