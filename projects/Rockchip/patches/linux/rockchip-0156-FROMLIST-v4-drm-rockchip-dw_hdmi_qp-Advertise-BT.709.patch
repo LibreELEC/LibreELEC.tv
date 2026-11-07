@@ -1,0 +1,40 @@
+From 81ab4db7dc2468bfd00b4a6347b4f1f291183aba Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:13 +0200
+Subject: [PATCH 156/280] FROMLIST(v4): drm/rockchip: dw_hdmi_qp: Advertise
+ BT.709 and BT.2020 colorimetries
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Expose BT.2020 RGB and YCC colorimetry so userspace can enable HDR
+output. Also explicitly expose BT.709 YCC as it is listed in the
+Rockchip RK3588 TRM V1.0-Part2 20220309 data sheet.
+
+Tested on a Radxa Rock 5B (RK3588) with an LG OLED55B87LC in KDE
+Plasma 6.7.5: enabling HDR switches the colorspace to BT.2020, and
+disabling it restores the default.
+
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index ce751f2721b9..8e690075db4b 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -667,6 +667,10 @@ static int dw_hdmi_qp_rockchip_bind(struct device *dev, struct device *master,
+ 				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422) |
+ 				      BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR420);
+ 
++	plat_data.supported_colorspaces = BIT(DRM_MODE_COLORIMETRY_BT709_YCC) |
++				      BIT(DRM_MODE_COLORIMETRY_BT2020_RGB) |
++				      BIT(DRM_MODE_COLORIMETRY_BT2020_YCC);
++
+ 	encoder = &hdmi->encoder.encoder;
+ 	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
+ 
+-- 
+2.43.0
+

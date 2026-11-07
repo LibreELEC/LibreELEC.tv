@@ -1,0 +1,54 @@
+From 520b71ebc0fd111f654dfc5411059236c562f9b0 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 11:08:55 +0000
+Subject: [PATCH 232/280] WIP: drm/bridge-connector: expose Dolby Vision for
+ capable HDMI bridges
+
+Add drm_bridge.hdmi_dolby_vision for HDMI bridges whose display pipeline
+delivers RGB 8 bpc bit-exact, and attach the Dolby Vision connector
+property to bridge connectors built on such a bridge. Signalling is then
+handled entirely by the HDMI state helpers.
+---
+ drivers/gpu/drm/display/drm_bridge_connector.c | 6 ++++++
+ include/drm/drm_bridge.h                       | 8 ++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/gpu/drm/display/drm_bridge_connector.c b/drivers/gpu/drm/display/drm_bridge_connector.c
+index 5165d8ec8a9a..cc03d9cb1b9a 100644
+--- a/drivers/gpu/drm/display/drm_bridge_connector.c
++++ b/drivers/gpu/drm/display/drm_bridge_connector.c
+@@ -1082,6 +1082,12 @@ struct drm_connector *drm_bridge_connector_init(struct drm_device *drm,
+ 					       connector_type, ddc);
+ 		if (ret)
+ 			return ERR_PTR(ret);
++
++		if (bridge_connector->bridge_hdmi->hdmi_dolby_vision) {
++			ret = drm_connector_attach_hdmi_dolby_vision_property(connector);
++			if (ret)
++				return ERR_PTR(ret);
++		}
+ 	} else {
+ 		ret = drmm_connector_init(drm, connector,
+ 					  &drm_bridge_connector_funcs,
+diff --git a/include/drm/drm_bridge.h b/include/drm/drm_bridge.h
+index 4a7601eaf4a3..3c9dda705335 100644
+--- a/include/drm/drm_bridge.h
++++ b/include/drm/drm_bridge.h
+@@ -1087,6 +1087,14 @@ struct drm_bridge {
+ 	 * output.
+ 	 */
+ 	bool ycbcr_420_allowed;
++	/**
++	 * @hdmi_dolby_vision: Set by HDMI bridges (&DRM_BRIDGE_OP_HDMI) whose
++	 * display pipeline can deliver an RGB 8 bpc framebuffer to the sink
++	 * bit-exact, i.e. whose CRTC driver calls
++	 * drm_atomic_helper_check_crtc_dolby_vision(). The bridge connector
++	 * then exposes the experimental Dolby Vision connector property.
++	 */
++	bool hdmi_dolby_vision;
+ 	/**
+ 	 * @pre_enable_prev_first: The bridge requires that the prev
+ 	 * bridge @pre_enable function is called before its @pre_enable,
+-- 
+2.43.0
+

@@ -1,0 +1,32 @@
+From 2aff2997d87fede1ee12aa37f474d489c6681de0 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 13:36:40 +0000
+Subject: [PATCH 226/280] fixup! WIP: drm/display: hdmi-state-helper: force a
+ modeset on HDR metadata change
+
+Compare the HDR output metadata by content rather than by blob pointer.
+Userspace creates a new blob for every update, so re-sending identical
+metadata forced a full modeset and the sink resynchronised.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/display/drm_hdmi_state_helper.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 455f879524cf..957bf4abab9e 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -926,7 +926,7 @@ int drm_atomic_helper_connector_hdmi_check(struct drm_connector *connector,
+ 	if (old_conn_state->hdmi.broadcast_rgb != new_conn_state->hdmi.broadcast_rgb ||
+ 	    old_conn_state->hdmi.output_bpc != new_conn_state->hdmi.output_bpc ||
+ 	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format ||
+-	    old_conn_state->hdr_output_metadata != new_conn_state->hdr_output_metadata ||
++	    !drm_connector_atomic_hdr_metadata_equal(old_conn_state, new_conn_state) ||
+ 	    old_conn_state->colorspace != new_conn_state->colorspace) {
+ 		struct drm_crtc *crtc = new_conn_state->crtc;
+ 		struct drm_crtc_state *crtc_state;
+-- 
+2.43.0
+

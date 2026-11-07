@@ -1,0 +1,41 @@
+From 0517a65cc1b98f30aac1b95110df771c8b8e338e Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 19:21:38 +0000
+Subject: [PATCH 242/280] WIP: drm/rockchip: dw_hdmi_qp: attach the Broadcast
+ RGB property
+
+The HDMI connector state helper already derives is_limited_range and the
+AVI InfoFrame quantization range from the Broadcast RGB setting, but the
+property was never attached to the dw-hdmi-qp bridge connector. Userspace
+therefore could not select full range, and every CTA mode was limited
+range.
+
+Standard Dolby Vision requires full-range RGB, so attach the property
+after creating the bridge connector. The default remains Automatic so
+existing behaviour is unchanged.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+index aeba16ffa80c..f268d3620b0c 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi_qp-rockchip.c
+@@ -760,6 +760,11 @@ static int dw_hdmi_qp_rockchip_bind(struct device *dev, struct device *master,
+ 		return dev_err_probe(dev, PTR_ERR(connector),
+ 				     "Failed to init bridge connector\n");
+ 
++	ret = drm_connector_attach_broadcast_rgb_property(connector);
++	if (ret)
++		return dev_err_probe(dev, ret,
++				     "Failed to attach Broadcast RGB property\n");
++
+ 	platform_set_drvdata(pdev, hdmi);
+ 
+ 	return 0;
+-- 
+2.43.0
+

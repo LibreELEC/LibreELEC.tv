@@ -1,0 +1,66 @@
+From 10ec9b20debdf0e06da8b6ab60f5a7bb5188e85c Mon Sep 17 00:00:00 2001
+From: Geraldo Nascimento <geraldogabriel@gmail.com>
+Date: Tue, 16 Jun 2026 12:25:45 -0300
+Subject: [PATCH 087/280] FROMLIST(v7): PCI: rockchip-host: do not attempt 5.0
+ GT/s retraining
+
+Drop the 5.0 GT/s Link Speed retraining from Rockchip PCIe Root
+Complex Mode Operation, so called host driver.
+
+The reason is that Shawn Lin from Rockchip has reiterated that there
+may be danger of "catastrophic failure" in using their PCIe with
+5.0GT/s speeds.
+
+While Rockchip has done so informally without issuing a proper errata,
+and the particulars are thus unknown, this may cause data loss or
+worse.
+
+This change is corroborated by RK3399 official datasheet [1], which
+states maximum link speed for this platform is 2.5 GT/s.
+
+[1] https://opensource.rock-chips.com/images/d/d7/Rockchip_RK3399_Datasheet_V2.1-20200323.pdf
+
+Link: https://lore.kernel.org/all/ffd05070-9879-4468-94e3-b88968b4c21b@rock-chips.com/
+Cc: stable@vger.kernel.org
+Reported-by: Dragan Simic <dsimic@manjaro.org>
+Reported-by: Shawn Lin <shawn.lin@rock-chips.com>
+Signed-off-by: Geraldo Nascimento <geraldogabriel@gmail.com>
+Reviewed-by: Dragan Simic <dsimic@manjaro.org>
+---
+ drivers/pci/controller/pcie-rockchip-host.c | 20 --------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/drivers/pci/controller/pcie-rockchip-host.c b/drivers/pci/controller/pcie-rockchip-host.c
+index d203c4876d30..0b52f2e370f4 100644
+--- a/drivers/pci/controller/pcie-rockchip-host.c
++++ b/drivers/pci/controller/pcie-rockchip-host.c
+@@ -328,26 +328,6 @@ static int rockchip_pcie_host_init_port(struct rockchip_pcie *rockchip)
+ 		goto err_power_off_phy;
+ 	}
+ 
+-	if (rockchip->link_gen == 2) {
+-		/*
+-		 * Enable retrain for gen2. This should be configured only after
+-		 * gen1 finished.
+-		 */
+-		status = rockchip_pcie_read(rockchip, PCIE_RC_CONFIG_CR + PCI_EXP_LNKCTL2);
+-		status &= ~PCI_EXP_LNKCTL2_TLS;
+-		status |= PCI_EXP_LNKCTL2_TLS_5_0GT;
+-		rockchip_pcie_write(rockchip, status, PCIE_RC_CONFIG_CR + PCI_EXP_LNKCTL2);
+-		status = rockchip_pcie_read(rockchip, PCIE_RC_CONFIG_CR + PCI_EXP_LNKCTL);
+-		status |= PCI_EXP_LNKCTL_RL;
+-		rockchip_pcie_write(rockchip, status, PCIE_RC_CONFIG_CR + PCI_EXP_LNKCTL);
+-
+-		err = readl_poll_timeout(rockchip->apb_base + PCIE_CORE_CTRL,
+-					 status, PCIE_LINK_IS_GEN2(status), 20,
+-					 500 * USEC_PER_MSEC);
+-		if (err)
+-			dev_dbg(dev, "PCIe link training gen2 timeout, fall back to gen1!\n");
+-	}
+-
+ 	/* Check the final link width from negotiated lane counter from MGMT */
+ 	status = rockchip_pcie_read(rockchip, PCIE_CORE_CTRL);
+ 	status = 0x1 << ((status & PCIE_CORE_PL_CONF_LANE_MASK) >>
+-- 
+2.43.0
+

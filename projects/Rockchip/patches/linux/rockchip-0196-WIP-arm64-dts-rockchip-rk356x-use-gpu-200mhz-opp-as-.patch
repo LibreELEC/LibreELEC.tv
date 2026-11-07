@@ -1,0 +1,67 @@
+From 02b018b58bed9d167387c2647ebed11348dbddf4 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 27 Apr 2025 20:38:05 +0000
+Subject: [PATCH 196/280] WIP: arm64: dts: rockchip: rk356x: use gpu 200mhz opp
+ as opp-suspend
+
+CLK_GPU is the main clock for the GPU on RK356x, it's typical source
+pll can be one of mpll, gpll, cpll or npll. For higher clock rates it
+is also possible to use the gpu pvtpll as pll source.
+
+The logic to switch between a normal pll and the pvtpll depending on
+rate is handled in TF-A firmware, and exposed to Linux as a scmi clock.
+In the device tree this is modeled in the gpu node by using the scmi gpu
+clk as the core gpu clk and the normal CLK_GPU as a bus clk.
+
+TF-A will typically change to use normal pll for rates up to 400 MHz and
+use pvtpll for 600 MHz or more.
+
+Add opp-suspend to the 200 MHz opp to ensure a normal pll is used when
+the gpu device is in PM runtime suspended state.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ arch/arm64/boot/dts/rockchip/rk3566.dtsi  | 1 +
+ arch/arm64/boot/dts/rockchip/rk3566t.dtsi | 1 +
+ arch/arm64/boot/dts/rockchip/rk3568.dtsi  | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3566.dtsi b/arch/arm64/boot/dts/rockchip/rk3566.dtsi
+index 3fcca79279f7..d3aa13545845 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3566.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3566.dtsi
+@@ -57,6 +57,7 @@ gpu_opp_table: opp-table-1 {
+ 		opp-200000000 {
+ 			opp-hz = /bits/ 64 <200000000>;
+ 			opp-microvolt = <850000 850000 1000000>;
++			opp-suspend;
+ 		};
+ 
+ 		opp-300000000 {
+diff --git a/arch/arm64/boot/dts/rockchip/rk3566t.dtsi b/arch/arm64/boot/dts/rockchip/rk3566t.dtsi
+index cd89bd3b125b..2a8c59e6777e 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3566t.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3566t.dtsi
+@@ -45,6 +45,7 @@ gpu_opp_table: opp-table-1 {
+ 		opp-200000000 {
+ 			opp-hz = /bits/ 64 <200000000>;
+ 			opp-microvolt = <850000 850000 1000000>;
++			opp-suspend;
+ 		};
+ 
+ 		opp-300000000 {
+diff --git a/arch/arm64/boot/dts/rockchip/rk3568.dtsi b/arch/arm64/boot/dts/rockchip/rk3568.dtsi
+index 2f42bf26fd9b..776e71eda2f1 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3568.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3568.dtsi
+@@ -68,6 +68,7 @@ gpu_opp_table: opp-table-1 {
+ 		opp-200000000 {
+ 			opp-hz = /bits/ 64 <200000000>;
+ 			opp-microvolt = <850000 850000 1000000>;
++			opp-suspend;
+ 		};
+ 
+ 		opp-300000000 {
+-- 
+2.43.0
+

@@ -1,0 +1,87 @@
+From 2e9b4d8cfabe688f4b6b43c345417e1fcb30af0d Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 19 Apr 2026 23:48:33 +0000
+Subject: [PATCH 185/280] WIP: drm/rockchip: dw_hdmi: use tmds_char_rate_valid
+ ops
+
+NOTE: switch from mode_valid to tmds_char_rate_valid
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+index e0a404bd6d09..38654a9f988b 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -198,9 +198,9 @@ static const struct dw_hdmi_phy_config rockchip_phy_config[] = {
+ };
+ 
+ static enum drm_mode_status
+-dw_hdmi_rockchip_mode_valid(struct dw_hdmi *dw_hdmi, void *data,
+-			    const struct drm_display_info *info,
+-			    const struct drm_display_mode *mode)
++dw_hdmi_rockchip_tmds_char_rate_valid(struct dw_hdmi *dw_hdmi, void *data,
++				      const struct drm_display_mode *mode,
++				      unsigned long long tmds_rate)
+ {
+ 	struct rockchip_hdmi *hdmi = data;
+ 	int pclk = mode->clock * 1000;
+@@ -435,7 +435,7 @@ static struct rockchip_hdmi_chip_data rk3228_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3228_hdmi_drv_data = {
+-	.mode_valid = dw_hdmi_rockchip_mode_valid,
++	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.phy_data = &rk3228_chip_data,
+ 	.phy_ops = &rk3228_hdmi_phy_ops,
+ 	.phy_name = "inno_dw_hdmi_phy2",
+@@ -450,7 +450,7 @@ static struct rockchip_hdmi_chip_data rk3288_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3288_hdmi_drv_data = {
+-	.mode_valid = dw_hdmi_rockchip_mode_valid,
++	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+ 	.phy_config = rockchip_phy_config,
+@@ -470,7 +470,7 @@ static struct rockchip_hdmi_chip_data rk3328_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3328_hdmi_drv_data = {
+-	.mode_valid = dw_hdmi_rockchip_mode_valid,
++	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.phy_data = &rk3328_chip_data,
+ 	.phy_ops = &rk3328_hdmi_phy_ops,
+ 	.phy_name = "inno_dw_hdmi_phy2",
+@@ -483,7 +483,7 @@ static struct rockchip_hdmi_chip_data rk3368_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3368_hdmi_drv_data = {
+-	.mode_valid = dw_hdmi_rockchip_mode_valid,
++	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+ 	.phy_config = rockchip_phy_config,
+@@ -499,7 +499,7 @@ static struct rockchip_hdmi_chip_data rk3399_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3399_hdmi_drv_data = {
+-	.mode_valid = dw_hdmi_rockchip_mode_valid,
++	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+ 	.phy_config = rockchip_phy_config,
+@@ -513,7 +513,7 @@ static struct rockchip_hdmi_chip_data rk3568_chip_data = {
+ };
+ 
+ static const struct dw_hdmi_plat_data rk3568_hdmi_drv_data = {
+-	.mode_valid = dw_hdmi_rockchip_mode_valid,
++	.tmds_char_rate_valid = dw_hdmi_rockchip_tmds_char_rate_valid,
+ 	.mpll_cfg   = rockchip_mpll_cfg,
+ 	.cur_ctr    = rockchip_cur_ctr,
+ 	.phy_config = rockchip_phy_config,
+-- 
+2.43.0
+

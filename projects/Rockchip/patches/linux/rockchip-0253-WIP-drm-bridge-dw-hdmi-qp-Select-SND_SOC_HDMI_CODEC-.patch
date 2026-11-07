@@ -1,0 +1,33 @@
+From c058c39135958c0de25f55e9886cbb66d23c5dff Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Fri, 20 Feb 2026 10:51:29 +0000
+Subject: [PATCH 253/280] WIP: drm/bridge: dw-hdmi-qp: Select
+ SND_SOC_HDMI_CODEC for HDMI audio controls
+
+Add 'select SND_SOC_HDMI_CODEC if SND_SOC' to match all other bridge
+drivers using DRM_BRIDGE_OP_HDMI_AUDIO and DRM_DW_HDMI_I2S_AUDIO to
+ensure the hdmi-codec driver is compiled and the ELD, IEC958 Playback
+Default, IEC958 Playback Mask, and Playback Channel Map ALSA controls
+are created.
+
+Assisted-by: Claude:claude-opus-4-6
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/Kconfig b/drivers/gpu/drm/bridge/synopsys/Kconfig
+index bee64e547d1e..024313122604 100644
+--- a/drivers/gpu/drm/bridge/synopsys/Kconfig
++++ b/drivers/gpu/drm/bridge/synopsys/Kconfig
+@@ -63,6 +63,7 @@ config DRM_DW_HDMI_QP
+ 	select DRM_DISPLAY_HELPER
+ 	select DRM_KMS_HELPER
+ 	select REGMAP_MMIO
++	select SND_SOC_HDMI_CODEC if SND_SOC
+ 
+ config DRM_DW_HDMI_QP_CEC
+ 	bool "Synopsis Designware QP CEC interface"
+-- 
+2.43.0
+

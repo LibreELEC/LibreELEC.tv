@@ -1,0 +1,45 @@
+From db7c0c4559e246f83278af96ae6b28ad493b6c81 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 11:08:55 +0000
+Subject: [PATCH 233/280] WIP: drm/bridge: dw-hdmi-qp: allow platforms to
+ enable Dolby Vision
+
+Add a dolby_vision platform flag and pass it on as the bridge's
+hdmi_dolby_vision capability. The 27-byte Dolby vendor-specific
+InfoFrame fits the existing VSI packet registers, so no other change is
+needed in the bridge.
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 3 +++
+ include/drm/bridge/dw_hdmi_qp.h              | 2 ++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index e7b5b90249c5..bea897904625 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -1182,6 +1182,9 @@ struct dw_hdmi_qp *dw_hdmi_qp_bind(struct platform_device *pdev,
+ 	if (plat_data->supported_colorspaces)
+ 		hdmi->bridge.supported_colorspaces = plat_data->supported_colorspaces;
+ 
++	/* The Dolby VSIF (27 bytes) fits the VSI packet registers. */
++	hdmi->bridge.hdmi_dolby_vision = plat_data->dolby_vision;
++
+ 	if (plat_data->max_bpc)
+ 		hdmi->bridge.max_bpc = plat_data->max_bpc;
+ 
+diff --git a/include/drm/bridge/dw_hdmi_qp.h b/include/drm/bridge/dw_hdmi_qp.h
+index c336bd40c9cb..246eb77e87f2 100644
+--- a/include/drm/bridge/dw_hdmi_qp.h
++++ b/include/drm/bridge/dw_hdmi_qp.h
+@@ -32,6 +32,8 @@ struct dw_hdmi_qp_plat_data {
+ 	unsigned int supported_colorspaces;
+ 	/* Maximum bits per color channel: 8, 10 or 12 */
+ 	unsigned int max_bpc;
++	/* The CRTC guarantees bit-exact scanout for Dolby Vision tunnelling */
++	bool dolby_vision;
+ };
+ 
+ struct dw_hdmi_qp *dw_hdmi_qp_bind(struct platform_device *pdev,
+-- 
+2.43.0
+

@@ -1,0 +1,103 @@
+From 933eca02091df1d3cbf0df172fdddeed04793120 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:43 +0300
+Subject: [PATCH 025/280] FROMGIT(7.4): drm/display: bridge_connector: Wire up
+ HDMI 2.0 scrambler callbacks
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Connect the bridge connector's .scrambler_{enable|disable} callbacks to
+the underlying bridge's .hdmi_scrambler_{enable|disable} funcs when
+HDMI 2.0 conformance is advertised.
+
+This completes the bridge connector plumbing so that the SCDC
+scrambling helpers can control source-side scrambling through the
+bridge chain.
+
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-19-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ .../gpu/drm/display/drm_bridge_connector.c    | 40 ++++++++++++++++++-
+ 1 file changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/display/drm_bridge_connector.c b/drivers/gpu/drm/display/drm_bridge_connector.c
+index 4ad3cd107ecd..0f85ca2bf209 100644
+--- a/drivers/gpu/drm/display/drm_bridge_connector.c
++++ b/drivers/gpu/drm/display/drm_bridge_connector.c
+@@ -577,6 +577,32 @@ static int drm_bridge_connector_write_spd_infoframe(struct drm_connector *connec
+ 	return bridge->funcs->hdmi_write_spd_infoframe(bridge, buffer, len);
+ }
+ 
++static int drm_bridge_connector_scrambler_enable(struct drm_connector *connector)
++{
++	struct drm_bridge_connector *bridge_connector =
++		to_drm_bridge_connector(connector);
++	struct drm_bridge *bridge;
++
++	bridge = bridge_connector->bridge_hdmi;
++	if (!bridge)
++		return -EINVAL;
++
++	return bridge->funcs->hdmi_scrambler_enable(bridge);
++}
++
++static int drm_bridge_connector_scrambler_disable(struct drm_connector *connector)
++{
++	struct drm_bridge_connector *bridge_connector =
++		to_drm_bridge_connector(connector);
++	struct drm_bridge *bridge;
++
++	bridge = bridge_connector->bridge_hdmi;
++	if (!bridge)
++		return -EINVAL;
++
++	return bridge->funcs->hdmi_scrambler_disable(bridge);
++}
++
+ static const struct drm_edid *
+ drm_bridge_connector_read_edid(struct drm_connector *connector)
+ {
+@@ -604,7 +630,7 @@ static const struct drm_connector_hdmi_funcs drm_bridge_connector_hdmi_funcs = {
+ 		.clear_infoframe = drm_bridge_connector_clear_hdmi_infoframe,
+ 		.write_infoframe = drm_bridge_connector_write_hdmi_infoframe,
+ 	},
+-	/* audio, hdr_drm and spd are set dynamically during init */
++	/* scrambler, audio, hdr_drm and spd are set dynamically during init */
+ };
+ 
+ static const struct drm_connector_infoframe_funcs drm_bridge_connector_hdmi_audio_infoframe = {
+@@ -908,6 +934,11 @@ struct drm_connector *drm_bridge_connector_init(struct drm_device *drm,
+ 			     !bridge->funcs->hdmi_clear_spd_infoframe))
+ 				return ERR_PTR(-EINVAL);
+ 
++			if (bridge->supported_hdmi_ver >= HDMI_VERSION_2_0 &&
++			    (!bridge->funcs->hdmi_scrambler_enable ||
++			     !bridge->funcs->hdmi_scrambler_disable))
++				return ERR_PTR(-EINVAL);
++
+ 			bridge_connector->bridge_hdmi = drm_bridge_get(bridge);
+ 		}
+ 
+@@ -1027,6 +1058,13 @@ struct drm_connector *drm_bridge_connector_init(struct drm_device *drm,
+ 			bridge_connector->hdmi_funcs.spd =
+ 				drm_bridge_connector_hdmi_spd_infoframe;
+ 
++		if (bridge_connector->bridge_hdmi->supported_hdmi_ver >= HDMI_VERSION_2_0) {
++			bridge_connector->hdmi_funcs.scrambler_enable =
++				drm_bridge_connector_scrambler_enable;
++			bridge_connector->hdmi_funcs.scrambler_disable =
++				drm_bridge_connector_scrambler_disable;
++		}
++
+ 		ret = drmm_connector_hdmi_init(drm, connector,
+ 					       &drm_bridge_connector_funcs,
+ 					       &bridge_connector->hdmi_funcs,
+-- 
+2.43.0
+

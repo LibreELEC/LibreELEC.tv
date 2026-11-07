@@ -1,0 +1,36 @@
+From 5e6a21655c0a57c1bc1a9e1e7ce20f15f0f7a6c1 Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Thu, 10 Sep 2026 09:34:45 -0400
+Subject: [PATCH 091/280] FROMLIST(v2): ARM: dts: rockchip: Rename
+ rk3288-tinker HDMI audio card
+
+Rename the audio card to "RK3288 HDMI" so it can be identified
+user-visible ALSA fields and match the naming scheme used across
+the rest of the Rockchip family.
+
+It gets the same name as the rk3288-miqi, making the sound node
+identical in both device trees, but won't be moved to rk3288.dtsi as
+tinker and miqi are the only rk3288 boards with HDMI sound.
+
+Fixes: e58c5e739d6f ("ARM: dts: rockchip: move shared tinker-board nodes to a common dtsi")
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ arch/arm/boot/dts/rockchip/rk3288-tinker.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/rockchip/rk3288-tinker.dtsi b/arch/arm/boot/dts/rockchip/rk3288-tinker.dtsi
+index 7e16022c7d9e..1caf49579ae3 100644
+--- a/arch/arm/boot/dts/rockchip/rk3288-tinker.dtsi
++++ b/arch/arm/boot/dts/rockchip/rk3288-tinker.dtsi
+@@ -73,7 +73,7 @@ sdio_pwrseq: sdio-pwrseq {
+ 	sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+-		simple-audio-card,name = "rockchip,tinker-codec";
++		simple-audio-card,name = "RK3288 HDMI";
+ 		simple-audio-card,mclk-fs = <512>;
+ 
+ 		simple-audio-card,codec {
+-- 
+2.43.0
+

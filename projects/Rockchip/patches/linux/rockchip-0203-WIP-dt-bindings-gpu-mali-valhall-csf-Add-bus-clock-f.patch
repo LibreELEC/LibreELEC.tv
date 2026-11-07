@@ -1,0 +1,37 @@
+From 57eb2c4cd4bb6d3e1e5928e5047615095452c48e Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 27 Apr 2025 20:34:01 +0000
+Subject: [PATCH 203/280] WIP: dt-bindings: gpu: mali-valhall-csf: Add bus
+ clock for RK3588
+
+Add support for a bus clock for rockchip,rk3588-mali compatible.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ .../devicetree/bindings/gpu/arm,mali-valhall-csf.yaml          | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/gpu/arm,mali-valhall-csf.yaml b/Documentation/devicetree/bindings/gpu/arm,mali-valhall-csf.yaml
+index 8eccd4338a2b..5713020068ec 100644
+--- a/Documentation/devicetree/bindings/gpu/arm,mali-valhall-csf.yaml
++++ b/Documentation/devicetree/bindings/gpu/arm,mali-valhall-csf.yaml
+@@ -40,7 +40,7 @@ properties:
+ 
+   clocks:
+     minItems: 1
+-    maxItems: 3
++    maxItems: 4
+ 
+   clock-names:
+     minItems: 1
+@@ -50,6 +50,7 @@ properties:
+           - coregroup
+           - stacks
+       - const: stacks
++      - const: bus
+ 
+   nvmem-cells:
+     items:
+-- 
+2.43.0
+

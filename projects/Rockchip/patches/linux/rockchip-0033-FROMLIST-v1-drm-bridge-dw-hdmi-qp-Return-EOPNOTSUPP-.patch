@@ -1,0 +1,56 @@
+From 7a00a07a08c454109c1b725bb3215585164d64d7 Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Tue, 19 May 2026 14:00:11 -0400
+Subject: [PATCH 033/280] FROMLIST(v1): drm/bridge: dw-hdmi-qp: Return
+ -EOPNOTSUPP in HDMI audio functions
+
+-EOPNOTSUPP is not logged as an error by the ASoC subsystem, but -ENODEV
+is. It also better represents the situation: The operation is currently not
+supported (because clocks are not enabled and tmds_char_rate is
+unavailable), but the hardware is present.
+
+Using -EOPNOTSUPP in the audio_prepare callback removes possible repeated
+warning log lines when HDMI is not connected.
+
+Returning -EOPNOTSUPP in the audio_enable callback is also needed as it
+avoids logging 0-valued ELD errors.
+
+When tmds_char_rate is available, the clocks are enabled and the
+functions will keep returning 0 as before.
+
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # Rock 5B, NanoPC-T6 LTS & Plus
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index cfd1b18c06e6..136972bc231e 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -467,8 +467,10 @@ static int dw_hdmi_qp_audio_enable(struct drm_bridge *bridge,
+ {
+ 	struct dw_hdmi_qp *hdmi = dw_hdmi_qp_from_bridge(bridge);
+ 
+-	if (hdmi->tmds_char_rate)
+-		dw_hdmi_qp_mod(hdmi, 0, AVP_DATAPATH_PACKET_AUDIO_SWDISABLE, GLOBAL_SWDISABLE);
++	if (!hdmi->tmds_char_rate)
++		return -EOPNOTSUPP;
++
++	dw_hdmi_qp_mod(hdmi, 0, AVP_DATAPATH_PACKET_AUDIO_SWDISABLE, GLOBAL_SWDISABLE);
+ 
+ 	return 0;
+ }
+@@ -482,7 +484,7 @@ static int dw_hdmi_qp_audio_prepare(struct drm_bridge *bridge,
+ 	bool ref2stream = false;
+ 
+ 	if (!hdmi->tmds_char_rate)
+-		return -ENODEV;
++		return -EOPNOTSUPP;
+ 
+ 	if (fmt->bit_clk_provider | fmt->frame_clk_provider) {
+ 		dev_err(hdmi->dev, "unsupported clock settings\n");
+-- 
+2.43.0
+

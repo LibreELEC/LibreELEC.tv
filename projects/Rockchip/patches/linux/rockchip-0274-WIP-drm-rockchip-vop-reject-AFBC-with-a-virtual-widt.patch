@@ -1,0 +1,39 @@
+From 99b8710fdf17cec933c27b2d0128520556481df8 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 09:59:02 +0000
+Subject: [PATCH 274/280] WIP: drm/rockchip: vop: reject AFBC with a virtual
+ width
+
+The VOP AFBC decoder is programmed with the source size only and cannot
+skip a stride wider than the source, so a cropped AFBC buffer is scanned
+out with the wrong layout.
+
+Reject AFBC planes whose source width differs from the framebuffer
+width, as the vendor kernel does on RK3399.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+index 74d5a8dc2675..3966f241c010 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+@@ -928,6 +928,12 @@ static int vop_plane_atomic_check(struct drm_plane *plane,
+ 				      new_plane_state->rotation);
+ 			return -EINVAL;
+ 		}
++
++		if (fb->width != drm_rect_width(&new_plane_state->src) >> 16) {
++			DRM_DEBUG_KMS("AFBC does not support a virtual width, fb width=%u\n",
++				      fb->width);
++			return -EINVAL;
++		}
+ 	}
+ 
+ 	return 0;
+-- 
+2.43.0
+

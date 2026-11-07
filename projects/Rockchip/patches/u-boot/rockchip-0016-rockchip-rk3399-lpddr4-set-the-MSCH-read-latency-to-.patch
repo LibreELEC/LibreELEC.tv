@@ -1,0 +1,43 @@
+From 49c6e385c684931a4b2d5d5528f27d18f2265bb2 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 14:35:54 +0000
+Subject: [PATCH] rockchip: rk3399: lpddr4: set the MSCH read latency to 0x20
+
+The LPDDR4 NoC timings set the MSCH ddrtiminga0 read latency to 0x80.
+At 4K 10-bit 50/60 fps the VOP underflows while the video decoder and
+display share DDR, and the Rockchip vendor LPDDR4 board configurations
+use a read latency of 0x20.
+
+Set the read latency to 0x20 for both channels.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi b/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi
+index f0c478d189e..d30a09448c5 100644
+--- a/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi
++++ b/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi
+@@ -18,7 +18,7 @@
+ 		0xf
+ 		0xf
+ 		1
+-		0x80241d22
++		0x20241d22
+ 		0x15050f08
+ 		0x00000602
+ 		0x00002122
+@@ -35,7 +35,7 @@
+ 		0xf
+ 		0xf
+ 		1
+-		0x80241d22
++		0x20241d22
+ 		0x15050f08
+ 		0x00000602
+ 		0x00002122
+-- 
+2.43.0
+

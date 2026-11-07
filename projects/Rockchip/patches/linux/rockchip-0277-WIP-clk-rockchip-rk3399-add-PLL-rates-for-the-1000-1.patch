@@ -1,0 +1,55 @@
+From bc965755f82beeda9e30b7a34511d540a69ab818 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 12:22:13 +0000
+Subject: [PATCH 277/280] WIP: clk: rockchip: rk3399: add PLL rates for the
+ 1000/1001 HDMI clocks
+
+The PLL rate table has the integer HDMI pixel clocks but none of their
+1000/1001 variants. VPLL rounds a request down to the next table rate,
+so 148.352 MHz becomes 106.5 MHz, and the dw-hdmi glue rejects the mode
+because that is more than 0.1% away. Every 59.94, 29.97 and 23.976 Hz
+mode is removed.
+
+Add fractional entries at the rates DRM uses for these modes: 593.407,
+296.703, 148.352 and 74.176 MHz. Run the VCO at 2967 MHz (3115 MHz for
+74.176 MHz) as the vendor kernel does, with the fraction chosen so that
+the rate calculated from the registers equals the table rate. A higher
+rate makes a child divider round up to divide by 2, and any difference
+makes the clk core predict a different rate than it later reads back,
+which leaves the dclk_vop0 fractional mux selected by its notifier.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/clk/rockchip/clk-rk3399.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/clk/rockchip/clk-rk3399.c b/drivers/clk/rockchip/clk-rk3399.c
+index c2b243d7a5e2..01360084113f 100644
+--- a/drivers/clk/rockchip/clk-rk3399.c
++++ b/drivers/clk/rockchip/clk-rk3399.c
+@@ -88,17 +88,21 @@ static struct rockchip_pll_rate_table rk3399_pll_rates[] = {
+ 	RK3036_PLL_RATE( 676000000, 3, 169, 2, 1, 1, 0),
+ 	RK3036_PLL_RATE( 600000000, 1, 75, 3, 1, 1, 0),
+ 	RK3036_PLL_RATE( 594000000, 1, 99, 4, 1, 1, 0),
++	RK3036_PLL_RATE( 593407000, 1, 123, 5, 1, 0, 10510227),
+ 	RK3036_PLL_RATE( 533250000, 8, 711, 4, 1, 1, 0),
+ 	RK3036_PLL_RATE( 504000000, 1, 63, 3, 1, 1, 0),
+ 	RK3036_PLL_RATE( 500000000, 6, 250, 2, 1, 1, 0),
+ 	RK3036_PLL_RATE( 408000000, 1, 68, 2, 2, 1, 0),
+ 	RK3036_PLL_RATE( 312000000, 1, 52, 2, 2, 1, 0),
+ 	RK3036_PLL_RATE( 297000000, 1, 99, 4, 2, 1, 0),
++	RK3036_PLL_RATE( 296703000, 1, 123, 5, 2, 0, 10506732),
+ 	RK3036_PLL_RATE( 216000000, 1, 72, 4, 2, 1, 0),
+ 	RK3036_PLL_RATE( 148500000, 1, 99, 4, 4, 1, 0),
++	RK3036_PLL_RATE( 148352000, 1, 123, 5, 4, 0, 10513723),
+ 	RK3036_PLL_RATE( 106500000, 1, 71, 4, 4, 1, 0),
+ 	RK3036_PLL_RATE(  96000000, 1, 64, 4, 4, 1, 0),
+ 	RK3036_PLL_RATE(  74250000, 2, 99, 4, 4, 1, 0),
++	RK3036_PLL_RATE(  74176000, 1, 129, 7, 6, 0, 13555991),
+ 	RK3036_PLL_RATE(  65000000, 1, 65, 6, 4, 1, 0),
+ 	RK3036_PLL_RATE(  54000000, 1, 54, 6, 4, 1, 0),
+ 	RK3036_PLL_RATE(  27000000, 1, 27, 6, 4, 1, 0),
+-- 
+2.43.0
+

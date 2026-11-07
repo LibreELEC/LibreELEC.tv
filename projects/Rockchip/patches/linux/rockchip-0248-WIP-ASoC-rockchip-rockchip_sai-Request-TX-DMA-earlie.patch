@@ -1,0 +1,41 @@
+From b5cfb68dcd7d0d0352445428f791eaa103eb7fab Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 12 Oct 2026 14:48:31 +0000
+Subject: [PATCH 248/280] WIP: ASoC: rockchip: rockchip_sai: Request TX DMA
+ earlier
+
+The TX DMA request level is 16 words per lane, which leaves about 41 us
+of audio in each lane FIFO at 192 kHz with two 32-bit slots per lane.
+Mainline pl330 restarts each cyclic period from its interrupt handler
+and sometimes takes longer than that, so 8-channel 192 kHz playback,
+the format used for HBR passthrough, underruns several times a second.
+Each underrun stops the stream and is heard as a dropout.
+
+Request DMA at 28 words instead. The FIFO is 32 words per lane and a
+16-beat burst over four lanes adds four words to each, so this is the
+highest level that cannot overflow and nearly doubles the headroom.
+On RK3576 8-channel S16_LE at 192 kHz then plays without underruns.
+
+Fixes: cc78d1eaabad ("ASoC: rockchip: add Serial Audio Interface (SAI) driver")
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ sound/soc/rockchip/rockchip_sai.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sound/soc/rockchip/rockchip_sai.c b/sound/soc/rockchip/rockchip_sai.c
+index c303732c652d..8fbbe3c7d4d4 100644
+--- a/sound/soc/rockchip/rockchip_sai.c
++++ b/sound/soc/rockchip/rockchip_sai.c
+@@ -1155,7 +1155,7 @@ static int rockchip_sai_init_dai(struct rk_sai_dev *sai, struct resource *res,
+ 	}
+ 
+ 	regmap_update_bits(sai->regmap, SAI_DMACR, SAI_DMACR_TDL_MASK,
+-			   SAI_DMACR_TDL(16));
++			   SAI_DMACR_TDL(28));
+ 	regmap_update_bits(sai->regmap, SAI_DMACR, SAI_DMACR_RDL_MASK,
+ 			   SAI_DMACR_RDL(16));
+ 
+-- 
+2.43.0
+
