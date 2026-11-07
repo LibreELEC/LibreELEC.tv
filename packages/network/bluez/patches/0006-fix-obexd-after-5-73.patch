@@ -4,7 +4,7 @@ Date: Sat, 09 Mar 2024 08:05:30 +0000
 Subject: [PATCH] fix obexd after 5 73
 
 diff --git a/Makefile.obexd b/Makefile.obexd
-index 7ad74e128..666463b7c 100644
+index 9daa5aac2..96b81c5b4 100644
 --- a/Makefile.obexd
 +++ b/Makefile.obexd
 @@ -1,6 +1,4 @@
@@ -23,7 +23,7 @@ index 7ad74e128..666463b7c 100644
  obexd_builtin_modules += irmc
  obexd_builtin_sources += obexd/plugins/irmc.c
  
-@@ -57,6 +57,8 @@ obexd_builtin_sources += obexd/plugins/mas.c obexd/src/map_ap.h \
+@@ -58,6 +58,8 @@ obexd_builtin_sources += obexd/plugins/mas.c obexd/src/map_ap.h \
  				obexd/plugins/messages.h \
  				obexd/plugins/messages-dummy.c
  
@@ -32,7 +32,7 @@ index 7ad74e128..666463b7c 100644
  obexd_builtin_modules += mns
  obexd_builtin_sources += obexd/client/mns.c obexd/src/map_ap.h \
  				obexd/client/map-event.h
-@@ -108,11 +110,6 @@ obexd_src_obexd_CPPFLAGS = $(AM_CPPFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) \
+@@ -109,11 +111,6 @@ obexd_src_obexd_CPPFLAGS = $(AM_CPPFLAGS) $(GLIB_CFLAGS) $(DBUS_CFLAGS) \
  				-D_FILE_OFFSET_BITS=64 \
  				-I$(builddir)/obexd/src
  

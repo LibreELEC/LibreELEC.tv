@@ -29,10 +29,10 @@ Signed-off-by: Gary Bisson <gary.bisson@boundarydevices.com>
  create mode 100644 tools/hciattach_rome.h
 
 diff --git a/Makefile.tools b/Makefile.tools
-index 6188449f1..a8acaeef3 100644
+index 3a376b3d0..4e693ccc2 100644
 --- a/Makefile.tools
 +++ b/Makefile.tools
-@@ -425,6 +425,7 @@ tools_hciattach_SOURCES = tools/hciattach.c tools/hciattach.h \
+@@ -442,6 +442,7 @@ tools_hciattach_SOURCES = tools/hciattach.c tools/hciattach.h \
  						tools/hciattach_ti.c \
  						tools/hciattach_tialt.c \
  						tools/hciattach_ath3k.c \

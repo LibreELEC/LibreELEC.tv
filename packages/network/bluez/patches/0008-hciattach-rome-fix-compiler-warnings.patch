@@ -118,5 +118,5 @@ index 1b7a27f..eeae2fa 100644
  		if (err < 0) {
  			fprintf(stderr, "Failed to RESET after RAMPATCH upgrade!\n");
 -- 
-2.47.1
+2.53.0
 
