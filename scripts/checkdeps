@@ -256,7 +256,7 @@ if [ "${#need_map[@]}" -gt 0 ]; then
 
   if command -v sudo >/dev/null; then
     case "${DISTRO}" in
-      ubuntu|debian|linuxmint|\"elementary\")
+      ubuntu|debian|kali|linuxmint|\"elementary\")
         get_yes_no && sudo apt-get install "${need_map[@]}"
         ;;
       fedora|centos|rhel)

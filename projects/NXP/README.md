@@ -9,7 +9,5 @@ This project is for NXP SoC devices
 * [Udoo](devices/iMX6)
 * [Wandboard](devices/iMX6)
 
-**iMX8**
-* [Coral Edge TPU Development Board](devices/iMX8)
-* [i.MX8MQ EVK](devices/iMX8)
-* [TechNexion PICO-PI-8M](devices/iMX8)
+**iMX8MP**
+* [Variscite DART-MX8MP on DT8MCustomBoard](devices/VAR-DART-IMX8MP)
