@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="@PKG_ADDON_ID@"
+       name="@ADDON_NAME@"
+       version="0"
+       provider-name="@PROVIDER_NAME@">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+@REQUIRES@
+  </requires>
+  <extension point="xbmc.service" library="default.py"/>
+  <extension point="kodi.context.item">
+    <menu id="kodi.core.main">
+      <item library="resources/lib/context.py">
+        <label>30120</label>
+        <visible>[Window.IsActive(videos) + !ListItem.IsFolder] | String.IsEqual(ListItem.DBType,movie) | String.IsEqual(ListItem.DBType,episode) | String.IsEqual(ListItem.DBType,musicvideo)</visible>
+      </item>
+    </menu>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>@PKG_SHORTDESC@</summary>
+    <description>
+@PKG_LONGDESC@
+    </description>
+    <disclaimer>
+@PKG_DISCLAIMER@
+    </disclaimer>
+    <platform>all</platform>
+    <news>
+@PKG_ADDON_NEWS@
+    </news>
+    <assets>
+      <icon>resources/icon.png</icon>
+      <fanart>resources/fanart.png</fanart>
+    </assets>
+  </extension>
+</addon>
