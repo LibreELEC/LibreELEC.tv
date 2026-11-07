@@ -3,8 +3,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libplist"
-PKG_VERSION="2.8.0"
-PKG_SHA256="b1f59f7634c58b2481325a23ff4e3bf51574a42d868cbe466d2b39b04550752a"
+PKG_VERSION="2.8.1"
+PKG_SHA256="2a1792e5820e1657c173735fde75baeebd6dd967d2ac47be1e3891ddc64ebefa"
 PKG_LICENSE="LGPL-2.1-or-later"
 PKG_SITE="http://www.libimobiledevice.org/"
 PKG_URL="https://github.com/libimobiledevice/libplist/releases/download/${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.bz2"
