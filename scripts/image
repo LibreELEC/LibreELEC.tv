@@ -194,6 +194,17 @@ EOF
 
 ln -sf /etc/issue ${INSTALL}/etc/motd
 
+# Copy DISTRIBUTION related files to filesystem
+if [ -d "${DISTRO_DIR}/${DISTRO}/filesystem" ]; then
+  cp -PR --remove-destination ${DISTRO_DIR}/${DISTRO}/filesystem/* ${INSTALL}
+  #install distribution specific systemd services
+  for service in ${DISTRO_DIR}/${DISTRO}/filesystem/usr/lib/systemd/system/*.service; do
+    if [ -f "${service}" ]; then
+      enable_service ${service##*/}
+    fi
+  done
+fi
+
 # Copy PROJECT related files to filesystem
 if [ -d "${PROJECT_DIR}/${PROJECT}/filesystem" ]; then
   cp -PR --remove-destination ${PROJECT_DIR}/${PROJECT}/filesystem/* ${INSTALL}
