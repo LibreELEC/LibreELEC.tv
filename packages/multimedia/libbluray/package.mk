@@ -3,6 +3,7 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libbluray"
+# also bump packages/addons/tools/jre.zulu/package.mk
 PKG_VERSION="1.5.0"
 PKG_SHA256="f676408e91a5d321abf8b8d4dfdae36205c297dab5c54c3ec519639025f474a2"
 PKG_LICENSE="LGPL-2.1-or-later"
