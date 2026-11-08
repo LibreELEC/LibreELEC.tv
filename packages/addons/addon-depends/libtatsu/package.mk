@@ -2,8 +2,8 @@
 # Copyright (C) 2025-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libtatsu"
-PKG_VERSION="1.0.5"
-PKG_SHA256="536fa228b14f156258e801a7f4d25a3a9dd91bb936bf6344e23171403c57e440"
+PKG_VERSION="1.1.0"
+PKG_SHA256="96c8abd97552a4a0c487c701aba9a65d590c338dd331058ffb38304290b696c7"
 PKG_LICENSE="LGPL-2.1-or-later"
 PKG_SITE="http://www.libimobiledevice.org"
 PKG_URL="https://github.com/libimobiledevice/libtatsu/releases/download/${PKG_VERSION}/libtatsu-${PKG_VERSION}.tar.bz2"
