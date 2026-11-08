@@ -8,17 +8,17 @@ Subject: [PATCH] meh help2man
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/Makefile.in b/Makefile.in
-index 3ec84b8..03c30d8 100644
+index f9b21b1..d87c756 100644
 --- a/Makefile.in
 +++ b/Makefile.in
-@@ -751,7 +751,7 @@ update_mans = \
+@@ -760,7 +760,7 @@ update_mans = \
      $(MKDIR_P) doc \
      && AUTOMAKE_HELP2MAN=true ./pre-inst-env \
         $(PERL) $(srcdir)/doc/help2man --output=$@ --info-page=automake \
 -               --name="$${HELP2MAN_NAME}"
 +               --name="$${HELP2MAN_NAME}" --no-discard-stderr
  
- checklinkx = $(top_srcdir)/contrib/checklinkx
+ checklinkx = $(top_srcdir)/maintainer/checklinkx
  # that particular sleep seems to be what gnu.org likes.
 -- 
 2.53.0
