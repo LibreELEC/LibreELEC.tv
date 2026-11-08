@@ -41,6 +41,18 @@
     <keybind key="C-A-BackSpace">
       <action name="Exit" />
     </keybind>
+
+    <!-- Volume controls (pactl / PipeWire / PulseAudio) -->
+    <keybind key="XF86AudioRaiseVolume">
+      <action name="Execute" command="/storage/.kodi/addons/tools.externalhelper/bin/pa-volume-control up" />
+    </keybind>
+    <keybind key="XF86AudioLowerVolume">
+      <action name="Execute" command="/storage/.kodi/addons/tools.externalhelper/bin/pa-volume-control down" />
+    </keybind>
+    <keybind key="XF86AudioMute">
+      <action name="Execute" command="/storage/.kodi/addons/tools.externalhelper/bin/pa-volume-control mute" />
+    </keybind>
+
   </keyboard>
 </labwc_config>
 
