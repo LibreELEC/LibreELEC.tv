@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@gmail.com>
-Date: Thu, 01 Oct 2026 12:55:15 +0200
+Date: Thu, 1 Oct 2026 12:55:15 +0200
 Subject: [PATCH] drm/bridge: dw-hdmi: Optionally prefer deep color RGB
 
 Output bus formats are ordered with RGB888 ahead of every deep color
@@ -13,17 +13,22 @@ offered ahead of RGB888 if max_bpc and the sink allow them and the
 resulting TMDS rate fits both that limit and the sink's. Platforms
 which don't set it keep the current order.
 
+The maximum TMDS character rate of the HDMI Forum data block only
+covers rates above 340 MHz, where scrambling is used. Below that, the
+limit of the HDMI vendor specific data block still applies, which some
+sinks set lower than 340 MHz, so check unscrambled rates against it too.
+
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 46 ++++++++++++++++++++++-
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 55 ++++++++++++++++++++++-
  include/drm/bridge/dw_hdmi.h              |  8 ++++
- 2 files changed, 52 insertions(+), 2 deletions(-)
+ 2 files changed, 61 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-index f15f7522fdac..d7da04cf7b7a 100644
+index 6067674c3b50..391ffbb3446d 100644
 --- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
 +++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-@@ -2699,6 +2699,27 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+@@ -2719,6 +2719,36 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
   * - MEDIA_BUS_FMT_YUV8_1X24,
   */
  
@@ -45,13 +50,22 @@ index f15f7522fdac..d7da04cf7b7a 100644
 +	else
 +		max = min(max, 165000U);
 +
++	/*
++	 * The HDMI Forum data block only covers rates above 340 MHz, where
++	 * scrambling is used. Below that, the limit of the HDMI vendor
++	 * specific data block still applies, which some sinks set lower.
++	 */
++	if (tmds <= 340000 && info->hdmi.max_tmds_clock_14 &&
++	    tmds > info->hdmi.max_tmds_clock_14)
++		return false;
++
 +	return tmds <= max;
 +}
 +
  /*
   * Can return a maximum of 15 possible output formats for a mode/connector:
   * four YUV 4:2:0 ones for modes which also allow other formats, followed
-@@ -2712,12 +2733,14 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+@@ -2732,12 +2762,14 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
  					struct drm_connector_state *conn_state,
  					unsigned int *num_output_fmts)
  {
@@ -66,7 +80,7 @@ index f15f7522fdac..d7da04cf7b7a 100644
  	u32 *output_fmts;
  	unsigned int i = 0;
  
-@@ -2772,6 +2795,23 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+@@ -2792,6 +2824,23 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
  	 * if supported. In any case the default RGB888 format is added
  	 */
  
@@ -90,7 +104,7 @@ index f15f7522fdac..d7da04cf7b7a 100644
  	/* Default 8bit RGB fallback */
  	output_fmts[i++] = MEDIA_BUS_FMT_RGB888_1X24;
  
-@@ -2789,7 +2829,8 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+@@ -2809,7 +2858,8 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
  		if (info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444))
  			output_fmts[i++] = MEDIA_BUS_FMT_YUV12_1X36;
  
@@ -100,7 +114,7 @@ index f15f7522fdac..d7da04cf7b7a 100644
  	}
  
  	if (max_bpc >= 10 && info->bpc >= 10) {
-@@ -2799,7 +2840,8 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
+@@ -2819,7 +2869,8 @@ static u32 *dw_hdmi_bridge_atomic_get_output_bus_fmts(struct drm_bridge *bridge,
  		if (info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR444))
  			output_fmts[i++] = MEDIA_BUS_FMT_YUV10_1X30;
  
@@ -111,10 +125,10 @@ index f15f7522fdac..d7da04cf7b7a 100644
  
  	if (info->color_formats & BIT(DRM_OUTPUT_COLOR_FORMAT_YCBCR422))
 diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
-index c08afc56c09c..85243a952272 100644
+index 791e9f2617c5..3bd94437cdae 100644
 --- a/include/drm/bridge/dw_hdmi.h
 +++ b/include/drm/bridge/dw_hdmi.h
-@@ -147,6 +147,14 @@ struct dw_hdmi_plat_data {
+@@ -157,6 +157,14 @@ struct dw_hdmi_plat_data {
  	 */
  	bool phy_max_tmds_msm_ctrl_quirk;
  
@@ -129,6 +143,3 @@ index c08afc56c09c..85243a952272 100644
  	/*
  	 * Private data passed to all the .mode_valid() and .configure_phy()
  	 * callback functions.
--- 
-2.43.0
-
