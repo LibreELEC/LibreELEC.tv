@@ -1,47 +1,46 @@
-From 8b2861ed786011883bf892cc72a4f83e5b758b94 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@gmail.com>
 Date: Mon, 20 Jul 2026 13:41:36 +0200
-Subject: [PATCH 272/273] drm/bridge: dw-hdmi: Re-assert PHY clock select at
- max TMDS rate
+Subject: [PATCH] drm/bridge: dw-hdmi: Re-assert PHY clock select at max TMDS
+ rate
 
-At the top of the supported TMDS rate range (594 MHz), some PHY
-instances need HDMI_3D_TX_PHY_MSM_CTRL's clock select written again
-together with the override bit already used by the sibling
-HDMI_3D_TX_PHY_CKCALCTRL register, for the earlier write at the same
-offset to actually take effect. Lower rates configure correctly with
-a single write.
+Above the HDMI 1.4 TMDS rate limit of 340 MHz, some PHY instances need
+HDMI_3D_TX_PHY_MSM_CTRL's clock select written again together with the
+override bit already used by the sibling HDMI_3D_TX_PHY_CKCALCTRL
+register, for the earlier write at the same offset to actually take
+effect. This was first seen at 594 MHz, but a 592.5 MHz mode, just
+below the 1000/1001 variant of 594 MHz, shows the same striped picture
+until the next mode set. Lower rates configure correctly with a single
+write.
 
 Gate this behind a plat_data flag rather than applying it
 unconditionally, since other platforms sharing this PHY configure
-function can also legitimately reach 594 MHz and have not been
+function can also legitimately reach these rates and have not been
 verified to need or tolerate the extra write.
-
-Also match the 1000/1001 variant of 594 MHz used by 59.94 Hz modes.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 13 +++++++++++++
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 12 ++++++++++++
  drivers/gpu/drm/bridge/synopsys/dw-hdmi.h |  1 +
  drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c     |  1 +
  include/drm/bridge/dw_hdmi.h              |  9 +++++++++
- 4 files changed, 24 insertions(+)
+ 4 files changed, 23 insertions(+)
 
 diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-index d675c734a591..b4d37a25b584 100644
+index 097640b8136a..6b8e3b47860f 100644
 --- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
 +++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-@@ -1642,6 +1642,19 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+@@ -1654,6 +1654,18 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
  	dw_hdmi_phy_i2c_write(hdmi, HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
  			      HDMI_3D_TX_PHY_MSM_CTRL);
  
 +	/*
-+	 * At 594 MHz, the highest TMDS rate this PHY supports, some
-+	 * instances need the clock select re-asserted together with the
-+	 * override bit for it to actually latch. Include the 1000/1001
-+	 * variant used by 59.94 Hz modes.
++	 * Above the HDMI 1.4 TMDS rate limit, some instances need the clock
++	 * select re-asserted together with the override bit for it to
++	 * actually latch.
 +	 */
 +	if (pdata->phy_max_tmds_msm_ctrl_quirk &&
-+	    mtmdsclock >= 594000000UL / 1001 * 1000)
++	    mtmdsclock > HDMI_1_3_TMDS_CHAR_RATE_MAX_HZ)
 +		dw_hdmi_phy_i2c_write(hdmi,
 +				      HDMI_3D_TX_PHY_MSM_CTRL_OVERRIDE |
 +				      HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_FB_CLK,
@@ -63,10 +62,10 @@ index b16cf6efb8d4..6a6a6195da5e 100644
  #define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_CLK_REF_MPLL	(0 << 1)
  #define HDMI_3D_TX_PHY_MSM_CTRL_CKO_SEL_OFF		(1 << 1)
 diff --git a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
-index bea668047822..0660ac4346a3 100644
+index a5d5e6524d29..8b49b6e3a64d 100644
 --- a/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
 +++ b/drivers/gpu/drm/sun4i/sun8i_dw_hdmi.c
-@@ -374,6 +374,7 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
+@@ -388,6 +388,7 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
  	 * output is never negotiated in practice.
  	 */
  	plat_data->ycbcr444_alt_vmap = true;
@@ -94,5 +93,3 @@ index d029a32c03a5..791e9f2617c5 100644
  	/*
  	 * Private data passed to all the .mode_valid() and .configure_phy()
  	 * callback functions.
--- 
-2.43.0

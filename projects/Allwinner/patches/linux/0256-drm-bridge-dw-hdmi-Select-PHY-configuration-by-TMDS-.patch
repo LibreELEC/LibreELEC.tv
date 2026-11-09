@@ -1,27 +1,30 @@
-From 5b9aea238cc6a84d391ab36292d3e1e6714f3d95 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@gmail.com>
 Date: Mon, 20 Jul 2026 08:47:16 +0200
-Subject: [PATCH 256/273] drm/bridge: dw-hdmi: Select PHY configuration by TMDS
- clock
+Subject: [PATCH] drm/bridge: dw-hdmi: Select PHY configuration by TMDS clock
 
-MPLL, current control and voltage level configuration all depend on the
-actual TMDS character rate, not on the pixel clock. The two differ when
-the output format is YUV 4:2:0 (half rate) or deep color (higher rate).
+The PHY configuration tables are matched against the pixel clock, which
+differs from the rate the PHY sees when the output format is YUV 4:2:0
+(half rate) or deep color (higher rate).
 
-Match the PHY configuration tables against the TMDS clock so that for
-example a 4K@60 YUV 4:2:0 mode (594 MHz pixel clock, 297 MHz TMDS
-clock) picks the 297 MHz PLL settings instead of the 594 MHz ones.
+Voltage level configuration depends on the actual TMDS character rate,
+so match it against the TMDS clock. The MPLL and current control tables
+have a column per color depth, which already accounts for the higher
+rate of deep color, so keep matching them against the pixel clock, but
+halve it for YUV 4:2:0. This way, for example, a 4K@60 YUV 4:2:0 mode
+(594 MHz pixel clock, 297 MHz TMDS clock) picks the 297 MHz PLL
+settings instead of the 594 MHz ones.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-index 93d94a72c17c..a878197d1379 100644
+index 1ba43472b874..55e79d18427e 100644
 --- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
 +++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-@@ -1586,23 +1586,22 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+@@ -1586,11 +1586,19 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
  		const struct dw_hdmi_plat_data *pdata,
  		unsigned long mpixelclock)
  {
@@ -31,16 +34,18 @@ index 93d94a72c17c..a878197d1379 100644
  	const struct dw_hdmi_phy_config *phy_config = pdata->phy_config;
  
 -	/* TOFIX Will need 420 specific PHY configuration tables */
--
++	/*
++	 * The MPLL and current control tables are indexed by the pixel clock
++	 * and have a column per color depth, which already accounts for the
++	 * higher TMDS rate of deep color. Only YUV 4:2:0 halves the rate
++	 * the PHY sees.
++	 */
++	if (hdmi_bus_fmt_is_yuv420(hdmi->hdmi_data.enc_out_bus_format))
++		mpixelclock /= 2;
+ 
  	/* PLL/MPLL Cfg - always match on final entry */
  	for (; mpll_config->mpixelclock != ~0UL; mpll_config++)
--		if (mpixelclock <= mpll_config->mpixelclock)
-+		if (mtmdsclock <= mpll_config->mpixelclock)
- 			break;
- 
- 	for (; curr_ctrl->mpixelclock != ~0UL; curr_ctrl++)
--		if (mpixelclock <= curr_ctrl->mpixelclock)
-+		if (mtmdsclock <= curr_ctrl->mpixelclock)
+@@ -1602,7 +1610,7 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
  			break;
  
  	for (; phy_config->mpixelclock != ~0UL; phy_config++)
@@ -49,6 +54,3 @@ index 93d94a72c17c..a878197d1379 100644
  			break;
  
  	if (mpll_config->mpixelclock == ~0UL ||
--- 
-2.43.0
-

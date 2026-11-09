@@ -1,8 +1,8 @@
-From 78169e9b84b3d8869eb4e68ada9f430eedddea88 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jernej Skrabec <jernej.skrabec@gmail.com>
 Date: Mon, 20 Jul 2026 12:45:32 +0200
-Subject: [PATCH 266/273] drm/bridge: dw-hdmi: Select PHY resource entry by
- output color depth
+Subject: [PATCH] drm/bridge: dw-hdmi: Select PHY resource entry by output
+ color depth
 
 hdmi_phy_configure_dwc_hdmi_3d_tx() always indexes mpll_cfg->res[0]
 and cur_ctr->curr[0], regardless of the negotiated output color
@@ -17,16 +17,14 @@ exists and handles every supported bus format. For 8-bit output
 this is DW_HDMI_RES_8, identical to the previous hardcoded index, so
 there is no behavior change for the common case.
 
-YUV 4:2:2 is always sent at the 8-bit TMDS rate, so it keeps using
-the 8-bit entry.
-
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+
 ---
  drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 22 +++++++++++++++++++---
  1 file changed, 19 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
-index 2692fb6d538f..d7ef6c205f8a 100644
+index ad7103ddbf62..2d16337be23b 100644
 --- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
 +++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
 @@ -1590,6 +1590,22 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
@@ -50,9 +48,9 @@ index 2692fb6d538f..d7ef6c205f8a 100644
 +		}
 +	}
  
- 	/* PLL/MPLL Cfg - always match on final entry */
- 	for (; mpll_config->mpixelclock != ~0UL; mpll_config++)
-@@ -1609,11 +1625,11 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
+ 	/*
+ 	 * The MPLL and current control tables are indexed by the pixel clock
+@@ -1618,11 +1634,11 @@ static int hdmi_phy_configure_dwc_hdmi_3d_tx(struct dw_hdmi *hdmi,
  	    phy_config->mpixelclock == ~0UL)
  		return -EINVAL;
  
