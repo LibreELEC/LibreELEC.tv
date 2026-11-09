@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 5 Nov 2026 23:00:00 +0100
+Subject: [PATCH] drm/sun4i: mixer: Run the H6 display engine at 696 MHz
+
+Scalers produce one pixel per display engine clock cycle, so they need
+the clock to be comfortably above the pixel rate during the active part
+of each line. With 600 MHz, that doesn't hold for high refresh rate modes
+with reduced blanking. 2560x1440@144 (592.5 MHz, 2560 of 2720 pixels
+per line active) uses about 93 % of the cycles for an upscaled plane,
+which shows up as horizontal stripes. Kodi always upscales its 1080p
+user interface to such modes.
+
+Lowering the clock to provoke the same load at 3840x2160@60 shows stripes
+at about 90 % and works at 86 %.
+
+The vendor kernel runs the H6 display engine at 696 MHz. Do the same,
+which brings the 1440p@144 case down to 80 %.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+diff --git a/drivers/gpu/drm/sun4i/sun8i_mixer.c b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+index c85bc5d089dd..5452d89d889c 100644
+--- a/drivers/gpu/drm/sun4i/sun8i_mixer.c
++++ b/drivers/gpu/drm/sun4i/sun8i_mixer.c
+@@ -1165,7 +1165,7 @@ static const struct sun8i_mixer_cfg sun50i_h6_mixer0_cfg = {
+ 		.scanline_ed	= {2048},
+ 	},
+ 	.de_type	= SUN8I_MIXER_DE3,
+-	.mod_rate	= 600000000,
++	.mod_rate	= 696000000,
+ 	.ui_num		= 3,
+ 	.vi_num		= 1,
+ 	.has_formatter	= 1,

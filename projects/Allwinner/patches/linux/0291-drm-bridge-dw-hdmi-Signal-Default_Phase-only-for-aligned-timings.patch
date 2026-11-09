@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Mon, 9 Nov 2026 20:07:09 +0100
+Subject: [PATCH] drm/bridge: dw-hdmi: Signal Default_Phase only for aligned
+ timings
+
+The video packetizer always sets IDEFAULT_PHASE, which makes the
+controller send Default_Phase = 1 in the General Control Packet.
+According to HDMI 1.4b section 6.5.3, this tells the sink that every
+Video Data Period, the first pixel after it and the first pixel after
+every HSYNC or VSYNC transition start at pixel packing phase 0. With
+deep color, that only holds if all horizontal timings are multiples of
+the pixel group size: 4 pixels for 10-bit and 2 pixels for 12-bit.
+
+That's not the case for many common modes, e.g. 720x480@60 (htotal 858),
+1280x720@60 (htotal 1650) or 1280x1440@60 with 1390 pixels per line.
+With 10-bit RGB output, sinks then show wrong colors, flickering or no
+picture at all, while the same modes work fine with 8-bit output.
+
+Set Default_Phase only when the timings actually allow it, the same way
+i915 does it.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 45 +++++++++++++++++++++--
+ 1 file changed, 42 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 30820a87c4c6..b4b6cb2fbdf7 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -1214,12 +1214,50 @@ static void hdmi_video_csc(struct dw_hdmi *hdmi)
+ 	dw_hdmi_update_csc_coeffs(hdmi);
+ }
+ 
++/*
++ * HDMI 1.4b section 6.5.3: Default_Phase may only be signalled if every
++ * Video Data Period, the first pixel after it and the first pixel after
++ * every HSYNC or VSYNC transition start at pixel packing phase 0, i.e. if
++ * all horizontal timings are multiples of the deep color pixel group.
++ */
++static bool hdmi_default_phase_possible(struct dw_hdmi *hdmi,
++					const struct drm_display_mode *mode)
++{
++	u32 bus_format = hdmi->hdmi_data.enc_out_bus_format;
++	unsigned int group;
++
++	switch (hdmi_bus_fmt_color_depth(bus_format)) {
++	case 10:
++		/* 4 pixels in 5 TMDS clocks */
++		group = 4;
++		break;
++	case 12:
++		/* 2 pixels in 3 TMDS clocks */
++		group = 2;
++		break;
++	default:
++		return true;
++	}
++
++	/* YUV 4:2:0 packs two pixels per TMDS pixel */
++	if (hdmi_bus_fmt_is_yuv420(bus_format))
++		group *= 2;
++
++	return !(mode->hdisplay % group) &&
++	       !(mode->hsync_start % group) &&
++	       !(mode->hsync_end % group) &&
++	       !(mode->htotal % group) &&
++	       (!(mode->flags & DRM_MODE_FLAG_INTERLACE) ||
++		!((mode->htotal / 2) % group));
++}
++
+ /*
+  * HDMI video packetizer is used to packetize the data.
+  * for example, if input is YCC422 mode or repeater is used,
+  * data should be repacked this module can be bypassed.
+  */
+-static void hdmi_video_packetize(struct dw_hdmi *hdmi)
++static void hdmi_video_packetize(struct dw_hdmi *hdmi,
++				 const struct drm_display_mode *mode)
+ {
+ 	unsigned int color_depth = 0;
+ 	unsigned int remap_size = HDMI_VP_REMAP_YCC422_16bit;
+@@ -1311,7 +1349,8 @@ static void hdmi_video_packetize(struct dw_hdmi *hdmi)
+ 		  HDMI_VP_CONF_PR_EN_MASK |
+ 		  HDMI_VP_CONF_BYPASS_SELECT_MASK, HDMI_VP_CONF);
+ 
+-	hdmi_modb(hdmi, 1 << HDMI_VP_STUFF_IDEFAULT_PHASE_OFFSET,
++	hdmi_modb(hdmi, hdmi_default_phase_possible(hdmi, mode) <<
++			HDMI_VP_STUFF_IDEFAULT_PHASE_OFFSET,
+ 		  HDMI_VP_STUFF_IDEFAULT_PHASE_MASK, HDMI_VP_STUFF);
+ 
+ 	hdmi_writeb(hdmi, remap_size, HDMI_VP_REMAP);
+@@ -2391,7 +2430,7 @@ static int dw_hdmi_setup(struct dw_hdmi *hdmi,
+ 		dev_dbg(hdmi->dev, "%s DVI mode\n", __func__);
+ 	}
+ 
+-	hdmi_video_packetize(hdmi);
++	hdmi_video_packetize(hdmi, mode);
+ 	hdmi_video_csc(hdmi);
+ 	hdmi_video_sample(hdmi);
+ 	hdmi_tx_hdcp_config(hdmi);

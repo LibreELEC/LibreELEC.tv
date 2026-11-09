@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Tue, 3 Nov 2026 21:48:02 +0100
+Subject: [PATCH] clk: sunxi-ng: h6: Keep both parents running while switching
+ VP9 clock
+
+The VP9 clock mux only switches while both parents run. Its reset
+default parent is pll-ve, which is off at boot. When the Hantro driver
+sets the VP9 clock to 300 MHz, the clock moves to pll-periph0-2x, but
+the switch doesn't happen until pll-ve gets enabled for the video
+engine. Until then, every VP9 frame times out.
+
+Keep both parents enabled while the parent changes.
+
+Fixes: 524353ea480b ("clk: sunxi-ng: add support for the Allwinner H6 CCU")
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/clk/sunxi-ng/ccu-sun50i-h6.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/clk/sunxi-ng/ccu-sun50i-h6.c b/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
+index ed79603ea6a5..a9ce521388ea 100644
+--- a/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
++++ b/drivers/clk/sunxi-ng/ccu-sun50i-h6.c
+@@ -338,12 +338,17 @@ static SUNXI_CCU_MP_WITH_MUX_GATE(emce_clk, "emce", ce_parents, 0x6b0,
+ static SUNXI_CCU_GATE(bus_emce_clk, "bus-emce", "psi-ahb1-ahb2",
+ 		      0x6bc, BIT(0), 0);
+ 
++/*
++ * The mux only switches while both parents run. pll-ve is off at boot, so
++ * moving the clock away from it would otherwise leave the VP9 decoder
++ * without a clock until pll-ve gets enabled for the video engine.
++ */
+ static const char * const vp9_parents[] = { "pll-ve", "pll-periph0-2x" };
+ static SUNXI_CCU_M_WITH_MUX_GATE(vp9_clk, "vp9", vp9_parents, 0x6c0,
+ 				       0, 3,	/* M */
+ 				       24, 1,	/* mux */
+ 				       BIT(31),	/* gate */
+-				       0);
++				       CLK_OPS_PARENT_ENABLE);
+ 
+ static SUNXI_CCU_GATE(bus_vp9_clk, "bus-vp9", "psi-ahb1-ahb2",
+ 		      0x6cc, BIT(0), 0);

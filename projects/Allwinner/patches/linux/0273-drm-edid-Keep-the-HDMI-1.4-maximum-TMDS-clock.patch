@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Tue, 3 Nov 2026 21:48:01 +0100
+Subject: [PATCH] drm/edid: Keep the HDMI 1.4 maximum TMDS clock
+
+The HDMI Forum vendor specific data block overrides the maximum TMDS
+clock of the HDMI vendor specific data block in
+drm_display_info.max_tmds_clock. The former only covers rates above
+340 MHz, where scrambling is used, though. Below that, the latter still
+applies, and some sinks set it lower than 340 MHz, e.g. the ASUS PG329
+declares 300 MHz there and 600 MHz in the HDMI Forum block. Such a sink
+doesn't accept unscrambled TMDS rates between the two.
+
+Keep the value of the HDMI vendor specific data block, so drivers can
+check unscrambled rates against it.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+---
+ drivers/gpu/drm/drm_edid.c  | 4 +++-
+ include/drm/drm_connector.h | 9 +++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index 07970e5b5f65..0db176248d52 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -6392,8 +6392,10 @@ drm_parse_hdmi_vsdb_video(struct drm_connector *connector, const u8 *db)
+ 
+ 	if (len >= 6)
+ 		info->dvi_dual = db[6] & 1;
+-	if (len >= 7)
++	if (len >= 7) {
+ 		info->max_tmds_clock = db[7] * 5000;
++		info->hdmi.max_tmds_clock_14 = info->max_tmds_clock;
++	}
+ 
+ 	/*
+ 	 * Try to infer whether the sink supports HDMI infoframes.
+diff --git a/include/drm/drm_connector.h b/include/drm/drm_connector.h
+index a0cf0268de48..b191662d81ef 100644
+--- a/include/drm/drm_connector.h
++++ b/include/drm/drm_connector.h
+@@ -324,6 +324,15 @@ struct drm_hdmi_info {
+ 	/** @y420_dc_modes: bitmap of deep color support index */
+ 	u8 y420_dc_modes;
+ 
++	/**
++	 * @max_tmds_clock_14: Maximum TMDS clock rate in kHz the sink
++	 * supports without scrambling, as declared in the HDMI vendor
++	 * specific data block. Unlike &drm_display_info.max_tmds_clock, it
++	 * isn't overridden by the HDMI Forum data block, which only covers
++	 * rates above 340 MHz. 0 if not declared.
++	 */
++	int max_tmds_clock_14;
++
+ 	/** @max_frl_rate_per_lane: support fixed rate link */
+ 	u8 max_frl_rate_per_lane;
+ 
