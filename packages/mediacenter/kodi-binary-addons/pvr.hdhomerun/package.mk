@@ -5,7 +5,7 @@
 PKG_NAME="pvr.hdhomerun"
 PKG_VERSION="22.2.7-Piers"
 PKG_SHA256="437cc682fe61e0da2e239b90f1ba6d8d4c43c10078e57f30175aa00227954aec"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-pvr/pvr.hdhomerun"
