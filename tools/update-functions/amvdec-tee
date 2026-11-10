@@ -1,0 +1,8 @@
+function get_pkg_ver() {
+  local github_repos=LibreELEC/amvdec-tee
+
+  local upstream_default_branch=$(curl -m 5 -sL "https://api.github.com/repos/${github_repos}" | jq -r '.default_branch')
+  local upstream_latest_commit=$(curl -m 5 -sL "https://api.github.com/repos/${github_repos}/git/refs/heads/${upstream_default_branch}" | jq -r '.object.url')
+
+  pkgver=$(echo ${upstream_latest_commit} | sed 's#.*/##')
+}
