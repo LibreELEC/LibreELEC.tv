@@ -2,8 +2,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="lz4"
-PKG_VERSION="1.11.0"
-PKG_SHA256="247e5fa64da5f7b75ee3dd3bed484076396c9ebe8254d9ccf693eb62800c5e26"
+PKG_VERSION="1.11.1"
+PKG_SHA256="683fed08a844ad012196381e40badf80c0bbe4962959761416d41c9e67d77ec7"
 PKG_LICENSE="BSD-2-Clause"
 PKG_SITE="https://github.com/lz4/lz4"
 PKG_URL="https://github.com/lz4/lz4/archive/v${PKG_VERSION}.tar.gz"
