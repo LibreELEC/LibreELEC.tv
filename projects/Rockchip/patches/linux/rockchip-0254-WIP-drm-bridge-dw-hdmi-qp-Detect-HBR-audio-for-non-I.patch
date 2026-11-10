@@ -1,0 +1,63 @@
+From 762523ee821a5d3217786365bf59629749bf431d Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 22 Feb 2026 05:39:46 +0000
+Subject: [PATCH 254/280] WIP: drm/bridge: dw-hdmi-qp: Detect HBR audio for
+ non-IEC958 subframe formats
+
+Some applications such as Kodi use S16LE format (not IEC958_SUBFRAME_LE)
+with 8 channels at 192kHz for HBR audio pass-through. The IEC958 channel
+status AES0 NONAUDIO flag is set to indicate bitstream data.
+
+Previously, the driver only selected AUD_HBR mode when the PCM format
+was IEC958_SUBFRAME_LE. With S16LE, it fell through to AUD_ASP (standard
+audio sample packets) which receivers cannot decode as HBR audio. This
+caused TrueHD and DTS-HD MA to fall back to PCM decoding, and Atmos to
+fail entirely.
+
+Detect HBR mode also when 8 channels are requested and IEC958 channel
+status NONAUDIO flag is set, regardless of the PCM sample format. In
+this case BPCUV remains internally generated (since S16LE data does not
+carry embedded channel status) while the HBR packet format is correctly
+selected.
+
+Assisted-by: Claude:claude-opus-4-6
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index 24ab3deaf242..4ab8badfe18b 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -174,6 +174,14 @@ static void dw_hdmi_qp_set_audio_interface(struct dw_hdmi_qp *hdmi,
+ 	/*
+ 	 * Enable bpcuv generated internally for L-PCM, or received
+ 	 * from stream for NLPCM/HBR.
++	 *
++	 * When IEC958 subframe format is used, the I2S data carries embedded
++	 * channel status (bpcuv) which must be received from the stream.
++	 *
++	 * Some applications use S16LE format with 8 channels for HBR pass-
++	 * through. In this case channel status is set via registers, but we
++	 * still need to select HBR mode so the HDMI controller uses the
++	 * correct packet format.
+ 	 */
+ 	switch (fmt->bit_fmt) {
+ 	case SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE:
+@@ -181,7 +189,11 @@ static void dw_hdmi_qp_set_audio_interface(struct dw_hdmi_qp *hdmi,
+ 		conf0 |= I2S_BPCUV_RCV_EN;
+ 		break;
+ 	default:
+-		conf0 = AUD_ASP | I2S_BPCUV_RCV_DIS;
++		if (hparms->channels == 8 &&
++		    (hparms->iec.status[0] & IEC958_AES0_NONAUDIO))
++			conf0 = AUD_HBR | I2S_BPCUV_RCV_DIS;
++		else
++			conf0 = AUD_ASP | I2S_BPCUV_RCV_DIS;
+ 		break;
+ 	}
+ 
+-- 
+2.43.0
+

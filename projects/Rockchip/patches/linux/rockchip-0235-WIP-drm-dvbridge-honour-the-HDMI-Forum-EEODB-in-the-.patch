@@ -1,0 +1,62 @@
+From b0001ed8537161bb699f5f77d3ec5394652dde13 Mon Sep 17 00:00:00 2001
+From: CroqueMr <82093548+CroqueMr@users.noreply.github.com>
+Date: Tue, 20 Oct 2026 21:24:50 +0200
+Subject: [PATCH 235/280] WIP: drm: dvbridge: honour the HDMI Forum EEODB in
+ the EDID parser
+
+The EDID block count was taken from the base block extension count
+alone. Sinks that use the HDMI Forum EDID Extension Override Data Block
+(EEODB) report more extension blocks in the first CTA extension, so
+their full EDID was rejected as invalid and Dolby Vision was not
+detected. Accept EDIDs of up to 256 blocks and take the block count
+from the EEODB when it is present.
+
+From libreelec-x86-DV R1.0.0-Beta5 (linux-9910).
+
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ include/drm/drm_dvbridge_edid.h | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/include/drm/drm_dvbridge_edid.h b/include/drm/drm_dvbridge_edid.h
+index 1611a4eef1d4..267688fa47ae 100644
+--- a/include/drm/drm_dvbridge_edid.h
++++ b/include/drm/drm_dvbridge_edid.h
+@@ -43,12 +43,12 @@ dvbridge_parse_edid(const unsigned char *edid, size_t size)
+ {
+ 	static const unsigned char magic[8] = {0, 255, 255, 255, 255, 255, 255, 0};
+ 	struct dvbridge_sink_caps result = {DV_EDID_ABSENT, 0, 0, 0, false, false};
+-	unsigned int block, i, found = 0;
++	unsigned int block, i, blocks, found = 0;
+ 
+ 	if (!edid || !size)
+ 		return result;
+ 	result.status = DV_EDID_INVALID;
+-	if (size < 128 || size != ((size_t)edid[126] + 1) * 128)
++	if (size < 128 || size % 128 || size > 256 * 128)
+ 		return result;
+ 	for (i = 0; i < 8; i++)
+ 		if (edid[i] != magic[i])
+@@ -61,8 +61,18 @@ dvbridge_parse_edid(const unsigned char *edid, size_t size)
+ 		if (sum)
+ 			return result;
+ 	}
++	blocks = edid[126] + 1;
++	if (edid[126] && size >= 256) {
++		const unsigned char *cta = edid + 128;
++		/* HDMI Forum EEODB occupies bytes 4..6 of the first CTA extension. */
++		if (cta[0] == 2 && cta[1] >= 3 && cta[2] >= 7 && cta[2] <= 127 &&
++		    cta[4] == 0xe2 && cta[5] == 0x78 && cta[6])
++			blocks = cta[6] + 1;
++	}
++	if (size != (size_t)blocks * 128)
++		return result;
+ 	result.status = DV_EDID_NO_DV;
+-	for (block = 1; block < size / 128; block++) {
++	for (block = 1; block < blocks; block++) {
+ 		const unsigned char *b = edid + block * 128;
+ 		unsigned int end = b[2], pos;
+ 
+-- 
+2.43.0
+

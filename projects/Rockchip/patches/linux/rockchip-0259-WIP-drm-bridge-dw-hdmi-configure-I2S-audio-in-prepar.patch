@@ -1,0 +1,49 @@
+From 221b7f7a8f1a4f552c9985161ec18869528d37ca Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 26 Oct 2026 12:33:19 +0000
+Subject: [PATCH 259/280] WIP: drm/bridge: dw-hdmi: configure I2S audio in
+ prepare
+
+The non-audio and HBR modes are selected from the IEC958 channel status,
+but alsa-lib writes the IEC958 Playback Default control from a hw_params
+hook that runs after the kernel hw_params. dw-hdmi therefore always sees
+the previous (PCM) channel status and sends compressed streams as PCM.
+
+Configure the I2S sampler from the hdmi-codec prepare callback instead,
+which runs after the control has been written, as dw-hdmi-qp does.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c
+index e07a1fe2b6b8..35ee8e091ca5 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c
+@@ -35,9 +35,9 @@ static inline u8 hdmi_read(struct dw_hdmi_i2s_audio_data *audio, int offset)
+ 	return audio->read(hdmi, offset);
+ }
+ 
+-static int dw_hdmi_i2s_hw_params(struct device *dev, void *data,
+-				 struct hdmi_codec_daifmt *fmt,
+-				 struct hdmi_codec_params *hparms)
++static int dw_hdmi_i2s_prepare(struct device *dev, void *data,
++			       struct hdmi_codec_daifmt *fmt,
++			       struct hdmi_codec_params *hparms)
+ {
+ 	struct dw_hdmi_i2s_audio_data *audio = data;
+ 	struct dw_hdmi *hdmi = audio->hdmi;
+@@ -207,7 +207,7 @@ static int dw_hdmi_i2s_hook_plugged_cb(struct device *dev, void *data,
+ }
+ 
+ static const struct hdmi_codec_ops dw_hdmi_i2s_ops = {
+-	.hw_params	= dw_hdmi_i2s_hw_params,
++	.prepare	= dw_hdmi_i2s_prepare,
+ 	.audio_startup  = dw_hdmi_i2s_audio_startup,
+ 	.audio_shutdown	= dw_hdmi_i2s_audio_shutdown,
+ 	.get_eld	= dw_hdmi_i2s_get_eld,
+-- 
+2.43.0
+

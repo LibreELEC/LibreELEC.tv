@@ -1,0 +1,163 @@
+From bcf188624ef4223eaa12e5cf0abfa26a5c667915 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 11:08:11 +0000
+Subject: [PATCH 230/280] WIP: drm/display: hdmi-state-helper: signal standard
+ Dolby Vision
+
+When userspace sets hdmi.dolby_vision on a connector using the HDMI state
+helpers:
+
+- force full-range RGB 8 bpc output, the only format Dolby Vision
+  tunnelling uses;
+- validate the link against the sink's EDID and drm_dvbridge_validate():
+  HDMI sink with a standard Dolby Vision block, no HDR metadata blob, no
+  cloning, progressive CTA 1080p/2160p at 24-60 Hz;
+- send the Dolby vendor-specific InfoFrame in place of the HDMI 1.4 one
+  and put the CTA VIC in the AVI InfoFrame instead;
+- force a modeset when the request changes.
+
+Any HDMI bridge or encoder driver built on the helpers gets the
+signalling with no driver code; bit-exact scanout is checked separately.
+---
+ .../gpu/drm/display/drm_hdmi_state_helper.c   | 83 +++++++++++++++++++
+ 1 file changed, 83 insertions(+)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 957bf4abab9e..6d5a369f7c54 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -5,6 +5,7 @@
+ 
+ #include <drm/drm_atomic.h>
+ #include <drm/drm_connector.h>
++#include <drm/drm_dvbridge.h>
+ #include <drm/drm_edid.h>
+ #include <drm/drm_modes.h>
+ #include <drm/drm_print.h>
+@@ -683,6 +684,11 @@ hdmi_compute_config(const struct drm_connector *connector,
+ 	enum drm_output_color_format fmt;
+ 	int ret;
+ 
++	/* Dolby Vision tunnels the picture in full-range RGB 8 bpc only. */
++	if (conn_state->hdmi.dolby_vision)
++		return hdmi_compute_format_bpc(connector, conn_state, mode, 8,
++					       DRM_OUTPUT_COLOR_FORMAT_RGB444);
++
+ 	if (conn_state->color_format != DRM_CONNECTOR_COLOR_FORMAT_AUTO) {
+ 		switch (conn_state->color_format) {
+ 		case DRM_CONNECTOR_COLOR_FORMAT_AUTO:
+@@ -753,6 +759,13 @@ static int hdmi_generate_avi_infoframe(const struct drm_connector *connector,
+ 	if (ret)
+ 		return ret;
+ 
++	/*
++	 * The Dolby VSIF occupies the vendor slot, so 4K timings that HDMI 1.4
++	 * would identify in its vendor packet must use their CTA VIC here.
++	 */
++	if (conn_state->hdmi.dolby_vision)
++		frame->video_code = drm_dvbridge_avi_vic(drm_match_cea_mode(mode));
++
+ 	frame->colorspace =
+ 		output_color_format_to_hdmi_colorspace(connector,
+ 						       conn_state->hdmi.output_format);
+@@ -841,6 +854,19 @@ static int hdmi_generate_hdmi_vendor_infoframe(const struct drm_connector *conne
+ 
+ 	infoframe->set = false;
+ 
++	if (conn_state->hdmi.dolby_vision) {
++		struct hdmi_dolby_vendor_infoframe *dolby = &infoframe->data.vendor.dolby;
++
++		hdmi_dolby_vendor_infoframe_init(dolby);
++		dolby->signal = true;
++		ret = hdmi_dolby_vendor_infoframe_check(dolby);
++		if (ret)
++			return ret;
++
++		infoframe->set = true;
++		return 0;
++	}
++
+ 	if (!info->has_hdmi_infoframe)
+ 		return 0;
+ 
+@@ -887,6 +913,50 @@ hdmi_generate_infoframes(const struct drm_connector *connector,
+ 	return 0;
+ }
+ 
++static int
++hdmi_dolby_vision_check(const struct drm_connector *connector,
++			const struct drm_connector_state *conn_state,
++			const struct drm_crtc_state *crtc_state,
++			const struct drm_display_mode *mode)
++{
++	const struct drm_property_blob *edid = connector->edid_blob_ptr;
++	const struct drm_dvbridge_link link = {
++		.requested = true,
++		.lab_enabled = true,
++		.sink_standard = edid && drm_dvbridge_edid(edid->data, edid->length),
++		.hdmi = connector->display_info.is_hdmi,
++		.native_hdmi = connector->connector_type == DRM_MODE_CONNECTOR_HDMIA ||
++			       connector->connector_type == DRM_MODE_CONNECTOR_HDMIB,
++		.rgb = conn_state->hdmi.output_format == DRM_OUTPUT_COLOR_FORMAT_RGB444,
++		.limited_range = conn_state->hdmi.is_limited_range,
++		.hdr_blob = conn_state->hdr_output_metadata,
++		.cloned = hweight32(crtc_state->connector_mask) > 1,
++		.progressive = !(mode->flags & DRM_MODE_FLAG_INTERLACE),
++		.requested_bpc = conn_state->hdmi.output_bpc,
++		.pipe_bpp = conn_state->hdmi.output_bpc * 3,
++		.colorspace = conn_state->colorspace,
++		.width = mode->hdisplay,
++		.height = mode->vdisplay,
++		.rounded_refresh = drm_mode_vrefresh(mode),
++	};
++	int ret;
++
++	if (!drm_dvbridge_avi_vic(drm_match_cea_mode(mode)) ||
++	    (mode->flags & DRM_MODE_FLAG_3D_MASK)) {
++		drm_dbg_kms(connector->dev, "Dolby Vision: unsupported timing\n");
++		return -EINVAL;
++	}
++
++	ret = drm_dvbridge_validate(&link);
++	if (ret)
++		drm_dbg_kms(connector->dev,
++			    "Dolby Vision rejected: sink=%d rgb=%d limited=%d hdr=%d bpc=%u %ux%u@%d\n",
++			    link.sink_standard, link.rgb, link.limited_range, link.hdr_blob,
++			    link.requested_bpc, link.width, link.height, link.rounded_refresh);
++
++	return ret;
++}
++
+ /**
+  * drm_atomic_helper_connector_hdmi_check() - Helper to check HDMI connector atomic state
+  * @connector: DRM Connector
+@@ -919,6 +989,18 @@ int drm_atomic_helper_connector_hdmi_check(struct drm_connector *connector,
+ 
+ 	new_conn_state->hdmi.is_limited_range = hdmi_is_limited_range(connector, new_conn_state);
+ 
++	if (new_conn_state->hdmi.dolby_vision) {
++		struct drm_crtc_state *crtc_state =
++			drm_atomic_get_crtc_state(state, new_conn_state->crtc);
++
++		if (IS_ERR(crtc_state))
++			return PTR_ERR(crtc_state);
++
++		ret = hdmi_dolby_vision_check(connector, new_conn_state, crtc_state, mode);
++		if (ret)
++			return ret;
++	}
++
+ 	ret = hdmi_generate_infoframes(connector, new_conn_state);
+ 	if (ret)
+ 		return ret;
+@@ -926,6 +1008,7 @@ int drm_atomic_helper_connector_hdmi_check(struct drm_connector *connector,
+ 	if (old_conn_state->hdmi.broadcast_rgb != new_conn_state->hdmi.broadcast_rgb ||
+ 	    old_conn_state->hdmi.output_bpc != new_conn_state->hdmi.output_bpc ||
+ 	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format ||
++	    old_conn_state->hdmi.dolby_vision != new_conn_state->hdmi.dolby_vision ||
+ 	    !drm_connector_atomic_hdr_metadata_equal(old_conn_state, new_conn_state) ||
+ 	    old_conn_state->colorspace != new_conn_state->colorspace) {
+ 		struct drm_crtc *crtc = new_conn_state->crtc;
+-- 
+2.43.0
+

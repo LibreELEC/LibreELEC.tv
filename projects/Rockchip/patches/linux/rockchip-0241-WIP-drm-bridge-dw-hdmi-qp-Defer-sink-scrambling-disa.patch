@@ -1,0 +1,69 @@
+From dc4e9333e1027fab0050e3ffbc8b8b3cb8f1aa07 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 19 Oct 2026 13:12:51 +0000
+Subject: [PATCH 241/280] WIP: drm/bridge: dw-hdmi-qp: Defer sink scrambling
+ disable to atomic_enable()
+
+On a modeset from a scrambled mode to an unscrambled one, e.g. 4K60 to
+1080p60, atomic_disable() reset the sink SCDC TMDS_Bit_Clock_Ratio and
+scrambling bits while the PHY was still transmitting the old scrambled
+signal. phy_power_off() only drops the PHY usage count, which the PHY
+pixel clock used as the VOP2 DCLK parent still holds, so TMDS output
+continues until the CRTC is disabled. HDMI 2.0 requires TMDS clock and
+data to be suspended while the sink clock ratio is changed.
+
+When the connector stays active in the same commit, leave scrambling
+enabled in atomic_disable() and disable it at the start of
+atomic_enable() instead, before the PHY lanes are taken out of reset.
+When the output is shut down, keep disabling it in atomic_disable() so
+the SCDC monitoring work is cancelled.
+
+After switching from the 4K60 scrambled console to 1080p60 or
+1080p59.94 at 8 bpc, an AVR kept showing the previous picture and played
+no audio, while it worked from a 1080p console.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+index bea897904625..24ab3deaf242 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-qp.c
+@@ -555,6 +555,8 @@ static void dw_hdmi_qp_bridge_atomic_enable(struct drm_bridge *bridge,
+ 	if (WARN_ON(!conn_state))
+ 		return;
+ 
++	drm_connector_hdmi_disable_scrambling(connector);
++
+ 	if (connector->display_info.is_hdmi) {
+ 		op_mode = 0;
+ 		hdmi->tmds_char_rate = conn_state->hdmi.tmds_char_rate;
+@@ -593,6 +595,8 @@ static void dw_hdmi_qp_bridge_atomic_disable(struct drm_bridge *bridge,
+ 					     struct drm_atomic_commit *state)
+ {
+ 	struct dw_hdmi_qp *hdmi = bridge->driver_private;
++	struct drm_connector_state *conn_state;
++	struct drm_crtc_state *crtc_state = NULL;
+ 	struct drm_connector *connector;
+ 
+ 	scoped_guard(mutex, &hdmi->mutex) {
+@@ -605,7 +609,12 @@ static void dw_hdmi_qp_bridge_atomic_disable(struct drm_bridge *bridge,
+ 	hdmi->tmds_char_rate = 0;
+ 
+ 	connector = drm_atomic_get_old_connector_for_encoder(state, bridge->encoder);
+-	drm_connector_hdmi_disable_scrambling(connector);
++	conn_state = drm_atomic_get_new_connector_state(state, connector);
++	if (conn_state && conn_state->crtc)
++		crtc_state = drm_atomic_get_new_crtc_state(state, conn_state->crtc);
++
++	if (!crtc_state || !crtc_state->active)
++		drm_connector_hdmi_disable_scrambling(connector);
+ 
+ 	hdmi->phy.ops->disable(hdmi, hdmi->phy.data);
+ }
+-- 
+2.43.0
+

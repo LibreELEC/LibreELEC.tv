@@ -1,0 +1,34 @@
+From 5e83c59e7c28113ac4ff3742f39c329ca7d3b8b1 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Mon, 27 Apr 2026 01:26:24 +0000
+Subject: [PATCH 178/280] WIP: drm/bridge: dw-hdmi: attach Broadcast RGB
+ property
+
+Attach the Broadcast RGB connector property to the dw-hdmi bridge
+connector.
+
+dw-hdmi already reads conn_state->hdmi.is_limited_range and can use the
+CSC block to convert RGB full range to limited range. Expose the
+standard connector property so userspace can request that behavior.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 6f853e143ff1..b4f025512e9c 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -2305,7 +2305,7 @@ static int dw_hdmi_connector_create(struct dw_hdmi *hdmi)
+ 	if (IS_ERR(connector))
+ 		return PTR_ERR(connector);
+ 
+-	return 0;
++	return drm_connector_attach_broadcast_rgb_property(connector);
+ }
+ 
+ /* -----------------------------------------------------------------------------
+-- 
+2.43.0
+

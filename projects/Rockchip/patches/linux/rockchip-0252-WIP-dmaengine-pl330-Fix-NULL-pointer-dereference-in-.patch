@@ -1,0 +1,84 @@
+From 127ab8276fec7f4b30b5112ed15a88396e2e6c79 Mon Sep 17 00:00:00 2001
+From: Sugar Zhang <sugar.zhang@rock-chips.com>
+Date: Wed, 2 Jul 2025 11:25:33 +0800
+Subject: [PATCH 252/280] WIP: dmaengine: pl330: Fix NULL pointer dereference
+ in pl330_tasklet()
+
+Unable to handle kernel NULL pointer dereference at virtual address 0000000000000010
+Mem abort info:
+  ESR = 0x0000000096000005
+  EC = 0x25: DABT (current EL), IL = 32 bits
+  SET = 0, FnV = 0
+  EA = 0, S1PTW = 0
+  FSC = 0x05: level 1 translation fault
+Data abort info:
+  ISV = 0, ISS = 0x00000005
+  CM = 0, WnR = 0
+user pgtable: 4k pages, 39-bit VAs, pgdp=0000000007a01000
+[0000000000000010] pgd=0000000000000000, p4d=0000000000000000, pud=0000000000000000
+Internal error: Oops: 0000000096000005 [#1] PREEMPT SMP
+Modules linked in: bcmdhd(O)
+CPU: 3 PID: 16268 Comm: brcm_patchram_p Tainted: G        W  O       6.1.118 #135
+Hardware name: Rockchip RK3308B EVB AUDIO DDR3 V11 Board + Rockchip RK3308 RGB ExtBoard V10 (DT)
+pstate: 600000c5 (nZCv daIF -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+pc : pl330_tasklet+0xf8/0x51c
+lr : pl330_tasklet+0x44/0x51c
+sp : ffffffc008d23e50
+x29: ffffffc008d23e50 x28: 0000000000000001 x27: 0000000000000101
+x26: ffffff80018c3848 x25: ffffff80018c3848 x24: ffffffc00877d0f0
+x23: ffffff80018c3848 x22: ffffff80018c3870 x21: 0000000000000000
+x20: 0000000000000000 x19: ffffff80018c37a0 x18: ffffffc00b8c3b28
+x17: ffffffc015c48000 x16: ffffffc008d20000 x15: 0000000000000000
+x14: ffffff8002dd170c x13: 0000000000000801 x12: 0000000000000001
+x11: 0000000000000003 x10: 0000000000000000 x9 : 000000000029316c
+x8 : ffffff801e684200 x7 : 000000000000028e x6 : 0000000000000c00
+x5 : ffffff80018c3870 x4 : 0000000000000000 x3 : ffffff80018c3848
+x2 : 0000000000000001 x1 : ffffff80018c3848 x0 : 0000000000000000
+Call trace:
+ pl330_tasklet+0xf8/0x51c
+ tasklet_action_common.constprop.0+0x8c/0xd0
+ tasklet_hi_action+0x24/0x2c
+ handle_softirqs+0x1b0/0x1f0
+ _stext+0x10/0x18
+ ____do_softirq+0xc/0x14
+ call_on_irq_stack+0x24/0x34
+ do_softirq_own_stack+0x18/0x20
+ __irq_exit_rcu+0x64/0xac
+ irq_exit_rcu+0xc/0x14
+ el1_interrupt+0x34/0x5c
+ el1h_64_irq_handler+0x14/0x1c
+ el1h_64_irq+0x64/0x68
+ exit_rcu+0x0/0x6c
+ do_group_exit+0x30/0x8c
+ get_signal+0x174/0x5e4
+ do_notify_resume+0x128/0x938
+ el0_svc_compat+0x30/0x3c
+ el0t_32_sync_handler+0xac/0xf4
+ el0t_32_sync+0x14c/0x150
+
+Signed-off-by: Sugar Zhang <sugar.zhang@rock-chips.com>
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/dma/pl330.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 0f41e66fb40b..a2232c739520 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2201,6 +2201,11 @@ static void pl330_tasklet(struct tasklet_struct *t)
+ 
+ 	spin_lock_irqsave(&pch->lock, flags);
+ 
++	if (!pch->thread) {
++		spin_unlock_irqrestore(&pch->lock, flags);
++		return;
++	}
++
+ 	/* Pick up ripe tomatoes */
+ 	list_for_each_entry_safe(desc, _dt, &pch->work_list, node) {
+ 		if (desc->status == DONE) {
+-- 
+2.43.0
+

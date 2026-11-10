@@ -1,0 +1,38 @@
+From 42c82d22068cbbce17a98b9be94b318aa4729c00 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:08 +0200
+Subject: [PATCH 151/280] FROMLIST(v4): drm/display: hdmi-state-helper: Force
+ modeset on colorspace change
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The colorimetry signalled to the sink is part of the AVI infoframe,
+which is only updated on a modeset. A change of the colorspace
+property therefore never reaches the sink.
+
+Treat a colorspace change like a change of the Broadcast RGB, output
+bpc or output format, and force a modeset.
+
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/display/drm_hdmi_state_helper.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 7cdb7ca3dc12..9368e53c5945 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -925,7 +925,8 @@ int drm_atomic_helper_connector_hdmi_check(struct drm_connector *connector,
+ 
+ 	if (old_conn_state->hdmi.broadcast_rgb != new_conn_state->hdmi.broadcast_rgb ||
+ 	    old_conn_state->hdmi.output_bpc != new_conn_state->hdmi.output_bpc ||
+-	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format) {
++	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format ||
++	    old_conn_state->colorspace != new_conn_state->colorspace) {
+ 		struct drm_crtc *crtc = new_conn_state->crtc;
+ 		struct drm_crtc_state *crtc_state;
+ 
+-- 
+2.43.0
+

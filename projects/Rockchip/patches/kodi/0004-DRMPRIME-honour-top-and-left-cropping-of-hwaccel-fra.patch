@@ -1,0 +1,113 @@
+From ffbcc0e0d911a6f1e58c4348f968720ffd2acc7d Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Sun, 25 Oct 2026 18:37:50 +0000
+Subject: [PATCH] DRMPRIME: honour top and left cropping of hwaccel frames
+
+FFmpeg applies only right and bottom cropping to hwaccel frames and
+leaves the left and top cropping to the consumer. The Rockchip decoder
+writes AFBC frames 4 lines below the top of the buffer and exports that
+offset as top cropping, but the DRM PRIME plane is always fed from the
+top left of the frame.
+
+Size the picture without the left and top cropping, create the
+framebuffer with it, and start the plane source rectangle there.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../VideoPlayer/Buffers/VideoBufferDRMPRIME.h  |  5 +++++
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp  | 18 ++++++++++++++++--
+ .../HwDecRender/VideoLayerBridgeDRMPRIME.cpp   | 11 ++++++-----
+ 3 files changed, 27 insertions(+), 7 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/Buffers/VideoBufferDRMPRIME.h b/xbmc/cores/VideoPlayer/Buffers/VideoBufferDRMPRIME.h
+index 3dc44ce927..242e740f68 100644
+--- a/xbmc/cores/VideoPlayer/Buffers/VideoBufferDRMPRIME.h
++++ b/xbmc/cores/VideoPlayer/Buffers/VideoBufferDRMPRIME.h
+@@ -35,6 +35,9 @@ public:
+   virtual const VideoPicture& GetPicture() const { return m_picture; }
+   virtual uint32_t GetWidth() const { return GetPicture().iWidth; }
+   virtual uint32_t GetHeight() const { return GetPicture().iHeight; }
++  // position of the picture within the buffer
++  virtual uint32_t GetCropX() const { return 0; }
++  virtual uint32_t GetCropY() const { return 0; }
+ 
+   virtual AVDRMFrameDescriptor* GetDescriptor() const = 0;
+   virtual bool IsValid() const;
+@@ -56,6 +59,8 @@ public:
+   void Unref();
+ 
+   AVDRMFrameDescriptor* GetDescriptor() const override;
++  uint32_t GetCropX() const override { return static_cast<uint32_t>(m_pFrame->crop_left); }
++  uint32_t GetCropY() const override { return static_cast<uint32_t>(m_pFrame->crop_top); }
+   bool IsValid() const override;
+   bool AcquireDescriptor() override;
+   void ReleaseDescriptor() override;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index ca5ef8212e..5641da99e2 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -519,6 +519,13 @@ void CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+   pVideoPicture->iWidth = m_pFrame->width;
+   pVideoPicture->iHeight = m_pFrame->height;
+ 
++  // hwaccel frames keep their left/top cropping; the picture starts there
++  if (m_pFrame->format == AV_PIX_FMT_DRM_PRIME)
++  {
++    pVideoPicture->iWidth -= static_cast<int>(m_pFrame->crop_left);
++    pVideoPicture->iHeight -= static_cast<int>(m_pFrame->crop_top);
++  }
++
+   double aspect_ratio = 0;
+   AVRational pixel_aspect = m_pFrame->sample_aspect_ratio;
+   if (pixel_aspect.num)
+@@ -658,8 +665,15 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+   // ffmpeg's v4l2m2m resizes without re-invoking our GetFormat callback; republish from the frames
+   int piWidth, piHeight;
+   m_processInfo.GetVideoDimensions(piWidth, piHeight);
+-  if (m_pFrame->width != piWidth || m_pFrame->height != piHeight)
+-    m_processInfo.SetVideoDimensions(m_pFrame->width, m_pFrame->height);
++  int width = m_pFrame->width;
++  int height = m_pFrame->height;
++  if (m_pFrame->format == AV_PIX_FMT_DRM_PRIME)
++  {
++    width -= static_cast<int>(m_pFrame->crop_left);
++    height -= static_cast<int>(m_pFrame->crop_top);
++  }
++  if (width != piWidth || height != piHeight)
++    m_processInfo.SetVideoDimensions(width, height);
+ 
+   SetPictureParams(pVideoPicture);
+ 
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VideoLayerBridgeDRMPRIME.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VideoLayerBridgeDRMPRIME.cpp
+index 7919cbbf42..c908852e09 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VideoLayerBridgeDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/VideoLayerBridgeDRMPRIME.cpp
+@@ -157,9 +157,10 @@ uint32_t CVideoLayerBridgeDRMPRIME::CreateFramebuffer(CVideoBufferDRMPRIME* buff
+       flags = DRM_MODE_FB_MODIFIERS;
+ 
+     // add the video frame FB
+-    ret = drmModeAddFB2WithModifiers(m_DRM->GetFileDescriptor(), buffer->GetWidth(),
+-                                     buffer->GetHeight(), layer->format, handles, pitches, offsets,
+-                                     modifier, &fbId, flags);
++    ret = drmModeAddFB2WithModifiers(m_DRM->GetFileDescriptor(),
++                                     buffer->GetCropX() + buffer->GetWidth(),
++                                     buffer->GetCropY() + buffer->GetHeight(), layer->format,
++                                     handles, pitches, offsets, modifier, &fbId, flags);
+     if (ret < 0)
+       CLog::Log(LOGERROR,
+                 "CVideoLayerBridgeDRMPRIME::{} - failed to add fb, format {:#x} modifier {:#x} "
+@@ -225,8 +226,8 @@ void CVideoLayerBridgeDRMPRIME::SetVideoPlane(CVideoBufferDRMPRIME* buffer, cons
+ 
+   m_DRM->AddProperty(plane, "FB_ID", m_fb_id);
+   m_DRM->AddProperty(plane, "CRTC_ID", m_DRM->GetCrtc()->GetCrtcId());
+-  m_DRM->AddProperty(plane, "SRC_X", 0);
+-  m_DRM->AddProperty(plane, "SRC_Y", 0);
++  m_DRM->AddProperty(plane, "SRC_X", buffer->GetCropX() << 16);
++  m_DRM->AddProperty(plane, "SRC_Y", buffer->GetCropY() << 16);
+   m_DRM->AddProperty(plane, "SRC_W", buffer->GetWidth() << 16);
+   m_DRM->AddProperty(plane, "SRC_H", buffer->GetHeight() << 16);
+   m_DRM->AddProperty(plane, "CRTC_X", static_cast<int32_t>(destRect.x1) & ~1);
+-- 
+2.43.0
+

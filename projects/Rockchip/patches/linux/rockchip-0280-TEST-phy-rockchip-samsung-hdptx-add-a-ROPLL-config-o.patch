@@ -1,0 +1,73 @@
+From 2f895da2120e63197008b697ac26388c3dc4d742 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 19 Oct 2026 11:53:55 +0000
+Subject: [PATCH 280/280] TEST: phy: rockchip: samsung-hdptx: add a ROPLL
+ config override parameter
+
+Add a writable ropll_override module parameter that takes a full TMDS
+ROPLL configuration in the rk_hdptx_tmds_ropll_cfg column order:
+
+  rate,mdiv,mdafc,pdiv,rdiv,sdiv,en,deno,nsig,num,n,num,deno
+
+When the rate matches the TMDS rate being configured, the override is
+used instead of the table entry or the computed configuration, and the
+applied values are logged. This allows different PLL configurations for
+the same rate to be compared at runtime, e.g. to investigate HBR audio
+dropouts that only occur at 1/1.001 TMDS rates.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../phy/rockchip/phy-rockchip-samsung-hdptx.c | 29 ++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c b/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c
+index 24ed0d7eb6f8..4142c76d9395 100644
+--- a/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c
++++ b/drivers/phy/rockchip/phy-rockchip-samsung-hdptx.c
+@@ -1198,6 +1198,28 @@ static int rk_hdptx_frl_lcpll_ropll_cmn_config(struct rk_hdptx_phy *hdptx)
+ 	return rk_hdptx_post_enable_pll(hdptx);
+ }
+ 
++static char ropll_override[128];
++module_param_string(ropll_override, ropll_override, sizeof(ropll_override), 0644);
++MODULE_PARM_DESC(ropll_override,
++		 "rate,mdiv,mdafc,pdiv,rdiv,sdiv,en,deno,nsig,num,n,num,deno");
++
++static bool rk_hdptx_ropll_override(unsigned long long rate,
++				    struct ropll_config *cfg)
++{
++	unsigned long long orate;
++
++	if (sscanf(ropll_override,
++		   "%llu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu",
++		   &orate, &cfg->pms_mdiv, &cfg->pms_mdiv_afc, &cfg->pms_pdiv,
++		   &cfg->pms_refdiv, &cfg->pms_sdiv, &cfg->sdm_en, &cfg->sdm_deno,
++		   &cfg->sdm_num_sign, &cfg->sdm_num, &cfg->sdc_n, &cfg->sdc_num,
++		   &cfg->sdc_deno) != 13)
++		return false;
++
++	cfg->rate = orate;
++	return orate == rate;
++}
++
+ static int rk_hdptx_tmds_ropll_cmn_config(struct rk_hdptx_phy *hdptx)
+ {
+ 	const struct ropll_config *cfg = NULL;
+@@ -1207,7 +1229,12 @@ static int rk_hdptx_tmds_ropll_cmn_config(struct rk_hdptx_phy *hdptx)
+ 	if (!hdptx->hdmi_cfg.rate)
+ 		return 0;
+ 
+-	for (i = 0; i < ARRAY_SIZE(rk_hdptx_tmds_ropll_cfg); i++)
++	if (rk_hdptx_ropll_override(hdptx->hdmi_cfg.rate, &rc)) {
++		cfg = &rc;
++		dev_info(hdptx->dev, "ropll override: %s\n", ropll_override);
++	}
++
++	for (i = 0; !cfg && i < ARRAY_SIZE(rk_hdptx_tmds_ropll_cfg); i++)
+ 		if (hdptx->hdmi_cfg.rate == rk_hdptx_tmds_ropll_cfg[i].rate) {
+ 			cfg = &rk_hdptx_tmds_ropll_cfg[i];
+ 			break;
+-- 
+2.43.0
+

@@ -1,0 +1,42 @@
+From 256a7fd6ec72ca334b9d5900d754bda8a2013a25 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Clau=C3=9Fen?= <jan.claussen10@web.de>
+Date: Sun, 18 Oct 2026 16:31:07 +0200
+Subject: [PATCH 150/280] FROMLIST(v4): drm/connector: Fix typo in colorspace
+ error messages
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Change provded to provided.
+
+Signed-off-by: Jan Claußen <jan.claussen10@web.de>
+---
+ drivers/gpu/drm/drm_connector.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
+index d94c86bfed86..d26575909b41 100644
+--- a/drivers/gpu/drm/drm_connector.c
++++ b/drivers/gpu/drm/drm_connector.c
+@@ -2768,14 +2768,14 @@ static int drm_mode_create_colorspace_property(struct drm_connector *connector,
+ 		return 0;
+ 
+ 	if (!supported_colorspaces) {
+-		drm_err(dev, "No supported colorspaces provded on [CONNECTOR:%d:%s]\n",
+-			    connector->base.id, connector->name);
++		drm_err(dev, "No supported colorspaces provided on [CONNECTOR:%d:%s]\n",
++			connector->base.id, connector->name);
+ 		return -EINVAL;
+ 	}
+ 
+ 	if ((supported_colorspaces & -BIT(DRM_MODE_COLORIMETRY_COUNT)) != 0) {
+-		drm_err(dev, "Unknown colorspace provded on [CONNECTOR:%d:%s]\n",
+-			    connector->base.id, connector->name);
++		drm_err(dev, "Unknown colorspace provided on [CONNECTOR:%d:%s]\n",
++			connector->base.id, connector->name);
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+2.43.0
+

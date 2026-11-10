@@ -1,0 +1,101 @@
+From 410d6d944ff07e2c1fc820702e7a88f716897531 Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 22 Sep 2026 10:01:13 +0200
+Subject: [PATCH 104/280] FROMLIST(v2): accel/rocket: register a devfreq
+ cooling device
+
+With devfreq driving the NPU clock, a thermal zone can now throttle the NPU
+by capping that clock. Register the cooling device so a devicetree can bind
+it to a zone.
+
+The _em variant is used, not because there is an energy model today but so
+that there will be one the day a power coefficient for this NPU is
+measured. There is none now: the NPU core nodes carry no
+dynamic-power-coefficient, Rockchip does not publish one, and a made-up
+number would be worse than no number. devfreq_cooling_em_register() logs
+the missing model at debug level and registers the cooling device anyway,
+so what this gets today is step-wise throttling with no power model for the
+IPA governor to use. Measuring the coefficient is follow-up work.
+
+Registration is allowed to fail. A kernel built without DEVFREQ_THERMAL
+gets a stub that returns an error, and losing throttling is not a reason to
+refuse to drive the NPU at all, so the failure is logged and probe carries
+on. The cooling device is unregistered by hand before the devfreq device it
+is attached to goes away.
+
+Assisted-by: LLM sparse checkpatch
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+---
+ drivers/accel/rocket/rocket_devfreq.c | 25 +++++++++++++++++++++++++
+ drivers/accel/rocket/rocket_devfreq.h |  2 ++
+ 2 files changed, 27 insertions(+)
+
+diff --git a/drivers/accel/rocket/rocket_devfreq.c b/drivers/accel/rocket/rocket_devfreq.c
+index 871fa370eb43..c81887734de7 100644
+--- a/drivers/accel/rocket/rocket_devfreq.c
++++ b/drivers/accel/rocket/rocket_devfreq.c
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/devfreq.h>
++#include <linux/devfreq_cooling.h>
+ #include <linux/ktime.h>
+ #include <linux/minmax.h>
+ #include <linux/of.h>
+@@ -446,6 +447,25 @@ int rocket_devfreq_init(struct rocket_device *rdev)
+ 		goto err_remove_table;
+ 	}
+ 
++	/*
++	 * Thermal throttling is optional, so a kernel built without
++	 * DEVFREQ_THERMAL keeps a working NPU rather than a failed probe.
++	 *
++	 * The _em variant is used so that the driver is ready for an energy
++	 * model the day a power coefficient for this NPU is measured. There is
++	 * none today: the NPU core nodes have no dynamic-power-coefficient,
++	 * the vendor does not publish one, and inventing a number would be
++	 * worse than having none. Without it the EM registration inside is
++	 * skipped and throttling is step-wise, with no power model for IPA to
++	 * use.
++	 */
++	rdevfreq->cooling = devfreq_cooling_em_register(rdevfreq->devfreq, NULL);
++	if (IS_ERR(rdevfreq->cooling)) {
++		dev_info(dev, "no devfreq cooling device (%pe), NPU will not be throttled\n",
++			 rdevfreq->cooling);
++		rdevfreq->cooling = NULL;
++	}
++
+ 	return 0;
+ 
+ err_remove_table:
+@@ -468,6 +488,11 @@ void rocket_devfreq_fini(struct rocket_device *rdev)
+ 
+ 	dev = rdevfreq->owner->dev;
+ 
++	if (rdevfreq->cooling) {
++		devfreq_cooling_unregister(rdevfreq->cooling);
++		rdevfreq->cooling = NULL;
++	}
++
+ 	devfreq_remove_device(rdevfreq->devfreq);
+ 	rdevfreq->devfreq = NULL;
+ 
+diff --git a/drivers/accel/rocket/rocket_devfreq.h b/drivers/accel/rocket/rocket_devfreq.h
+index 65a9de6d3738..26a3749078b9 100644
+--- a/drivers/accel/rocket/rocket_devfreq.h
++++ b/drivers/accel/rocket/rocket_devfreq.h
+@@ -10,9 +10,11 @@
+ 
+ struct rocket_core;
+ struct rocket_device;
++struct thermal_cooling_device;
+ 
+ struct rocket_devfreq {
+ 	struct devfreq *devfreq;
++	struct thermal_cooling_device *cooling;
+ 	struct devfreq_simple_ondemand_data gov_data;
+ 
+ 	/*
+-- 
+2.43.0
+

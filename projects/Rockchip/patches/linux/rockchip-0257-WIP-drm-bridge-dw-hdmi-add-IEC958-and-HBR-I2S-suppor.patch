@@ -1,0 +1,147 @@
+From 14998445d893894b4eb255243c6f2f423e52684e Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@gmail.com>
+Date: Thu, 3 Sep 2026 21:31:10 +0200
+Subject: [PATCH 257/280] WIP: drm/bridge: dw-hdmi: add IEC958 and HBR I2S
+ support
+
+Configure the I2S sampler for the 21-bit BPCUV representation used by
+IEC 61937 streams.
+
+Select NLPCM for non-audio IEC958 streams, or HBR for the standard
+8-channel 192 kHz transport. Keep the modes independent and enable all
+four I2S lanes for HBR.
+
+Restore internal PCUV insertion for ordinary PCM on controller revisions
+which provide that control.
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../drm/bridge/synopsys/dw-hdmi-i2s-audio.c   | 66 +++++++++++++------
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.h     |  6 ++
+ 2 files changed, 53 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c
+index 2c903c9fe805..e07a1fe2b6b8 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c
+@@ -12,6 +12,7 @@
+ #include <drm/bridge/dw_hdmi.h>
+ #include <drm/drm_crtc.h>
+ 
++#include <sound/asoundef.h>
+ #include <sound/hdmi-codec.h>
+ 
+ #include "dw-hdmi.h"
+@@ -40,8 +41,14 @@ static int dw_hdmi_i2s_hw_params(struct device *dev, void *data,
+ {
+ 	struct dw_hdmi_i2s_audio_data *audio = data;
+ 	struct dw_hdmi *hdmi = audio->hdmi;
++	bool iec958 = fmt->bit_fmt == SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE;
++	bool non_pcm = iec958 &&
++		       (hparms->iec.status[0] & IEC958_AES0_NONAUDIO);
++	bool hbr = non_pcm && hparms->channels == 8 &&
++		   hparms->sample_rate == 192000;
+ 	u8 conf0 = 0;
+ 	u8 conf1 = 0;
++	u8 conf2 = 0;
+ 	u8 inputclkfs = 0;
+ 
+ 	/* it cares I2S only */
+@@ -57,27 +64,47 @@ static int dw_hdmi_i2s_hw_params(struct device *dev, void *data,
+ 	inputclkfs	= HDMI_AUD_INPUTCLKFS_64FS;
+ 	conf0		= (HDMI_AUD_CONF0_I2S_SELECT | HDMI_AUD_CONF0_I2S_EN0);
+ 
+-	/* Enable the required i2s lanes */
+-	switch (hparms->channels) {
+-	case 7 ... 8:
+-		conf0 |= HDMI_AUD_CONF0_I2S_EN3;
+-		fallthrough;
+-	case 5 ... 6:
+-		conf0 |= HDMI_AUD_CONF0_I2S_EN2;
+-		fallthrough;
+-	case 3 ... 4:
+-		conf0 |= HDMI_AUD_CONF0_I2S_EN1;
+-		/* Fall-thru */
++	if (hbr) {
++		/* HBR is split over all four I2S input lanes. */
++		conf0 |= HDMI_AUD_CONF0_I2S_EN1 |
++			 HDMI_AUD_CONF0_I2S_EN2 |
++			 HDMI_AUD_CONF0_I2S_EN3;
++	} else {
++		/* Enable the required I2S lanes. */
++		switch (hparms->channels) {
++		case 7 ... 8:
++			conf0 |= HDMI_AUD_CONF0_I2S_EN3;
++			fallthrough;
++		case 5 ... 6:
++			conf0 |= HDMI_AUD_CONF0_I2S_EN2;
++			fallthrough;
++		case 3 ... 4:
++			conf0 |= HDMI_AUD_CONF0_I2S_EN1;
++		}
+ 	}
+ 
+-	switch (hparms->sample_width) {
+-	case 16:
+-		conf1 = HDMI_AUD_CONF1_WIDTH_16;
+-		break;
+-	case 24:
+-	case 32:
+-		conf1 = HDMI_AUD_CONF1_WIDTH_24;
+-		break;
++	if (iec958) {
++		/* BPCUV followed by a 16-bit IEC 61937 payload. */
++		conf1 = HDMI_AUD_CONF1_WIDTH_21;
++		conf2 = 0;
++		if (hbr)
++			conf2 = HDMI_AUD_CONF2_HBR;
++		else if (non_pcm)
++			conf2 = HDMI_AUD_CONF2_NLPCM;
++	} else {
++		/* PCUV insertion was added in DWC HDMI 2.10a. */
++		if (hdmi_read(audio, HDMI_DESIGN_ID) >= 0x21)
++			conf2 = HDMI_AUD_CONF2_INSERT_PCUV;
++
++		switch (hparms->sample_width) {
++		case 16:
++			conf1 = HDMI_AUD_CONF1_WIDTH_16;
++			break;
++		case 24:
++		case 32:
++			conf1 = HDMI_AUD_CONF1_WIDTH_24;
++			break;
++		}
+ 	}
+ 
+ 	switch (fmt->fmt) {
+@@ -109,6 +136,7 @@ static int dw_hdmi_i2s_hw_params(struct device *dev, void *data,
+ 	hdmi_write(audio, inputclkfs, HDMI_AUD_INPUTCLKFS);
+ 	hdmi_write(audio, conf0, HDMI_AUD_CONF0);
+ 	hdmi_write(audio, conf1, HDMI_AUD_CONF1);
++	hdmi_write(audio, conf2, HDMI_AUD_CONF2);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
+index 19bf122d7821..b60d6c8c5ddc 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
+@@ -929,8 +929,14 @@ enum {
+ 	HDMI_AUD_CONF1_MODE_BURST_1 = 0x60,
+ 	HDMI_AUD_CONF1_MODE_BURST_2 = 0x80,
+ 	HDMI_AUD_CONF1_WIDTH_16 = 0x10,
++	HDMI_AUD_CONF1_WIDTH_21 = 0x15,
+ 	HDMI_AUD_CONF1_WIDTH_24 = 0x18,
+ 
++/* AUD_CONF2 field values */
++	HDMI_AUD_CONF2_INSERT_PCUV = 0x04,
++	HDMI_AUD_CONF2_NLPCM = 0x02,
++	HDMI_AUD_CONF2_HBR = 0x01,
++
+ /* AUD_CTS3 field values */
+ 	HDMI_AUD_CTS3_N_SHIFT_OFFSET = 5,
+ 	HDMI_AUD_CTS3_N_SHIFT_MASK = 0xe0,
+-- 
+2.43.0
+

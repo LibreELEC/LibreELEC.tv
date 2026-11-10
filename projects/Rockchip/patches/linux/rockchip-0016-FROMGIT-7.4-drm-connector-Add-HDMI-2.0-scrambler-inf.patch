@@ -1,0 +1,190 @@
+From 5724c66ba17370e50a9484e079ec7111b1e4e814 Mon Sep 17 00:00:00 2001
+From: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+Date: Tue, 1 Sep 2026 21:50:31 +0300
+Subject: [PATCH 016/280] FROMGIT(7.4): drm/connector: Add HDMI 2.0 scrambler
+ infrastructure
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the connector-level infrastructure to support HDMI 2.0 scrambling:
+
+- A drm_connector_hdmi_scrambler_supported() helper to report whether
+  the source supports the scrambling capability
+- A .scrambler_{enable,disable}() pair of callbacks in
+  drm_connector_hdmi_funcs to allow scrambling setup on the source side
+- A scrambler_needed flag to be managed by the hdmi state helpers based
+  on the negotiated TMDS character rate and the source/sink scrambling
+  capabilities
+- A scrambler_enabled flag to track whether scrambling is currently
+  active
+- A delayed work item (scdc_work) to monitor sink-side scrambling status
+  and retry the setup if the sink resets it
+- A scdc_work_initialized flag to support lazy initialization of the
+  work item on the first scrambling enable and guard the teardown paths
+
+These are intended to be used by SCDC scrambling helpers to coordinate
+scrambling setup and teardown between the source driver and the DRM
+core.
+
+Tested-by: Maud Spierings <maud_spierings@hotmail.com>
+Tested-by: Diederik de Haas <diederik@cknow-tech.com>  # NanoPC-T6 LTS, Rock 5B
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Tested-by: Igor Paunovic <royalnet026@gmail.com> # RK3588 Orange Pi 5 Plus, dual HDMI
+Tested-by: Robin Räber <robin.raebi@gmail.com>
+Link: https://patch.msgid.link/20260901-dw-hdmi-qp-scramb-v11-7-bc12954a0688@collabora.com
+Signed-off-by: Cristian Ciocaltea <cristian.ciocaltea@collabora.com>
+---
+ drivers/gpu/drm/drm_connector.c | 10 +++++
+ include/drm/drm_connector.h     | 79 +++++++++++++++++++++++++++++++++
+ 2 files changed, 89 insertions(+)
+
+diff --git a/drivers/gpu/drm/drm_connector.c b/drivers/gpu/drm/drm_connector.c
+index 38cf853e867e..d94c86bfed86 100644
+--- a/drivers/gpu/drm/drm_connector.c
++++ b/drivers/gpu/drm/drm_connector.c
+@@ -602,6 +602,13 @@ int drmm_connector_hdmi_init(struct drm_device *dev,
+ 	    !hdmi_funcs->hdmi.write_infoframe)
+ 		return -EINVAL;
+ 
++	if (hdmi_funcs->supported_hdmi_ver >= HDMI_VERSION_2_0 &&
++	    (!hdmi_funcs->scrambler_enable ||
++	     !hdmi_funcs->scrambler_disable)) {
++		drm_err(dev, "Scrambler callbacks missing for HDMI 2.x\n");
++		return -EINVAL;
++	}
++
+ 	if (!(connector_type == DRM_MODE_CONNECTOR_HDMIA ||
+ 	      connector_type == DRM_MODE_CONNECTOR_HDMIB))
+ 		return -EINVAL;
+@@ -919,6 +926,9 @@ void drm_connector_cleanup(struct drm_connector *connector)
+ 		    DRM_CONNECTOR_REGISTERED))
+ 		drm_connector_unregister(connector);
+ 
++	if (connector->hdmi.scdc_work_initialized)
++		cancel_delayed_work_sync(&connector->hdmi.scdc_work);
++
+ 	platform_device_unregister(connector->hdmi_audio.codec_pdev);
+ 
+ 	if (connector->privacy_screen) {
+diff --git a/include/drm/drm_connector.h b/include/drm/drm_connector.h
+index a6de3e63b462..6b2cce2fa3af 100644
+--- a/include/drm/drm_connector.h
++++ b/include/drm/drm_connector.h
+@@ -28,6 +28,7 @@
+ #include <linux/ctype.h>
+ #include <linux/hdmi.h>
+ #include <linux/notifier.h>
++#include <linux/workqueue.h>
+ #include <drm/drm_mode_object.h>
+ #include <drm/drm_util.h>
+ #include <drm/drm_property.h>
+@@ -1131,6 +1132,17 @@ struct drm_connector_hdmi_state {
+ 	 * @tmds_char_rate: TMDS Character Rate, in Hz.
+ 	 */
+ 	unsigned long long tmds_char_rate;
++
++	/**
++	 * @scrambler_needed: Whether HDMI 2.0 SCDC scrambling is required
++	 * for the negotiated mode/bpc/format.
++	 *
++	 * Computed by drm_atomic_helper_connector_hdmi_check() according to
++	 * the HDMI 2.0 specification: scrambling is mandatory above a 340 MHz
++	 * TMDS character rate. Optional scrambling at lower rates is
++	 * deliberately not requested by the helper.
++	 */
++	bool scrambler_needed;
+ };
+ 
+ /**
+@@ -1481,6 +1493,36 @@ struct drm_connector_hdmi_funcs {
+ 	 */
+ 	const struct drm_edid *(*read_edid)(struct drm_connector *connector);
+ 
++	/**
++	 * @scrambler_enable:
++	 *
++	 * The callback is invoked via @drm_connector_hdmi_enable_scrambling
++	 * during commit to setup SCDC scrambling and high TMDS clock ratio on
++	 * the source side.
++	 *
++	 * The @scrambler_enable callback is mandatory if HDMI 2.0 is to be
++	 * supported.
++	 *
++	 * Returns:
++	 * 0 on success, a negative error code otherwise
++	 */
++	int (*scrambler_enable)(struct drm_connector *connector);
++
++	/**
++	 * @scrambler_disable:
++	 *
++	 * The callback is invoked via @drm_connector_hdmi_disable_scrambling
++	 * during commit to tear down SCDC scrambling and high TMDS clock ratio
++	 * on the source side.
++	 *
++	 * The @scrambler_disable callback is mandatory if HDMI 2.0 is to be
++	 * supported.
++	 *
++	 * Returns:
++	 * 0 on success, a negative error code otherwise
++	 */
++	int (*scrambler_disable)(struct drm_connector *connector);
++
+ 	/**
+ 	 * @avi:
+ 	 *
+@@ -2111,6 +2153,25 @@ struct drm_connector_hdmi {
+ 	 */
+ 	unsigned long long max_tmds_char_rate;
+ 
++	/**
++	 * @scrambler_enabled: Tracks whether HDMI 2.0 scrambler is currently enabled.
++	 */
++	bool scrambler_enabled;
++
++	/**
++	 * @scdc_work: Work item currently used to monitor sink-side scrambling
++	 * status and retry setup if the sink resets it.
++	 */
++	struct delayed_work scdc_work;
++
++	/**
++	 * @scdc_work_initialized: Tracks whether @scdc_work has been set up via
++	 * INIT_DELAYED_WORK(). The work item is initialized lazily on the first
++	 * scrambling enable, so this guards the teardown paths against touching
++	 * an uninitialized work item.
++	 */
++	bool scdc_work_initialized;
++
+ 	/**
+ 	 * @funcs: HDMI connector Control Functions and controller capabilities
+ 	 */
+@@ -2702,6 +2763,24 @@ drm_connector_is_unregistered(struct drm_connector *connector)
+ 		DRM_CONNECTOR_UNREGISTERED;
+ }
+ 
++/**
++ * drm_connector_hdmi_scrambler_supported - does connector support HDMI
++ * scrambling?
++ * @connector: DRM connector
++ *
++ * Checks whether or not @connector driver supports HDMI scrambling, based on
++ * the HDMI version advertised by the controller.
++ *
++ * Returns:
++ * True if the connector supports scrambling, false otherwise.
++ */
++static inline bool
++drm_connector_hdmi_scrambler_supported(const struct drm_connector *connector)
++{
++	return connector->hdmi.funcs &&
++		connector->hdmi.funcs->supported_hdmi_ver >= HDMI_VERSION_2_0;
++}
++
+ void drm_connector_oob_hotplug_event(struct fwnode_handle *connector_fwnode,
+ 				     enum drm_connector_status status);
+ enum drm_connector_color_format
+-- 
+2.43.0
+

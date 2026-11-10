@@ -1,0 +1,31 @@
+From b579c73cd92b9b9c1febf753ced48f0777b6ff9e Mon Sep 17 00:00:00 2001
+From: Detlev Casanova <detlev.casanova@collabora.com>
+Date: Thu, 10 Sep 2026 09:34:47 -0400
+Subject: [PATCH 093/280] FROMLIST(v2): arm64: dts: rockchip: Rename rk3399
+ HDMI audio card
+
+Rename the card from "hdmi-sound" to "RK3399 HDMI" so it identifies
+the SoC in user-visible ALSA fields and matches the naming scheme
+used across the rest of the Rockchip family.
+
+Signed-off-by: Detlev Casanova <detlev.casanova@collabora.com>
+---
+ arch/arm64/boot/dts/rockchip/rk3399-base.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+index 49c68fe65de6..c46e58d4af0d 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+@@ -2008,7 +2008,7 @@ hdmi_sound: hdmi-sound {
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <256>;
+-		simple-audio-card,name = "hdmi-sound";
++		simple-audio-card,name = "RK3399 HDMI";
+ 		status = "disabled";
+ 
+ 		simple-audio-card,cpu {
+-- 
+2.43.0
+

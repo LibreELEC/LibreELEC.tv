@@ -1,0 +1,95 @@
+From 39dd520824582c82dd251787ebf7acbb4e09bbe3 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 19 Apr 2026 22:50:34 +0000
+Subject: [PATCH 177/280] WIP: drm/bridge: dw-hdmi: implement SPD infoframe
+ callbacks
+
+Implement the bridge SPD infoframe callbacks and advertise
+DRM_BRIDGE_OP_HDMI_SPD_INFOFRAME.
+
+Program the DW HDMI FC SPD vendor, product and device info registers
+from the provided infoframe payload and toggle the SPD automatic packet
+transmission bit when enabling or clearing the infoframe.
+
+Signed-off-by: Jonas Karlman <jonas@kwiboo.se>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 36 ++++++++++++++++++++++-
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.h |  1 +
+ 2 files changed, 36 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index c409a798d3cd..6f853e143ff1 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -1894,6 +1894,37 @@ static int dw_hdmi_bridge_write_hdr_drm_infoframe(struct drm_bridge *bridge,
+ 	return 0;
+ }
+ 
++static int dw_hdmi_bridge_clear_spd_infoframe(struct drm_bridge *bridge)
++{
++	struct dw_hdmi *hdmi = bridge->driver_private;
++
++	hdmi_modb(hdmi, 0, HDMI_FC_DATAUTO0_SPD_AUTO, HDMI_FC_DATAUTO0);
++
++	return 0;
++}
++
++static int dw_hdmi_bridge_write_spd_infoframe(struct drm_bridge *bridge,
++					      const u8 *buffer, size_t len)
++{
++	struct dw_hdmi *hdmi = bridge->driver_private;
++	int i;
++
++	dw_hdmi_bridge_clear_spd_infoframe(bridge);
++
++	for (i = 0; i < 8; i++)
++		hdmi_writeb(hdmi, buffer[4 + i], HDMI_FC_SPDVENDORNAME0 + i);
++
++	for (i = 0; i < 16; i++)
++		hdmi_writeb(hdmi, buffer[12 + i], HDMI_FC_SDPPRODUCTNAME0 + i);
++
++	hdmi_writeb(hdmi, buffer[28], HDMI_FC_SPDDEVICEINF);
++
++	hdmi_modb(hdmi, HDMI_FC_DATAUTO0_SPD_AUTO,
++		  HDMI_FC_DATAUTO0_SPD_AUTO, HDMI_FC_DATAUTO0);
++
++	return 0;
++}
++
+ static void hdmi_av_composer(struct dw_hdmi *hdmi,
+ 			     const struct drm_display_info *display,
+ 			     const struct drm_display_mode *mode,
+@@ -2790,6 +2821,8 @@ static const struct drm_bridge_funcs dw_hdmi_bridge_funcs = {
+ 	.hdmi_write_hdmi_infoframe = dw_hdmi_bridge_write_hdmi_infoframe,
+ 	.hdmi_clear_hdr_drm_infoframe = dw_hdmi_bridge_clear_hdr_drm_infoframe,
+ 	.hdmi_write_hdr_drm_infoframe = dw_hdmi_bridge_write_hdr_drm_infoframe,
++	.hdmi_clear_spd_infoframe = dw_hdmi_bridge_clear_spd_infoframe,
++	.hdmi_write_spd_infoframe = dw_hdmi_bridge_write_spd_infoframe,
+ };
+ 
+ /* -----------------------------------------------------------------------------
+@@ -3201,7 +3234,8 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
+ 
+ 	hdmi->bridge.driver_private = hdmi;
+ 	hdmi->bridge.ops = DRM_BRIDGE_OP_DETECT | DRM_BRIDGE_OP_EDID
+-			 | DRM_BRIDGE_OP_HPD | DRM_BRIDGE_OP_HDMI;
++			 | DRM_BRIDGE_OP_HPD | DRM_BRIDGE_OP_HDMI
++			 | DRM_BRIDGE_OP_HDMI_SPD_INFOFRAME;
+ 	hdmi->bridge.supported_hdmi_ver = hdmi->version >= 0x200a && hdmi->ddc ?
+ 					  HDMI_VERSION_2_0 : HDMI_VERSION_1_4;
+ 	hdmi->bridge.interlace_allowed = true;
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
+index 599fad09f927..19bf122d7821 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.h
+@@ -855,6 +855,7 @@ enum {
+ 	HDMI_FC_DBGFORCE_FORCEVIDEO = 0x1,
+ 
+ /* FC_DATAUTO0 field values */
++	HDMI_FC_DATAUTO0_SPD_AUTO = 0x10,
+ 	HDMI_FC_DATAUTO0_VSD_AUTO = 0x08,
+ 
+ /* FC_DATAUTO3 field values */
+-- 
+2.43.0
+

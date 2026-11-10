@@ -1,0 +1,33 @@
+From a22b63b5ad18420688fc52521be2a7b9b70e1055 Mon Sep 17 00:00:00 2001
+From: Derek Foreman <derek.foreman@collabora.com>
+Date: Mon, 16 Sep 2024 13:09:00 -0500
+Subject: [PATCH 225/280] WIP: drm/display: hdmi-state-helper: force a modeset
+ on HDR metadata change
+
+The HDR output metadata is sent in the DRM infoframe, which the HDMI
+helpers only program when the bridge is enabled. Force a modeset when
+the metadata changes, so new metadata reaches the sink.
+
+Signed-off-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+[chewitt: split out of "gpu: hdmi: Always install colorspace connector
+ property", as its FIXME asked]
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/display/drm_hdmi_state_helper.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/display/drm_hdmi_state_helper.c b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+index 9368e53c5945..455f879524cf 100644
+--- a/drivers/gpu/drm/display/drm_hdmi_state_helper.c
++++ b/drivers/gpu/drm/display/drm_hdmi_state_helper.c
+@@ -926,6 +926,7 @@ int drm_atomic_helper_connector_hdmi_check(struct drm_connector *connector,
+ 	if (old_conn_state->hdmi.broadcast_rgb != new_conn_state->hdmi.broadcast_rgb ||
+ 	    old_conn_state->hdmi.output_bpc != new_conn_state->hdmi.output_bpc ||
+ 	    old_conn_state->hdmi.output_format != new_conn_state->hdmi.output_format ||
++	    old_conn_state->hdr_output_metadata != new_conn_state->hdr_output_metadata ||
+ 	    old_conn_state->colorspace != new_conn_state->colorspace) {
+ 		struct drm_crtc *crtc = new_conn_state->crtc;
+ 		struct drm_crtc_state *crtc_state;
+-- 
+2.43.0
+

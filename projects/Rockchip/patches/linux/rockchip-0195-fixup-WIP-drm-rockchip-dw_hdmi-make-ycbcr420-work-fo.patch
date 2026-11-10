@@ -1,0 +1,243 @@
+From 5d1f5f11643b530d50cfb72dcb5bd70fb1884fa0 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Wed, 28 Oct 2026 08:09:55 +0000
+Subject: [PATCH 195/280] fixup! WIP: drm/rockchip: dw_hdmi: make ycbcr420 work
+ for rk3399
+
+With a YUV output the RK3399 VOP overlays the windows in YUV, but YUV
+windows are still converted to RGB and RGB windows are not converted,
+and the BCSH block converts the result to YUV again. Translucent
+windows are then blended with RGB samples as YUV, so video under a
+translucent gui turns green.
+
+Scan out YUV windows unconverted and convert RGB windows to limited
+range BT.709 or BT.2020 YCbCr, selected by the CRTC colour space, and
+disable the BCSH conversion. Set the colour space from the connector
+colorspace in the dw-hdmi glue.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c | 15 +++++++
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.c | 47 ++++++++++++++++++++-
+ drivers/gpu/drm/rockchip/rockchip_drm_vop.h |  3 ++
+ drivers/gpu/drm/rockchip/rockchip_vop_reg.c | 35 ++++++++++++---
+ 4 files changed, 92 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+index 257a0e92e4fd..f8b326f9d979 100644
+--- a/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
++++ b/drivers/gpu/drm/rockchip/dw_hdmi-rockchip.c
+@@ -12,6 +12,7 @@
+ #include <linux/phy/phy.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/videodev2.h>
+ 
+ #include <drm/bridge/dw_hdmi.h>
+ #include <drm/drm_edid.h>
+@@ -329,6 +330,19 @@ static u32 dw_hdmi_rockchip_get_bus_format(struct drm_encoder *encoder,
+ 	return bridge_state->output_bus_cfg.format;
+ }
+ 
++static u32
++dw_hdmi_rockchip_color_space(const struct drm_connector_state *conn_state)
++{
++	switch (conn_state->colorspace) {
++	case DRM_MODE_COLORIMETRY_BT2020_RGB:
++	case DRM_MODE_COLORIMETRY_BT2020_YCC:
++	case DRM_MODE_COLORIMETRY_BT2020_CYCC:
++		return V4L2_COLORSPACE_BT2020;
++	default:
++		return V4L2_COLORSPACE_DEFAULT;
++	}
++}
++
+ static int
+ dw_hdmi_rockchip_encoder_atomic_check(struct drm_encoder *encoder,
+ 				      struct drm_crtc_state *crtc_state,
+@@ -361,6 +375,7 @@ dw_hdmi_rockchip_encoder_atomic_check(struct drm_encoder *encoder,
+ 
+ 	s->output_type = DRM_MODE_CONNECTOR_HDMIA;
+ 	s->bus_format = bus_format;
++	s->color_space = dw_hdmi_rockchip_color_space(conn_state);
+ 
+ 	if (!hdmi->phy || !conn_state->hdmi.tmds_char_rate)
+ 		return 0;
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+index 6eb7d14d1159..74d5a8dc2675 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c
+@@ -17,6 +17,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/reset.h>
++#include <linux/videodev2.h>
+ 
+ #include <drm/drm.h>
+ #include <drm/drm_atomic.h>
+@@ -126,6 +127,25 @@ static const uint32_t bt601_yuv2rgb[] = {
+ 	0x321168, 0x0877CF, 0x2EB127
+ };
+ 
++/* Full range RGB to limited range YCbCr */
++static const uint32_t bt709_rgb2yuv[] = {
++	0x00BB, 0x0275, 0x003F,
++	0xFF99, 0xFEA5, 0x01C2,
++	0x01C2, 0xFE68, 0xFFD7,
++	0x010200, 0x080200, 0x080200
++};
++
++static const uint32_t bt2020_rgb2yuv[] = {
++	0x00E6, 0x0253, 0x0034,
++	0xFF83, 0xFEBD, 0x01C1,
++	0x01C1, 0xFE64, 0xFFDC,
++	0x010200, 0x080200, 0x080200
++};
++
++/* Fixed RGB to YCbCr matrices of the windows without coefficient registers */
++#define VOP_CSC_BT709L		1
++#define VOP_CSC_BT2020L		3
++
+ enum vop_pending {
+ 	VOP_PENDING_FB_UNREF,
+ };
+@@ -954,6 +974,8 @@ static void vop_plane_atomic_update(struct drm_plane *plane,
+ 	uint32_t val;
+ 	bool rb_swap, uv_swap;
+ 	int win_index = VOP_WIN_TO_INDEX(vop_win);
++	struct rockchip_crtc_state *s;
++	bool yuv_overlay, bt2020;
+ 	int format;
+ 	int is_yuv = fb->format->is_yuv;
+ 	int i;
+@@ -972,6 +994,8 @@ static void vop_plane_atomic_update(struct drm_plane *plane,
+ 		return;
+ 	}
+ 
++	s = to_rockchip_crtc_state(drm_atomic_get_new_crtc_state(state, crtc));
++
+ 	obj = fb->obj[0];
+ 	rk_obj = to_rockchip_obj(obj);
+ 
+@@ -1020,7 +1044,25 @@ static void vop_plane_atomic_update(struct drm_plane *plane,
+ 	VOP_WIN_SET(vop, win, fmt_10, is_fmt_10(fb->format->format));
+ 	VOP_WIN_SET(vop, win, yrgb_vir, DIV_ROUND_UP(fb->pitches[0], 4));
+ 	VOP_WIN_SET(vop, win, yrgb_mst, dma_addr);
+-	VOP_WIN_YUV2YUV_SET(vop, win_yuv2yuv, y2r_en, is_yuv);
++	/*
++	 * With a YUV output the windows are overlaid in YUV: YUV windows are
++	 * scanned out unconverted and RGB windows are converted to YUV.
++	 */
++	yuv_overlay = is_yuv_output(s->bus_format);
++	bt2020 = s->color_space == V4L2_COLORSPACE_BT2020;
++	VOP_WIN_YUV2YUV_SET(vop, win_yuv2yuv, y2r_en, is_yuv && !yuv_overlay);
++	VOP_WIN_YUV2YUV_SET(vop, win_yuv2yuv, r2y_en, !is_yuv && yuv_overlay);
++	if (!is_yuv && yuv_overlay) {
++		const uint32_t *rgb2yuv = bt2020 ? bt2020_rgb2yuv : bt709_rgb2yuv;
++
++		for (i = 0; i < NUM_YUV2YUV_COEFFICIENTS; i++) {
++			VOP_WIN_YUV2YUV_COEFFICIENT_SET(vop, win_yuv2yuv,
++							r2y_coefficients[i],
++							rgb2yuv[i]);
++		}
++		VOP_WIN_YUV2YUV_SET(vop, win_yuv2yuv, csc_mode,
++				    bt2020 ? VOP_CSC_BT2020L : VOP_CSC_BT709L);
++	}
+ 	VOP_WIN_SET(vop, win, y_mir_en,
+ 		    (new_state->rotation & DRM_MODE_REFLECT_Y) ? 1 : 0);
+ 	VOP_WIN_SET(vop, win, x_mir_en,
+@@ -1495,7 +1537,8 @@ static void vop_crtc_atomic_enable(struct drm_crtc *crtc,
+ 	VOP_REG_SET(vop, common, overlay_mode, yuv_output);
+ 	VOP_REG_SET(vop, common, dsp_out_yuv, yuv_output);
+ 
+-	VOP_REG_SET(vop, common, bcsh_r2y_en, yuv_output);
++	/* RGB windows are converted to YUV before the YUV overlay */
++	VOP_REG_SET(vop, common, bcsh_r2y_en, 0);
+ 
+ 	/*
+ 	 * Background color is 10bit depth if vop version >= 3.5
+diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_vop.h b/drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+index 3d4d6a29d785..ea95a197fb7e 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.h
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.h
+@@ -184,6 +184,7 @@ struct vop_scl_regs {
+ 
+ struct vop_yuv2yuv_phy {
+ 	struct vop_reg y2r_coefficients[NUM_YUV2YUV_COEFFICIENTS];
++	struct vop_reg r2y_coefficients[NUM_YUV2YUV_COEFFICIENTS];
+ };
+ 
+ struct vop_win_phy {
+@@ -220,6 +221,8 @@ struct vop_win_yuv2yuv_data {
+ 	uint32_t base;
+ 	const struct vop_yuv2yuv_phy *phy;
+ 	struct vop_reg y2r_en;
++	struct vop_reg r2y_en;
++	struct vop_reg csc_mode;
+ };
+ 
+ struct vop_win_data {
+diff --git a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+index f8c291cbfd29..acd3c87d19f4 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c
+@@ -969,17 +969,37 @@ static const struct vop_yuv2yuv_phy rk3399_yuv2yuv_win01_data = {
+ 		VOP_REG(RK3399_WIN0_YUV2YUV_Y2R + 24, 0xffffffff, 0),
+ 		VOP_REG(RK3399_WIN0_YUV2YUV_Y2R + 28, 0xffffffff, 0),
+ 	},
++	.r2y_coefficients = {
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 0, 0xffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 0, 0xffff, 16),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 4, 0xffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 4, 0xffff, 16),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 8, 0xffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 8, 0xffff, 16),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 12, 0xffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 12, 0xffff, 16),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 16, 0xffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 20, 0xffffffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 24, 0xffffffff, 0),
++		VOP_REG(RK3399_WIN0_YUV2YUV_R2Y + 28, 0xffffffff, 0),
++	},
+ };
+ 
+ static const struct vop_yuv2yuv_phy rk3399_yuv2yuv_win23_data = { };
+ 
+ static const struct vop_win_yuv2yuv_data rk3399_vop_big_win_yuv2yuv_data[] = {
+ 	{ .base = 0x00, .phy = &rk3399_yuv2yuv_win01_data,
+-	  .y2r_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 1) },
++	  .y2r_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 1),
++	  .r2y_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 2) },
+ 	{ .base = 0x60, .phy = &rk3399_yuv2yuv_win01_data,
+-	  .y2r_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 9) },
+-	{ .base = 0xC0, .phy = &rk3399_yuv2yuv_win23_data },
+-	{ .base = 0x120, .phy = &rk3399_yuv2yuv_win23_data },
++	  .y2r_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 9),
++	  .r2y_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 10) },
++	{ .base = 0xC0, .phy = &rk3399_yuv2yuv_win23_data,
++	  .r2y_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 18),
++	  .csc_mode = VOP_REG(RK3399_YUV2YUV_WIN, 0x3, 22) },
++	{ .base = 0x120, .phy = &rk3399_yuv2yuv_win23_data,
++	  .r2y_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 26),
++	  .csc_mode = VOP_REG(RK3399_YUV2YUV_WIN, 0x3, 30) },
+ 
+ };
+ 
+@@ -1082,8 +1102,11 @@ static const struct vop_win_data rk3399_vop_lit_win_data[] = {
+ 
+ static const struct vop_win_yuv2yuv_data rk3399_vop_lit_win_yuv2yuv_data[] = {
+ 	{ .base = 0x00, .phy = &rk3399_yuv2yuv_win01_data,
+-	  .y2r_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 1)},
+-	{ .base = 0x60, .phy = &rk3399_yuv2yuv_win23_data },
++	  .y2r_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 1),
++	  .r2y_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 2) },
++	{ .base = 0x60, .phy = &rk3399_yuv2yuv_win23_data,
++	  .r2y_en = VOP_REG(RK3399_YUV2YUV_WIN, 0x1, 18),
++	  .csc_mode = VOP_REG(RK3399_YUV2YUV_WIN, 0x3, 22) },
+ };
+ 
+ static const struct vop_data rk3399_vop_lit = {
+-- 
+2.43.0
+

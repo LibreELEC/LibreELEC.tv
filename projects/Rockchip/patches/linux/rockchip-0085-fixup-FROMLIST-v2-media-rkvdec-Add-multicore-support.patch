@@ -1,0 +1,51 @@
+From 6c9d1e08e71c1e471932986206f4b7d81e360771 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Tue, 20 Oct 2026 20:27:36 +0000
+Subject: [PATCH 085/280] fixup! FROMLIST(v2): media: rkvdec: Add multicore
+ support
+
+Make the acquire_core() and release_core() comments valid kernel-doc,
+fixing these W=1 warnings:
+
+  rkvdec.c:1267 This comment starts with '/**', but isn't a kernel-doc comment.
+  rkvdec.c:1287 This comment starts with '/**', but isn't a kernel-doc comment.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/media/platform/rockchip/rkvdec/rkvdec.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/rockchip/rkvdec/rkvdec.c b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+index 1d14c0ae8837..4365304b5411 100644
+--- a/drivers/media/platform/rockchip/rkvdec/rkvdec.c
++++ b/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+@@ -1265,8 +1265,13 @@ static const struct media_device_ops rkvdec_media_ops = {
+ };
+ 
+ /**
+- * Return a core that is available for decoding or null if no core is found.
++ * acquire_core() - claim a core that is available for decoding
++ * @rkvdec: the rkvdec device
++ * @ctx: the context that will run on the core
++ *
+  * The caller should make sure to call release_core() when the core is no longer needed.
++ *
++ * Return: an available core, or NULL if no core is available.
+  */
+ static struct rkvdec_core *acquire_core(struct rkvdec_dev *rkvdec, struct rkvdec_ctx *ctx)
+ {
+@@ -1285,7 +1290,9 @@ static struct rkvdec_core *acquire_core(struct rkvdec_dev *rkvdec, struct rkvdec
+ }
+ 
+ /**
+- * Release the core to make it available for a next job.
++ * release_core() - make a core available for the next job
++ * @rkvdec: the rkvdec device
++ * @core: the core to release
+  */
+ static void release_core(struct rkvdec_dev *rkvdec, struct rkvdec_core *core)
+ {
+-- 
+2.43.0
+

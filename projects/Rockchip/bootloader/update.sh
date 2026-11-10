@@ -71,7 +71,32 @@ fi
   fi
 
 # update bootloader
- if [ -f ${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin ]; then
+  loader_sig() {
+    dd if="${1}" bs=4 skip=8192 count=1 2>/dev/null | md5sum | awk '{print $1}'
+  }
+
+  if [ -f "${UPDATE_IMG_FILE}" -a -n "${UPDATE_IMG_OFFSET}" -a -b "${BOOT_DISK}" ]; then
+    IMG_SIG=$(loader_sig "${UPDATE_IMG_FILE}")
+    DISK_SIG=$(loader_sig "${BOOT_DISK}")
+    ZERO_SIG=$(loader_sig /dev/zero)
+    LOADER_END=$((UPDATE_IMG_OFFSET / 512))
+    PART_START=$(cat /sys/class/block/$(basename ${BOOT_PART})/start 2>/dev/null)
+    [ -n "${PART_START}" ] && [ "${PART_START}" -lt "${LOADER_END}" ] && LOADER_END=${PART_START}
+    BOARD_COMPAT=$(tr '\0' '\n' </proc/device-tree/compatible 2>/dev/null | head -n 1)
+  fi
+
+  if [ -n "${IMG_SIG}" -a "${IMG_SIG}" != "${ZERO_SIG}" -a "${IMG_SIG}" = "${DISK_SIG}" ] && \
+     ! dd if="${UPDATE_IMG_FILE}" bs=512 skip=64 count=$((LOADER_END - 64)) 2>/dev/null | \
+       grep -aqF "${BOARD_COMPAT:-none}"; then
+    echo "Skipping U-Boot update: image is not for ${BOARD_COMPAT:-this board}"
+    IMG_SIG=""
+  fi
+
+  if [ -n "${IMG_SIG}" -a "${IMG_SIG}" != "${ZERO_SIG}" -a "${IMG_SIG}" = "${DISK_SIG}" ]; then
+    echo -n "Updating U-Boot from image... "
+    dd if="${UPDATE_IMG_FILE}" of=${BOOT_DISK} bs=512 skip=64 seek=64 count=$((LOADER_END - 64)) conv=fsync,notrunc &>/dev/null
+    echo "done"
+  elif [ -f ${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin ]; then
     echo -n "Updating U-Boot... "
     dd if=${SYSTEM_ROOT}/usr/share/bootloader/u-boot-rockchip.bin of=${BOOT_DISK} bs=32k seek=1 conv=fsync &>/dev/null
     echo "done"

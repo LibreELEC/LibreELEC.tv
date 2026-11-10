@@ -1,0 +1,117 @@
+From 7f89b8d6aff88586d82dce527dab097c98184fdc Mon Sep 17 00:00:00 2001
+From: Igor Paunovic <royalnet026@gmail.com>
+Date: Tue, 22 Sep 2026 10:01:05 +0200
+Subject: [PATCH 097/280] FROMLIST(v2): accel/rocket: number the cores by
+ devicetree position, not bind order
+
+rocket_job_hw_submit() programs the S_POINTER registers of a core with an
+extra bit derived from core->index, the way the vendor driver derives it
+from the hardware number of the core. rocket_probe() sets core->index to
+the slot the core takes in rdev->cores[], which is the order the cores
+bind in.
+
+The two agree only while the cores that bind are a prefix of the core
+nodes in the devicetree, in devicetree order. Unbind them and bind them
+back with a different core first, have one core's probe deferred behind a
+sibling's, or disable a core other than the last one, and every task
+submitted to a core whose slot is not its hardware number times out after
+500 ms. The reset that follows does not help, and the inference finishes
+with wrong output.
+
+Observed on an Orange Pi 5 Plus with a KASAN build, over all six bind
+orders of the three cores: only the devicetree order ran clean. The other
+five produced 27 to 141 "NPU job timed out". In four of them no output
+tensor changed with the input, and the harness gave up before its first
+measured round; the fifth got through a six-second run with 27 timeouts
+and a wrong top-1 class. All but one of the timeouts land on the cores
+whose slot is not their hardware number, in proportion to the tasks the
+scheduler hands them, and in both directions of the mismatch.
+
+Number the cores by their position among the core nodes in the devicetree
+instead, which is what the hardware number is.
+
+The wrong value has been assigned since the driver was added, but it only
+reached the hardware once the extra bit was introduced, hence the Fixes
+tag below.
+
+Fixes: 0810d5ad88a1 ("accel/rocket: Add job submission IOCTL")
+Cc: stable@vger.kernel.org
+Assisted-by: LLM sparse checkpatch
+Signed-off-by: Igor Paunovic <royalnet026@gmail.com>
+---
+ drivers/accel/rocket/rocket_core.h |  5 +++++
+ drivers/accel/rocket/rocket_drv.c  | 31 +++++++++++++++++++++++++++++-
+ 2 files changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/accel/rocket/rocket_core.h b/drivers/accel/rocket/rocket_core.h
+index f6d7382854ca..46ed8352a79d 100644
+--- a/drivers/accel/rocket/rocket_core.h
++++ b/drivers/accel/rocket/rocket_core.h
+@@ -30,6 +30,11 @@
+ struct rocket_core {
+ 	struct device *dev;
+ 	struct rocket_device *rdev;
++	/*
++	 * Hardware number of the core: its position among the core nodes in
++	 * the devicetree. Not an index into rdev->cores[] - that slot is what
++	 * find_core_for_dev() returns.
++	 */
+ 	unsigned int index;
+ 
+ 	int irq;
+diff --git a/drivers/accel/rocket/rocket_drv.c b/drivers/accel/rocket/rocket_drv.c
+index 5d7805c41dc3..4313d34dc238 100644
+--- a/drivers/accel/rocket/rocket_drv.c
++++ b/drivers/accel/rocket/rocket_drv.c
+@@ -157,10 +157,39 @@ static const struct drm_driver rocket_drm_driver = {
+ 	.desc			= "rocket DRM",
+ };
+ 
++/*
++ * The extra bit that rocket_job_hw_submit() sets in the S_POINTER registers
++ * is the hardware number of the core, which is its position among the core
++ * nodes in the devicetree: a disabled core keeps its number. The slot a core
++ * takes in rdev->cores[] is the order the cores happened to bind in, and the
++ * two only agree while the cores that bind are a prefix of those nodes, in
++ * devicetree order. Every task submitted to a core whose slot is not its
++ * hardware number then times out.
++ */
++static int rocket_core_hw_index(struct device *dev)
++{
++	struct device_node *np;
++	int index = 0;
++
++	for_each_matching_node(np, dev->driver->of_match_table) {
++		if (np == dev->of_node) {
++			of_node_put(np);
++			return index;
++		}
++		index++;
++	}
++
++	return -ENODEV;
++}
++
+ static int rocket_probe(struct platform_device *pdev)
+ {
++	int index = rocket_core_hw_index(&pdev->dev);
+ 	int ret;
+ 
++	if (index < 0)
++		return index;
++
+ 	if (rdev == NULL) {
+ 		/* First core probing, initialize DRM device. */
+ 		rdev = rocket_device_init(drm_dev, &rocket_drm_driver);
+@@ -179,7 +208,7 @@ static int rocket_probe(struct platform_device *pdev)
+ 
+ 	rdev->cores[core].rdev = rdev;
+ 	rdev->cores[core].dev = &pdev->dev;
+-	rdev->cores[core].index = core;
++	rdev->cores[core].index = index;
+ 
+ 	rdev->num_cores++;
+ 
+-- 
+2.43.0
+
