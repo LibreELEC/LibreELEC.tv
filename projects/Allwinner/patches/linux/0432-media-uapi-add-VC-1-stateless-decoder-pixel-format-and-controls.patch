@@ -1171,9 +1171,9 @@ index 648b88c868bc..cb4fdb0cf7d0 100644
 --- a/drivers/media/v4l2-core/v4l2-ctrls-core.c
 +++ b/drivers/media/v4l2-core/v4l2-ctrls-core.c
 @@ -115,6 +115,7 @@ static void std_init_compound(const struct v4l2_ctrl *ctrl, u32 idx,
- 	struct v4l2_ctrl_fwht_params *p_fwht_params;
  	struct v4l2_ctrl_h264_scaling_matrix *p_h264_scaling_matrix;
  	struct v4l2_ctrl_av1_sequence *p_av1_sequence;
+ 	struct v4l2_ctrl_hevc_sps *p_hevc_sps;
 +	struct v4l2_ctrl_vc1_sequence *p_vc1_sequence;
  	void *p = ptr.p + idx * ctrl->elem_size;
  
