@@ -2,8 +2,8 @@
 # Copyright (C) 2024-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="krb5"
-PKG_VERSION="1.22.2"
-PKG_SHA256="3243ffbc8ea4d4ac22ddc7dd2a1dc54c57874c40648b60ff97009763554eaf13"
+PKG_VERSION="1.22.3"
+PKG_SHA256="fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b"
 PKG_LICENSE="MIT"
 PKG_SITE="https://web.mit.edu/kerberos/"
 # XXX bump on major version change
