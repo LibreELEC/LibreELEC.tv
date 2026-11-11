@@ -109,6 +109,13 @@ def get_audio_device() -> str | None:
     else:
         return get_kodi_audio_device()
 
+def get_screensaver_timeout_setting() -> str | None:
+    config = settings.getInt('screensavertimeout')
+    if config == 0:
+        return None
+    else:
+        return str(config * 60)
+
 
 def run_external_program(
     executable: str,
@@ -134,6 +141,8 @@ def run_external_program(
     if displayconfig is None:
         displayconfig = get_display_config_setting()
 
+    screensaver_timeout = get_screensaver_timeout_setting()
+
     environment = {}
 
     if displayconfig is not None:
@@ -146,6 +155,8 @@ def run_external_program(
         environment['KODI_EXTERNAL_SESSION'] = 'wayland'
     else:
         environment['KODI_EXTERNAL_SESSION'] = 'plain'
+    if screensaver_timeout is not None:
+        environment['KODI_SCREENSAVER_TIMEOUT'] = screensaver_timeout
 
     if env is not None:
         environment.update(env)
