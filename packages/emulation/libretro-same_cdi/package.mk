@@ -2,8 +2,8 @@
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-same_cdi"
-PKG_VERSION="9a589f6ba8c35f5310853f63420d9dab1df63492"
-PKG_SHA256="3db197310f3e26a4076c7595ee2f03034fba36e000a274e8c38f584cea4013fa"
+PKG_VERSION="ff9bb99a50d518aef6d2add1c49b7c44447e3e78"
+PKG_SHA256="a716b7de6d1f8e70d3b053cece9c2f11388f674c0071036b5cb3a9296bb473ce"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/libretro/same_cdi"
 PKG_URL="https://github.com/libretro/same_cdi/archive/${PKG_VERSION}.tar.gz"
