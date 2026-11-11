@@ -9,18 +9,18 @@ Subject: [PATCH] link with ludev
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f31b956b..e9891c94 100644
+index 8f3148ab..52a7d4ca 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -748,7 +748,7 @@ add_executable (${exe_name} ${exe_srcs}
+@@ -748,7 +748,7 @@ add_executable (${exe_name} ${exe_srcs} ${exe_hdrs})
  if (OSCamOperatingSystem MATCHES "Mac OS X")
  	target_link_libraries (${exe_name} ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt minilzo)
  else (OSCamOperatingSystem MATCHES "Mac OS X")
 -	target_link_libraries (${exe_name} -Wl,--start-group ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt -Wl,--end-group minilzo)
 +	target_link_libraries (${exe_name} -Wl,--start-group ${csoscam} ${csmodules} ${csreaders} csctapi cscrypt -Wl,--end-group minilzo udev)
  endif (OSCamOperatingSystem MATCHES "Mac OS X")
- if (BUILD_TESTS)
- 	# Test binary stays plain: no sign/upx — see Makefile rationale.
+ execute_process (COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/config.sh --enabled WEBIF OUTPUT_VARIABLE CONFIG_WEBIF OUTPUT_STRIP_TRAILING_WHITESPACE)
+ if (CONFIG_WEBIF MATCHES "Y")
 diff --git a/utils/CMakeLists.txt b/utils/CMakeLists.txt
 index 49649863..1c368dac 100644
 --- a/utils/CMakeLists.txt
