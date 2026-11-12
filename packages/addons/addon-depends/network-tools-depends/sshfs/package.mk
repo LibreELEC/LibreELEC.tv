@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="sshfs"
-PKG_VERSION="3.7.6"
-PKG_SHA256="6a1bcb31450a077e9cb1b7ff158c71de34db697c3c0da6cb362502131e495893"
+PKG_VERSION="3.7.7"
+PKG_SHA256="893013ce6cdbf6f9fa790c9a4ca2b07eea95139f965f5c14f06b458cbe17f00d"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/libfuse/sshfs"
 PKG_URL="https://github.com/libfuse/sshfs/releases/download/sshfs-${PKG_VERSION}/sshfs-${PKG_VERSION}.tar.xz"
