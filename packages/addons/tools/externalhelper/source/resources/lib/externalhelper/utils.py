@@ -123,14 +123,16 @@ def run_external_program(
     env: dict | None = None,
     name: str = '',
     wayland: bool = True,
+    pulseaudio: bool = False,
+    pulseaudio_channels: int | None = None,
     audiodevice: str | None = None,
     displayconfig: str | None = None,
 ) -> bool:
     addon = xbmcaddon.Addon(ADDON_ID)
 
     if get_confirm_start_setting():
-        str = addon.getLocalizedString(30000).format(name=name)
-        ok = xbmcgui.Dialog().yesno(name, str)
+        message = addon.getLocalizedString(30000).format(name=name)
+        ok = xbmcgui.Dialog().yesno(name, message)
         if not ok:
             return False
 
@@ -157,6 +159,12 @@ def run_external_program(
         environment['KODI_EXTERNAL_SESSION'] = 'plain'
     if screensaver_timeout is not None:
         environment['KODI_SCREENSAVER_TIMEOUT'] = screensaver_timeout
+    if pulseaudio:
+        environment['KODI_FLATPAK_PULSEAUDIO'] = 'yes'
+        if pulseaudio_channels is not None:
+            environment['KODI_FLATPAK_PULSEAUDIO_CHANNELS'] = str(pulseaudio_channels)
+    else:
+        environment['KODI_FLATPAK_PULSEAUDIO'] = 'no'
 
     if env is not None:
         environment.update(env)
