@@ -1,0 +1,76 @@
+From 397646583b36b0c48922850a8b808f8660883e33 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Mon, 2 Nov 2026 00:55:04 +0900
+Subject: [PATCH 15/16] ram: rk3399: Use the maximum LPDDR4 tRFCab as the
+ default
+
+Some ROCK 4C+ boards fail to boot with mainline U-Boot (SPL does not
+start), depending on the DRAM fitted.
+
+rk3399-sdram-lpddr4-100.dtsi sets tRFCab to 180ns regardless of the
+DRAM density. JEDEC defines the minimum tRFCab per density: 180ns is
+sufficient only for 4Gb per channel or less. 8Gb per channel requires
+280ns, and 16Gb per channel requires 380ns.
+
+Set the default to 380ns, the largest JEDEC value, so that all
+densities are within spec. This is longer than necessary for smaller
+devices; a follow-up patch selects the value from MR8.
+
+Tested on ROCK 4C+ (MT53E512M32D2NP, 8Gb per channel), which boots
+with this patch alone.
+
+This patch was written with the help of Claude (claude-opus-5-5).
+
+Signed-off-by: Shigeaki Asai <y-asai.0816@docomonet.jp>
+---
+ arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi b/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi
+index f0c478d189e..92677ec36cf 100644
+--- a/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi
++++ b/arch/arm/dts/rk3399-sdram-lpddr4-100.dtsi
+@@ -94,9 +94,9 @@
+ 		0x00041109
+ 		0x00000000
+ 		0x03010000
+-		0x06100048
+-		0x0c280090
+-		0x00bb0009
++		0x06100098
++		0x0c280130
++		0x00bb0013
+ 		0x00000000
+ 		0x00060005
+ 		0x000a0005
+@@ -105,10 +105,10 @@
+ 		0x030a0000
+ 		0x0c000002
+ 		0x00000103
+-		0x0005030a
+-		0x00060037
+-		0x0005006e
+-		0x05050007
++		0x009b030a
++		0x0136009b
++		0x00140136
++		0x05050014
+ 		0x03030605
+ 		0x06050301
+ 		0x06030c05
+@@ -424,9 +424,9 @@
+ 		0x080c0004
+ 		0x00061c00
+ 		0x00000214
+-		0x00bb0009
+-		0x0c280090
+-		0x06100048
++		0x00bb0013
++		0x0c280130
++		0x06100098
+ 		0x00000500
+ 		0x00000000
+ 		0x00000000
+-- 
+2.43.0
+

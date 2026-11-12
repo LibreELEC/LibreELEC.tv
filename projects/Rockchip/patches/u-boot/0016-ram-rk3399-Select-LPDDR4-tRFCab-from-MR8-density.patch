@@ -1,0 +1,110 @@
+From 1dde47947f0a293bac8e0e23e102a0a8e3583464 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Mon, 2 Nov 2026 00:56:08 +0900
+Subject: [PATCH 16/16] ram: rk3399: Select LPDDR4 tRFCab from MR8 density
+
+The default LPDDR4 tRFCab is 380ns, which is valid for all densities
+but longer than necessary for smaller devices, and increases the time
+the DRAM is unavailable during refresh.
+
+Once the DRAM is initialized, read the density from MR8 for each
+channel and reprogram tRFCab with the JEDEC value for that density,
+together with tXSR and tXSNR (tRFCab + 7.5ns). This is done for all
+three frequency sets in both the CTL and the PI, before switching to
+the final frequency.
+
+Tested on ROCK 4C+ (MT53E512M32D2NP) and ROCK 4SE (MT53E512M32D4NQ).
+Both report MR8=0x10 and use 280ns.
+
+This patch was written with the help of Claude (claude-opus-5-5).
+
+Signed-off-by: Shigeaki Asai <y-asai.0816@docomonet.jp>
+---
+ drivers/ram/rockchip/sdram_rk3399.c | 64 +++++++++++++++++++++++++++++
+ 1 file changed, 64 insertions(+)
+
+diff --git a/drivers/ram/rockchip/sdram_rk3399.c b/drivers/ram/rockchip/sdram_rk3399.c
+index 6fa8f268770..fc3c673aff9 100644
+--- a/drivers/ram/rockchip/sdram_rk3399.c
++++ b/drivers/ram/rockchip/sdram_rk3399.c
+@@ -2565,6 +2565,37 @@ static int lpddr4_set_rate(struct dram_info *dram,
+ 
+ 	return 0;
+ }
++
++/*
++ * tRFCab (JEDEC LPDDR4) by density per channel, indexed by MR8 OP[5:2]:
++ * 2Gb, 3Gb, 4Gb, 6Gb, 8Gb, 12Gb, 16Gb per channel.
++ */
++static const u16 lpddr4_trfc_ns[] = { 130, 180, 180, 280, 280, 380, 380 };
++
++/*
++ * Program tRFCab and tXSR/tXSNR (tRFCab + 7.5ns) for the three frequency
++ * sets. mhz[] holds the rate of CTL F0, F1 and F2; the PI uses the
++ * reverse order for F0 and F2.
++ */
++static void lpddr4_set_trfc(u32 *denali_ctl, u32 *denali_pi, u32 trfc_ns,
++			    const u32 mhz[3])
++{
++	u32 f, trfc, txsr;
++
++	for (f = 0; f < 3; f++) {
++		trfc = DIV_ROUND_UP(trfc_ns * mhz[f], 1000);
++		txsr = DIV_ROUND_UP((trfc_ns * 2 + 15) * mhz[f], 2000);
++
++		/* CTL TRFC_Fx [9:0] */
++		clrsetbits_le32(&denali_ctl[48 + f], 0x3ff, trfc);
++		/* CTL TXSR_Fx [31:16] */
++		clrsetbits_le32(&denali_ctl[59 + f], 0xffff << 16, txsr << 16);
++		/* CTL TXSNR_Fx [15:0] */
++		clrsetbits_le32(&denali_ctl[60 + f], 0xffff, txsr);
++		/* PI_TRFC_Fx [9:0] */
++		clrsetbits_le32(&denali_pi[46 + 2 - f], 0x3ff, trfc);
++	}
++}
+ #endif /* CONFIG_RAM_ROCKCHIP_LPDDR4 */
+ 
+ /* CS0,n=1
+@@ -2964,6 +2995,39 @@ static int sdram_init(struct dram_info *dram,
+ 	}
+ 
+ #if defined(CONFIG_RAM_ROCKCHIP_LPDDR4)
++	/*
++	 * The parameters start with the longest tRFCab (380ns). Now that the
++	 * devices are initialised, read the density from MR8 and use the
++	 * tRFCab it requires.
++	 */
++	if (dramtype == LPDDR4) {
++		const u32 mhz[3] = {
++			dfs_cfgs_lpddr4[0].base.ddr_freq / MHz,
++			dfs_cfgs_lpddr4[1].base.ddr_freq / MHz,
++			ddr_freq,
++		};
++
++		for (channel = 0; channel < 2; channel++) {
++			const struct chan_info *chan = &dram->chan[channel];
++			u32 mr8 = 0, density;
++
++			if (!params->ch[channel].cap_info.rank)
++				continue;
++
++			read_mr(chan->pctl, 1, 8, &mr8);
++			density = (mr8 >> 2) & 0xf;
++			if (density >= ARRAY_SIZE(lpddr4_trfc_ns))
++				continue;
++
++			lpddr4_set_trfc(chan->pctl->denali_ctl,
++					chan->pi->denali_pi,
++					lpddr4_trfc_ns[density], mhz);
++			if (IS_ENABLED(CONFIG_RAM_ROCKCHIP_DEBUG))
++				printf("%s: ch%d MR8=0x%02x tRFCab %uns\n", __func__,
++				       channel, mr8, lpddr4_trfc_ns[density]);
++		}
++	}
++
+ 	/* LPDDR4 needs to be trained at 400MHz */
+ 	lpddr4_set_rate(dram, params, 0);
+ 	params->base.ddr_freq = dfs_cfgs_lpddr4[0].base.ddr_freq / MHz;
+-- 
+2.43.0
+
