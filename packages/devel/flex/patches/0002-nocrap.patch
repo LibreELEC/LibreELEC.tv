@@ -1,12 +1,17 @@
-From 6b4ff6cb9cae1e206cb63d4541a8a272c5bc6535 Mon Sep 17 00:00:00 2001
+From 7d18df38565aac5a81d79b39e63a79a902429e2c Mon Sep 17 00:00:00 2001
 From: Andre Heider <a.heider@gmail.com>
-Date: Wed, 08 Jan 2020 13:00:45 +0100
+Date: Wed, 8 Jan 2020 13:00:45 +0100
 Subject: [PATCH] nocrap
 
+---
+ Makefile.am | 4 ----
+ 1 file changed, 4 deletions(-)
+
 diff --git a/Makefile.am b/Makefile.am
+index 22e99c345528..f5b2569f9c26 100644
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -43,10 +43,6 @@ EXTRA_DIST = \
+@@ -49,10 +49,6 @@ dist_noinst_SCRIPTS = \
  
  SUBDIRS = \
  	src \
@@ -16,4 +21,7 @@ diff --git a/Makefile.am b/Makefile.am
 -	tests \
  	tools
  
- # Create the ChangeLog, but only if we're inside a git working directory
+ # Convenience targets to build libfl only
+-- 
+2.55.0.windows.5
+

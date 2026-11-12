@@ -1,17 +1,46 @@
-From 49cdf3874c8849b39d5064c6c6e9d925c83e6743 Mon Sep 17 00:00:00 2001
+From ba2445edc3d3f4094acb0a76edbcd2f6f660bcb4 Mon Sep 17 00:00:00 2001
 From: Rudi Heitbaum <rudi@heitbaum.com>
 Date: Sun, 25 May 2025 13:15:28 +0000
 Subject: [PATCH] use flex host for target cross compile
 
+---
+ src/Makefile.am | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
 diff --git a/src/Makefile.am b/src/Makefile.am
+index 8730a3870856..b155b9fcf2aa 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -100,7 +100,7 @@ stage1scan.c: scan.l stage1flex$(EXEEXT)
- 	./stage1flex$(EXEEXT) $(AM_LFLAGS) $(LFLAGS) -o $@ $(srcdir)/scan.l
- else
- stage1scan.c: scan.c
--	sed 's|^\(#line .*\)"'`printf %s $< | sed 's|[][\\\\.*]|\\\\&|g'`'"|\1"$@"|g' $< > $@
-+	../../.$(HOST_NAME)/src/stage1flex$(EXEEXT) $(AM_LFLAGS) $(LFLAGS) -o $@ $(srcdir)/scan.l
- endif
+@@ -55,11 +55,7 @@ flex_SOURCES = \
+ nodist_flex_SOURCES = \
+ 	$(SKELINCLUDES)
  
- dist-hook: scan.l flex$(EXEEXT)
+-if ENABLE_BOOTSTRAP
+ nodist_flex_SOURCES += stage1scan.c
+-else
+-flex_SOURCES += scan.l
+-endif
+ 
+ COMMON_SOURCES = \
+ 	buf.c \
+@@ -137,10 +133,17 @@ go-flex.h: go-flex.skl mkskel.sh
+ # The input and output file names are fixed for deterministic scanner
+ # generation. If scan.l is not modified by builders, stage1scan.c should
+ # be bit-identical to the scan.c pregenerated on release.
++if ENABLE_BOOTSTRAP
+ stage1scan.c: scan.l stage1flex$(EXEEXT)
+ 	( cd $(srcdir) && $(abs_builddir)/stage1flex$(EXEEXT) \
+ 	  $(AM_LFLAGS) $(LFLAGS) -o scan.c -t scan.l ) >$@ || \
+ 	{ s=$$?; rm -f $@; exit $$s; }
++else
++stage1scan.c: scan.l
++	( cd $(srcdir) && $(abs_builddir)/../../.$(HOST_NAME)/src/stage1flex$(EXEEXT) \
++	  $(AM_LFLAGS) $(LFLAGS) -o scan.c -t scan.l ) >$@ || \
++	{ s=$$?; rm -f $@; exit $$s; }
++endif
+ 
+ # Unlike stage1scan.c, we leave stage2scan.c intact when the generation
+ # fails. This allow users to examine generation errors.
+-- 
+2.55.0.windows.5
+
