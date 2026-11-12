@@ -1,0 +1,60 @@
+From 4c09705851b6a13e54acd83937f78c2a13b18e3b Mon Sep 17 00:00:00 2001
+From: Igor Velkov <iav@iav.lv>
+Date: Tue, 6 Oct 2026 19:36:17 +0300
+Subject: [PATCH 135/267] FROMLIST(v2): arm64: dts: amlogic:
+ meson-sm1-odroid-hc4: add the fan tachometer
+
+The fan connector routes the fan's tachometer output to GPIOX_7, but
+the fan node does not describe it. pwm-fan therefore registers no
+fan1_input, and the fan speed cannot be read.
+
+Describe the line as the fan's interrupt, and mux the pin as a GPIO
+input without bias: R109 on the board pulls the line up to VDDAO_3V3
+(schematic rev1.0, sheet 31).
+
+Tested on ODROID-HC4: fan1_input reads 0 with the fan stopped and
+rises with the duty cycle, to about 4200 rpm at full speed.
+
+Assisted-by: LLM
+Signed-off-by: Igor Velkov <iav@iav.lv>
+Reviewed-by: Neil Armstrong <neil.armstrong@linaro.org>
+---
+ .../boot/dts/amlogic/meson-sm1-odroid-hc4.dts     | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts b/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts
+index 25a8a60e152c..c3d9a260014f 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts
++++ b/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts
+@@ -21,6 +21,10 @@ fan0: pwm-fan {
+ 		#cooling-cells = <2>;
+ 		cooling-levels = <0 120 170 220>;
+ 		pwms = <&pwm_cd 1 40000 0>;
++		interrupt-parent = <&gpio_intc>;
++		interrupts = <IRQID_GPIOX_7 IRQ_TYPE_EDGE_FALLING>;
++		pinctrl-0 = <&fan_tach_pins>;
++		pinctrl-names = "default";
+ 	};
+ 
+ 	leds {
+@@ -116,6 +120,17 @@ &pcie {
+ 	reset-gpios = <&gpio GPIOH_4 GPIO_ACTIVE_LOW>;
+ };
+ 
++&periphs_pinctrl {
++	fan_tach_pins: fan-tach {
++		mux {
++			groups = "GPIOX_7";
++			function = "gpio_periphs";
++			bias-disable;
++			output-disable;
++		};
++	};
++};
++
+ &pwm_cd {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-- 
+2.43.0
+

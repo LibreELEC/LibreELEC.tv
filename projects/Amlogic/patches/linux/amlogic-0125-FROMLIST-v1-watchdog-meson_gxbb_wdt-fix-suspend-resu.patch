@@ -1,0 +1,56 @@
+From 179090819a31cac2aa973f642e57bc970d14f5d1 Mon Sep 17 00:00:00 2001
+From: Igor Velkov <iav@iav.lv>
+Date: Tue, 20 Oct 2026 20:28:37 +0300
+Subject: [PATCH 125/267] FROMLIST(v1): watchdog: meson_gxbb_wdt: fix
+ suspend/resume handling of HW_RUNNING watchdog
+
+meson_gxbb_wdt_suspend() and meson_gxbb_wdt_resume() only check
+watchdog_active(). Since commit 6adbfbab0f03 ("watchdog: meson: keep
+running if already active"), probe keeps a watchdog left running by the
+bootloader and sets WDOG_HW_RUNNING. If userspace never opens the
+device, WDOG_ACTIVE stays clear and the timer is not stopped for system
+suspend.
+
+On an ODROID-HC4 (S905X3) whose U-Boot starts the watchdog, with no
+userspace owner, the board does not wake from deep suspend
+(rtcwake -m mem -s 60) in 2 of 2 attempts and needs a power cycle.
+
+Stop the timer on suspend and restart it on resume also when it is only
+running in hardware, as sp805_wdt does. With this change the board
+wakes from deep suspend in 4 of 4 attempts, and the kernel pings the
+watchdog again after resume.
+
+Fixes: 6adbfbab0f03 ("watchdog: meson: keep running if already active")
+Assisted-by: LLM
+Signed-off-by: Igor Velkov <iav@iav.lv>
+---
+ drivers/watchdog/meson_gxbb_wdt.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/watchdog/meson_gxbb_wdt.c b/drivers/watchdog/meson_gxbb_wdt.c
+index a48622d11ad7..6d84acf697d0 100644
+--- a/drivers/watchdog/meson_gxbb_wdt.c
++++ b/drivers/watchdog/meson_gxbb_wdt.c
+@@ -123,7 +123,8 @@ static int __maybe_unused meson_gxbb_wdt_resume(struct device *dev)
+ {
+ 	struct meson_gxbb_wdt *data = dev_get_drvdata(dev);
+ 
+-	if (watchdog_active(&data->wdt_dev))
++	if (watchdog_active(&data->wdt_dev) ||
++	    watchdog_hw_running(&data->wdt_dev))
+ 		meson_gxbb_wdt_start(&data->wdt_dev);
+ 
+ 	return 0;
+@@ -133,7 +134,8 @@ static int __maybe_unused meson_gxbb_wdt_suspend(struct device *dev)
+ {
+ 	struct meson_gxbb_wdt *data = dev_get_drvdata(dev);
+ 
+-	if (watchdog_active(&data->wdt_dev))
++	if (watchdog_active(&data->wdt_dev) ||
++	    watchdog_hw_running(&data->wdt_dev))
+ 		meson_gxbb_wdt_stop(&data->wdt_dev);
+ 
+ 	return 0;
+-- 
+2.43.0
+

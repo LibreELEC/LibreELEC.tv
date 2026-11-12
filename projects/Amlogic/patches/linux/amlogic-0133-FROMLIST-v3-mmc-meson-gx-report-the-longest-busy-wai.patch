@@ -1,0 +1,38 @@
+From 55edf22742db84b224d0bdb91cd931a5e88944fe Mon Sep 17 00:00:00 2001
+From: Igor Velkov <iav@iav.lv>
+Date: Fri, 9 Oct 2026 17:03:00 +0000
+Subject: [PATCH 133/267] FROMLIST(v3): mmc: meson-gx: report the longest busy
+ wait the controller can do
+
+The driver does not set max_busy_timeout, so the core takes the host
+for one that can wait for busy indefinitely and sends erase and cache
+flush as R1b with busy timeouts of up to 60 s and 30 s. The CMD_CFG
+timeout field holds at most 32768 ms, so the controller times out first.
+
+Report 32768 ms as max_busy_timeout. The core then sizes discards to
+fit and, for a longer wait, sends R1 and polls for busy itself.
+
+Fixes: 51c5d8447bd7 ("MMC: meson: initial support for GX platforms")
+Assisted-by: LLM
+Signed-off-by: Igor Velkov <iav@iav.lv>
+---
+ drivers/mmc/host/meson-gx-mmc.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mmc/host/meson-gx-mmc.c b/drivers/mmc/host/meson-gx-mmc.c
+index 36302c0e9c33..c93fef2f7d15 100644
+--- a/drivers/mmc/host/meson-gx-mmc.c
++++ b/drivers/mmc/host/meson-gx-mmc.c
+@@ -1181,6 +1181,9 @@ static int meson_mmc_probe(struct platform_device *pdev)
+ 
+ 	mmc->caps |= MMC_CAP_CMD23;
+ 
++	/* The longest busy wait the CMD_CFG timeout field can hold. */
++	mmc->max_busy_timeout = SD_EMMC_CMD_TIMEOUT_MAX;
++
+ 	if (mmc->caps & MMC_CAP_SDIO_IRQ)
+ 		mmc->caps2 |= MMC_CAP2_SDIO_IRQ_NOTHREAD;
+ 
+-- 
+2.43.0
+

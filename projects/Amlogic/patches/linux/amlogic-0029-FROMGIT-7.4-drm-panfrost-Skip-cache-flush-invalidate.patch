@@ -1,0 +1,62 @@
+From 02814b7fa74baa7c425c306774e2175377de90a8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Adri=C3=A1n=20Larumbe?= <adrian.larumbe@collabora.com>
+Date: Mon, 12 Oct 2026 15:48:04 +0100
+Subject: [PATCH 029/267] FROMGIT(7.4): drm/panfrost: Skip cache
+ flush/invalidate when enabling perfcnt
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The GPU cache flush/invalidate operation is unnecessary. In the usual case,
+before a perfcnt dump is requested, there will be no stale lines in GPU
+caches for the sample BO's physmem pages, since their memory had not
+recently been addressed by the GPU.
+
+However, in the off-chance that the sample BO reuses memory that the GPU
+had recently addressed and for which it contains stale lines in its caches,
+there already was a FLUSH_PT command being issued as part of the buffer GPU
+mapping procedure, so by the time panfrost_gem_open() comes back at perfcnt
+session enable, stale GPU cache lines should've already been evicted.
+
+In either case, forcing a GPU cache clean when enabling a new session makes
+no difference, and removing it simplifies handling of the error path.
+
+Reviewed-by: Boris Brezillon <boris.brezillon@collabora.com>
+Reviewed-by: Steven Price <steven.price@arm.com>
+Link: https://patch.msgid.link/20261012-claude-fixes-v15-12-bc0a6c498553@collabora.com
+Signed-off-by: Adrián Larumbe <adrian.larumbe@collabora.com>
+---
+ drivers/gpu/drm/panfrost/panfrost_perfcnt.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_perfcnt.c b/drivers/gpu/drm/panfrost/panfrost_perfcnt.c
+index f71534e741b6..ffc77121070e 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_perfcnt.c
++++ b/drivers/gpu/drm/panfrost/panfrost_perfcnt.c
+@@ -124,21 +124,10 @@ static int panfrost_perfcnt_enable_locked(struct panfrost_device *pfdev,
+ 	panfrost_gem_internal_set_label(&bo->base, "Perfcnt sample buffer");
+ 
+ 	/*
+-	 * Invalidate the cache and clear the counters to start from a fresh
+-	 * state.
++	 * Clear the counters to start from a fresh state.
+ 	 */
+-	reinit_completion(&pfdev->perfcnt->dump_comp);
+-	gpu_write(pfdev, GPU_INT_CLEAR,
+-		  GPU_IRQ_CLEAN_CACHES_COMPLETED |
+-		  GPU_IRQ_PERFCNT_SAMPLE_COMPLETED);
++	gpu_write(pfdev, GPU_INT_CLEAR, GPU_IRQ_PERFCNT_SAMPLE_COMPLETED);
+ 	gpu_write(pfdev, GPU_CMD, GPU_CMD_PERFCNT_CLEAR);
+-	gpu_write(pfdev, GPU_CMD, GPU_CMD_CLEAN_INV_CACHES);
+-	ret = wait_for_completion_timeout(&pfdev->perfcnt->dump_comp,
+-					  msecs_to_jiffies(1000));
+-	if (!ret) {
+-		ret = -ETIMEDOUT;
+-		goto err_vunmap;
+-	}
+ 
+ 	ret = panfrost_mmu_as_get(pfdev, perfcnt->mapping->mmu);
+ 	if (ret < 0)
+-- 
+2.43.0
+

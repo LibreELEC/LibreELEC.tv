@@ -1,0 +1,66 @@
+From cca627c784a54357182b260785e0dfeeaf0ace75 Mon Sep 17 00:00:00 2001
+From: Jiebing Chen <jiebing.chen@amlogic.com>
+Date: Wed, 21 Oct 2026 15:08:28 +0800
+Subject: [PATCH 114/267] FROMLIST(v7): dt-bindings: clock: meson: Add audio
+ power domain for S4 soc
+
+The audio power domain has been found on S4 device.
+It must be enabled prior to audio operations.
+
+Signed-off-by: Jiebing Chen <jiebing.chen@amlogic.com>
+---
+ .../bindings/clock/amlogic,axg-audio-clkc.yaml  | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/clock/amlogic,axg-audio-clkc.yaml b/Documentation/devicetree/bindings/clock/amlogic,axg-audio-clkc.yaml
+index fd7982dd4cea..69f5fef5f14a 100644
+--- a/Documentation/devicetree/bindings/clock/amlogic,axg-audio-clkc.yaml
++++ b/Documentation/devicetree/bindings/clock/amlogic,axg-audio-clkc.yaml
+@@ -20,6 +20,7 @@ properties:
+     enum:
+       - amlogic,axg-audio-clkc
+       - amlogic,g12a-audio-clkc
++      - amlogic,s4-audio-clkc
+       - amlogic,sm1-audio-clkc
+ 
+   '#clock-cells':
+@@ -100,6 +101,8 @@ properties:
+   resets:
+     description: internal reset line
+ 
++  power-domains:
++    maxItems: 1
+ required:
+   - compatible
+   - '#clock-cells'
+@@ -115,6 +118,7 @@ allOf:
+           contains:
+             enum:
+               - amlogic,g12a-audio-clkc
++              - amlogic,s4-audio-clkc
+               - amlogic,sm1-audio-clkc
+     then:
+       required:
+@@ -122,7 +126,18 @@ allOf:
+     else:
+       properties:
+         '#reset-cells': false
+-
++  - if:
++      properties:
++        compatible:
++          contains:
++            enum:
++              - amlogic,s4-audio-clkc
++    then:
++      required:
++        - power-domains
++    else:
++      properties:
++        power-domains: false
+ additionalProperties: false
+ 
+ examples:
+-- 
+2.43.0
+

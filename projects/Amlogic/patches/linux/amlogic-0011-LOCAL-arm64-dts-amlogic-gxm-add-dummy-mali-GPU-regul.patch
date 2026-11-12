@@ -1,7 +1,7 @@
-From 15114bf35b774e7a6c727dc30610d375f568096c Mon Sep 17 00:00:00 2001
+From 80a558786405b8e17b3e122f041cb79416aaba65 Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Mon, 22 Jun 2026 16:56:15 +0000
-Subject: [PATCH 011/210] LOCAL: arm64: dts: amlogic: gxm: add dummy mali GPU
+Subject: [PATCH 011/267] LOCAL: arm64: dts: amlogic: gxm: add dummy mali GPU
  regulator
 
 The Mali-T820 GPU OPP table specifies an operating voltage so the

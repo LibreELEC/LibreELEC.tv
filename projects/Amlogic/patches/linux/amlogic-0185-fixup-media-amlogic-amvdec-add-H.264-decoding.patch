@@ -1,0 +1,37 @@
+From 27580eee3452e617734c28a3b0afc88f4364cba7 Mon Sep 17 00:00:00 2001
+From: Andreas Baierl <ichgeh@imkreisrum.de>
+Date: Mon, 9 Nov 2026 09:54:54 +0100
+Subject: [PATCH 185/267] fixup! media: amlogic: amvdec: add H.264 decoding
+
+media: amlogic: amvdec: h264: abort a frame if no capture is picked
+
+If no CAPTURE buffer can be picked for a new picture, the threaded
+interrupt handler aborts only for field pictures. For frame pictures it
+returns without an action for the firmware, so the job never finishes.
+
+Abort for frame pictures too.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Andreas Baierl <ichgeh@imkreisrum.de>
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ drivers/media/platform/amlogic/amvdec/codec_h264.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/amlogic/amvdec/codec_h264.c b/drivers/media/platform/amlogic/amvdec/codec_h264.c
+index 62321b6506e7..6aa703cd3194 100644
+--- a/drivers/media/platform/amlogic/amvdec/codec_h264.c
++++ b/drivers/media/platform/amlogic/amvdec/codec_h264.c
+@@ -1817,8 +1817,7 @@ static irqreturn_t codec_h264_threaded_isr(struct amvdec_session *sess)
+ 			codec_h264_multi_inject_sps_rpm(sess);
+ 			if (!h264->multi_pic_started) {
+ 				if (codec_h264_multi_pick_capture(sess)) {
+-					if (h264->multi_field_picture)
+-						codec_h264_multi_abort(sess);
++					codec_h264_multi_abort(sess);
+ 					return IRQ_HANDLED;
+ 				}
+ 				if (codec_h264_multi_config_decode_buf(sess)) {
+-- 
+2.43.0
+

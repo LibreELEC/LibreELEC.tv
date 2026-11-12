@@ -1,0 +1,62 @@
+From f0c12ac6d23d6de301afd8e969131bc839cd5664 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Thu, 1 Oct 2026 00:30:31 +0200
+Subject: [PATCH 197/267] VSETTI: ASoC: meson: gx: rename gx_stream ready to
+ running
+
+The flag now only tracks whether the formatters are enabled, so name it
+accordingly. No functional change.
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ sound/soc/meson/gx-formatter.c | 6 +++---
+ sound/soc/meson/gx-interface.h | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sound/soc/meson/gx-formatter.c b/sound/soc/meson/gx-formatter.c
+index f84a007459c2..67ab8605bb3e 100644
+--- a/sound/soc/meson/gx-formatter.c
++++ b/sound/soc/meson/gx-formatter.c
+@@ -70,7 +70,7 @@ static int gx_formatter_attach(struct gx_formatter *formatter)
+ 	}
+ 
+ 	/* Catch up if the stream is already running when we attach */
+-	if (ts->ready)
++	if (ts->running)
+ 		gx_formatter_enable(formatter);
+ 
+ 	list_add_tail(&formatter->list, &ts->formatter_list);
+@@ -245,7 +245,7 @@ int gx_stream_start(struct gx_stream *ts)
+ 	list_for_each_entry(formatter, &ts->formatter_list, list)
+ 		gx_formatter_enable(formatter);
+ 
+-	ts->ready = true;
++	ts->running = true;
+ 
+ 	spin_unlock_irqrestore(&ts->lock, irq_flags);
+ 	return 0;
+@@ -258,7 +258,7 @@ void gx_stream_stop(struct gx_stream *ts)
+ 	unsigned long irq_flags;
+ 
+ 	spin_lock_irqsave(&ts->lock, irq_flags);
+-	ts->ready = false;
++	ts->running = false;
+ 
+ 	/* Stop all the formatters attached to the stream */
+ 	list_for_each_entry(formatter, &ts->formatter_list, list) {
+diff --git a/sound/soc/meson/gx-interface.h b/sound/soc/meson/gx-interface.h
+index 64f06d2bfe39..5cb84d874251 100644
+--- a/sound/soc/meson/gx-interface.h
++++ b/sound/soc/meson/gx-interface.h
+@@ -30,7 +30,7 @@ struct gx_stream {
+ 	unsigned int width;
+ 	unsigned int physical_width;
+ 	bool prepared;
+-	bool ready;
++	bool running;
+ 
+ 	/* For continuous clock tracking */
+ 	bool clk_enabled;
+-- 
+2.43.0
+

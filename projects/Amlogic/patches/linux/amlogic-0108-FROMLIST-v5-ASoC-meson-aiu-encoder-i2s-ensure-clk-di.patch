@@ -1,0 +1,58 @@
+From acc0ccab1606b67e1736db764881a88385b06151 Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Sun, 18 Oct 2026 12:18:00 +0200
+Subject: [PATCH 108/267] FROMLIST(v5): ASoC: meson: aiu-encoder-i2s: ensure
+ clk divider gets disabled in hw_free
+
+A recent Sashiko review [1] on this code revealed the following problem:
+
+  If a user opens both streams so snd_soc_dai_active(dai) evaluates to 2,
+  and explicitly calls SNDRV_PCM_IOCTL_HW_FREE before closing them,
+  snd_soc_dai_active(dai) remains 2. This skips disabling the clock
+  divider.
+  When the streams are subsequently closed, the ALSA core skips invoking
+  hw_free again because the state was already changed to
+  SNDRV_PCM_STATE_OPEN. This would leave the clock divider permanently
+  enabled, potentially draining battery or blocking system suspend.
+
+This commit resolves this problem by using the 'clk_enabled' field of
+'struct gx_stream'. In particular when 'hw_free()' is called on a stream
+the code check what is the status of the other stream and then only if
+both are off the clock divider is disabled.
+
+[1]: https://lore.kernel.org/all/20260917212019.4ECE61F00893@smtp.kernel.org/
+
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ sound/soc/meson/aiu-encoder-i2s.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/sound/soc/meson/aiu-encoder-i2s.c b/sound/soc/meson/aiu-encoder-i2s.c
+index 58dce9f08c9d..70ea39c77b32 100644
+--- a/sound/soc/meson/aiu-encoder-i2s.c
++++ b/sound/soc/meson/aiu-encoder-i2s.c
+@@ -219,16 +219,14 @@ static int aiu_encoder_i2s_hw_free(struct snd_pcm_substream *substream,
+ 				   struct snd_soc_dai *dai)
+ {
+ 	struct gx_stream *ts = snd_soc_dai_get_dma_data(dai, substream);
++	struct gx_stream *other = snd_soc_dai_dma_data_get(dai, !substream->stream);
+ 	struct snd_soc_component *component = dai->component;
+ 
+-	/*
+-	 * If this is the last substream being closed then disable the i2s
+-	 * clock divider.
+-	 */
+-	if (snd_soc_dai_active(dai) <= 1)
+-		aiu_encoder_i2s_divider_enable(component, 0);
+-
+ 	if (ts->clk_enabled) {
++		/* Disable the clk divider only if also the other stream is not using it */
++		if (!other || !other->clk_enabled)
++			aiu_encoder_i2s_divider_enable(component, false);
++
+ 		clk_disable_unprepare(ts->iface->mclk);
+ 		ts->clk_enabled = false;
+ 	}
+-- 
+2.43.0
+

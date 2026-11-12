@@ -1,0 +1,314 @@
+From cdac63705ba6c94a416aa5bb5f180ab5e30c027d Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Fri, 23 Oct 2026 06:47:30 +0000
+Subject: [PATCH 244/267] arm64: dts: amlogic: meson-s4: use the S4 audio glue
+ and add VIM1S sound
+
+Use the S4 tohdmitx and spdifout compatibles, and add sound to the Khadas
+VIM1S, linking the I2S and S/PDIF outputs of the HDMI TX glue to the
+transmitter and sending eight channel HDMI audio from TDM B, the only S4
+TDM output with four data lanes, keeping TDM A and C as stereo links to
+the analogue codec.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ .../amlogic/meson-s4-s905y4-khadas-vim1s.dts  | 243 ++++++++++++++++++
+ arch/arm64/boot/dts/amlogic/meson-s4.dtsi     |   6 +-
+ 2 files changed, 246 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/amlogic/meson-s4-s905y4-khadas-vim1s.dts b/arch/arm64/boot/dts/amlogic/meson-s4-s905y4-khadas-vim1s.dts
+index e274b24f05d7..7c33cc6af0d3 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-s4-s905y4-khadas-vim1s.dts
++++ b/arch/arm64/boot/dts/amlogic/meson-s4-s905y4-khadas-vim1s.dts
+@@ -164,6 +164,19 @@ hdmi_5v: regulator-hdmi-5v {
+ 		regulator-always-on;
+ 	};
+ 
++	vcc5v_reg: regulator-vcc-5v {
++		compatible = "regulator-fixed";
++		vin-supply = <&main_5v>;
++		regulator-name = "VCC5V";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		gpio = <&gpio GPIOH_7 GPIO_ACTIVE_HIGH>;
++		startup-delay-us = <7000>;
++		enable-active-high;
++		regulator-boot-on;
++		regulator-always-on;
++	};
++
+ 	vdd_gpu: regulator-vdd-gpu {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "vdd-gpu";
+@@ -247,6 +260,236 @@ hdmi_connector_in: endpoint {
+ 			};
+ 		};
+ 	};
++
++	dmics: audio-codec-1 {
++		compatible = "dmic-codec";
++		#sound-dai-cells = <0>;
++		num-channels = <2>;
++		wakeup-delay-ms = <50>;
++		sound-name-prefix = "MIC";
++	};
++
++	dioo2133: audio-amplifier-0 {
++		compatible = "simple-audio-amplifier";
++		enable-gpios = <&gpio GPIOH_8 GPIO_ACTIVE_HIGH>;
++		VCC-supply = <&vcc5v_reg>;
++		sound-name-prefix = "10U2";
++	};
++
++	spdif_dir: audio-spdif-in {
++		compatible = "linux,spdif-dir";
++		#sound-dai-cells = <0>;
++		sound-name-prefix = "DIR";
++	};
++
++	spdif_dit: audio-spdif-out {
++		compatible = "linux,spdif-dit";
++		#sound-dai-cells = <0>;
++		sound-name-prefix = "DIT";
++	};
++
++	sound {
++		compatible = "amlogic,axg-sound-card";
++		model = "VIM1S";
++		audio-widgets = "Line", "Lineout";
++		audio-aux-devs = <&tdmout_a>, <&tdmout_b>, <&tdmout_c>,
++				 <&tdmin_a>, <&tdmin_b>, <&tdmin_c>,
++				 <&tdmin_lb>, <&dioo2133>;
++		audio-routing = "TDMOUT_A IN 0", "FRDDR_A OUT 0",
++				"TDMOUT_A IN 1", "FRDDR_B OUT 0",
++				"TDMOUT_A IN 2", "FRDDR_C OUT 0",
++				"TDM_A Playback", "TDMOUT_A OUT",
++				"TDMOUT_B IN 0", "FRDDR_A OUT 1",
++				"TDMOUT_B IN 1", "FRDDR_B OUT 1",
++				"TDMOUT_B IN 2", "FRDDR_C OUT 1",
++				"TDM_B Playback", "TDMOUT_B OUT",
++				"TDMOUT_C IN 0", "FRDDR_A OUT 2",
++				"TDMOUT_C IN 1", "FRDDR_B OUT 2",
++				"TDMOUT_C IN 2", "FRDDR_C OUT 2",
++				"TDM_C Playback", "TDMOUT_C OUT",
++				"SPDIFOUT_A IN 0", "FRDDR_A OUT 3",
++				"SPDIFOUT_A IN 1", "FRDDR_B OUT 3",
++				"SPDIFOUT_A IN 2", "FRDDR_C OUT 3",
++				"SPDIFOUT_B IN 0", "FRDDR_A OUT 4",
++				"SPDIFOUT_B IN 1", "FRDDR_B OUT 4",
++				"SPDIFOUT_B IN 2", "FRDDR_C OUT 4",
++				"TDMIN_A IN 0", "TDM_A Capture",
++				"TDMIN_A IN 1", "TDM_B Capture",
++				"TDMIN_A IN 2", "TDM_C Capture",
++				"TDMIN_A IN 3", "TDM_A Loopback",
++				"TDMIN_A IN 4", "TDM_B Loopback",
++				"TDMIN_A IN 5", "TDM_C Loopback",
++				"TDMIN_B IN 0", "TDM_A Capture",
++				"TDMIN_B IN 1", "TDM_B Capture",
++				"TDMIN_B IN 2", "TDM_C Capture",
++				"TDMIN_B IN 3", "TDM_A Loopback",
++				"TDMIN_B IN 4", "TDM_B Loopback",
++				"TDMIN_B IN 5", "TDM_C Loopback",
++				"TDMIN_C IN 0", "TDM_A Capture",
++				"TDMIN_C IN 1", "TDM_B Capture",
++				"TDMIN_C IN 2", "TDM_C Capture",
++				"TDMIN_C IN 3", "TDM_A Loopback",
++				"TDMIN_C IN 4", "TDM_B Loopback",
++				"TDMIN_C IN 5", "TDM_C Loopback",
++				"TDMIN_LB IN 3", "TDM_A Capture",
++				"TDMIN_LB IN 4", "TDM_B Capture",
++				"TDMIN_LB IN 5", "TDM_C Capture",
++				"TDMIN_LB IN 0", "TDM_A Loopback",
++				"TDMIN_LB IN 1", "TDM_B Loopback",
++				"TDMIN_LB IN 2", "TDM_C Loopback",
++				"TODDR_A IN 0", "TDMIN_A OUT",
++				"TODDR_B IN 0", "TDMIN_A OUT",
++				"TODDR_C IN 0", "TDMIN_A OUT",
++				"TODDR_A IN 1", "TDMIN_B OUT",
++				"TODDR_B IN 1", "TDMIN_B OUT",
++				"TODDR_C IN 1", "TDMIN_B OUT",
++				"TODDR_A IN 2", "TDMIN_C OUT",
++				"TODDR_B IN 2", "TDMIN_C OUT",
++				"TODDR_C IN 2", "TDMIN_C OUT",
++				"TODDR_A IN 3", "SPDIFIN Capture",
++				"TODDR_B IN 3", "SPDIFIN Capture",
++				"TODDR_C IN 3", "SPDIFIN Capture",
++				"TODDR_A IN 6", "TDMIN_LB OUT",
++				"TODDR_B IN 6", "TDMIN_LB OUT",
++				"TODDR_C IN 6", "TDMIN_LB OUT",
++				"10U2 INL", "ACODEC LOLP",
++				"10U2 INR", "ACODEC LORP",
++				"Lineout", "10U2 OUTL",
++				"Lineout", "10U2 OUTR";
++		clocks = <&clkc_pll CLKID_HIFI_PLL>,
++				<&clkc_pll CLKID_MPLL0>,
++				<&clkc_pll CLKID_MPLL1>;
++		assigned-clocks = <&clkc_pll CLKID_HIFI_PLL>,
++				  <&clkc_pll CLKID_MPLL0>,
++				  <&clkc_pll CLKID_MPLL1>;
++		assigned-clock-rates = <1179648000>,
++				       <270950400>,
++				       <338688000>;
++
++		dai-link-0 {
++			sound-dai = <&frddr_a>;
++		};
++
++		dai-link-1 {
++			sound-dai = <&frddr_b>;
++		};
++
++		dai-link-2 {
++			sound-dai = <&frddr_c>;
++		};
++
++		dai-link-3 {
++			sound-dai = <&toddr_a>;
++		};
++
++		dai-link-4 {
++			sound-dai = <&toddr_b>;
++		};
++
++		dai-link-5 {
++			sound-dai = <&toddr_c>;
++		};
++
++		/* i2s jack output interface */
++		dai-link-6 {
++			sound-dai = <&tdmif_a>;
++			dai-format = "i2s";
++			dai-tdm-slot-tx-mask-0 = <1 1>;
++			mclk-fs = <256>;
++
++			codec {
++				sound-dai = <&toacodec TOACODEC_IN_A>;
++			};
++		};
++
++		/* 8ch hdmi interface */
++		dai-link-7 {
++			sound-dai = <&tdmif_b>;
++			dai-format = "i2s";
++			dai-tdm-slot-tx-mask-0 = <1 1>;
++			dai-tdm-slot-tx-mask-1 = <1 1>;
++			dai-tdm-slot-tx-mask-2 = <1 1>;
++			dai-tdm-slot-tx-mask-3 = <1 1>;
++			mclk-fs = <256>;
++
++			codec-0 {
++				sound-dai = <&tohdmitx TOHDMITX_I2S_IN_B>;
++			};
++
++			codec-1 {
++				sound-dai = <&toacodec TOACODEC_IN_B>;
++			};
++		};
++
++		/* i2s jack output interface */
++		dai-link-8 {
++			sound-dai = <&tdmif_c>;
++			dai-format = "i2s";
++			dai-tdm-slot-tx-mask-0 = <1 1>;
++			mclk-fs = <256>;
++
++			codec {
++				sound-dai = <&toacodec TOACODEC_IN_C>;
++			};
++		};
++
++		/* spdif hdmi and coax output */
++		dai-link-9 {
++			sound-dai = <&spdifout_a>;
++
++			codec-0 {
++				sound-dai = <&spdif_dit>;
++			};
++
++			codec-1 {
++				sound-dai = <&tohdmitx TOHDMITX_SPDIF_IN_A>;
++			};
++		};
++
++		/* spdif hdmi interface */
++		dai-link-10 {
++			sound-dai = <&spdifout_b>;
++
++			codec {
++				sound-dai = <&tohdmitx TOHDMITX_SPDIF_IN_B>;
++			};
++		};
++
++		/* spdif coax input */
++		dai-link-11 {
++			sound-dai = <&spdifin>;
++
++			codec {
++				sound-dai = <&spdif_dir>;
++			};
++		};
++
++		dai-link-12 {
++			sound-dai = <&toacodec TOACODEC_OUT>;
++
++			codec {
++				sound-dai = <&acodec>;
++			};
++		};
++
++		/* hdmi glue */
++		dai-link-13 {
++			sound-dai = <&tohdmitx TOHDMITX_I2S_OUT>;
++
++			codec {
++				sound-dai = <&hdmi_tx 0>;
++			};
++		};
++
++		/* hdmi glue, compressed */
++		dai-link-14 {
++			sound-dai = <&tohdmitx TOHDMITX_SPDIF_OUT>;
++
++			codec {
++				sound-dai = <&hdmi_tx 1>;
++			};
++		};
++	};
+ };
+ 
+ &cvbs_vdac_port {
+diff --git a/arch/arm64/boot/dts/amlogic/meson-s4.dtsi b/arch/arm64/boot/dts/amlogic/meson-s4.dtsi
+index 8f7464142bba..915fd6fe33ee 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-s4.dtsi
++++ b/arch/arm64/boot/dts/amlogic/meson-s4.dtsi
+@@ -1407,7 +1407,7 @@ spdifin: audio-controller@330400 {
+ 	};
+ 
+ 	spdifout_a: audio-controller@330480 {
+-		compatible = "amlogic,g12a-spdifout",
++		compatible = "amlogic,s4-spdifout",
+ 				 "amlogic,axg-spdifout";
+ 		reg = <0x0 0x330480 0x0 0x50>;
+ 		#sound-dai-cells = <0>;
+@@ -1461,7 +1461,7 @@ tdmout_c: audio-controller@330580 {
+ 	};
+ 
+ 	spdifout_b: audio-controller@330680 {
+-		compatible = "amlogic,g12a-spdifout",
++		compatible = "amlogic,s4-spdifout",
+ 				 "amlogic,axg-spdifout";
+ 		reg = <0x0 0x330680 0x0 0x50>;
+ 		#sound-dai-cells = <0>;
+@@ -1482,7 +1482,7 @@ toacodec: audio-controller@330740 {
+ 	};
+ 
+ 	tohdmitx: audio-controller@330744 {
+-		compatible = "amlogic,sm1-tohdmitx",
++		compatible = "amlogic,s4-tohdmitx",
+ 				 "amlogic,g12a-tohdmitx";
+ 		reg = <0x0 0x330744 0x0 0x4>;
+ 		#sound-dai-cells = <1>;
+-- 
+2.43.0
+

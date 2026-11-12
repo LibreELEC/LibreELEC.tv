@@ -1,0 +1,68 @@
+From 4d56163b3104be9de12a6964186eb677147c501c Mon Sep 17 00:00:00 2001
+From: Igor Velkov <iav@iav.lv>
+Date: Fri, 2 Oct 2026 21:36:46 +0300
+Subject: [PATCH 033/267] FROMGIT(7.4): arm64: dts: amlogic:
+ meson-sm1-odroid-hc4: mux the SPI NOR HOLD# and WP# pins
+
+The SPI NOR flash uses six lines, but nor_pins covers only four: data,
+clock and chip select. Nothing claims HOLD# (BOOT_3) and WP# (BOOT_7),
+so they keep the boot ROM setting. After a boot from SPI they are in
+the nor function and the flash works. After a boot from SD with the
+button under the board, they stay eMMC data lines pulled low, and
+spi-nor reports "unrecognized JEDEC id bytes: 00 00 00 00 00 00".
+
+Add them as a separate group in meson-g12-common.dtsi rather than to
+nor_pins: whether HOLD# and WP# reach the SoC depends on the board. The
+HC4 has eMMC disabled and takes both groups.
+
+Tested on ODROID-HC4: with BOOT_3 and BOOT_7 set back to eMMC with
+pull-down and spifc rebound, the flash fails as above without this
+patch and probes as a 16 MiB mtd0 with it.
+
+Fixes: 7178f340e929 ("arm64: dts: meson-sm1-odroid-hc4: add spifc node to ODROID-HC4")
+Assisted-by: LLM
+Signed-off-by: Igor Velkov <iav@iav.lv>
+Reviewed-by: Neil Armstrong <neil.armstrong@linaro.org>
+Link: https://patch.msgid.link/20261002-hc4-spi-nor-v2-1-8366a4f91049@iav.lv
+Signed-off-by: Neil Armstrong <neil.armstrong@linaro.org>
+---
+ arch/arm64/boot/dts/amlogic/meson-g12-common.dtsi    | 9 +++++++++
+ arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts | 2 +-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/amlogic/meson-g12-common.dtsi b/arch/arm64/boot/dts/amlogic/meson-g12-common.dtsi
+index 9030e8c59170..985738b2df47 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-g12-common.dtsi
++++ b/arch/arm64/boot/dts/amlogic/meson-g12-common.dtsi
+@@ -630,6 +630,15 @@ mux {
+ 						};
+ 					};
+ 
++					nor_hold_wp_pins: nor-hold-wp {
++						mux {
++							groups = "nor_hold",
++							       "nor_wp";
++							function = "nor";
++							bias-disable;
++						};
++					};
++
+ 					pdm_din0_a_pins: pdm-din0-a {
+ 						mux {
+ 							groups = "pdm_din0_a";
+diff --git a/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts b/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts
+index 3ece30a0a1ff..c4b93d6619f2 100644
+--- a/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts
++++ b/arch/arm64/boot/dts/amlogic/meson-sm1-odroid-hc4.dts
+@@ -126,7 +126,7 @@ &sd_emmc_c {
+ 
+ &spifc {
+ 	status = "okay";
+-	pinctrl-0 = <&nor_pins>;
++	pinctrl-0 = <&nor_pins>, <&nor_hold_wp_pins>;
+ 	pinctrl-names = "default";
+ 
+ 	flash@0 {
+-- 
+2.43.0
+

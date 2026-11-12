@@ -1,0 +1,39 @@
+From 7ef3f0febc3662b20d92ec42e3cfbb06a5dc5c6d Mon Sep 17 00:00:00 2001
+From: Carlo Caione <ccaione@baylibre.com>
+Date: Thu, 22 Oct 2026 17:57:26 +0200
+Subject: [PATCH 129/267] FROMLIST(v1): MAINTAINERS: cover all the headers in
+ ARM/Amlogic Meson SoC CLOCK FRAMEWORK
+
+The ARM/Amlogic Meson SoC CLOCK FRAMEWORK section was written when the
+GXBB and Meson8 headers were the only clock headers, and only the A1
+ones were added to it since. The headers of the AXG, G12A, A9, C3, S4
+and T7 clock controllers in include/dt-bindings/clock/ are not covered,
+so ./scripts/get_maintainer.pl does not return this section for them.
+
+Match every amlogic,* clock header, and the axg* and g12a* ones.
+
+Signed-off-by: Carlo Caione <ccaione@baylibre.com>
+Reviewed-by: Neil Armstrong <neil.armstrong@linaro.org>
+Reviewed-by: Jerome Brunet <jbrunet@baylibre.com>
+---
+ MAINTAINERS | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d158b8bae3ad..ef796f04664f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2555,7 +2555,9 @@ L:	linux-amlogic@lists.infradead.org
+ S:	Maintained
+ F:	Documentation/devicetree/bindings/clock/amlogic*
+ F:	drivers/clk/meson/
+-F:	include/dt-bindings/clock/amlogic,a1*
++F:	include/dt-bindings/clock/amlogic,*
++F:	include/dt-bindings/clock/axg*
++F:	include/dt-bindings/clock/g12a*
+ F:	include/dt-bindings/clock/gxbb*
+ F:	include/dt-bindings/clock/meson*
+ 
+-- 
+2.43.0
+

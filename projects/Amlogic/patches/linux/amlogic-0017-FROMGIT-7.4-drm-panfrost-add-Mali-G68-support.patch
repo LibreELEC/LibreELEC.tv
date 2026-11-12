@@ -1,0 +1,72 @@
+From 21091d73aa8a1c5b959b1d5e4a10036f59d1abd9 Mon Sep 17 00:00:00 2001
+From: Markuss Broks <markuss.broks@gmail.com>
+Date: Mon, 3 Aug 2026 12:35:20 +0300
+Subject: [PATCH 017/267] FROMGIT(7.4): drm/panfrost: add Mali-G68 support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the features, issues, and ID for Mali-G68, a first-generation
+(v9) Valhall GPU.
+Tested on Exynos8835: the GPU reports GPU_ID 0x9204 (G68 r1p1).
+
+Signed-off-by: Markuss Broks <markuss.broks@gmail.com>
+Reviewed-by: Steven Price <steven.price@arm.com>
+Reviewed-by: Adrián Larumbe <adrian.larumbe@collabora.com>
+Link: https://patch.msgid.link/20260803-staging-mainline-v1-1-5071dc782149@gmail.com
+Signed-off-by: Adrián Larumbe <adrian.larumbe@collabora.com>
+---
+ drivers/gpu/drm/panfrost/panfrost_features.h | 2 ++
+ drivers/gpu/drm/panfrost/panfrost_gpu.c      | 3 +++
+ drivers/gpu/drm/panfrost/panfrost_issues.h   | 8 ++++++++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_features.h b/drivers/gpu/drm/panfrost/panfrost_features.h
+index 52f9d69f6db9..34c65847192f 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_features.h
++++ b/drivers/gpu/drm/panfrost/panfrost_features.h
+@@ -121,6 +121,8 @@ enum panfrost_hw_feature {
+ 	BIT_ULL(HW_FEATURE_IDVS_GROUP_SIZE) | \
+ 	BIT_ULL(HW_FEATURE_CLEAN_ONLY_SAFE))
+ 
++#define hw_features_g68 hw_features_g57
++
+ static inline bool panfrost_has_hw_feature(struct panfrost_device *pfdev,
+ 					   enum panfrost_hw_feature feat)
+ {
+diff --git a/drivers/gpu/drm/panfrost/panfrost_gpu.c b/drivers/gpu/drm/panfrost/panfrost_gpu.c
+index 7d555e63e21a..29ac0dce5ff8 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_gpu.c
++++ b/drivers/gpu/drm/panfrost/panfrost_gpu.c
+@@ -242,6 +242,9 @@ static const struct panfrost_model gpu_models[] = {
+ 	/* MediaTek MT8188 Mali-G57 MC3 */
+ 	GPU_MODEL(g57, 0x9093,
+ 		GPU_REV(g57, 0, 0)),
++
++	GPU_MODEL(g68, 0x9004,
++		  GPU_REV(g68, 1, 0), GPU_REV(g68, 1, 1)),
+ 	{0},
+ };
+ 
+diff --git a/drivers/gpu/drm/panfrost/panfrost_issues.h b/drivers/gpu/drm/panfrost/panfrost_issues.h
+index eb60cb83667a..dd39946bb572 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_issues.h
++++ b/drivers/gpu/drm/panfrost/panfrost_issues.h
+@@ -265,6 +265,14 @@ enum panfrost_hw_issue {
+ #define hw_issues_g57_r0p0 (\
+ 	BIT_ULL(HW_ISSUE_TTRX_3485))
+ 
++#define hw_issues_g68 (\
++	BIT_ULL(HW_ISSUE_TTRX_2968_TTRX_3162))
++
++#define hw_issues_g68_r1p0 (\
++	BIT_ULL(HW_ISSUE_TTRX_3485))
++
++#define hw_issues_g68_r1p1 0
++
+ static inline bool panfrost_has_hw_issue(const struct panfrost_device *pfdev,
+ 					 enum panfrost_hw_issue issue)
+ {
+-- 
+2.43.0
+

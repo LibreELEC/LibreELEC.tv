@@ -1,0 +1,44 @@
+From d8808444a43f880f9040af06740e7622bf115b8b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Adri=C3=A1n=20Larumbe?= <adrian.larumbe@collabora.com>
+Date: Mon, 12 Oct 2026 15:48:01 +0100
+Subject: [PATCH 026/267] FROMGIT(7.4): drm/panfrost: Warn of RPM get failure
+ at device remove time
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Rather than just failing silently, let's warn the user of device removal
+not being able to take a PM reference, because it should be seen as fatal.
+
+Reviewed-by: Boris Brezillon <boris.brezillon@collabora.com>
+Reviewed-by: Steven Price <steven.price@arm.com>
+Link: https://patch.msgid.link/20261012-claude-fixes-v15-9-bc0a6c498553@collabora.com
+Signed-off-by: Adrián Larumbe <adrian.larumbe@collabora.com>
+---
+ drivers/gpu/drm/panfrost/panfrost_device.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.c b/drivers/gpu/drm/panfrost/panfrost_device.c
+index a6deabb39fd2..687230225743 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.c
++++ b/drivers/gpu/drm/panfrost/panfrost_device.c
+@@ -9,6 +9,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/regulator/consumer.h>
+ #include <drm/drm_drv.h>
++#include <drm/drm_print.h>
+ 
+ #include "panfrost_device.h"
+ #include "panfrost_devfreq.h"
+@@ -385,7 +386,7 @@ int panfrost_device_init(struct panfrost_device *pfdev)
+ 
+ void panfrost_device_fini(struct panfrost_device *pfdev)
+ {
+-	pm_runtime_get_sync(pfdev->base.dev);
++	drm_WARN_ON(&pfdev->base, pm_runtime_get_sync(pfdev->base.dev) < 0);
+ 
+ 	pm_runtime_dont_use_autosuspend(pfdev->base.dev);
+ 	pm_runtime_disable(pfdev->base.dev);
+-- 
+2.43.0
+

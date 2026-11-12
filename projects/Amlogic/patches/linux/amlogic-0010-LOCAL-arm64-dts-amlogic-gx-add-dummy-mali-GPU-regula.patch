@@ -1,7 +1,7 @@
-From c8e35a20cdaa098f2f679f95b8c96d3a7358369d Mon Sep 17 00:00:00 2001
+From bdb914114af9d676577209d7a4b61d72351d7689 Mon Sep 17 00:00:00 2001
 From: Christian Hewitt <christianshewitt@gmail.com>
 Date: Mon, 22 Jun 2026 14:02:14 +0000
-Subject: [PATCH 010/210] LOCAL: arm64: dts: amlogic: gx: add dummy mali GPU
+Subject: [PATCH 010/267] LOCAL: arm64: dts: amlogic: gx: add dummy mali GPU
  regulator
 
 The Mali GPU OPP table specifies an operating voltage so the lima

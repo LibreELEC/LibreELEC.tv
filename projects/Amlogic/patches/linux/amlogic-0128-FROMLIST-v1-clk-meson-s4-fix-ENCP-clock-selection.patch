@@ -1,0 +1,34 @@
+From fd9504a09160d2125ee488a1ed7203ebe795e779 Mon Sep 17 00:00:00 2001
+From: Carlo Caione <ccaione@baylibre.com>
+Date: Thu, 22 Oct 2026 22:10:34 +0200
+Subject: [PATCH 128/267] FROMLIST(v1): clk: meson: s4: fix ENCP clock
+ selection
+
+The ENCP clock uses ENCT's settings by mistake. Change the selector
+from bits [23:20] to [27:24].
+
+See the S905Y4 datasheet v0.7, Table 7-58.
+
+Fixes: 57b55c76aaf1 ("clk: meson: S4: add support for Amlogic S4 SoC peripheral clock controller")
+Signed-off-by: Carlo Caione <ccaione@baylibre.com>
+Reviewed-by: Chuan Liu <chuan.liu@amlogic.com>
+---
+ drivers/clk/meson/s4-peripherals.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/meson/s4-peripherals.c b/drivers/clk/meson/s4-peripherals.c
+index ba41fcd90588..33573eb85927 100644
+--- a/drivers/clk/meson/s4-peripherals.c
++++ b/drivers/clk/meson/s4-peripherals.c
+@@ -1114,7 +1114,7 @@ static struct clk_regmap s4_cts_encp_sel = {
+ 	.data = &(struct clk_regmap_mux_data){
+ 		.offset = CLKCTRL_VID_CLK_DIV,
+ 		.mask = 0xf,
+-		.shift = 20,
++		.shift = 24,
+ 		.table = s4_cts_parents_val_table,
+ 	},
+ 	.hw.init = &(struct clk_init_data){
+-- 
+2.43.0
+

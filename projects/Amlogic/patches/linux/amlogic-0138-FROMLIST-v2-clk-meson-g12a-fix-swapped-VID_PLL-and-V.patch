@@ -1,0 +1,36 @@
+From e101245b17a8bbe39381c68f724ca6ae9a81d828 Mon Sep 17 00:00:00 2001
+From: Ronald Claveau <linux-kernel-dev@aliel.fr>
+Date: Fri, 23 Oct 2026 14:53:53 +0200
+Subject: [PATCH 138/267] FROMLIST(v2): clk: meson: g12a: fix swapped VID_PLL
+ and VID_PLL_DIV clock ids for sm1
+
+In sm1 onecell data table CLKID_VID_PLL points to g12a_vid_pll_div
+and CLKID_VID_PLL_DIV points to g12a_vid_pll. So the ids are swapped.
+
+Swap the ids back to their right entries.
+
+Fixes: 3dd02b7334ec ("clk: meson: g12a: add support for SM1 GP1 PLL")
+Signed-off-by: Ronald Claveau <linux-kernel-dev@aliel.fr>
+---
+ drivers/clk/meson/g12a.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/meson/g12a.c b/drivers/clk/meson/g12a.c
+index e6c6304b5599..e150fd00964a 100644
+--- a/drivers/clk/meson/g12a.c
++++ b/drivers/clk/meson/g12a.c
+@@ -5117,9 +5117,9 @@ static struct clk_hw *sm1_hw_clks[] = {
+ 	[CLKID_HDMI_PLL_OD]		= &g12a_hdmi_pll_od.hw,
+ 	[CLKID_HDMI_PLL_OD2]		= &g12a_hdmi_pll_od2.hw,
+ 	[CLKID_HDMI_PLL]		= &g12a_hdmi_pll.hw,
+-	[CLKID_VID_PLL]			= &g12a_vid_pll_div.hw,
++	[CLKID_VID_PLL]			= &g12a_vid_pll.hw,
+ 	[CLKID_VID_PLL_SEL]		= &g12a_vid_pll_sel.hw,
+-	[CLKID_VID_PLL_DIV]		= &g12a_vid_pll.hw,
++	[CLKID_VID_PLL_DIV]		= &g12a_vid_pll_div.hw,
+ 	[CLKID_VCLK_SEL]		= &g12a_vclk_sel.hw,
+ 	[CLKID_VCLK2_SEL]		= &g12a_vclk2_sel.hw,
+ 	[CLKID_VCLK_INPUT]		= &g12a_vclk_input.hw,
+-- 
+2.43.0
+

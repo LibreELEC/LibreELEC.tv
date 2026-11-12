@@ -1,0 +1,45 @@
+From 9b38068ae5592662a839a1599f5b60f5fc1a7e5d Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Sun, 18 Oct 2026 12:18:02 +0200
+Subject: [PATCH 110/267] FROMLIST(v5): ASoC: meson: aiu: add I2S Capture DAI
+
+Add capture stream to CPU_I2S_ENCODER making it able to handle both
+playback and capture streams. Captured data is formatted from
+"audin-formatter-i2s" widget, buffered from "audin-fifo" into an internal
+FIFO and then bulk transmitted into RAM when the FIFO is full.
+
+As for the naming of the stream "I2S Encoder" is kept as base following
+the same pattern used for the playback stream and with the goal to minimize
+changes.
+
+Supported format for capture is currently limited to S16_LE because it's
+the only one that has been tested. According to the manual also S24_LE
+should be supported, but this is kept as follow-up.
+
+Reviewed-by: Jerome Brunet <jbrunet@baylibre.com>
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ sound/soc/meson/aiu.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/sound/soc/meson/aiu.c b/sound/soc/meson/aiu.c
+index 535fbf7c1639..14d0e20a4bd6 100644
+--- a/sound/soc/meson/aiu.c
++++ b/sound/soc/meson/aiu.c
+@@ -153,6 +153,13 @@ static struct snd_soc_dai_driver aiu_cpu_dai_drv[] = {
+ 			.rates = SNDRV_PCM_RATE_8000_192000,
+ 			.formats = AIU_FORMATS,
+ 		},
++		.capture = {
++			.stream_name = "I2S Encoder Capture",
++			.channels_min = 2,
++			.channels_max = 2,
++			.rates = SNDRV_PCM_RATE_8000_192000,
++			.formats = SNDRV_PCM_FMTBIT_S16_LE,
++		},
+ 		.ops = &aiu_encoder_i2s_dai_ops,
+ 		.symmetric_rate = 1,
+ 	},
+-- 
+2.43.0
+

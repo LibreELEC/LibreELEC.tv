@@ -1,0 +1,182 @@
+From 686dbfae8ae57c6afc65ee08b3bee3662747416e Mon Sep 17 00:00:00 2001
+From: Valerio Setti <vsetti@baylibre.com>
+Date: Wed, 21 Oct 2026 23:52:04 +0200
+Subject: [PATCH 139/267] FROMLIST(v1): ASoC: meson: gx-formatter: change
+ stream lock from mutex to spinlock
+
+Currently a mutex is being used in 'struct gx_stream' to serialize
+access to structure data. This was inherited from the AXG design. An
+important difference though is that in axg-card dai_links are nonatomic
+so callback functions like 'trigger' are allowed to sleep. In GX instead
+dai_links are atomic.
+
+For example, starting playback from userspace with
+'CONFIG_DEBUG_ATOMIC_SLEEP=y' results in a warning message like:
+
+[ ] BUG: sleeping function called from invalid context at kernel/locking/mutex.c:316
+[ ] in_atomic(): 1, irqs_disabled(): 1, non_block: 0, pid: 272, name: speaker-test
+[ ] preempt_count: 1, expected: 0
+
+due to the following call stack:
+
+snd_pcm_do_start (called with spinlock taken)
+  dpcm_fe_dai_trigger
+    dpcm_fe_dai_do_trigger
+      dpcm_dai_trigger_fe_be
+        dpcm_be_dai_trigger
+          soc_pcm_trigger
+            snd_soc_pcm_dai_trigger
+              soc_dai_trigger
+                aiu_encoder_i2s_trigger
+                  gx_stream_start (takes 'ts->lock')
+
+Fix this by changing the lock type from mutex to spinlock. This is safe
+on GX platform because all formatters' functions only perform MMIO regmap
+calls that do not sleep.
+
+'spin_lock_irqsave' is used in 'gx_stream_start'/'gx_stream_stop' because
+trigger runs with IRQs already disabled and stop can also run in IRQ
+context (e.g. in case of XRUN while executing 'aiu_fifo_isr').
+'spin_lock_irq' is instead used in 'gx_formatter_attach'/
+'gx_formatter_detach' in order to prevent IRQs on the same CPU that might
+end up calling 'gx_stream_stop' and therefore deadlock.
+
+Fixes: a295be8d6210 ("ASoC: meson: gx: add gx-formatter and gx-interface")
+Signed-off-by: Valerio Setti <vsetti@baylibre.com>
+---
+ sound/soc/meson/gx-formatter.c | 21 +++++++++++----------
+ sound/soc/meson/gx-formatter.h |  4 ++++
+ sound/soc/meson/gx-interface.h |  3 ++-
+ 3 files changed, 17 insertions(+), 11 deletions(-)
+
+diff --git a/sound/soc/meson/gx-formatter.c b/sound/soc/meson/gx-formatter.c
+index 2d3218cce426..6b4155f9f05e 100644
+--- a/sound/soc/meson/gx-formatter.c
++++ b/sound/soc/meson/gx-formatter.c
+@@ -61,7 +61,7 @@ static int gx_formatter_attach(struct gx_formatter *formatter)
+ 	struct gx_stream *ts = formatter->stream;
+ 	int ret = 0;
+ 
+-	mutex_lock(&ts->lock);
++	spin_lock_irq(&ts->lock);
+ 
+ 	/* Catch up if the stream is already running when we attach */
+ 	if (ts->ready) {
+@@ -74,7 +74,7 @@ static int gx_formatter_attach(struct gx_formatter *formatter)
+ 
+ 	list_add_tail(&formatter->list, &ts->formatter_list);
+ out:
+-	mutex_unlock(&ts->lock);
++	spin_unlock_irq(&ts->lock);
+ 	return ret;
+ }
+ 
+@@ -85,9 +85,9 @@ static void gx_formatter_detach(struct gx_formatter *formatter)
+ 	if (!ts)
+ 		return;
+ 
+-	mutex_lock(&ts->lock);
++	spin_lock_irq(&ts->lock);
+ 	list_del(&formatter->list);
+-	mutex_unlock(&ts->lock);
++	spin_unlock_irq(&ts->lock);
+ 
+ 	gx_formatter_disable(formatter);
+ }
+@@ -212,9 +212,10 @@ EXPORT_SYMBOL_GPL(gx_formatter_create);
+ int gx_stream_start(struct gx_stream *ts)
+ {
+ 	struct gx_formatter *formatter;
++	unsigned long irq_flags;
+ 	int ret = 0;
+ 
+-	mutex_lock(&ts->lock);
++	spin_lock_irqsave(&ts->lock, irq_flags);
+ 
+ 	/* Start all the formatters attached to the stream */
+ 	list_for_each_entry(formatter, &ts->formatter_list, list) {
+@@ -228,7 +229,7 @@ int gx_stream_start(struct gx_stream *ts)
+ 	ts->ready = true;
+ 
+ out:
+-	mutex_unlock(&ts->lock);
++	spin_unlock_irqrestore(&ts->lock, irq_flags);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(gx_stream_start);
+@@ -236,8 +237,9 @@ EXPORT_SYMBOL_GPL(gx_stream_start);
+ void gx_stream_stop(struct gx_stream *ts)
+ {
+ 	struct gx_formatter *formatter;
++	unsigned long irq_flags;
+ 
+-	mutex_lock(&ts->lock);
++	spin_lock_irqsave(&ts->lock, irq_flags);
+ 	ts->ready = false;
+ 
+ 	/* Stop all the formatters attached to the stream */
+@@ -245,7 +247,7 @@ void gx_stream_stop(struct gx_stream *ts)
+ 		gx_formatter_disable(formatter);
+ 	}
+ 
+-	mutex_unlock(&ts->lock);
++	spin_unlock_irqrestore(&ts->lock, irq_flags);
+ }
+ EXPORT_SYMBOL_GPL(gx_stream_stop);
+ 
+@@ -256,7 +258,7 @@ struct gx_stream *gx_stream_alloc(struct gx_iface *iface)
+ 	ts = kzalloc_obj(*ts);
+ 	if (ts) {
+ 		INIT_LIST_HEAD(&ts->formatter_list);
+-		mutex_init(&ts->lock);
++		spin_lock_init(&ts->lock);
+ 		ts->iface = iface;
+ 	}
+ 
+@@ -272,7 +274,6 @@ void gx_stream_free(struct gx_stream *ts)
+ 	 * are removing the TDM DAI. It should not be possible
+ 	 */
+ 	WARN_ON(!list_empty(&ts->formatter_list));
+-	mutex_destroy(&ts->lock);
+ 	kfree(ts);
+ }
+ EXPORT_SYMBOL_GPL(gx_stream_free);
+diff --git a/sound/soc/meson/gx-formatter.h b/sound/soc/meson/gx-formatter.h
+index b90b1814d79b..9f5a1720481e 100644
+--- a/sound/soc/meson/gx-formatter.h
++++ b/sound/soc/meson/gx-formatter.h
+@@ -20,6 +20,10 @@ struct gx_formatter_hw {
+ 
+ struct gx_formatter_ops {
+ 	struct gx_stream *(*get_stream)(struct snd_soc_dapm_widget *w);
++	/*
++	 * Following functions are called with gx_stream->lock held and local
++	 * IRQs disabled so they must not sleep.
++	 */
+ 	void (*enable)(struct regmap *map);
+ 	void (*disable)(struct regmap *map);
+ 	int (*prepare)(struct regmap *map,
+diff --git a/sound/soc/meson/gx-interface.h b/sound/soc/meson/gx-interface.h
+index 2a6207e393e8..a6a5cc9e7af0 100644
+--- a/sound/soc/meson/gx-interface.h
++++ b/sound/soc/meson/gx-interface.h
+@@ -9,6 +9,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/regmap.h>
++#include <linux/spinlock.h>
+ #include <sound/pcm.h>
+ #include <sound/soc.h>
+ #include <sound/soc-dai.h>
+@@ -24,7 +25,7 @@ struct gx_iface {
+ struct gx_stream {
+ 	struct gx_iface *iface;
+ 	struct list_head formatter_list;
+-	struct mutex lock;
++	spinlock_t lock;
+ 	unsigned int channels;
+ 	unsigned int width;
+ 	unsigned int physical_width;
+-- 
+2.43.0
+

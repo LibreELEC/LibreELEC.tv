@@ -1,0 +1,24 @@
+From 73684cdf18663c15471480a3c176bb0c23a5e5eb Mon Sep 17 00:00:00 2001
+From: Da Xue <da@libre.computer>
+Date: Sun, 22 Jun 2025 17:46:21 -0400
+Subject: [PATCH 140/267] WIP: mmc: meson-gx-mmc: add delay during poweroff
+
+---
+ drivers/mmc/host/meson-gx-mmc.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mmc/host/meson-gx-mmc.c b/drivers/mmc/host/meson-gx-mmc.c
+index c93fef2f7d15..99ca1ebd4c29 100644
+--- a/drivers/mmc/host/meson-gx-mmc.c
++++ b/drivers/mmc/host/meson-gx-mmc.c
+@@ -620,6 +620,7 @@ static void meson_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	case MMC_POWER_OFF:
+ 		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, 0);
+ 		mmc_regulator_disable_vqmmc(mmc);
++		msleep(50);
+ 
+ 		break;
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,29 @@
+From 08481e77b445c8d58442f13eccf75cdd9c4d205d Mon Sep 17 00:00:00 2001
+From: Jiebing Chen <jiebing.chen@amlogic.com>
+Date: Wed, 21 Oct 2026 15:08:29 +0800
+Subject: [PATCH 115/267] FROMLIST(v7): ASoC: dt-bindings: axg-audio: Add S4
+ audio tocodec
+
+Add S4 SoC tocodec compatibility support.
+
+Acked-by: Rob Herring (Arm) <robh@kernel.org>
+Signed-off-by: Jiebing Chen <jiebing.chen@amlogic.com>
+---
+ .../devicetree/bindings/sound/amlogic,g12a-toacodec.yaml         | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/sound/amlogic,g12a-toacodec.yaml b/Documentation/devicetree/bindings/sound/amlogic,g12a-toacodec.yaml
+index 23f82bb89750..7e053aaa0f59 100644
+--- a/Documentation/devicetree/bindings/sound/amlogic,g12a-toacodec.yaml
++++ b/Documentation/devicetree/bindings/sound/amlogic,g12a-toacodec.yaml
+@@ -25,6 +25,7 @@ properties:
+           - const: amlogic,g12a-toacodec
+       - items:
+           - enum:
++              - amlogic,s4-toacodec
+               - amlogic,sm1-toacodec
+           - const: amlogic,g12a-toacodec
+ 
+-- 
+2.43.0
+
