@@ -2,9 +2,9 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.gambatte"
-PKG_VERSION="0.5.0.63-Omega"
-PKG_SHA256="4f352b52446a30c0662c24d53c183843624e6e574f023178438d8bbc633840a9"
-PKG_REV="2"
+PKG_VERSION="0.5.0.73-Piers"
+PKG_SHA256="66f8a52836c83175d400d1db0b93e02008f6b605696d8a4ed3b162c1a541ea7c"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.gambatte"
