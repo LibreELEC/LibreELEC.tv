@@ -1,0 +1,67 @@
+From 1652c54b73f67df17b7b4ab0b0f7048204aa8104 Mon Sep 17 00:00:00 2001
+From: Ferdinand Bachmann <ferdinand.bachmann@yrlf.at>
+Date: Mon, 21 Sep 2026 11:30:43 +0200
+Subject: [PATCH] ipc-json, input: handle LIBINPUT_CONFIG_SCROLL_CIRCULAR
+
+New entry introduced in libinput 1.32.0.
+
+Co-authored-by: Stephen Seo <seo.disparate@gmail.com>
+---
+ meson.build                         |  2 +-
+ sway/commands/input/scroll_method.c | 10 ++++++++++
+ sway/ipc-json.c                     |  5 +++++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 17d65c334c..748931b201 100644
+--- a/meson.build
++++ b/meson.build
+@@ -110,7 +110,7 @@ conf_data.set10('HAVE_LIBSYSTEMD', sdbus.found() and sdbus.name() == 'libsystemd
+ conf_data.set10('HAVE_LIBELOGIND', sdbus.found() and sdbus.name() == 'libelogind')
+ conf_data.set10('HAVE_BASU', sdbus.found() and sdbus.name() == 'basu')
+ conf_data.set10('HAVE_TRAY', have_tray)
+-foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY', 'LIBINPUT_SWITCH_KEYPAD_SLIDE']
++foreach sym : ['LIBINPUT_CONFIG_ACCEL_PROFILE_CUSTOM', 'LIBINPUT_CONFIG_DRAG_LOCK_ENABLED_STICKY', 'LIBINPUT_SWITCH_KEYPAD_SLIDE', 'LIBINPUT_CONFIG_SCROLL_CIRCULAR']
+ 	conf_data.set10('HAVE_' + sym, cc.has_header_symbol('libinput.h', sym, dependencies: libinput))
+ endforeach
+ 
+diff --git a/sway/commands/input/scroll_method.c b/sway/commands/input/scroll_method.c
+index cd8b5f7a70..9320182b30 100644
+--- a/sway/commands/input/scroll_method.c
++++ b/sway/commands/input/scroll_method.c
+@@ -22,9 +22,19 @@ struct cmd_results *input_cmd_scroll_method(int argc, char **argv) {
+ 		ic->scroll_method = LIBINPUT_CONFIG_SCROLL_EDGE;
+ 	} else if (strcasecmp(argv[0], "on_button_down") == 0) {
+ 		ic->scroll_method = LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN;
++#if HAVE_LIBINPUT_CONFIG_SCROLL_CIRCULAR
++	} else if (strcasecmp(argv[0], "circular") == 0) {
++		ic->scroll_method = LIBINPUT_CONFIG_SCROLL_CIRCULAR;
++#endif
+ 	} else {
++#if HAVE_LIBINPUT_CONFIG_SCROLL_CIRCULAR
++		return cmd_results_new(CMD_INVALID,
++			"Expected 'scroll_method "
++			"<none|two_finger|edge|on_button_down|circular>'");
++#else
+ 		return cmd_results_new(CMD_INVALID,
+ 			"Expected 'scroll_method <none|two_finger|edge|on_button_down>'");
++#endif
+ 	}
+ 
+ 	return cmd_results_new(CMD_SUCCESS, NULL);
+diff --git a/sway/ipc-json.c b/sway/ipc-json.c
+index 8e73bfc82b..1ff9a9f2e4 100644
+--- a/sway/ipc-json.c
++++ b/sway/ipc-json.c
+@@ -1088,6 +1088,11 @@ static json_object *describe_libinput_device(struct libinput_device *device) {
+ 		case LIBINPUT_CONFIG_SCROLL_ON_BUTTON_DOWN:
+ 			scroll_method = "on_button_down";
+ 			break;
++#if HAVE_LIBINPUT_CONFIG_SCROLL_CIRCULAR
++		case LIBINPUT_CONFIG_SCROLL_CIRCULAR:
++			scroll_method = "circular";
++			break;
++#endif
+ 		}
+ 		json_object_object_add(object, "scroll_method",
+ 				json_object_new_string(scroll_method));
