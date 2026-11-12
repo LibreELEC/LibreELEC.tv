@@ -3,6 +3,8 @@
   <core>
     <decoration>none</decoration>
     <gap>0</gap>
+    <!-- outputs are managed by kanshi -->
+    <autoEnableOutputs>no</autoEnableOutputs>
   </core>
 
   <theme>
