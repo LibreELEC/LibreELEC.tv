@@ -1,0 +1,34 @@
+From 875e23850d0cfa38da047a5c38ee023c0f136c3b Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Thu, 12 Nov 2026 10:52:15 +0000
+Subject: [PATCH] lexer: call unput() in cfg_dummy_function
+
+cfg_dummy_function() calls yyunput(0, NULL) to stop the compiler
+warning that the static yyunput() is defined but not used. flex 2.6.9
+now defines yyunput as a one argument macro around yyunput_r(), so
+the call fails to build:
+
+  lexer.l:339:20: error: macro 'yyunput' passed 2 arguments, but takes just 1
+
+Use the documented unput() macro instead, which every flex version
+maps onto its unput function with the current text pointer.
+---
+ src/lexer.l | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/lexer.l b/src/lexer.l
+index 8fd5ec8ed6c0..fcf062c2c4f3 100644
+--- a/src/lexer.l
++++ b/src/lexer.l
+@@ -336,7 +336,7 @@ void cfg_dummy_function(void)
+     /* please compiler :-)
+      * otherwise "defined but not used" warning
+      */
+-    yyunput(0, NULL);
++    unput(0);
+ }
+ 
+ static void cfg_raw_append(const char *s, int n)
+-- 
+2.53.0
+
