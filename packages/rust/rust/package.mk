@@ -68,6 +68,7 @@ channel = "stable"
 codegen-tests = false
 optimize = true
 download-rustc = false
+deny-warnings = false
 
 [build]
 submodules = false
