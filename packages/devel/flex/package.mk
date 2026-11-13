@@ -3,8 +3,8 @@
 # Copyright (C) 2019-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="flex"
-PKG_VERSION="2.6.4"
-PKG_SHA256="e87aae032bf07c26f85ac0ed3250998c37621d95f8bd748b31f15b33c45ee995"
+PKG_VERSION="2.6.11"
+PKG_SHA256="188e9c96b8fc032b2a0bdd24d4f0b692480c1854511c2fcc3034946f14fdf49a"
 PKG_LICENSE="BSD-3-Clause"
 PKG_SITE="https://github.com/westes/flex"
 PKG_URL="https://github.com/westes/flex/releases/download/v${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.gz"
