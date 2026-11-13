@@ -1,0 +1,35 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
+
+ACTION="${1:-up}"
+STEP=$(echo "${2:-5%}" | tr -dc '0-9')
+[ -z "${STEP}" ] && STEP=5
+
+case "${ACTION}" in
+  up)
+    CURRENT_VOL=$(pactl get-sink-volume @DEFAULT_SINK@ 2>/dev/null | grep -o '[0-9]\+%' | head -n 1 | tr -d '%')
+    if [ -z "${CURRENT_VOL}" ]; then
+      CURRENT_VOL=$(pactl list sinks 2>/dev/null | grep -A 15 -E 'Sink #[0-9]+|\* index' | grep -m 1 'Volume:' | grep -o '[0-9]\+%' | head -n 1 | tr -d '%')
+    fi
+    CURRENT_VOL="${CURRENT_VOL:-0}"
+
+    NEW_VOL=$((CURRENT_VOL + STEP))
+    if [ "${NEW_VOL}" -ge 100 ]; then
+      pactl set-sink-volume @DEFAULT_SINK@ 100% >/dev/null 2>&1
+    else
+      pactl set-sink-volume @DEFAULT_SINK@ "+${STEP}%" >/dev/null 2>&1
+    fi
+    ;;
+  down)
+    pactl set-sink-volume @DEFAULT_SINK@ "-${STEP}%" >/dev/null 2>&1
+    ;;
+  mute|toggle)
+    pactl set-sink-mute @DEFAULT_SINK@ toggle >/dev/null 2>&1
+    ;;
+  *)
+    echo "Usage: $0 {up|down|mute|toggle} [step%]" >&2
+    exit 1
+    ;;
+esac
+

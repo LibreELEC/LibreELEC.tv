@@ -4,14 +4,14 @@
 
 . /etc/profile
 
-addondir=$(dirname "$(dirname "$0")")
+ADDON_DIR=$(dirname "$(dirname "$0")")
 
 # choose the kanshi display configuration
 CONF=""
 if [ -n "${KODI_DISPLAY_CONFIG}" ]; then
   CONF="/storage/.config/kanshi/${KODI_DISPLAY_CONFIG}"
   if [ ! -f "${CONF}" ]; then
-    CONF="${addondir}/kanshi-config/${KODI_DISPLAY_CONFIG}"
+    CONF="${ADDON_DIR}/kanshi-config/${KODI_DISPLAY_CONFIG}"
     if [ ! -f "${CONF}" ]; then
       echo "kanshi configuration ${KODI_DISPLAY_CONFIG} not found, falling back to default config"
       CONF=""
@@ -22,23 +22,34 @@ fi
 if [ -z "${CONF}" ]; then
   CONF="/storage/.config/kanshi/default"
   if [ ! -f "${CONF}" ]; then
-    CONF="${addondir}/kanshi-config/default"
+    CONF="${ADDON_DIR}/kanshi-config/default"
   fi
 fi
 echo "using kanshi configuration ${CONF}"
 
 # launch kanshi display configuration
-kanshi -c "${CONF}" &
+${ADDON_DIR}/bin/kanshi -c "${CONF}" &
 KANSHI_PID=$!
 
+# start screensaver if enabled
+SCREENSAVER_PID=""
+if [ -n "${KODI_SCREENSAVER_TIMEOUT}" -a "${KODI_SCREENSAVER_TIMEOUT}" != "0" ]; then
+  ${ADDON_DIR}/bin/swayidle -w timeout "${KODI_SCREENSAVER_TIMEOUT}" "${ADDON_DIR}/bin/wlopm --off '*'" resume "${ADDON_DIR}/bin/wlopm --on '*'" &
+  SCREENSAVER_PID=$!
+fi
 # run WayVNC if enabled
-WAYVNC_PID=$(${addondir}/bin/wayvnc-session-helper)
+WAYVNC_PID=$(${ADDON_DIR}/bin/wayvnc-session-helper)
 
 # continue with the remaining session command
 "$@"
 
 # stop kanshi when the session ends
 kill -TERM "${KANSHI_PID}"
+
+# stop screensaver when the session ends
+if [ -n "${SCREENSAVER_PID}" ]; then
+  kill -TERM "${SCREENSAVER_PID}"
+fi
 
 # stop wayvnc when the session ends
 if [ -n "${WAYVNC_PID}" ]; then

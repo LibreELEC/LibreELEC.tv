@@ -1,0 +1,28 @@
+From ce87ea3dd6ac18002e08244ef46b350b92883f0f Mon Sep 17 00:00:00 2001
+From: Matthias Reichl <hias@horus.com>
+Date: Thu, 12 Nov 2026 14:09:56 +0100
+Subject: [PATCH] session: drop systemd user session update
+
+---
+ src/config/session.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/src/config/session.c b/src/config/session.c
+index b2eda31..55098a4 100644
+--- a/src/config/session.c
++++ b/src/config/session.c
+@@ -221,11 +221,6 @@ execute_update(const char *env_keys, const char *env_unset_keys, bool initialize
+ 			initialize ? env_keys : env_unset_keys);
+ 	spawn_sync_no_shell(cmd);
+ 	free(cmd);
+-
+-	cmd = strdup_printf("systemctl --user %s %s",
+-		initialize ? "import-environment" : "unset-environment", env_keys);
+-	spawn_sync_no_shell(cmd);
+-	free(cmd);
+ }
+ 
+ static void
+-- 
+2.47.3
+

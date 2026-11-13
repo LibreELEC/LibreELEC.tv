@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <core>
+    <decoration>none</decoration>
+    <gap>0</gap>
+    <!-- outputs are managed by kanshi -->
+    <autoEnableOutputs>no</autoEnableOutputs>
+  </core>
+
+  <theme>
+    <cornerRadius>0</cornerRadius>
+    <keepBorder>no</keepBorder>
+    <maximizedDecoration>none</maximizedDecoration>
+    <dropShadows>no</dropShadows>
+  </theme>
+
+  <resize>
+    <minimumArea>0</minimumArea>
+    <popupShow>Never</popupShow>
+  </resize>
+
+  <windowRules>
+    <windowRule identifier="*" type="normal" serverDecoration="no" skipWindowSwitcher="yes" skipTaskbar="yes">
+      <action name="Maximize" />
+    </windowRule>
+  </windowRules>
+
+  <!-- Kiosk mode: retain standard click/focus handling, disable desktop menu -->
+  <mouse>
+    <default />
+    <context name="Root">
+      <mousebind button="Left" action="Press">
+        <action name="Focus" />
+      </mousebind>
+    </context>
+  </mouse>
+
+  <keyboard>
+    <!-- Standard window closing and session exit shortcuts -->
+    <keybind key="A-F4">
+      <action name="Close" />
+    </keybind>
+    <keybind key="C-A-BackSpace">
+      <action name="Exit" />
+    </keybind>
+
+    <!-- Volume controls (pactl / PipeWire / PulseAudio) -->
+    <keybind key="XF86AudioRaiseVolume">
+      <action name="Execute" command="/storage/.kodi/addons/tools.externalhelper/bin/pa-volume-control up" />
+    </keybind>
+    <keybind key="XF86AudioLowerVolume">
+      <action name="Execute" command="/storage/.kodi/addons/tools.externalhelper/bin/pa-volume-control down" />
+    </keybind>
+    <keybind key="XF86AudioMute">
+      <action name="Execute" command="/storage/.kodi/addons/tools.externalhelper/bin/pa-volume-control mute" />
+    </keybind>
+
+  </keyboard>
+</labwc_config>
+

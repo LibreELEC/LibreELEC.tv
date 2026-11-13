@@ -2,6 +2,38 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
+ADDON_DIR=$(dirname "$(dirname "$0")")
+
+setup_pulse() {
+  PA_UNLOAD=""
+  CHANNELS=""
+
+  [ "${KODI_FLATPAK_PULSEAUDIO}" = "no" ] && return
+  [ "${KODI_AUDIO_DEVICE%%:*}" != "ALSA" ] && return
+
+  AUDIODEV="${KODI_AUDIO_DEVICE#ALSA:}"
+  AUDIODEV="${AUDIODEV:-sysdefault}"
+  
+  if [ -n "${KODI_FLATPAK_PULSEAUDIO_CHANNELS}" ]; then
+    CHANNELS="channels=${KODI_FLATPAK_PULSEAUDIO_CHANNELS}"
+  fi
+
+  echo "using ALSA audio device $AUDIODEV"
+
+  PA_UNLOAD=$(pactl load-module module-alsa-sink device="${AUDIODEV}" name="externalhelper" ${CHANNELS})
+  if [ $? -ne 0 ]; then
+    echo "failed to load pulseaudio module for alsa device ${AUDIODEV}"
+    PA_UNLOAD=""
+    return
+  fi
+}
+
+cleanup_pulse() {
+  if [ -n "${PA_UNLOAD}" ]; then
+    pactl unload-module "${PA_UNLOAD}"
+  fi
+}
+
 if [ -n "${KODI_KEYBOARD_LAYOUT}" ]; then
   export XKB_DEFAULT_LAYOUT="${KODI_KEYBOARD_LAYOUT}"
 fi
@@ -10,9 +42,34 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 mkdir -p "${XDG_RUNTIME_DIR}"
 chmod 0700 "${XDG_RUNTIME_DIR}"
 
-mydir=$(dirname "$0")
+EXTERNALHELPER_RUNTIME_DIR="${XDG_RUNTIME_DIR}/externalhelper"
+mkdir -p "${EXTERNALHELPER_RUNTIME_DIR}"
+chmod 0700 "${EXTERNALHELPER_RUNTIME_DIR}"
+
+# Determine labwc config directory (check user override, fallback to addon default)
+if [ -d "/storage/.config/labwc" ]; then
+  LABWC_CONFIG_DIR="/storage/.config/labwc"
+else
+  LABWC_CONFIG_DIR="${ADDON_DIR}/labwc-config"
+fi
+
+# Generate session runner script for labwc primary client
+SESSION_RUNNER="${EXTERNALHELPER_RUNTIME_DIR}/labwc-session-runner.sh"
+echo '#!/bin/sh' > "${SESSION_RUNNER}"
+printf 'exec "%s/bin/wayland-session-helper"' "${ADDON_DIR}" >> "${SESSION_RUNNER}"
+for arg in "$@"; do
+  escaped=$(printf '%s\n' "$arg" | sed "s/'/'\\\\''/g")
+  printf " '%s'" "$escaped" >> "${SESSION_RUNNER}"
+done
+echo "" >> "${SESSION_RUNNER}"
+chmod 0700 "${SESSION_RUNNER}"
+
+setup_pulse
 
 dbus-run-session -- \
-  "${mydir}/seatd-launch" -p "${mydir}/seatd" -- \
-  "${mydir}/cage" -- \
-  "${mydir}/wayland-session-helper" "$@"
+  "${ADDON_DIR}/bin/seatd-launch" -p "${ADDON_DIR}/bin/seatd" -- \
+  "${ADDON_DIR}/bin/labwc" -C "${LABWC_CONFIG_DIR}" -S "${SESSION_RUNNER}"
+
+cleanup_pulse
+
+rm -rf "${EXTERNALHELPER_RUNTIME_DIR}"

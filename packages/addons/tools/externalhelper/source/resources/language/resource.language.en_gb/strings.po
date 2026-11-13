@@ -65,6 +65,18 @@ msgctxt "#30112"
 msgid "For ALSA devices enter 'ALSA:' followed by the full PCM name like shown in aplay -L\neg ALSA:sysdefault:CARD=MyCard or ALSA:iec958:CARD=MyCard,DEV=1"
 msgstr ""
 
+msgctxt "#30113"
+msgid "Screensaver timeout"
+msgstr ""
+
+msgctxt "#30114"
+msgid "Set to 0 to disable screensaver"
+msgstr ""
+
+msgctxt "#30115"
+msgid "{0:d} min"
+msgstr ""
+
 msgctxt "#30200"
 msgid "VNC"
 msgstr ""
