@@ -11,3 +11,7 @@ PKG_URL="https://github.com/KhronosGroup/Vulkan-Headers/archive/v${PKG_VERSION}.
 PKG_DEPENDS_HOST="toolchain:host"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="Vulkan Header files and API registry"
+
+post_makeinstall_target() {
+  safe_remove "${INSTALL}/usr/share"
+} 
