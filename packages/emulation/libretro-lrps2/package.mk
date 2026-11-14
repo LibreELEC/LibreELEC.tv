@@ -2,12 +2,12 @@
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-lrps2"
-PKG_VERSION="d4908f40fb32f43c5055852ecaed3c52aa725dce"
-PKG_SHA256="445fba62dadfb0427cdb544970fea5c446858a62776784088a1162151095555b"
+PKG_VERSION="5dce3c29a9b938899773f0c266192889607267e9"
+PKG_SHA256="d2065862eccd9a49a86e358dabf65d9afb5b07b0c9cdd2355b01adcec3fe76c5"
 PKG_ARCH="x86_64"
 PKG_LICENSE="GPL-3.0-or-later"
-PKG_SITE="https://github.com/libretro/ps2"
-PKG_URL="https://github.com/libretro/ps2/archive/${PKG_VERSION}.tar.gz"
+PKG_SITE="https://github.com/libretro/parallel-ps2"
+PKG_URL="https://github.com/libretro/parallel-ps2/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
 PKG_LONGDESC="LRPS2 is a libretro port of the PCSX2 PlayStation 2 emulator."
 PKG_TOOLCHAIN="cmake"
