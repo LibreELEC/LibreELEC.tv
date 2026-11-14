@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: LibreELEC H616 contributor
+Date: Mon Oct 20 2026 00:00:00 +0000
+Subject: [PATCH] sunxi: h616: Add DDR3L v5.1 DRAM/PMIC parameters for X96Q
+
+The hechuang X96Q v5.1 board (H616 + 2GB DDR3L) ships in volume alongside
+the original amediatech X96Q, but differs in two ways that matter during
+SPL boot:
+
+1. DRAM timing.  With the generic parameters in configs/x96q_defconfig,
+   DRAM initialisation fails on the v5.1 board.
+
+2. PMIC.  The v5.1 uses an AXP313 (not the AXP305 of the original board)
+   and needs DCDC3 programmed to 1.36V for the DDR3L rail before DRAM
+   training.  Without AXP313 support the SPL leaves the DRAM rail at its
+   default and training fails regardless of timing parameters.
+
+Set the DRAM and PMIC parameters measured for this variant, identical to
+the values shipped in Armbian's linux-u-boot-x96q-v5-1 package and derived
+from warpme/minimyth2 and the X96Q DDR3L v5.1 bring-up work (zra123).
+
+Tested on hardware: with this patch u-boot 2026.10 SPL initialises DRAM
+and boots the v5.1 board (blue power LED, kernel handoff), which fails
+with the stock parameters.
+
++++ b/configs/x96q_defconfig
+@@ -5,13 +5,14 @@ CONFIG_DRAM_CLK=600
+ CONFIG_SPL=y
+ CONFIG_DRAM_SUNXI_DX_ODT=0x03030303
+ CONFIG_DRAM_SUNXI_DX_DRI=0x0e0e0e0e
+-CONFIG_DRAM_SUNXI_CA_DRI=0x1f12
+-CONFIG_DRAM_SUNXI_TPR0=0xc0001002
+-CONFIG_DRAM_SUNXI_TPR2=0x00000100
++CONFIG_DRAM_SUNXI_ODT_EN=0x1
++CONFIG_DRAM_SUNXI_CA_DRI=0x00001c12
++CONFIG_DRAM_SUNXI_TPR0=0xc0000a05
++CONFIG_DRAM_SUNXI_TPR2=0x00000000
+ CONFIG_DRAM_SUNXI_TPR6=0x33808080
+-CONFIG_DRAM_SUNXI_TPR10=0x002f0107
++CONFIG_DRAM_SUNXI_TPR10=0x002f0006
+ CONFIG_DRAM_SUNXI_TPR11=0xddddcccc
+-CONFIG_DRAM_SUNXI_TPR12=0xeddc7665
++CONFIG_DRAM_SUNXI_TPR12=0xeddc7564
+ CONFIG_MACH_SUN50I_H616=y
+ CONFIG_SUNXI_H616_INTERNAL_EPHY=y
+ CONFIG_SUNXI_DRAM_H616_DDR3_1333=y
+@@ -24,6 +25,9 @@ CONFIG_SYS_I2C_MVTWSI=y
+ CONFIG_SYS_I2C_SPEED=400000
+ CONFIG_SUPPORT_EMMC_BOOT=y
+ CONFIG_SUN8I_EMAC=y
+-CONFIG_AXP305_POWER=y
++CONFIG_AXP313_POWER=y
++CONFIG_AXP_DCDC3_VOLT=1360
++CONFIG_I2C3_ENABLE=y
++CONFIG_PHY_REALTEK=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_OHCI_HCD=y
