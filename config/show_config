@@ -136,6 +136,7 @@ show_config() {
 
   config_message+="\n - OEM Support:\t\t\t\t ${OEM_SUPPORT}"
   config_message+="\n - Default ROOT Password:\t\t ${ROOT_PASSWORD}"
+  config_message+="\n - Force ROOT Password Change:\t\t ${FORCE_ROOT_PASSWORD_CHANGE}"
   config_message+="\n - Bootloader:\t\t\t\t ${BOOTLOADER}"
   config_message+="\n - UDevil support:\t\t\t ${UDEVIL}"
   config_message+="\n - Installer support:\t\t\t ${INSTALLER_SUPPORT}"
