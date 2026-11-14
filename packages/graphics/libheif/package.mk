@@ -14,7 +14,13 @@ PKG_BUILD_FLAGS="+pic"
 PKG_CMAKE_OPTS_TARGET="-DBUILD_SHARED_LIBS=OFF \
                        -DWITH_EXAMPLES=OFF \
                        -DWITH_AOM_DECODER=OFF \
-                       -DWITH_AOM_ENCODER=OFF"
+                       -DWITH_AOM_ENCODER=OFF \
+                       -DWITH_X264=OFF \
+                       -DWITH_X265=OFF \
+                       -DWITH_OpenH264_DECODER=OFF \
+                       -DWITH_GDK_PIXBUF=OFF \
+                       -DWITH_LIBSHARPYUV=OFF \
+                       -DBUILD_TESTING=OFF"
 
 pre_configure_target() {
   export CXXFLAGS="${CXXFLAGS} -Wno-unused-variable"
