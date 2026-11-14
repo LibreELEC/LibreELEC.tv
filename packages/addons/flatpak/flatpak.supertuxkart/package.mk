@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.supertuxkart"
 PKG_VERSION="0"
-PKG_REV="1"
+PKG_REV="0"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="GPL-3.0-or-later"
 PKG_SITE="https://supertuxkart.net/"

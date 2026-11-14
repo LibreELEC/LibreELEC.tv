@@ -5,7 +5,7 @@
 
 PKG_NAME="vdr-addon"
 PKG_VERSION="2.8.4"
-PKG_REV="13"
+PKG_REV="0"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://libreelec.tv"
