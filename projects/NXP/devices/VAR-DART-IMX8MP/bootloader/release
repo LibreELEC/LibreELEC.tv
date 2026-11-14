@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
+
+mkdir -p $RELEASE_DIR/3rdparty/bootloader
+
+if [ -n "$UBOOT_SYSTEM" ] && [ -s "$(get_build_dir $BOOTLOADER)/flash.bin" ]; then
+  cp -a $(get_build_dir $BOOTLOADER)/flash.bin $RELEASE_DIR/3rdparty/bootloader/
+fi
+
+if [ -f "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/bootloader/boot-emmc.cmd" ]; then
+  cp -a "${PROJECT_DIR}/${PROJECT}/devices/${DEVICE}/bootloader/boot-emmc.cmd" \
+    $RELEASE_DIR/3rdparty/bootloader/boot-emmc.cmd
+fi
+
+cp -a $(get_build_dir linux)/arch/$TARGET_KERNEL_ARCH/boot/dts/freescale/*.dtb $RELEASE_DIR/3rdparty/bootloader
