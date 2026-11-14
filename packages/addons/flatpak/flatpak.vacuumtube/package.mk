@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.vacuumtube"
 PKG_VERSION="0"
-PKG_REV="1"
+PKG_REV="0"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/shy1132/VacuumTube/"

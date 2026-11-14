@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.freeintv"
 PKG_VERSION="1.2.0.37-Omega"
 PKG_SHA256="2e2303c6fc33996e3568b91808cb20537d0399e8100f1395f3652006f53e9196"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.freeintv"

@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.lrps2"
 PKG_VERSION="b7f9598aea4973d5640679db266b2f4f896b9a55"
 PKG_SHA256="90a8fcc2ea03874c05f30f945d19ba3f6a81ab4cd8a7539de54fb468ccca8db8"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="x86_64"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.lrps2"

@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.chromium"
 PKG_VERSION="0"
-PKG_REV="1"
+PKG_REV="0"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="BSD-3-Clause"
 PKG_SITE="https://www.chromium.org/"

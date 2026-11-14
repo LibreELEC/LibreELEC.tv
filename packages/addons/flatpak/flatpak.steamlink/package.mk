@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.steamlink"
 PKG_VERSION="0"
-PKG_REV="1"
+PKG_REV="0"
 PKG_ARCH="x86_64"
 PKG_LICENSE="LicenseRef-nonfree"
 PKG_SITE="https://store.steampowered.com/steamlink/about/"

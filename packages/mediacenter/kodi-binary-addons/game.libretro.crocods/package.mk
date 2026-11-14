@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.crocods"
 PKG_VERSION="0.0.1.35-Omega"
 PKG_SHA256="e27ded0dadd772e51ae9a066c420c6fd6058858d816ca51c816b095682285b96"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/kodi-game/game.libretro.crocods"

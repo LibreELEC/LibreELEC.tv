@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.px68k"
 PKG_VERSION="0.15.0.36-Omega"
 PKG_SHA256="37bbb2ed218b8117824d11ee95e00c15511a7379d36ac2105bc7cbd9657dfead"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-Non-commercial"
 PKG_SITE="https://github.com/kodi-game/game.libretro.px68k"

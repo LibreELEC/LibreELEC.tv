@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.mupen64plus-nx"
 PKG_VERSION="2.8.0.57-Omega"
 PKG_SHA256="f818406e45feb44cbb961356c6d5cbc746ab9249db5df2894a0fa6abb7e2c035"
-PKG_REV="2"
+PKG_REV="3"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.mupen64plus-nx"

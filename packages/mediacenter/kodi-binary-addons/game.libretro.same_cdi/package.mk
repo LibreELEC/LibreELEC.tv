@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.same_cdi"
 PKG_VERSION="0.287.0.19-Omega"
 PKG_SHA256="cde9ad20bcba2297ae20cb67f7c2edefd639fb1cb43168eeb4e8ecba72959445"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.same_cdi"

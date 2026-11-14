@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.vecx"
 PKG_VERSION="1.2.0.53-Omega"
 PKG_SHA256="671917d56711ab3c881a04c21cc314245330ccccd7b515952c4805873adffe72"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-3.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.vecx"

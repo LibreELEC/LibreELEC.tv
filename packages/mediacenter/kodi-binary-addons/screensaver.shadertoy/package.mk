@@ -5,7 +5,7 @@
 PKG_NAME="screensaver.shadertoy"
 PKG_VERSION="22.0.5-Piers"
 PKG_SHA256="900effd73a4e84848a1a54aa3bb893b57295b520f3d671f3e4e71fb72454f736"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/xbmc/screensaver.shadertoy"

@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.neocd"
 PKG_VERSION="20.22.0.27-Omega"
 PKG_SHA256="58a79c8bf0a963954333039198b89bd45b52089970eb46b8f9d1f24fb556978e"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="LGPL-3.0-only"
 PKG_SITE="https://github.com/kodi-game/game.libretro.neocd"

@@ -4,7 +4,7 @@
 PKG_NAME="lldpd"
 PKG_VERSION="1.0.23"
 PKG_SHA256="53f17e05ad3c4e73f1eb961cfc53f7848cd17c3f8ea242f5f9d7891b0ff5c968"
-PKG_REV="1"
+PKG_REV="0"
 PKG_ARCH="any"
 PKG_LICENSE="ISC"
 PKG_SITE="https://github.com/lldpd/lldpd"

@@ -5,7 +5,7 @@
 PKG_NAME="pvr.stalker"
 PKG_VERSION="22.2.7-Piers"
 PKG_SHA256="98f5151e4b29c99b6723061bb7cc5514c6307853d8d050c784a5ce93d51142e9"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-pvr/pvr.stalker"

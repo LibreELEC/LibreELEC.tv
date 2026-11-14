@@ -3,7 +3,7 @@
 
 PKG_NAME="filebrowser"
 PKG_VERSION="2.63.23"
-PKG_REV="9"
+PKG_REV="0"
 PKG_LICENSE="Apache-2.0"
 PKG_SITE="https://filebrowser.org"
 PKG_DEPENDS_TARGET="toolchain:host"

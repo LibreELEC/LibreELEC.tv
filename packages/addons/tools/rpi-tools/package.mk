@@ -3,7 +3,7 @@
 
 PKG_NAME="rpi-tools"
 PKG_VERSION="1.0"
-PKG_REV="1"
+PKG_REV="0"
 PKG_ARCH="arm aarch64"
 PKG_LICENSE="GPL-2.0-only"
 PKG_SITE="https://libreelec.tv"
