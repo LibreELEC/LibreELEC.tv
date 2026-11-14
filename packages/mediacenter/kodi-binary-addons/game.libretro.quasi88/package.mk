@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.quasi88"
 PKG_VERSION="0.6.4.43-Omega"
 PKG_SHA256="3c8e204ac497763a21c9480a92c21fe2116eea52d4f49e2af2a18d5e3cf37178"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-Non-commercial"
 PKG_SITE="https://github.com/kodi-game/game.libretro.quasi88"

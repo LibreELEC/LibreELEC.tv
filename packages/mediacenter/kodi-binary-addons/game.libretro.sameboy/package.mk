@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.sameboy"
 PKG_VERSION="0.15.4.47-Omega"
 PKG_SHA256="89507471c0b0cb10d18af3c16735f9efc7465490424f95de3d704be643442c40"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/kodi-game/game.libretro.sameboy"
