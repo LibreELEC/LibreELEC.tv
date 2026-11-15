@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Sun, 15 Nov 2026 19:37:42 +0100
+Subject: [PATCH] avcodec/v4l2_context: allocate the driver's minimum capture
+ buffers plus slack
+
+num_capture_buffers (default 20) does not look at
+V4L2_CID_MIN_BUFFERS_FOR_CAPTURE. The StarFive JH7110 Wave511 decoder
+reports 19 for 1080p H.264 and only runs a job when nearly all of them are
+queued, so with 20 buffers the user may hold just one frame. Kodi holds
+more while seeking: the decoder starves, the decode thread waits in poll()
+forever, the flush is never sent and playback hangs.
+
+Request the driver's minimum plus a few buffers for the user, capped at
+VIDEO_MAX_FRAME.
+---
+ libavcodec/v4l2_context.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/libavcodec/v4l2_context.c b/libavcodec/v4l2_context.c
+index 1f1fd6d..6e1cbb8 100644
+--- a/libavcodec/v4l2_context.c
++++ b/libavcodec/v4l2_context.c
+@@ -34,6 +34,8 @@
+ #include "v4l2_fmt.h"
+ #include "v4l2_m2m.h"
+ 
++#define V4L2_CAPTURE_EXTRA_BUFFERS 6
++
+ struct v4l2_format_update {
+     uint32_t v4l2_fmt;
+     int update_v4l2;
+@@ -768,6 +770,20 @@ int ff_v4l2_context_init(V4L2Context* ctx)
+ 
+     memset(&req, 0, sizeof(req));
+     req.count = ctx->num_buffers;
++
++    /*
++     * The driver needs V4L2_CID_MIN_BUFFERS_FOR_CAPTURE buffers queued to
++     * keep decoding; frames held by the user (e.g. a renderer queue) come
++     * on top of that, or the decoder starves.
++     */
++    if (V4L2_TYPE_IS_CAPTURE(ctx->type)) {
++        struct v4l2_control ctrl = { .id = V4L2_CID_MIN_BUFFERS_FOR_CAPTURE };
++
++        if (!ioctl(s->fd, VIDIOC_G_CTRL, &ctrl) &&
++            ctrl.value + V4L2_CAPTURE_EXTRA_BUFFERS > req.count)
++            req.count = FFMIN(ctrl.value + V4L2_CAPTURE_EXTRA_BUFFERS, VIDEO_MAX_FRAME);
++    }
++
+     req.memory = V4L2_MEMORY_MMAP;
+     req.type = ctx->type;
+     ret = ioctl(s->fd, VIDIOC_REQBUFS, &req);
+-- 
+2.56.1
+

@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Jackson.lee" <jackson.lee@chipsnmedia.com>
+Date: Tue, 17 Dec 2024 13:51:24 +0900
+Subject: [PATCH] media: chips-media: wave5: Fix a hang after seeking
+
+While seeking, the driver calls the flush command. Before the flush
+command is sent to the VPU, the driver should handle the display buffer
+flags and should get all decoded information from the VPU if the VCORE
+is running.
+
+Fixes: 9707a6254a8a ("media: chips-media: wave5: Add the v4l2 layer")
+Cc: stable@vger.kernel.org
+Signed-off-by: Jackson.lee <jackson.lee@chipsnmedia.com>
+Signed-off-by: Nas Chung <nas.chung@chipsnmedia.com>
+Reviewed-by: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Signed-off-by: Sebastian Fricke <sebastian.fricke@collabora.com>
+Signed-off-by: Hans Verkuil <hverkuil@xs4all.nl>
+(cherry picked from commit a2c75e964e51b096e9fe6adfa3eaed53594a668b)
+---
+ .../platform/chips-media/wave5/wave5-vpu-dec.c  | 17 ++++++++++++++++-
+ .../platform/chips-media/wave5/wave5-vpuapi.c   | 10 ++++++++++
+ 2 files changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c b/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c
+index 7eff54e..b1e7b47 100644
+--- a/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c
++++ b/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c
+@@ -1472,6 +1472,16 @@ static int streamoff_output(struct vb2_queue *q)
+ 	struct vb2_v4l2_buffer *buf;
+ 	int ret;
+ 	dma_addr_t new_rd_ptr;
++	struct dec_output_info dec_info;
++	unsigned int i;
++
++	for (i = 0; i < v4l2_m2m_num_dst_bufs_ready(m2m_ctx); i++) {
++		ret = wave5_vpu_dec_set_disp_flag(inst, i);
++		if (ret)
++			dev_dbg(inst->dev->dev,
++				"%s: Setting display flag of buf index: %u, fail: %d\n",
++				__func__, i, ret);
++	}
+ 
+ 	while ((buf = v4l2_m2m_src_buf_remove(m2m_ctx))) {
+ 		dev_dbg(inst->dev->dev, "%s: (Multiplanar) buf type %4u | index %4u\n",
+@@ -1479,6 +1489,11 @@ static int streamoff_output(struct vb2_queue *q)
+ 		v4l2_m2m_buf_done(buf, VB2_BUF_STATE_ERROR);
+ 	}
+ 
++	while (wave5_vpu_dec_get_output_info(inst, &dec_info) == 0) {
++		if (dec_info.index_frame_display >= 0)
++			wave5_vpu_dec_set_disp_flag(inst, dec_info.index_frame_display);
++	}
++
+ 	ret = wave5_vpu_flush_instance(inst);
+ 	if (ret)
+ 		return ret;
+@@ -1561,7 +1576,7 @@ static void wave5_vpu_dec_stop_streaming(struct vb2_queue *q)
+ 			break;
+ 
+ 		if (wave5_vpu_dec_get_output_info(inst, &dec_output_info))
+-			dev_dbg(inst->dev->dev, "Getting decoding results from fw, fail\n");
++			dev_dbg(inst->dev->dev, "there is no output info\n");
+ 	}
+ 
+ 	v4l2_m2m_update_stop_streaming_state(m2m_ctx, q);
+diff --git a/drivers/media/platform/chips-media/wave5/wave5-vpuapi.c b/drivers/media/platform/chips-media/wave5/wave5-vpuapi.c
+index 1a3efb6..65fdabc 100644
+--- a/drivers/media/platform/chips-media/wave5/wave5-vpuapi.c
++++ b/drivers/media/platform/chips-media/wave5/wave5-vpuapi.c
+@@ -73,6 +73,16 @@ int wave5_vpu_flush_instance(struct vpu_instance *inst)
+ 				 inst->type == VPU_INST_TYPE_DEC ? "DECODER" : "ENCODER", inst->id);
+ 			mutex_unlock(&inst->dev->hw_lock);
+ 			return -ETIMEDOUT;
++		} else if (ret == -EBUSY) {
++			struct dec_output_info dec_info;
++
++			mutex_unlock(&inst->dev->hw_lock);
++			wave5_vpu_dec_get_output_info(inst, &dec_info);
++			ret = mutex_lock_interruptible(&inst->dev->hw_lock);
++			if (ret)
++				return ret;
++			if (dec_info.index_frame_display > 0)
++				wave5_vpu_dec_set_disp_flag(inst, dec_info.index_frame_display);
+ 		}
+ 	} while (ret != 0);
+ 	mutex_unlock(&inst->dev->hw_lock);
+-- 
+2.56.1
+

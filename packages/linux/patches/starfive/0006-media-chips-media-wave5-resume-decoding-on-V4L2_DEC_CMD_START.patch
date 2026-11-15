@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Sun, 15 Nov 2026 19:46:54 +0100
+Subject: [PATCH] media: chips-media: wave5: resume decoding on
+ V4L2_DEC_CMD_START
+
+A finished drain switches the instance to STOP, and only a STREAMOFF/
+STREAMON of the CAPTURE queue moves it back to INIT_SEQ. The stateful
+decoder interface also allows V4L2_DEC_CMD_START to resume decoding
+after a drain, which is what FFmpeg's v4l2m2m decoder sends after a
+flush. In STOP, job_ready() never schedules a job, so playback hangs
+when Kodi seeks after the demuxer hit the end of the file and drained
+the decoder.
+
+Switch to INIT_SEQ on V4L2_DEC_CMD_START when the instance is stopped
+and the CAPTURE queue is streaming, like the CAPTURE restart does, and
+try to schedule a job.
+---
+ drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c b/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c
+index b1e7b47..55f65cb 100644
+--- a/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c
++++ b/drivers/media/platform/chips-media/wave5/wave5-vpu-dec.c
+@@ -932,6 +932,13 @@ static int wave5_vpu_dec_start(struct vpu_instance *inst)
+ 	vb2_clear_last_buffer_dequeued(dst_vq);
+ 	inst->eos = false;
+ 
++	/*
++	 * A finished drain leaves the instance in STOP. Resume decoding like a
++	 * STREAMOFF/STREAMON of the CAPTURE queue does.
++	 */
++	if (inst->state == VPU_INST_STATE_STOP && vb2_is_streaming(dst_vq))
++		ret = switch_state(inst, VPU_INST_STATE_INIT_SEQ);
++
+ unlock_and_return:
+ 	spin_unlock_irqrestore(&inst->state_spinlock, flags);
+ 	return ret;
+@@ -957,6 +964,8 @@ static int wave5_vpu_dec_decoder_cmd(struct file *file, void *fh, struct v4l2_de
+ 		break;
+ 	case V4L2_DEC_CMD_START:
+ 		ret = wave5_vpu_dec_start(inst);
++		if (!ret)
++			v4l2_m2m_try_schedule(m2m_ctx);
+ 		break;
+ 	default:
+ 		ret = -EINVAL;
+-- 
+2.56.1
+

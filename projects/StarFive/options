@@ -55,7 +55,9 @@
     WINDOWMANAGER="no"
 
   # Graphic drivers to use
-    GRAPHIC_DRIVERS=""
+  # pvr: closed Imagination DDK + StarFive Mesa (projects/StarFive/packages),
+  # enables V4L2 (Wave511 decoder through FFmpeg v4l2m2m / DRM PRIME)
+    GRAPHIC_DRIVERS="pvr"
 
   # KODI Player implementation to use (default / mesa)
     KODIPLAYER_DRIVER="$OPENGLES"
@@ -70,7 +72,7 @@
     INSTALLER_SUPPORT="no"
 
   # additional packages to install
-    ADDITIONAL_PACKAGES+=" dtc img-gpu-powervr"
+    ADDITIONAL_PACKAGES+=" dtc img-gpu-powervr wave511-firmware"
 
   # PulseAudio crashes on RISC-V (seen on the SpacemiT K1 port), use ALSA only
     PULSEAUDIO_SUPPORT="no"

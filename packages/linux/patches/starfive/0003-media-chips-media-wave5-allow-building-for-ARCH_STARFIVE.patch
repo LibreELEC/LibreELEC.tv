@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: LibreELEC
+Date: Sun, 15 Nov 2026 15:00:00 +0100
+Subject: [PATCH] media: chips-media: wave5: allow building for ARCH_STARFIVE
+
+The StarFive vendor tree adds the JH7110 Wave511 decoder ("starfive,vdec")
+to the wave5 driver and enables it in starfive_visionfive2_defconfig, but
+the Kconfig dependency still only allows ARCH_K3 (or COMPILE_TEST), so the
+driver is dropped from the config.
+---
+--- a/drivers/media/platform/chips-media/wave5/Kconfig
++++ b/drivers/media/platform/chips-media/wave5/Kconfig
+@@ -3,7 +3,7 @@
+ 	tristate "Chips&Media Wave Codec Driver"
+ 	depends on V4L_MEM2MEM_DRIVERS
+ 	depends on VIDEO_DEV && OF
+-	depends on ARCH_K3 || COMPILE_TEST
++	depends on ARCH_K3 || ARCH_STARFIVE || COMPILE_TEST
+ 	select VIDEOBUF2_DMA_CONTIG
+ 	select VIDEOBUF2_VMALLOC
+ 	select V4L2_MEM2MEM_DEV
