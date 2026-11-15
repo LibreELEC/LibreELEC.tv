@@ -52,7 +52,9 @@ dd if=/dev/zero of="${DISK}" bs=1M count=0 seek="${DISK_SIZE}" conv=fsync >"${SA
 if [ "${BOOTLOADER}" = "syslinux" ]; then
   DISK_LABEL=gpt
 else
-  DISK_LABEL=msdos
+  # a project can ask for gpt, e.g. when its boot ROM looks up the loader by
+  # GPT partition type
+  DISK_LABEL="${DISK_PARTITION_TABLE:-msdos}"
 fi
 
 # write a disklabel
