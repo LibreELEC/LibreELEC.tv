@@ -20,6 +20,11 @@ PKG_CONFIGURE_OPTS_TARGET="--disable-gss \
 pre_configure_target() {
   cd ${PKG_BUILD}
   rm -rf .${TARGET_NAME}
+
+  # libreadline.so is not linked against (the static) ncurses; nfsdctl must
+  # resolve the termcap symbols itself. ld.gold does not check undefined
+  # symbols of shared libraries, ld.bfd (riscv64) does.
+  export LIBS="${LIBS} -lncursesw"
 }
 
 post_configure_target() {
