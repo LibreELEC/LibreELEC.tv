@@ -248,6 +248,9 @@ make_target() {
         aarch64)
           PERF_BUILD_ARGS="ARCH=arm64"
           ;;
+        riscv64)
+          PERF_BUILD_ARGS="ARCH=riscv"
+          ;;
         *)
           PERF_BUILD_ARGS="ARCH=${TARGET_ARCH}"
           ;;
