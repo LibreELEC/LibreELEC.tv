@@ -14,8 +14,12 @@ PKG_LONGDESC="firmware-imx: Freescale IMX firmware such as for the VPU"
 PKG_TOOLCHAIN="manual"
 
 unpack() {
-  cd $(dirname ${PKG_BUILD})
-  sh ${SOURCES}/${PKG_NAME}/${PKG_NAME}-${PKG_VERSION}.bin --auto-accept
+  # Subshell: do not leave cwd off ${ROOT}. calculate_stamp runs sha256sum on
+  # paths relative to ROOT (e.g. packages/linux-firmware/firmware-imx/package.mk).
+  (
+    cd "$(dirname "${PKG_BUILD}")"
+    sh "${SOURCES}/${PKG_NAME}/${PKG_NAME}-${PKG_VERSION}.bin" --auto-accept
+  )
 }
 
 makeinstall_target() {
@@ -28,9 +32,16 @@ makeinstall_target() {
       cp -P firmware/vpu/vpu_fw_imx6d.bin ${INSTALL}/$(get_full_firmware_dir)/vpu
       cp -P firmware/vpu/vpu_fw_imx6q.bin ${INSTALL}/$(get_full_firmware_dir)/vpu
       ;;
-    "iMX8")
+    "iMX8"|"VAR-DART-IMX8MP")
       cp -P firmware/sdma/sdma-imx7d.bin ${INSTALL}/$(get_full_firmware_dir)/imx/sdma
       cp -P firmware/vpu/vpu_fw_imx8_dec.bin ${INSTALL}/$(get_full_firmware_dir)/vpu
+      if [ "${DEVICE}" = "VAR-DART-IMX8MP" ]; then
+        FWDIR="${INSTALL}/$(get_full_firmware_dir)"
+        cp -P firmware/vpu/vpu_fw_imx8_enc.bin ${FWDIR}/vpu
+        mkdir -p ${FWDIR}/imx/xcvr ${FWDIR}/imx/easrc
+        cp -P firmware/xcvr/xcvr-imx8mp.bin ${FWDIR}/imx/xcvr
+        cp -P firmware/easrc/easrc-imx8mn.bin ${FWDIR}/imx/easrc
+      fi
       ;;
   esac
 }
