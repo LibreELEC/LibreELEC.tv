@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: LibreELEC K1 port
+Date: Mon, 18 Aug 2026 13:00:00 +0800
+Subject: [PATCH] disable -Werror for gcc 16 compatibility
+
+---
+ nss/coreconf/Werror.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/nss/coreconf/Werror.mk b/nss/coreconf/Werror.mk
+--- a/nss/coreconf/Werror.mk
++++ b/nss/coreconf/Werror.mk
+@@ -95,7 +95,7 @@ ifndef WARNING_CFLAGS
+     endif #ndef NSS_ENABLE_WERROR
+ 
+     ifeq ($(NSS_ENABLE_WERROR),1)
+-      WARNING_CFLAGS += -Werror
++      # WARNING_CFLAGS += -Werror
+     else
+       # Old versions of gcc (< 4.8) don't support #pragma diagnostic in functions.
+       # Use this to disable use of that #pragma and the warnings it suppresses.
+-- 
+2.43.0
