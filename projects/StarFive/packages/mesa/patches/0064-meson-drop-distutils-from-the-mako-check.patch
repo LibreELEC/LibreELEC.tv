@@ -1,0 +1,19 @@
+From: LibreELEC
+Subject: [PATCH] meson: drop distutils from the mako check
+
+distutils is gone since Python 3.12; any mako that imports is new enough.
+---
+diff --git a/meson.build b/meson.build
+index 63d487a..6865408 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1038,9 +1038,7 @@ prog_python = import('python').find_installation('python3')
+ has_mako = run_command(
+   prog_python, '-c',
+   '''
+-from distutils.version import StrictVersion
+ import mako
+-assert StrictVersion(mako.__version__) > StrictVersion("0.8.0")
+   ''', check: false)
+ if has_mako.returncode() != 0
+   error('Python (3.x) mako module >= 0.8.0 required to build mesa.')
