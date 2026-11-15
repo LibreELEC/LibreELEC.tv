@@ -5,7 +5,7 @@
 PKG_NAME="u-boot"
 PKG_VERSION="2026.10"
 PKG_SHA256="3f856da3cbbc93af51ff95fde18588a348b4a26723b01d9841e999d988481015"
-PKG_ARCH="arm aarch64"
+PKG_ARCH="arm aarch64 riscv64"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://u-boot-project.org"
 PKG_URL="https://git.u-boot-project.org/u-boot/u-boot/-/archive/v${PKG_VERSION}/u-boot-v${PKG_VERSION}.tar.bz2"
