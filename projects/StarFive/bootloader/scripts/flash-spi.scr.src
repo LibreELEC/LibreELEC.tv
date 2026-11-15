@@ -1,0 +1,27 @@
+# Write the LibreELEC U-Boot (SPL and the OpenSBI + U-Boot FIT image) from
+# /spi on the system partition to the SPI flash. Never run automatically:
+# start it by hand from the U-Boot prompt (see projects/StarFive/README.md).
+#
+# SPI flash layout: SPL at 0x0, environment at 0xf0000, FIT at 0x100000.
+
+setenv le_spi_dev
+for le_dev in 0 1; do
+  if test -z "${le_spi_dev}" && test -e mmc ${le_dev}:1 /spi/u-boot.itb; then
+    setenv le_spi_dev ${le_dev}
+  fi
+done
+
+# read both files before writing anything, so a bad card does not leave a
+# half-written flash behind
+if test -z "${le_spi_dev}"; then
+  echo "flash-spi: /spi/u-boot.itb not found on mmc 0:1 or mmc 1:1"
+elif load mmc ${le_spi_dev}:1 ${kernel_addr_r} /spi/u-boot-spl.bin.normal.out && setenv le_spl_size ${filesize} && load mmc ${le_spi_dev}:1 ${ramdisk_addr_r} /spi/u-boot.itb && setenv le_itb_size ${filesize} && sf probe; then
+  echo "flash-spi: writing SPL and U-Boot, do not power off the board"
+  if sf update ${kernel_addr_r} 0 ${le_spl_size} && sf update ${ramdisk_addr_r} 0x100000 ${le_itb_size}; then
+    echo "flash-spi: done, power cycle the board"
+  else
+    echo "flash-spi: writing the SPI flash FAILED, recover it over UART before powering off"
+  fi
+else
+  echo "flash-spi: reading the files or probing the SPI flash failed, nothing written"
+fi

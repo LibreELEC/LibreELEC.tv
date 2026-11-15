@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
+
+# binman packs OpenSBI and U-Boot into u-boot.itb
+cp -av $(get_install_dir opensbi)/usr/share/bootloader/fw_dynamic.bin .
+export OPENSBI="$(pwd)/fw_dynamic.bin"

@@ -1,22 +1,101 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
-# The board boots with the U-Boot in its SPI flash. Its distro boot finds
-# extlinux/extlinux.conf on the bootable FAT partition and loads the device
-# tree ${fdtfile} (e.g. starfive/jh7110-starfive-visionfive-2-v1.3b.dtb, set
-# from the board EEPROM) relative to FDTDIR, so one image serves every board
-# revision.
+# JH7110 SD boot (boot switches RGPIO1:0 = 0:1): the boot ROM reads the GPT and
+# loads the SPL from the partition with type GUID 2E54B353-...; the SPL loads
+# u-boot.itb (OpenSBI + U-Boot) from GPT partition 4 (see bootloader/config).
+# The StarFive vendor U-Boot in SPI flash only looks at GPT partition 3, so
+# that is a small FAT partition with boot.scr. Partitions 1 (system) and
+# 2 (storage) stay as LibreELEC expects them; the other partitions sit in
+# front of them on the disk:
+#
+#   GPT 5  spl     2 MiB .. 4 MiB   u-boot-spl.bin.normal.out
+#   GPT 4  uboot   4 MiB .. 8 MiB   u-boot.itb
+#   GPT 3  boot    8 MiB .. 16 MiB  FAT "BOOT": boot.scr, vf2_uEnv.txt (vendor U-Boot)
+#   GPT 1  system  SYSTEM_PART_START (FAT, KERNEL, SYSTEM, extlinux, dtbs)
+#   GPT 2  storage
+#
+# The VisionFive 2 Lite has no SD boot mode, its boot ROM always starts the
+# U-Boot in SPI flash. /spi on the system partition holds that U-Boot and
+# flash-spi.scr to write it to the flash by hand (see README.md).
 
+GUID_SPL="2E54B353-1271-4842-806F-E436D6AF6985"
+GUID_UBOOT="BC13C2FF-59E6-4262-A352-B275FD6F7172"
+BOOT_PART_START=16384
+BOOT_PART_END=32767
+
+if [ "${SYSTEM_PART_START}" -le "${BOOT_PART_END}" ]; then
+  echo "image: SYSTEM_PART_START must be at least $((BOOT_PART_END + 1)) for the loader partitions"
+  exit 1
+fi
+
+for f in boot.scr vf2_uEnv.txt flash-spi.scr; do
+  if [ ! -f "${RELEASE_DIR}/3rdparty/bootloader/${f}" ]; then
+    echo "image: bootloader ${f} does not exist."
+    exit 1
+  fi
+done
+
+echo "image: creating boot partition..."
+parted -s "${DISK}" -a min unit s mkpart boot fat32 ${BOOT_PART_START} ${BOOT_PART_END} >"${SAVE_ERROR}" 2>&1 || show_error
+dd if=/dev/zero of="${IMG_TMP}/part3.fat" bs=512 count=0 seek="$((BOOT_PART_END - BOOT_PART_START + 1))" conv=fsync >"${SAVE_ERROR}" 2>&1 || show_error
+# "BOOT" keeps udevil from mounting it as a removable disk
+command mformat -i "${IMG_TMP}/part3.fat" -v BOOT :: >"${SAVE_ERROR}" 2>&1 || show_error
+for f in boot.scr vf2_uEnv.txt; do
+  command mcopy -i "${IMG_TMP}/part3.fat" "${RELEASE_DIR}/3rdparty/bootloader/${f}" :: >"${SAVE_ERROR}" 2>&1 || show_error
+done
+fsck.fat -n "${IMG_TMP}/part3.fat" >"${SAVE_ERROR}" 2>&1 || show_error
+dd if="${IMG_TMP}/part3.fat" of="${DISK}" bs=512 seek="${BOOT_PART_START}" conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+
+if [ -n "${UBOOT_SYSTEM}" ]; then
+  for f in u-boot-spl.bin.normal.out u-boot.itb; do
+    if [ ! -f "${RELEASE_DIR}/3rdparty/bootloader/${f}" ]; then
+      echo "image: bootloader ${f} does not exist."
+      exit 1
+    fi
+  done
+
+  echo "image: creating loader partitions..."
+  parted -s "${DISK}" -a min unit s mkpart uboot 8192 16383 >"${SAVE_ERROR}" 2>&1 || show_error
+  parted -s "${DISK}" type 4 ${GUID_UBOOT} >"${SAVE_ERROR}" 2>&1 || show_error
+  parted -s "${DISK}" -a min unit s mkpart spl 4096 8191 >"${SAVE_ERROR}" 2>&1 || show_error
+  parted -s "${DISK}" type 5 ${GUID_SPL} >"${SAVE_ERROR}" 2>&1 || show_error
+
+  echo "image: burn bootloader to image..."
+  dd if="${RELEASE_DIR}/3rdparty/bootloader/u-boot-spl.bin.normal.out" of="${DISK}" bs=512 seek=4096 conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+  dd if="${RELEASE_DIR}/3rdparty/bootloader/u-boot.itb" of="${DISK}" bs=512 seek=8192 conv=fsync,notrunc >"${SAVE_ERROR}" 2>&1 || show_error
+
+  echo "image: copying SPI flash bootloader..."
+  mmd spi >"${SAVE_ERROR}" 2>&1 || show_error
+  for f in u-boot-spl.bin.normal.out u-boot.itb flash-spi.scr; do
+    mcopy "${RELEASE_DIR}/3rdparty/bootloader/${f}" ::/spi >"${SAVE_ERROR}" 2>&1 || show_error
+  done
+fi
+
+# U-Boot (from SD or from SPI flash) finds extlinux/extlinux.conf on the
+# legacy_boot partition and loads ${fdtfile} (set from the board EEPROM, e.g.
+# starfive/jh7110-starfive-visionfive-2-v1.3b.dtb) relative to FDTDIR, so one
+# image serves every board revision.
 echo "image: copying device tree blobs..."
 mmd starfive >"${SAVE_ERROR}" 2>&1 || show_error
 mcopy "${RELEASE_DIR}/3rdparty/bootloader/starfive/"*.dtb ::/starfive >"${SAVE_ERROR}" 2>&1 || show_error
 
+CMDLINE="boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}"
+
 echo "image: copying extlinux.conf..."
 mkdir -p "${IMG_TMP}/extlinux"
-cat <<EOF2 >"${IMG_TMP}/extlinux/extlinux.conf"
+cat <<EOF >"${IMG_TMP}/extlinux/extlinux.conf"
 LABEL ${DISTRO}
   LINUX /${KERNEL_NAME}
   FDTDIR /
-  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}
-EOF2
+  APPEND ${CMDLINE}
+EOF
 mcopy -s "${IMG_TMP}/extlinux" :: >"${SAVE_ERROR}" 2>&1 || show_error
+
+# read by boot.scr (vendor U-Boot)
+echo "image: creating uEnv.ini..."
+cat <<EOF >"${IMG_TMP}/uEnv.ini"
+le_kernel=/${KERNEL_NAME}
+bootargs=${CMDLINE}
+EOF
+mcopy "${IMG_TMP}/uEnv.ini" :: >"${SAVE_ERROR}" 2>&1 || show_error

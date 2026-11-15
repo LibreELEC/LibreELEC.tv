@@ -5,4 +5,23 @@ SRCDIR="${BUILD}"/image/system/usr/share/bootloader
 DSTDIR="${RELEASE_DIR}"/3rdparty/bootloader
 
 mkdir -p "${DSTDIR}"/starfive
+cp -av "${SRCDIR}"/boot.scr "${SRCDIR}"/vf2_uEnv.txt "${SRCDIR}"/flash-spi.scr "${DSTDIR}"
+if [ -n "${UBOOT_SYSTEM}" ]; then
+  for f in u-boot-spl.bin.normal.out u-boot.itb; do
+    if [ -f "${SRCDIR}/${f}" ]; then
+      cp -av "${SRCDIR}/${f}" "${DSTDIR}"
+    else
+      echo "release: bootloader ${SRCDIR}/${f} does not exist."
+      exit 1
+    fi
+  done
+fi
 cp -av "${SRCDIR}"/jh7110*.dtb "${DSTDIR}"/starfive
+
+# mainline U-Boot sets fdtfile to the mainline name, the vendor kernel names
+# the JH7110S boards (VisionFive 2 Lite) jh7110s-*
+for dtb in starfive-visionfive-2-lite starfive-visionfive-2-lite-emmc; do
+  if [ -f "${DSTDIR}/starfive/jh7110s-${dtb}.dtb" ]; then
+    cp -av "${DSTDIR}/starfive/jh7110s-${dtb}.dtb" "${DSTDIR}/starfive/jh7110-${dtb}.dtb"
+  fi
+done

@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
+
+# SPL with the StarFive header (loaded by the boot ROM) and the
+# OpenSBI + U-Boot FIT image (loaded by the SPL)
+cp -av spl/u-boot-spl.bin.normal.out ${INSTALL}/usr/share/bootloader
+cp -av u-boot.itb ${INSTALL}/usr/share/bootloader

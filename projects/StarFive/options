@@ -3,8 +3,18 @@
 ################################################################################
 
   # Bootloader to use (syslinux / u-boot / bcm2835-bootloader)
-  # The board boots with the U-Boot in its SPI flash (distro boot, extlinux).
+  # Mainline U-Boot + OpenSBI on the SD card (boot switches on SD); with the
+  # switches on QSPI the U-Boot in SPI flash boots the same image (extlinux,
+  # or boot.scr for the vendor U-Boot). u-boot-script compiles the scripts in
+  # bootloader/scripts.
     BOOTLOADER="u-boot"
+    UBOOT_FIRMWARE="opensbi u-boot-script"
+
+  # The boot ROM finds the SPL by GPT partition type, see bootloader/mkimage.
+  # The system partition starts after the loader and boot partitions
+  # (2 MiB .. 16 MiB).
+    DISK_PARTITION_TABLE="gpt"
+    SYSTEM_PART_START=32768
 
   # Kernel extra targets to build
     KERNEL_MAKE_EXTRACMD="dtbs"

@@ -11,6 +11,11 @@
   # starfive: StarFive JH7110 vendor kernel 6.12 (JH7110_VisionFive2_6.12.y_devel)
     LINUX="${LINUX:-starfive}"
 
+  # One U-Boot serves all JH7110 boards (it picks the dtb from the EEPROM).
+  # Building it as part of the system puts the SPL and u-boot.itb into
+  # SYSTEM, so updates refresh the loaders and /spi.
+    UBOOT_SYSTEM="${UBOOT_SYSTEM:-visionfive2}"
+
   # glibc must run on the vendor 6.12 kernel
     GLIBC_ENABLE_KERNEL="6.12.0"
 

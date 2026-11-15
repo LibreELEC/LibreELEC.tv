@@ -1,0 +1,40 @@
+# LibreELEC boot script on GPT partition 3 ("BOOT")
+#
+# The StarFive vendor U-Boot in SPI flash only looks at partition 3. Every
+# SDK release loads vf2_uEnv.txt from there and runs its boot2, which sources
+# this script; the 6.12 SDK also finds boot.scr directly. Its fdtfile does
+# not match our dtb names on all releases. Pick the dtb, apply the same
+# fixups as the SDK (real memory size, CMA, chip revision A ethernet, CPU
+# voltage) and boot from the system partition. Any other U-Boot, or a
+# failure, falls back to extlinux.conf on the system partition.
+
+# chip_vision is only set by the vendor U-Boot
+if test -n "${chip_vision}"; then
+  if test "${vf2_board_type}" = 2; then
+    if test "${emmc_size}" = 0; then
+      setenv le_fdtfile starfive/jh7110-starfive-visionfive-2-lite.dtb
+    else
+      setenv le_fdtfile starfive/jh7110-starfive-visionfive-2-lite-emmc.dtb
+    fi
+  elif test -e ${devtype} ${devnum}:1 /starfive/${fdtfile}; then
+    setenv le_fdtfile starfive/${fdtfile}
+  elif test -e ${devtype} ${devnum}:1 /${fdtfile}; then
+    setenv le_fdtfile ${fdtfile}
+  else
+    echo "boot.scr: ${fdtfile} not found, using the VisionFive 2 v1.3b dtb"
+    setenv le_fdtfile starfive/jh7110-starfive-visionfive-2-v1.3b.dtb
+  fi
+
+  # bootargs and le_kernel, written by the image build
+  if load ${devtype} ${devnum}:1 ${kernel_addr_r} /uEnv.ini && env import -t ${kernel_addr_r} ${filesize}; then
+    if load ${devtype} ${devnum}:1 ${kernel_addr_r} ${le_kernel} && load ${devtype} ${devnum}:1 ${fdt_addr_r} /${le_fdtfile}; then
+      fdt addr ${fdt_addr_r}
+      fdt resize
+      run chipa_set_linux
+      run cpu_vol_set
+      booti ${kernel_addr_r} - ${fdt_addr_r}
+    fi
+  fi
+fi
+
+sysboot ${devtype} ${devnum}:1 any ${pxefile_addr_r} /extlinux/extlinux.conf

@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Sun, 15 Nov 2026 23:38:30 +0100
+Subject: [PATCH] pcie: starfive: enable the vpcie3v3-supply regulator
+
+The VisionFive 2 Lite only powers its M.2 M-Key slot when GPIO 27 is
+driven high. The driver handles that as an optional enable-gpios, but
+the upstream devicetree describes it as a fixed regulator in
+vpcie3v3-supply, so U-Boot never powers the slot and finds no NVMe
+drive. Also enable vpcie3v3-supply when it is present.
+---
+ drivers/pci/pcie_starfive_jh7110.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/pci/pcie_starfive_jh7110.c b/drivers/pci/pcie_starfive_jh7110.c
+index 88a2bf8..3f162e5 100644
+--- a/drivers/pci/pcie_starfive_jh7110.c
++++ b/drivers/pci/pcie_starfive_jh7110.c
+@@ -19,6 +19,7 @@
+ #include <asm-generic/gpio.h>
+ #include <dm/device_compat.h>
+ #include <dm/pinctrl.h>
++#include <power/regulator.h>
+ #include <linux/delay.h>
+ #include <linux/iopoll.h>
+ #include "pcie_plda_common.h"
+@@ -43,6 +44,7 @@ struct starfive_pcie {
+ 	struct clk_bulk	clks;
+ 	struct reset_ctl_bulk	rsts;
+ 	struct gpio_desc	power_gpio;
++	struct udevice		*vpcie3v3;
+ 	struct gpio_desc	reset_gpio;
+ 	struct regmap *regmap;
+ 	unsigned int stg_pcie_base;
+@@ -186,6 +188,11 @@ static int starfive_pcie_parse_dt(struct udevice *dev)
+ 	gpio_request_by_name(dev, "enable-gpios", 0, &priv->power_gpio,
+ 			     GPIOD_IS_OUT);
+ 
++	/* the upstream devicetree describes the slot power as a regulator */
++	if (CONFIG_IS_ENABLED(DM_REGULATOR))
++		device_get_supply_regulator(dev, "vpcie3v3-supply",
++					    &priv->vpcie3v3);
++
+ 	return 0;
+ }
+ 
+@@ -210,6 +217,12 @@ static int starfive_pcie_init_port(struct udevice *dev)
+ 	if (dm_gpio_is_valid(&priv->power_gpio))
+ 		dm_gpio_set_value(&priv->power_gpio, 1);
+ 
++	if (priv->vpcie3v3) {
++		ret = regulator_set_enable_if_allowed(priv->vpcie3v3, true);
++		if (ret)
++			dev_warn(dev, "Failed to enable vpcie3v3 (ret=%d)\n", ret);
++	}
++
+ 	dm_gpio_set_value(&priv->reset_gpio, 1);
+ 	/* Disable physical functions except #0 */
+ 	for (i = 1; i < PLDA_FUNC_NUM; i++) {
+-- 
+2.56.1
+

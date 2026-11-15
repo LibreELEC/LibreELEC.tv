@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Sun, 15 Nov 2026 22:15:45 +0100
+Subject: [PATCH] riscv: dts: starfive: visionfive2: SPL hints for the mmc pins
+
+U-Boot v2025.10 dropped the bootph-pre-ram hints for the mmc0/mmc1 pin
+groups together with the support for the deprecated SD card and eMMC boot
+modes. In SD card boot mode the boot ROM still starts the SPL from the
+card, but the SPL then fails with "spl: partition error" because it cannot
+read the card. Add the hints back for the VisionFive 2 boards.
+---
+ .../dts/starfive-visionfive2-u-boot.dtsi      | 25 +++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/arch/riscv/dts/starfive-visionfive2-u-boot.dtsi b/arch/riscv/dts/starfive-visionfive2-u-boot.dtsi
+index 4c86d28..f3d7272 100644
+--- a/arch/riscv/dts/starfive-visionfive2-u-boot.dtsi
++++ b/arch/riscv/dts/starfive-visionfive2-u-boot.dtsi
+@@ -15,4 +15,29 @@
+ 	assigned-clock-rates = <0>; /* FIXME: delete property and implement cpufreq */
+ };
+ 
++/*
++ * SD card and eMMC boot modes (RGPIO1:0 = 0:1 / 1:0): the boot ROM loads the
++ * SPL from the card, and the SPL needs the mmc pins to load u-boot.itb from
++ * it. Upstream dropped these hints when it deprecated those boot modes.
++ */
++&mmc0_pins {
++	bootph-pre-ram;
++
++	mmc-pins {
++		bootph-pre-ram;
++	};
++};
++
++&mmc1_pins {
++	bootph-pre-ram;
++
++	clk-pins {
++		bootph-pre-ram;
++	};
++
++	mmc-pins {
++		bootph-pre-ram;
++	};
++};
++
+ #include "starfive-visionfive2-binman.dtsi"
+-- 
+2.56.1
+

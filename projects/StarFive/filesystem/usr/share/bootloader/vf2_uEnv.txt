@@ -1,0 +1,1 @@
+boot2=if test -z "${bootdev}"; then setenv bootdev mmc; fi; setenv devtype ${bootdev}; load ${bootdev} ${devnum}:3 ${scriptaddr} /boot.scr && source ${scriptaddr}
