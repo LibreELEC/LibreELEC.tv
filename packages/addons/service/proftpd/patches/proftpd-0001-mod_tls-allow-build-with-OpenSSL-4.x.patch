@@ -1,0 +1,198 @@
+From 4c92e9b9bd4612b6268beba36b4009b94e702ada Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sat, 21 Mar 2026 07:26:07 +0000
+Subject: [PATCH] mod_tls: allow build with OpenSSL 4.x
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+ASN1_STRING are now opaque types — the internal data and length fields are
+no longer directly accessible. Use the accessor API instead. Accessors
+have been available since OpenSSL 1.1.0
+
+Signatures of numerous API functions, including those that are related
+to X509 processing, are changed to include const qualifiers for argument
+and return types, where suitable. Add const qualifer to variables.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ contrib/mod_tls.c | 46 +++++++++++++++++++++++-----------------------
+ 1 file changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/contrib/mod_tls.c b/contrib/mod_tls.c
+index 435240025..cacf795e2 100644
+--- a/contrib/mod_tls.c
++++ b/contrib/mod_tls.c
+@@ -799,7 +799,7 @@ static void tls_setup_notes(pool *p, SSL *ssl);
+ static int tls_verify_cb(int, X509_STORE_CTX *);
+ static int tls_verify_crl(int, X509_STORE_CTX *);
+ static int tls_verify_ocsp(int, X509_STORE_CTX *);
+-static char *tls_x509_name_oneline(X509_NAME *);
++static char *tls_x509_name_oneline(const X509_NAME *);
+ 
+ static int tls_readmore(int);
+ static int tls_writemore(int);
+@@ -2759,9 +2759,9 @@ static int tls_cert_match_ip_san(pool *p, X509 *cert, const char *ipstr) {
+ 
+ static char *tls_get_cert_cn(pool *p, X509 *cert) {
+   int idx = -1;
+-  X509_NAME *subj_name = NULL;
+-  X509_NAME_ENTRY *cn_entry = NULL;
+-  ASN1_STRING *cn_asn1 = NULL;
++  const X509_NAME *subj_name = NULL;
++  const X509_NAME_ENTRY *cn_entry = NULL;
++  const ASN1_STRING *cn_asn1 = NULL;
+   char *cn_str = NULL;
+   size_t cn_len = 0;
+ 
+@@ -6185,7 +6185,7 @@ static int ocsp_add_cached_response(pool *p, const char *fingerprint,
+   return res;
+ }
+ 
+-static int tls_feature_cmp(ASN1_STRING *str, void *feat_data,
++static int tls_feature_cmp(const ASN1_STRING *str, void *feat_data,
+     size_t feat_datasz) {
+   int is_feat = FALSE, res;
+   ASN1_STRING *feat;
+@@ -6229,8 +6229,8 @@ static int tls_cert_must_staple(X509 *cert, int *v2) {
+ 
+   for (i = 0; i < ext_count; i++) {
+     char buf[1024];
+-    X509_EXTENSION *ext;
+-    ASN1_OBJECT *obj;
++    const X509_EXTENSION *ext;
++    const ASN1_OBJECT *obj;
+ 
+ #if (OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(HAVE_LIBRESSL)) || \
+     (defined(HAVE_LIBRESSL) && LIBRESSL_VERSION_NUMBER >= 0x3050000L)
+@@ -6246,7 +6246,7 @@ static int tls_cert_must_staple(X509 *cert, int *v2) {
+     /* Double-check that the OID is that of the "TLS Feature" extension. */
+     if (strcmp(buf, TLS_X509V3_TLS_FEAT_OID_TEXT) == 0) {
+       char status_request[] = TLS_X509V3_TLS_FEAT_STATUS_REQUEST;
+-      ASN1_OCTET_STRING *value;
++      const ASN1_OCTET_STRING *value;
+ 
+ #if (OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(HAVE_LIBRESSL)) || \
+     (defined(HAVE_LIBRESSL) && LIBRESSL_VERSION_NUMBER >= 0x3050000L)
+@@ -9443,14 +9443,14 @@ static int tls_cert_to_user(const char *user_name, const char *field_name) {
+   }
+ 
+   if (strcmp(field_name, "CommonName") == 0) {
+-    X509_NAME *name;
++    const X509_NAME *name;
+     int pos = -1;
+ 
+     name = X509_get_subject_name(client_cert);
+ 
+     while (TRUE) {
+-      X509_NAME_ENTRY *entry;
+-      ASN1_STRING *data;
++      const X509_NAME_ENTRY *entry;
++      const ASN1_STRING *data;
+       int data_len;
+       const unsigned char *data_str = NULL;
+ 
+@@ -9561,8 +9561,8 @@ static int tls_cert_to_user(const char *user_name, const char *field_name) {
+       register int i;
+ 
+       for (i = 0; i < nexts; i++) {
+-        X509_EXTENSION *ext = NULL;
+-        ASN1_OBJECT *asn_object = NULL;
++        const X509_EXTENSION *ext = NULL;
++        const ASN1_OBJECT *asn_object = NULL;
+         char oid[PR_TUNABLE_PATH_MAX];
+ 
+         pr_signals_handle();
+@@ -9574,7 +9574,7 @@ static int tls_cert_to_user(const char *user_name, const char *field_name) {
+         memset(oid, '\0', sizeof(oid));
+         if (OBJ_obj2txt(oid, sizeof(oid)-1, asn_object, 1) > 0) {
+           if (strcmp(oid, field_name) == 0) {
+-            ASN1_OCTET_STRING *asn_data = NULL;
++            const ASN1_OCTET_STRING *asn_data = NULL;
+             const unsigned char *asn_datastr = NULL;
+             int asn_datalen;
+ 
+@@ -9871,7 +9871,7 @@ static void tls_setup_cert_ext_environ(const char *env_prefix, X509 *cert) {
+  *   email                   Email         NID_pkcs9_emailAddress
+  */
+ 
+-static void tls_setup_cert_dn_environ(const char *env_prefix, X509_NAME *name) {
++static void tls_setup_cert_dn_environ(const char *env_prefix, const X509_NAME *name) {
+   register int i;
+   int nentries;
+   char *k, *v;
+@@ -9883,7 +9883,7 @@ static void tls_setup_cert_dn_environ(const char *env_prefix, X509_NAME *name) {
+ #endif /* OpenSSL-1.1.x and later */
+ 
+   for (i = 0; i < nentries; i++) {
+-    X509_NAME_ENTRY *entry;
++    const X509_NAME_ENTRY *entry;
+     const unsigned char *entry_data;
+     int nid, entry_len;
+ 
+@@ -10000,7 +10000,7 @@ static void tls_setup_cert_environ(pool *p, const char *env_prefix,
+     char buf[80] = {'\0'};
+     ASN1_INTEGER *serial = X509_get_serialNumber(cert);
+     const X509_ALGOR *algo = NULL;
+-    X509_PUBKEY *pubkey = NULL;
++    const X509_PUBKEY *pubkey = NULL;
+ 
+     memset(buf, '\0', sizeof(buf));
+     pr_snprintf(buf, sizeof(buf) - 1, "%lu", X509_get_version(cert) + 1);
+@@ -10010,7 +10010,7 @@ static void tls_setup_cert_environ(pool *p, const char *env_prefix,
+     v = pstrdup(p, buf);
+     pr_env_set(p, k, v);
+ 
+-    if (serial->length < 4) {
++    if (ASN1_STRING_length(serial) < 4) {
+       memset(buf, '\0', sizeof(buf));
+       pr_snprintf(buf, sizeof(buf) - 1, "%lu", ASN1_INTEGER_get(serial));
+       buf[sizeof(buf)-1] = '\0';
+@@ -10290,7 +10290,7 @@ static void tls_setup_notes(pool *p, SSL *ssl) {
+   client_cert = SSL_get_peer_certificate(ssl);
+   if (client_cert != NULL) {
+     const X509_ALGOR *algo = NULL;
+-    X509_PUBKEY *pubkey = NULL;
++    const X509_PUBKEY *pubkey = NULL;
+     BIO *bio = NULL;
+     char *data = NULL;
+     long datalen = 0;
+@@ -10446,7 +10446,7 @@ static int tls_verify_cb(int ok, X509_STORE_CTX *ctx) {
+ 
+ static int tls_verify_crl(int ok, X509_STORE_CTX *ctx) {
+   register int i = 0;
+-  X509_NAME *subject = NULL, *issuer = NULL;
++  const X509_NAME *subject = NULL, *issuer = NULL;
+   X509 *xs = NULL;
+   STACK_OF(X509_CRL) *crls = NULL;
+   int res, verify_error;
+@@ -10624,7 +10624,7 @@ static int tls_verify_ocsp_url(X509_STORE_CTX *ctx, X509 *cert,
+     const char *url) {
+   BIO *conn;
+   X509 *issuing_cert = NULL;
+-  X509_NAME *subj = NULL;
++  const X509_NAME *subj = NULL;
+   X509_STORE *store = NULL;
+   const char *subj_name;
+   char *host = NULL, *port = NULL, *uri = NULL;
+@@ -11043,7 +11043,7 @@ static int tls_verify_ocsp(int ok, X509_STORE_CTX *ctx) {
+       }
+ 
+       *((char **) push_array(ocsp_urls)) = pstrdup(tmp_pool,
+-        (char *) desc->location->d.uniformResourceIdentifier->data);
++        (char *) ASN1_STRING_get0_data(desc->location->d.uniformResourceIdentifier));
+     }
+   }
+ 
+@@ -11111,7 +11111,7 @@ static ssize_t tls_write(SSL *ssl, const void *buf, size_t len) {
+   return count;
+ }
+ 
+-static char *tls_x509_name_oneline(X509_NAME *x509_name) {
++static char *tls_x509_name_oneline(const X509_NAME *x509_name) {
+   static char buf[1024] = {'\0'};
+ 
+   /* If we are using OpenSSL 0.9.6 or newer, we want to use
+-- 
+2.53.0
+
