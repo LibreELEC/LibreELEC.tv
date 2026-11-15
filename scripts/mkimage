@@ -259,7 +259,7 @@ elif [ "${BOOTLOADER}" = "u-boot" -a -n "${UBOOT_SYSTEM}" ]; then
 LABEL ${DISTRO}
   LINUX /${KERNEL_NAME}
   FDT /${DTB}
-  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} quiet ${EXTRA_CMDLINE}
+  APPEND boot=UUID=${UUID_SYSTEM} disk=UUID=${UUID_STORAGE} ${EXTRA_CMDLINE}
 EOF
 
     mcopy -s "${IMG_TMP}/extlinux" :: >"${SAVE_ERROR}" 2>&1 || show_error
