@@ -23,6 +23,9 @@
 # Root password to integrate in the target system
   ROOT_PASSWORD="libreelec"
 
+# Force a root password change on first login (yes / no)
+  FORCE_ROOT_PASSWORD_CHANGE="yes"
+
 # Partition labels for USB/SD installation media
   DISTRO_BOOTLABEL="LEIOT"
   DISTRO_DISKLABEL="STORAGE"
