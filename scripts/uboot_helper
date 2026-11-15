@@ -562,6 +562,14 @@ devices = \
       },
     },
   },
+  'StarFive': {
+    'JH7110': {
+      # no 'dtb': extlinux uses FDTDIR, the SPI flash U-Boot picks the dtb
+      'visionfive2': {
+        'config': 'starfive_visionfive2_defconfig'
+      },
+    },
+  },
 }
 
 class OptionsAction(argparse.Action):

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
+
+SRCDIR="${BUILD}"/image/system/usr/share/bootloader
+DSTDIR="${RELEASE_DIR}"/3rdparty/bootloader
+
+mkdir -p "${DSTDIR}"/starfive
+cp -av "${SRCDIR}"/jh7110*.dtb "${DSTDIR}"/starfive

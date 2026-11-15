@@ -1,0 +1,70 @@
+################################################################################
+# setup system defaults
+################################################################################
+
+  # Bootloader to use (syslinux / u-boot / bcm2835-bootloader)
+  # The board boots with the U-Boot in its SPI flash (distro boot, extlinux).
+    BOOTLOADER="u-boot"
+
+  # Kernel extra targets to build
+    KERNEL_MAKE_EXTRACMD="dtbs"
+
+################################################################################
+# setup build defaults
+################################################################################
+
+  # Project CFLAGS
+    PROJECT_CFLAGS=""
+
+  # SquashFS compression method (gzip / lzo / xz / zstd)
+    SQUASHFS_COMPRESSION="zstd"
+
+  # RISC-V toolchain: there is no gold linker for riscv64, use bfd
+    GOLD_SUPPORT="no"
+    DEFAULT_LINKER="bfd"
+
+################################################################################
+# setup project defaults
+################################################################################
+
+  # OpenGL implementation to use (no / mesa)
+    OPENGL="no"
+
+  # OpenGL ES implementation to use (no / mesa)
+  # mesa = StarFive Mesa 22.1.3 with the pvr gallium driver on top of the
+  # closed Imagination DDK (projects/StarFive/packages/mesa, img-gpu-powervr)
+    OPENGLES="${OPENGLES:-mesa}"
+
+  # Vulkan implementation to use (vulkan-loader / no)
+    VULKAN="no"
+
+  # Displayserver to use (wl / no)
+    DISPLAYSERVER="no"
+
+  # Windowmanager to use (weston / no)
+    WINDOWMANAGER="no"
+
+  # Graphic drivers to use
+    GRAPHIC_DRIVERS=""
+
+  # KODI Player implementation to use (default / mesa)
+    KODIPLAYER_DRIVER="$OPENGLES"
+
+  # additional Firmware to use (dvb-firmware, misc-firmware, wlan-firmware)
+    FIRMWARE="misc-firmware wlan-firmware dvb-firmware"
+
+  # build and install HDMI CEC support (yes / no)
+    CEC_FRAMEWORK_SUPPORT="yes"
+
+  # build with installer (yes / no)
+    INSTALLER_SUPPORT="no"
+
+  # additional packages to install
+    ADDITIONAL_PACKAGES+=" dtc img-gpu-powervr"
+
+  # PulseAudio crashes on RISC-V (seen on the SpacemiT K1 port), use ALSA only
+    PULSEAUDIO_SUPPORT="no"
+    KODI_PULSEAUDIO_SUPPORT="no"
+
+  # debug tty path
+    DEBUG_TTY="/dev/ttyS0"

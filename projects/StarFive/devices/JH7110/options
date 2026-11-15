@@ -1,0 +1,22 @@
+################################################################################
+# setup device defaults
+################################################################################
+
+  # The U74 cores (RV64GC) also implement the Zba/Zbb bit manipulation
+  # extensions (no vector extension)
+    TARGET_VARIANT="rv64gc_zba_zbb"
+    TARGET_TUNE="sifive-7-series"
+
+  # Kernel to use. values can be:
+  # starfive: StarFive JH7110 vendor kernel 6.12 (JH7110_VisionFive2_6.12.y_devel)
+    LINUX="${LINUX:-starfive}"
+
+  # glibc must run on the vendor 6.12 kernel
+    GLIBC_ENABLE_KERNEL="6.12.0"
+
+  # Kernel target (riscv64 has no zImage; U-Boot booti loads the raw Image)
+    KERNEL_TARGET="Image"
+
+  # kernel serial console
+    EXTRA_CMDLINE="console=ttyS0,115200 console=tty0 earlycon"
+
