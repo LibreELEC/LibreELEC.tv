@@ -105,6 +105,12 @@ get_graphicdrivers() {
     V4L2_SUPPORT="yes"
   fi
 
+  if listcontains "${GRAPHIC_DRIVERS}" "pvr"; then
+    # closed Imagination DDK with a vendor mesa (pvr gallium driver) that the
+    # project provides; mesa itself does not know this driver
+    V4L2_SUPPORT="yes"
+  fi
+
   if listcontains "${GRAPHIC_DRIVERS}" "r300"; then
     GALLIUM_DRIVERS+=" r300"
     LLVM_SUPPORT="yes"
