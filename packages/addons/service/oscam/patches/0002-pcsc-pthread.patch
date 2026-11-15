@@ -8,10 +8,10 @@ Subject: [PATCH 2/4] pcsc pthread
  1 file changed, 1 insertion(+)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 52a7d4ca..7e2c6a63 100644
+index e601075a..665fb2ee 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -839,6 +839,7 @@ if (NOT OSCamOperatingSystem MATCHES "Windows/Cygwin")
+@@ -836,6 +836,7 @@ if (NOT OSCamOperatingSystem MATCHES "Windows/Cygwin")
  		target_link_libraries (${exe_name} imp_pcsclite)
  	else (PCSCDIR OR STATICPCSC)
  		target_link_libraries (${exe_name} pcsclite)
