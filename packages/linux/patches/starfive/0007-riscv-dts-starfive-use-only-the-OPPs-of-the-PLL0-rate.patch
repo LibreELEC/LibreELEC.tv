@@ -1,0 +1,174 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bas=20Magr=C3=A9?= <bas@opvolger.net>
+Date: Mon, 16 Nov 2026 23:29:08 +0100
+Subject: [PATCH] riscv: dts: starfive: use only the OPPs of the PLL0 rate
+
+The vendor jh7110.dtsi lists two sets of CPU operating points: one
+derived from PLL0 at 1.5 GHz (JH7110) and one from PLL0 at 1.25 GHz
+(JH7110S). The vendor U-Boot removes the set that does not belong to
+the chip before booting (cpu_vol_set). Mainline U-Boot does not, so
+cpufreq switches between both sets, which reprograms PLL0 while the
+CPUs run from it, and a VisionFive 2 Lite can end up at 1.5 GHz, above
+the rating of the JH7110S.
+
+Keep only the 1.5 GHz set in jh7110.dtsi, like mainline Linux, and
+switch the JH7110S boards that set PLL0 to 1.25 GHz to the 1.25 GHz
+set.
+---
+ arch/riscv/boot/dts/starfive/jh7110.dtsi      | 19 +-------------
+ .../jh7110s-starfive-visionfive-2-cm.dts      | 26 +++++++++++++++++++
+ ...h7110s-starfive-visionfive-2-lite-emmc.dts | 26 +++++++++++++++++++
+ .../jh7110s-starfive-visionfive-2-lite.dts    | 26 +++++++++++++++++++
+ 4 files changed, 79 insertions(+), 18 deletions(-)
+
+diff --git a/arch/riscv/boot/dts/starfive/jh7110.dtsi b/arch/riscv/boot/dts/starfive/jh7110.dtsi
+index 9278d2e..0c20a72 100644
+--- a/arch/riscv/boot/dts/starfive/jh7110.dtsi
++++ b/arch/riscv/boot/dts/starfive/jh7110.dtsi
+@@ -198,6 +198,7 @@
+ 		};
+ 	};
+ 
++	/* JH7110: PLL0 runs at 1.5 GHz. The JH7110S boards use their own table. */
+ 	cpu_opp: opp-table-0 {
+ 			compatible = "operating-points-v2";
+ 			opp-shared;
+@@ -218,24 +219,6 @@
+ 					opp-hz = /bits/ 64 <1500000000>;
+ 					opp-microvolt = <1040000>;
+ 			};
+-			/* CPU opp table for 1.25GHz */
+-			opp-312500000 {
+-					opp-hz = /bits/ 64 <312500000>;
+-					opp-microvolt = <900000>;
+-			};
+-			opp-417000000 {
+-					opp-hz = /bits/ 64 <417000000>;
+-					opp-microvolt = <900000>;
+-			};
+-			opp-625000000 {
+-					opp-hz = /bits/ 64 <625000000>;
+-					opp-microvolt = <900000>;
+-					opp-suspend;
+-			};
+-			opp-1250000000 {
+-					opp-hz = /bits/ 64 <1250000000>;
+-					opp-microvolt = <1000000>;
+-			};
+ 	};
+ 
+ 	display: display-subsystem {
+diff --git a/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-cm.dts b/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-cm.dts
+index fa0bdc0..718a1a4 100644
+--- a/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-cm.dts
++++ b/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-cm.dts
+@@ -56,6 +56,32 @@
+ 	assigned-clock-rates = <500000000>, <1250000000>;
+ };
+ 
++/* JH7110S: PLL0 runs at 1.25 GHz, so only use the operating points derived from it */
++&cpu_opp {
++	/delete-node/ opp-375000000;
++	/delete-node/ opp-500000000;
++	/delete-node/ opp-750000000;
++	/delete-node/ opp-1500000000;
++
++	opp-312500000 {
++		opp-hz = /bits/ 64 <312500000>;
++		opp-microvolt = <900000>;
++	};
++	opp-417000000 {
++		opp-hz = /bits/ 64 <417000000>;
++		opp-microvolt = <900000>;
++	};
++	opp-625000000 {
++		opp-hz = /bits/ 64 <625000000>;
++		opp-microvolt = <900000>;
++		opp-suspend;
++	};
++	opp-1250000000 {
++		opp-hz = /bits/ 64 <1250000000>;
++		opp-microvolt = <1000000>;
++	};
++};
++
+ &sysgpio {
+ 	uart1_pins: uart1-0 {
+ 		tx-pins {
+diff --git a/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite-emmc.dts b/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite-emmc.dts
+index 1cfc048..1aa60b8 100644
+--- a/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite-emmc.dts
++++ b/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite-emmc.dts
+@@ -69,6 +69,32 @@
+ 	assigned-clock-rates = <500000000>, <1250000000>;
+ };
+ 
++/* JH7110S: PLL0 runs at 1.25 GHz, so only use the operating points derived from it */
++&cpu_opp {
++	/delete-node/ opp-375000000;
++	/delete-node/ opp-500000000;
++	/delete-node/ opp-750000000;
++	/delete-node/ opp-1500000000;
++
++	opp-312500000 {
++		opp-hz = /bits/ 64 <312500000>;
++		opp-microvolt = <900000>;
++	};
++	opp-417000000 {
++		opp-hz = /bits/ 64 <417000000>;
++		opp-microvolt = <900000>;
++	};
++	opp-625000000 {
++		opp-hz = /bits/ 64 <625000000>;
++		opp-microvolt = <900000>;
++		opp-suspend;
++	};
++	opp-1250000000 {
++		opp-hz = /bits/ 64 <1250000000>;
++		opp-microvolt = <1000000>;
++	};
++};
++
+ &sysgpio {
+ 	uart1_pins: uart1-0 {
+ 		tx-pins {
+diff --git a/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite.dts b/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite.dts
+index c82eec9..a708262 100644
+--- a/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite.dts
++++ b/arch/riscv/boot/dts/starfive/jh7110s-starfive-visionfive-2-lite.dts
+@@ -85,6 +85,32 @@
+ 	assigned-clock-rates = <500000000>, <1250000000>;
+ };
+ 
++/* JH7110S: PLL0 runs at 1.25 GHz, so only use the operating points derived from it */
++&cpu_opp {
++	/delete-node/ opp-375000000;
++	/delete-node/ opp-500000000;
++	/delete-node/ opp-750000000;
++	/delete-node/ opp-1500000000;
++
++	opp-312500000 {
++		opp-hz = /bits/ 64 <312500000>;
++		opp-microvolt = <900000>;
++	};
++	opp-417000000 {
++		opp-hz = /bits/ 64 <417000000>;
++		opp-microvolt = <900000>;
++	};
++	opp-625000000 {
++		opp-hz = /bits/ 64 <625000000>;
++		opp-microvolt = <900000>;
++		opp-suspend;
++	};
++	opp-1250000000 {
++		opp-hz = /bits/ 64 <1250000000>;
++		opp-microvolt = <1000000>;
++	};
++};
++
+ &sysgpio {
+ 	uart1_pins: uart1-0 {
+ 		tx-pins {
+-- 
+2.56.1
+

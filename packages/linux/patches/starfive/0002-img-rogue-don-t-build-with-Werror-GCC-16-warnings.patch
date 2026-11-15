@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: opvolger <noreply@localhost>
+Date: Wed, 11 Nov 2026 02:57:24 +0100
+Subject: [PATCH 2/2] img-rogue: don't build with -Werror (GCC 16 warnings)
+
+Generated-by: LLM
+---
+ .../gpu/drm/img/img-rogue/services/server/env/linux/Kbuild.mk   | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/img/img-rogue/services/server/env/linux/Kbuild.mk b/drivers/gpu/drm/img/img-rogue/services/server/env/linux/Kbuild.mk
+index 6171ff0ee1..d96146fbc6 100644
+--- a/drivers/gpu/drm/img/img-rogue/services/server/env/linux/Kbuild.mk
++++ b/drivers/gpu/drm/img/img-rogue/services/server/env/linux/Kbuild.mk
+@@ -608,7 +608,7 @@ endif
+ 
+ # Enable -Werror for all built object files
+ ifneq ($(W),1)
+-$(foreach _o,$(addprefix CFLAGS_,$($(PVRSRV_MODNAME)-y)),$(eval $(_o) += -Werror))
++# (disabled for newer GCC) $(foreach _o,$(addprefix CFLAGS_,$($(PVRSRV_MODNAME)-y)),$(eval $(_o) += -Werror))
+ endif
+ 
+ $(PVRSRV_MODNAME)-y += \

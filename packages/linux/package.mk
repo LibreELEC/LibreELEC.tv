@@ -36,6 +36,17 @@ case "${LINUX}" in
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="default rockchip"
     ;;
+  starfive)
+    # StarFive JH7110 vendor BSP kernel 6.12 (JH7110_VF2_6.12_v6.0.0)
+    PKG_VERSION="4cecf169f38eb94b40e307f5f870055e4d9d64f1" # 6.12.5
+    PKG_SHA256="4fc283e3dd763485ca07356e6924a5cfaa191c6f8fba10e1ec0c8e361eb3c9c4"
+    PKG_URL="https://github.com/starfive-tech/linux/archive/${PKG_VERSION}.tar.gz"
+    PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
+    # the default/ set targets mainline and does not apply to the vendor tree
+    PKG_PATCH_DIRS="starfive"
+    # the built-in IMG Rogue driver needs its firmware at probe time
+    PKG_DEPENDS_UNPACK+=" img-gpu-powervr"
+    ;;
   *)
     PKG_VERSION="7.3.4"
     PKG_SHA256="b11b6df8295e8e991ff040b71aaa4994a8b55caa23b6b092907f195b5840fd1f"
@@ -188,6 +199,17 @@ pre_make_target() {
     mkdir -p ${PKG_BUILD}/external-firmware/imx/sdma
       cp -a $(get_build_dir firmware-imx)/firmware/sdma/*imx6*.bin ${PKG_BUILD}/external-firmware/imx/sdma
       cp -a $(get_build_dir firmware-imx)/firmware/vpu/*imx6*.bin ${PKG_BUILD}/external-firmware
+
+    FW_LIST="$(find ${PKG_BUILD}/external-firmware -type f | sed 's|.*external-firmware/||' | sort | xargs)"
+
+    ${PKG_BUILD}/scripts/config --set-str CONFIG_EXTRA_FIRMWARE "${FW_LIST}"
+    ${PKG_BUILD}/scripts/config --set-str CONFIG_EXTRA_FIRMWARE_DIR "external-firmware"
+
+  elif [ "${LINUX}" = "starfive" ]; then
+    # pvrsrvkm (IMG Rogue, built in) initialises the GPU on probe, long before
+    # the firmware in the SYSTEM squashfs is available
+    mkdir -p ${PKG_BUILD}/external-firmware
+      cp -a $(get_build_dir img-gpu-powervr)/target/lib/firmware/rgx.* ${PKG_BUILD}/external-firmware
 
     FW_LIST="$(find ${PKG_BUILD}/external-firmware -type f | sed 's|.*external-firmware/||' | sort | xargs)"
 

@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: opvolger <noreply@localhost>
+Date: Wed, 11 Nov 2026 02:56:50 +0100
+Subject: [PATCH 1/2] img-rogue: drop .SECONDARY (conflicts with kbuild
+ .NOTINTERMEDIATE on make >= 4.4)
+
+Generated-by: LLM
+---
+ drivers/gpu/drm/img/img-rogue/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/img/img-rogue/Makefile b/drivers/gpu/drm/img/img-rogue/Makefile
+index faf588e85b..89aa9e705f 100644
+--- a/drivers/gpu/drm/img/img-rogue/Makefile
++++ b/drivers/gpu/drm/img/img-rogue/Makefile
+@@ -73,7 +73,7 @@ WINDOW_SYSTEM=nulldrmws
+ #include $(OUT)/config_kernel.mk
+ include $(src)/config_kernel.mk
+ 
+-.SECONDARY:
++# .SECONDARY: (removed: conflicts with .NOTINTERMEDIATE of kbuild on GNU make >= 4.4)
+ 
+ define symlink-source-file
+ @if [ ! -e $(dir $@) ]; then mkdir -p $(dir $@); fi

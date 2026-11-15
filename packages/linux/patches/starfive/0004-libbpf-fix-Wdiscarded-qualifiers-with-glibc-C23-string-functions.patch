@@ -1,0 +1,27 @@
+From: LibreELEC
+Subject: [PATCH] libbpf: fix -Wdiscarded-qualifiers with glibc C23 string functions
+
+glibc >= 2.43 returns a const pointer from strstr()/strchr() for a
+const argument (C23). libbpf builds with -Werror, which breaks the perf
+build. Same change as upstream libbpf.
+---
+--- a/tools/lib/bpf/libbpf.c
++++ b/tools/lib/bpf/libbpf.c
+@@ -8151,7 +8151,7 @@
+ 	struct bpf_object *obj = ctx;
+ 	const struct btf_type *t;
+ 	struct extern_desc *ext;
+-	char *res;
++	const char *res;
+ 
+ 	res = strstr(sym_name, ".llvm.");
+ 	if (sym_type == 'd' && res)
+@@ -11948,7 +11948,7 @@
+ 		if (!search_paths[i])
+ 			continue;
+ 		for (s = search_paths[i]; s != NULL; s = strchr(s, ':')) {
+-			char *next_path;
++			const char *next_path;
+ 			int seg_len;
+ 
+ 			if (s[0] == ':')
