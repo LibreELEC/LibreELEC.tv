@@ -8,12 +8,15 @@
 
 # determine architecture's family
   TARGET_SUBARCH=riscv64
-  TARGET_VARIANT=rv64gc
+
+# ISA string, a device can extend it (e.g. rv64gc_zba_zbb) and set TARGET_TUNE
+# (a gcc -mtune value, e.g. sifive-7-series)
+  TARGET_VARIANT="${TARGET_VARIANT:-rv64gc}"
 
   TARGET_GCC_ARCH=${TARGET_SUBARCH/-}
   TARGET_KERNEL_ARCH=riscv
 
 # setup ARCH specific *FLAGS
-  TARGET_CFLAGS="-march=${TARGET_VARIANT} -mabi=lp64d"
+  TARGET_CFLAGS="-march=${TARGET_VARIANT} -mabi=lp64d${TARGET_TUNE:+ -mtune=${TARGET_TUNE}}"
   TARGET_LDFLAGS=""
-  TARGET_ARCH_GCC_OPTS="--with-arch=${TARGET_VARIANT} --with-abi=lp64d"
+  TARGET_ARCH_GCC_OPTS="--with-arch=${TARGET_VARIANT} --with-abi=lp64d${TARGET_TUNE:+ --with-tune=${TARGET_TUNE}}"
