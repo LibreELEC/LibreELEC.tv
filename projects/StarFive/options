@@ -72,7 +72,7 @@
     INSTALLER_SUPPORT="no"
 
   # additional packages to install
-    ADDITIONAL_PACKAGES+=" dtc img-gpu-powervr wave511-firmware"
+    ADDITIONAL_PACKAGES+=" dtc img-gpu-powervr wave511-firmware aic8800-firmware"
 
   # PulseAudio crashes on RISC-V (seen on the SpacemiT K1 port), use ALSA only
     PULSEAUDIO_SUPPORT="no"

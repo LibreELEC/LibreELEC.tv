@@ -1,0 +1,10 @@
+# AIC8800D80 (VisionFive 2 Lite): only aic8800D80_bsp has an SDIO modalias.
+# The WiFi driver has to be loaded by hand; it powers the chip and loads the
+# WiFi firmware and the Bluetooth patch. Bluetooth is on a UART (ttyS1).
+
+ACTION!="add", GOTO="aic8800_end"
+SUBSYSTEM=="sdio", ATTR{vendor}=="0xc8a1", ATTR{device}=="0x0082", \
+  RUN{builtin}+="kmod load aic8800D80_fdrv", \
+  TAG+="systemd", ENV{SYSTEMD_WANTS}+="aic8800-bluetooth.service"
+
+LABEL="aic8800_end"

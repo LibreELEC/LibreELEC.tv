@@ -1,0 +1,6 @@
+[Unit]
+Description=AIC8800D80 Bluetooth on ttyS1
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hciattach -n -s 115200 /dev/ttyS1 any 115200 flow nosleep
