@@ -1,0 +1,30 @@
+From 7c5d33a20555694113b7b99865a7900954c57a1b Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Sun, 8 Nov 2026 15:52:58 +0100
+Subject: [PATCH 5/5] arm64: dts: mediatek: mt8395-radxa-nio-12l: Enable HDMI
+ CEC
+
+Enable the HDMI CEC controller. The CEC pin is already muxed in the
+HDMI pin group.
+---
+ arch/arm64/boot/dts/mediatek/mt8395-radxa-nio-12l.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt8395-radxa-nio-12l.dts b/arch/arm64/boot/dts/mediatek/mt8395-radxa-nio-12l.dts
+index 9cf0315da035d..6d326d663b495 100644
+--- a/arch/arm64/boot/dts/mediatek/mt8395-radxa-nio-12l.dts
++++ b/arch/arm64/boot/dts/mediatek/mt8395-radxa-nio-12l.dts
+@@ -203,6 +203,10 @@ &afe {
+ 	status = "okay";
+ };
+ 
++&cec {
++	status = "okay";
++};
++
+ &cpu0 {
+ 	cpu-supply = <&mt6359_vcore_buck_reg>;
+ };
+-- 
+2.47.3
+
