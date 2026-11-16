@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Mon, 24 Aug 2026 22:01:35 +0200
+Subject: [PATCH 04/11] DVDVideoCodecDRMPRIME: Convert tiled frames for direct
+ scanout
+
+The MediaTek stateless decoder produces MM21, a tiled layout that the
+display controller cannot scan out, so direct-to-plane rendering has
+nothing it can use. Insert scale_v4l2m2m ahead of the rest of the filter
+chain to convert such frames with a mem2mem device, which on MT8195 is
+MDP3.
+
+UYVY is asked for because the MediaTek planes advertise packed YUV and
+RGB but not NV12. The planes also have no scaler, mtk_plane_atomic_check
+passes DRM_PLANE_NO_SCALING for both limits, so the source rectangle has
+to match the destination one and any downscaling has to happen in the
+same pass.
+
+Only done for MediaTek modifiers and when the direct-to-plane renderer
+is selected; the GLES renderer imports tiled buffers directly. The
+output is scaled to fit the screen at the display aspect ratio, which
+is the plane's destination rectangle in the default view mode.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 70 +++++++++++++++++++
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h   |  1 +
+ 2 files changed, 71 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index fa51ed7f8c..8d0435530e 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -19,19 +19,25 @@
+ #include "settings/lib/Setting.h"
+ #include "threads/SingleLock.h"
+ #include "utils/CPUInfo.h"
++#include "utils/DRMHelpers.h"
+ #include "utils/StringUtils.h"
+ #include "utils/log.h"
++#include "windowing/GraphicContext.h"
++#include "windowing/WinSystem.h"
+ 
+ #if defined(HAVE_GBM)
+ #include "windowing/gbm/WinSystemGbm.h"
+ #endif
+ 
++#include <drm_fourcc.h>
++
+ extern "C"
+ {
+ #include <libavcodec/avcodec.h>
+ #include <libavfilter/buffersink.h>
+ #include <libavfilter/buffersrc.h>
+ #include <libavutil/error.h>
++#include <libavutil/hwcontext_drm.h>
+ #include <libavutil/imgutils.h>
+ #include <libavutil/opt.h>
+ #include <libavutil/pixdesc.h>
+@@ -921,6 +927,62 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterOut()
+   return VC_PICTURE;
+ }
+ 
++/*
++ * The MediaTek decoder produces MM21, a tiled layout the display controller
++ * cannot scan out. Convert it with a mem2mem device so the frame can go
++ * straight to a DRM plane.
++ *
++ * The plane has no scaler (mtk_plane_atomic_check passes DRM_PLANE_NO_SCALING),
++ * so the source rectangle has to match the destination one and the mem2mem
++ * device has to do any downscaling as well.
++ */
++std::string CDVDVideoCodecDRMPRIME::GetConvertFilter()
++{
++  // the GLES renderer imports tiled buffers directly, only scanout needs this
++  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
++          CSettings::SETTING_VIDEOPLAYER_USEPRIMERENDERER) != 0)
++    return {};
++
++  if (!IsSupportedHwFormat(static_cast<AVPixelFormat>(m_pFrame->format)))
++    return {};
++
++  const auto* descriptor = reinterpret_cast<const AVDRMFrameDescriptor*>(m_pFrame->data[0]);
++  if (!descriptor || descriptor->nb_objects < 1)
++    return {};
++
++  const uint64_t modifier = descriptor->objects[0].format_modifier;
++#if defined(DRM_FORMAT_MOD_VENDOR_MTK)
++  if (modifier >> 56 != DRM_FORMAT_MOD_VENDOR_MTK)
++    return {};
++#else
++  return {};
++#endif
++
++  // UYVY because the MediaTek planes take packed YUV and RGB, but not NV12
++  std::string filter = "scale_v4l2m2m=format=uyvy";
++
++  // fit the screen at the display aspect ratio, which is the plane's destination
++  // rectangle in the default view mode
++  const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
++  if (info.iScreenWidth > 0 && info.iScreenHeight > 0 && m_pFrame->width > 0 &&
++      m_pFrame->height > 0)
++  {
++    const AVRational sar = m_pFrame->sample_aspect_ratio;
++    const double dar = static_cast<double>(m_pFrame->width) / m_pFrame->height *
++                       (sar.num > 0 && sar.den > 0 ? av_q2d(sar) : 1.0);
++    int w = info.iScreenWidth;
++    int h = static_cast<int>(w / dar + 0.5);
++    if (h > info.iScreenHeight)
++    {
++      h = info.iScreenHeight;
++      w = static_cast<int>(h * dar + 0.5);
++    }
++    filter += StringUtils::Format(":w={}:h={}", w & ~1, h & ~1);
++  }
++
++  return filter;
++}
++
+ std::string CDVDVideoCodecDRMPRIME::GetFilterChain(bool interlaced)
+ {
+   // ask codec to do deinterlacing if possible
+@@ -937,6 +999,14 @@ std::string CDVDVideoCodecDRMPRIME::GetFilterChain(bool interlaced)
+   if (mInt != VS_INTERLACEMETHOD_NONE && interlaced && !m_deintFilterName.empty())
+     filterChain += m_deintFilterName;
+ 
++  /*
++   * Detiling comes first: the deinterlacer only understands linear frames and
++   * rejects anything else, so it has to run on the converted output.
++   */
++  const std::string convert = GetConvertFilter();
++  if (!convert.empty())
++    filterChain = filterChain.empty() ? convert : convert + "," + filterChain;
++
+   return filterChain;
+ }
+ 
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+index 585bba258b..7b1b819a5b 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+@@ -51,6 +51,7 @@ protected:
+   void FilterClose();
+   void FilterTest();
+   std::string GetFilterChain(bool interlaced);
++  std::string GetConvertFilter();
+ 
+   std::string m_name;
+   std::string m_deintFilterName;

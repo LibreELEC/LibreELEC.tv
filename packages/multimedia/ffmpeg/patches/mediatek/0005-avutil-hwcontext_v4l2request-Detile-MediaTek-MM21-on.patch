@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 14:48:28 +0100
+Subject: [PATCH 05/11] avutil/hwcontext_v4l2request: Detile MediaTek MM21 on
+ hwdownload
+
+MM21 frames could not be downloaded at all: the sw_format is a
+placeholder and transfer_get_formats offered nothing. Offer NV12 and
+detile the 16x32 luma / 16x16 chroma tiles on the CPU, so decodes can
+be checked with framemd5 and fluster. The display path keeps using the
+MDP3 for the conversion.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavutil/hwcontext_v4l2request.c | 81 +++++++++++++++++++++++++++++++
+ 1 file changed, 81 insertions(+)
+
+diff --git a/libavutil/hwcontext_v4l2request.c b/libavutil/hwcontext_v4l2request.c
+index 2863b43192..d053d04cd0 100644
+--- a/libavutil/hwcontext_v4l2request.c
++++ b/libavutil/hwcontext_v4l2request.c
+@@ -19,6 +19,7 @@
+ #include "config.h"
+ 
+ #include <fcntl.h>
++#include <string.h>
+ #include <linux/dma-buf.h>
+ #include <linux/media.h>
+ #include <sys/ioctl.h>
+@@ -1284,6 +1285,70 @@ fail:
+     return ret;
+ }
+ 
++#if defined(V4L2_PIX_FMT_MM21) && defined(DRM_FORMAT_MOD_MTK_16L_32S_TILE)
++/*
++ * MediaTek MM21: NV12 in 16x32 luma / 16x16 chroma tiles, each tile stored as
++ * contiguous 16 byte rows, tiles laid out row major across the plane pitch.
++ * Neither the display nor anything in libavutil reads it, so detile on the CPU
++ * for hwdownload (checksums, fluster); the display path uses the MDP3 instead.
++ */
++static int v4l2request_is_mm21(AVHWFramesContext *hwfc)
++{
++    AVV4L2RequestFramesContext *fctx = hwfc->hwctx;
++    const struct v4l2_format *fmt = &fctx->internal->capture.format;
++
++    return V4L2_TYPE_IS_MULTIPLANAR(fmt->type) &&
++           fmt->fmt.pix_mp.pixelformat == V4L2_PIX_FMT_MM21;
++}
++
++static void v4l2request_detile_mm21_plane(uint8_t *dst, int dst_linesize,
++                                          const uint8_t *src, int src_pitch,
++                                          int width, int height, int tile_h)
++{
++    const int tile_size = 16 * tile_h;
++
++    for (int y = 0; y < height; y++) {
++        const uint8_t *row = src + (y / tile_h) * src_pitch * tile_h +
++                             (y % tile_h) * 16;
++        uint8_t *out = dst + y * dst_linesize;
++
++        for (int x = 0; x < width; x += 16)
++            memcpy(out + x, row + (x / 16) * tile_size, FFMIN(16, width - x));
++    }
++}
++
++static int v4l2request_transfer_mm21(AVHWFramesContext *hwfc,
++                                     AVFrame *dst, const AVFrame *src)
++{
++    const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
++    const AVDRMLayerDescriptor *layer = &desc->layers[0];
++    AVFrame *map;
++    int ret;
++
++    if (desc->nb_layers != 1 || layer->nb_planes != 2 ||
++        desc->objects[0].format_modifier != DRM_FORMAT_MOD_MTK_16L_32S_TILE)
++        return AVERROR(EINVAL);
++
++    map = av_frame_alloc();
++    if (!map)
++        return AVERROR(ENOMEM);
++
++    ret = v4l2request_map_frame(hwfc, map, src);
++    if (ret)
++        goto fail;
++
++    v4l2request_detile_mm21_plane(dst->data[0], dst->linesize[0],
++                                  map->data[0], map->linesize[0],
++                                  dst->width, dst->height, 32);
++    v4l2request_detile_mm21_plane(dst->data[1], dst->linesize[1],
++                                  map->data[1], map->linesize[1],
++                                  FFALIGN(dst->width, 2), (dst->height + 1) / 2, 16);
++fail:
++    av_frame_free(&map);
++    return ret;
++}
++#endif
++
+ static int v4l2request_transfer_get_formats(AVHWFramesContext *hwfc,
+                                             enum AVHWFrameTransferDirection dir,
+                                             enum AVPixelFormat **formats)
+@@ -1300,6 +1365,14 @@ static int v4l2request_transfer_get_formats(AVHWFramesContext *hwfc,
+     fmts[0] = hwfc->sw_format;
+     fmts[1] = AV_PIX_FMT_NONE;
+ 
++#if defined(V4L2_PIX_FMT_MM21) && defined(DRM_FORMAT_MOD_MTK_16L_32S_TILE)
++    if (v4l2request_is_mm21(hwfc)) {
++        fmts[0] = AV_PIX_FMT_NV12;
++        *formats = fmts;
++        return 0;
++    }
++#endif
++
+     if (hwfc->sw_format == AV_PIX_FMT_YUV420P ||
+         hwfc->sw_format == AV_PIX_FMT_YUV420P10 ||
+         hwfc->sw_format == AV_PIX_FMT_YUV422P10)
+@@ -1318,6 +1391,14 @@ static int v4l2request_transfer_data_from(AVHWFramesContext *hwfc,
+     if (dst->width > hwfc->width || dst->height > hwfc->height)
+         return AVERROR(EINVAL);
+ 
++#if defined(V4L2_PIX_FMT_MM21) && defined(DRM_FORMAT_MOD_MTK_16L_32S_TILE)
++    if (v4l2request_is_mm21(hwfc)) {
++        if (dst->format != AV_PIX_FMT_NV12)
++            return AVERROR(ENOSYS);
++        return v4l2request_transfer_mm21(hwfc, dst, src);
++    }
++#endif
++
+     map = av_frame_alloc();
+     if (!map)
+         return AVERROR(ENOMEM);

@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 20:48:39 +0100
+Subject: [PATCH 07/11] DRMHelpers: Define the S0xx/S2xx/S4xx formats for older
+ libdrm
+
+The 10/12/16-bit software paths are guarded on these fourccs, which
+libdrm only has since 2.4.125, so on Debian trixie (2.4.124) decoding
+to yuv420p10 was compiled out. Also define the MediaTek 10-bit layout
+mask.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../VideoPlayer/Buffers/VideoBufferPoolDMA.cpp     |  2 ++
+ xbmc/utils/DRMHelpers.h                            | 14 ++++++++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/Buffers/VideoBufferPoolDMA.cpp b/xbmc/cores/VideoPlayer/Buffers/VideoBufferPoolDMA.cpp
+index 7fbb747204..fd4cc38dbf 100644
+--- a/xbmc/cores/VideoPlayer/Buffers/VideoBufferPoolDMA.cpp
++++ b/xbmc/cores/VideoPlayer/Buffers/VideoBufferPoolDMA.cpp
+@@ -13,6 +13,8 @@
+ 
+ #include <mutex>
+ 
++#include "utils/DRMHelpers.h"
++
+ #include <drm_fourcc.h>
+ 
+ extern "C"
+diff --git a/xbmc/utils/DRMHelpers.h b/xbmc/utils/DRMHelpers.h
+index 4cd8ff670c..93d5361d7c 100644
+--- a/xbmc/utils/DRMHelpers.h
++++ b/xbmc/utils/DRMHelpers.h
+@@ -20,6 +20,20 @@
+ #ifndef DRM_FORMAT_MOD_MTK_16L_32S_TILE
+ #define DRM_FORMAT_MOD_MTK_16L_32S_TILE fourcc_mod_code(MTK, 0x1)
+ #endif
++#ifndef MTK_FMT_MOD_10BIT_LAYOUT_MASK
++#define MTK_FMT_MOD_10BIT_LAYOUT_MASK (0xfULL << 16)
++#endif
++#ifndef DRM_FORMAT_S010
++#define DRM_FORMAT_S010 fourcc_code('S', '0', '1', '0')
++#define DRM_FORMAT_S210 fourcc_code('S', '2', '1', '0')
++#define DRM_FORMAT_S410 fourcc_code('S', '4', '1', '0')
++#define DRM_FORMAT_S012 fourcc_code('S', '0', '1', '2')
++#define DRM_FORMAT_S212 fourcc_code('S', '2', '1', '2')
++#define DRM_FORMAT_S412 fourcc_code('S', '4', '1', '2')
++#define DRM_FORMAT_S016 fourcc_code('S', '0', '1', '6')
++#define DRM_FORMAT_S216 fourcc_code('S', '2', '1', '6')
++#define DRM_FORMAT_S416 fourcc_code('S', '4', '1', '6')
++#endif
+ 
+ namespace DRMHELPERS
+ {

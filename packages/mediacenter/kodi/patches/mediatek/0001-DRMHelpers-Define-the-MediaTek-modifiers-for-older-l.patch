@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 14:55:27 +0100
+Subject: [PATCH 01/11] DRMHelpers: Define the MediaTek modifiers for older
+ libdrm
+
+The MediaTek format modifiers are in the kernel's drm_fourcc.h, but not
+in the libdrm copy that Kodi includes on Debian trixie (2.4.124). Define
+the vendor and the 16L32 tile modifier when they are missing, so code
+checking for them is not silently compiled out.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ xbmc/utils/DRMHelpers.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/xbmc/utils/DRMHelpers.h b/xbmc/utils/DRMHelpers.h
+index dcc7f502f3..4cd8ff670c 100644
+--- a/xbmc/utils/DRMHelpers.h
++++ b/xbmc/utils/DRMHelpers.h
+@@ -11,6 +11,16 @@
+ #include <cstdint>
+ #include <string>
+ 
++#include <drm_fourcc.h>
++
++// missing from older libdrm copies of drm_fourcc.h (2.4.124 in Debian trixie)
++#ifndef DRM_FORMAT_MOD_VENDOR_MTK
++#define DRM_FORMAT_MOD_VENDOR_MTK 0x0b
++#endif
++#ifndef DRM_FORMAT_MOD_MTK_16L_32S_TILE
++#define DRM_FORMAT_MOD_MTK_16L_32S_TILE fourcc_mod_code(MTK, 0x1)
++#endif
++
+ namespace DRMHELPERS
+ {
+ 

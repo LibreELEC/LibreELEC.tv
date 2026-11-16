@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 22:43:14 +0100
+Subject: [PATCH 11/11] DVDVideoCodecDRMPRIME: Detile MediaTek 10-bit frames
+ into P010 DMA buffers
+
+Instead of falling back to software decoding, copy MediaTek 10-bit
+(MT2110) frames through the hwcontext transfer, which detiles them, into
+a P010 DMA buffer from the software buffer pool. The GLES renderer
+imports P010 directly. Software decoding stays as the fallback when the
+transfer is not available.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 58 ++++++++++++++++++-
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h   |  1 +
+ 2 files changed, 57 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index 790dd40f02..0fa960a62c 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -562,6 +562,59 @@ void CDVDVideoCodecDRMPRIME::Drain()
+   av_packet_free(&avpkt);
+ }
+ 
++/*
++ * Copy a hardware frame into a DMA buffer of a software format through the
++ * hwcontext transfer (which detiles), so it takes the software buffer path.
++ */
++bool CDVDVideoCodecDRMPRIME::DownloadToDMA(AVPixelFormat format)
++{
++  const int size = av_image_get_buffer_size(format, m_pFrame->width, m_pFrame->height, 1);
++  if (size <= 0)
++    return false;
++
++  if (!m_swVideoBufferPool || !m_swVideoBufferPool->IsCompatible(format, size))
++  {
++    m_swVideoBufferPool = std::make_shared<CVideoBufferPoolDMA>();
++    m_swVideoBufferPool->Configure(format, size);
++  }
++  if (!m_swVideoBufferPool->IsConfigured())
++    return false;
++
++  CVideoBufferDMA* buffer = m_swVideoBufferPool->Get();
++  if (!buffer)
++    return false;
++
++  AVFrame* frame = av_frame_alloc();
++  if (!frame)
++  {
++    buffer->Release();
++    return false;
++  }
++
++  frame->format = format;
++  frame->width = m_pFrame->width;
++  frame->height = m_pFrame->height;
++  frame->opaque = static_cast<void*>(buffer);
++  frame->opaque_ref =
++      av_buffer_create(nullptr, 0, ReleaseBuffer, frame->opaque, AV_BUFFER_FLAG_READONLY);
++  buffer->Export(frame, frame->width, frame->height);
++  buffer->SyncStart();
++
++  if (av_hwframe_transfer_data(frame, m_pFrame, 0) < 0 || av_frame_copy_props(frame, m_pFrame) < 0)
++  {
++    av_frame_free(&frame);
++    return false;
++  }
++
++  // copy_props also copied the hardware frame's opaque
++  frame->opaque = static_cast<void*>(buffer);
++
++  av_frame_unref(m_pFrame);
++  av_frame_move_ref(m_pFrame, frame);
++  av_frame_free(&frame);
++  return true;
++}
++
+ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+ {
+   pVideoPicture->iWidth = m_pFrame->width;
+@@ -1131,10 +1184,11 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+     const uint64_t modifier = descriptor && descriptor->nb_objects > 0
+                                   ? descriptor->objects[0].format_modifier
+                                   : DRM_FORMAT_MOD_LINEAR;
+-    if (modifier >> 56 == DRM_FORMAT_MOD_VENDOR_MTK && (modifier & MTK_FMT_MOD_10BIT_LAYOUT_MASK))
++    if (modifier >> 56 == DRM_FORMAT_MOD_VENDOR_MTK &&
++        (modifier & MTK_FMT_MOD_10BIT_LAYOUT_MASK) && !DownloadToDMA(AV_PIX_FMT_P010))
+     {
+       CLog::Log(LOGWARNING,
+-                "CDVDVideoCodecDRMPRIME::{} - MediaTek 10-bit layout cannot be displayed, "
++                "CDVDVideoCodecDRMPRIME::{} - MediaTek 10-bit layout cannot be detiled, "
+                 "falling back to software decoding",
+                 __FUNCTION__);
+       m_hints.codecOptions |= CODEC_FORCE_SOFTWARE;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+index 44ea601fd7..02e7518e1d 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+@@ -44,6 +44,7 @@ public:
+ protected:
+   void Drain();
+   bool SetPictureParams(VideoPicture* pVideoPicture);
++  bool DownloadToDMA(AVPixelFormat format);
+   void UpdateProcessInfo(struct AVCodecContext* avctx, const enum AVPixelFormat fmt);
+   CDVDVideoCodec::VCReturn ProcessFilterIn();
+   CDVDVideoCodec::VCReturn ProcessFilterOut();

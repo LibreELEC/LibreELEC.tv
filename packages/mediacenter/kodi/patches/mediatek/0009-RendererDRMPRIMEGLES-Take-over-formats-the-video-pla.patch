@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 21:00:07 +0100
+Subject: [PATCH 09/11] RendererDRMPRIMEGLES: Take over formats the video plane
+ rejects
+
+With direct to plane selected, a DRM PRIME buffer no plane can scan out
+(the MediaTek planes take neither YUV420 nor S010 from the software
+decoder) ended up at the default GLES renderer, which cannot render
+drm_prime at all. Since the plane renderer is tried first, accepting
+these buffers here only adds a fallback.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp      | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+index 5bea716ad9..413dd14cb9 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+@@ -45,9 +45,8 @@ CBaseRenderer* CRendererDRMPRIMEGLES::Create(CVideoBuffer* buffer)
+   if (!settings->GetBool(CSettings::SETTING_VIDEOPLAYER_USEPRIMEDECODER))
+     return nullptr;
+ 
+-  if (settings->GetInt(CSettings::SETTING_VIDEOPLAYER_USEPRIMERENDERER) != 1)
+-    return nullptr;
+-
++  // with direct to plane selected, "drm_prime" is tried first, so this only
++  // takes over the formats no video plane can scan out
+   auto buf = dynamic_cast<CVideoBufferDRMPRIME*>(buffer);
+   if (!buf)
+     return nullptr;

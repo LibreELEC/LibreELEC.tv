@@ -24,6 +24,13 @@ case "${PROJECT}" in
     PKG_FFMPEG_BRANCH="armsoc-9.0.2"
     PKG_SOURCE_NAME="ffmpeg-${PKG_VERSION}.tar.gz"
     ;;
+  Mediatek)
+    PKG_VERSION="ad8c2e36ee2d5a30442f6e4ca0e82df2622f8958"
+    PKG_SHA256="eed6678e9a1877a5bd36b7ea85c510a41f17c172f045153ec8f177bf477f4fc1"
+    PKG_URL="https://github.com/chewitt/ffmpeg/archive/${PKG_VERSION}.tar.gz"
+    PKG_FFMPEG_BRANCH="armsoc-9.0.2"
+    PKG_PATCH_DIRS+=" mediatek"
+    ;;
   Generic)
     PKG_FFMPEG_REQUEST_DISABLE=""
     PKG_FFMPEG_REQUEST_ENABLE=""
@@ -54,7 +61,7 @@ esac
 
 post_unpack() {
   # Fix FFmpeg version
-  if [ "${PROJECT}" = "Amlogic" ] || [ "${PROJECT}" = "Rockchip" ]; then
+  if [ "${PROJECT}" = "Amlogic" ] || [ "${PROJECT}" = "Mediatek" ] || [ "${PROJECT}" = "Rockchip" ]; then
     echo "${PKG_FFMPEG_BRANCH}-${PKG_VERSION:0:7}" >${PKG_BUILD}/VERSION
   else
     echo "${PKG_VERSION}" >${PKG_BUILD}/RELEASE
@@ -71,7 +78,7 @@ if [ "${V4L2_SUPPORT}" = "yes" ]; then
   PKG_NEED_UNPACK+=" $(get_pkg_directory libdrm)"
   PKG_FFMPEG_V4L2="--enable-v4l2_m2m --enable-libdrm"
 
-  if [ "${PROJECT}" = "Allwinner" -o "${PROJECT}" = "Amlogic" -o "${PROJECT}" = "Rockchip" -o "${DEVICE}" = "iMX8" -o "${DEVICE}" = "RPi4" -o "${DEVICE}" = "RPi5" ]; then
+  if [ "${PROJECT}" = "Allwinner" -o "${PROJECT}" = "Amlogic" -o "${PROJECT}" = "Mediatek" -o "${PROJECT}" = "Rockchip" -o "${DEVICE}" = "iMX8" -o "${DEVICE}" = "RPi4" -o "${DEVICE}" = "RPi5" ]; then
     PKG_DEPENDS_TARGET+=" systemd"
     PKG_NEED_UNPACK+=" $(get_pkg_directory systemd)"
     PKG_FFMPEG_V4L2+=" ${PKG_FFMPEG_REQUEST_ENABLE}"

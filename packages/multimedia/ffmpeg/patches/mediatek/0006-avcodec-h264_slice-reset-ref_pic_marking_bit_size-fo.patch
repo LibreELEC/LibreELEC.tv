@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 19:54:31 +0100
+Subject: [PATCH 06/11] avcodec/h264_slice: reset ref_pic_marking_bit_size for
+ non-reference slices
+
+Non-reference slices have no dec_ref_pic_marking() syntax, but the
+field kept the size from the previous reference slice. V4L2 stateless
+decoders get a stale dec_ref_pic_marking_bit_size for non-reference
+B-frames.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavcodec/h264_slice.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/libavcodec/h264_slice.c b/libavcodec/h264_slice.c
+index 9836aa3a7f..755222764f 100644
+--- a/libavcodec/h264_slice.c
++++ b/libavcodec/h264_slice.c
+@@ -1864,6 +1864,8 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
+         if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
+             return AVERROR_INVALIDDATA;
+         sl->ref_pic_marking_bit_size = pos - get_bits_left(&sl->gb);
++    } else {
++        sl->ref_pic_marking_bit_size = 0;
+     }
+ 
+     if (sl->slice_type_nos != AV_PICTURE_TYPE_I && pps->cabac) {
