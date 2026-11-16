@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Mon, 24 Aug 2026 21:58:55 +0200
+Subject: [PATCH 03/11] avfilter/deinterlace_v4l2m2m: Reject non-linear frame
+ layouts
+
+The DRM frame descriptor is mapped to a V4L2 pixel format using only
+layer->format; the format modifier is never looked at. A tiled or
+compressed frame is therefore handed to the m2m device as if it were
+linear, which produces garbage rather than an error.
+
+Check the modifier up front and fail with ENOSYS. This turns silent
+corruption into a clear error for MediaTek MM21, Allwinner tiled,
+Broadcom SAND128 and Arm AFBC frames. Linear two-object NV12M input
+keeps working.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavfilter/vf_deinterlace_v4l2m2m.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/libavfilter/vf_deinterlace_v4l2m2m.c b/libavfilter/vf_deinterlace_v4l2m2m.c
+index 6f9f63fa5f..b44210d5f2 100644
+--- a/libavfilter/vf_deinterlace_v4l2m2m.c
++++ b/libavfilter/vf_deinterlace_v4l2m2m.c
+@@ -920,6 +920,22 @@ static int deint_v4l2m2m_filter_frame(AVFilterLink *link, AVFrame *in)
+ 
+     if (ctx->field_order == V4L2_FIELD_ANY) {
+         AVDRMFrameDescriptor *drm_desc = (AVDRMFrameDescriptor *)in->data[0];
++        uint64_t modifier = drm_desc->objects[0].format_modifier;
++
++        /*
++         * The DRM format is mapped to a V4L2 pixel format without the
++         * modifier, so only linear layouts are understood. A tiled or
++         * compressed frame (MediaTek MM21, Allwinner tiled, Broadcom SAND,
++         * Arm AFBC) would be handed to the m2m device as if it were linear.
++         */
++        if (modifier != DRM_FORMAT_MOD_LINEAR &&
++            modifier != DRM_FORMAT_MOD_INVALID) {
++            av_log(priv, AV_LOG_ERROR,
++                   "Unsupported frame layout, modifier 0x%016" PRIx64 " is not linear\n",
++                   modifier);
++            return AVERROR(ENOSYS);
++        }
++
+         ctx->in_objects = drm_desc->nb_objects;
+         ctx->orig_width = drm_desc->layers[0].planes[0].pitch;
+         if (ctx->in_objects == 2)
