@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Mon, 24 Aug 2026 16:56:15 +0200
+Subject: [PATCH 02/11] EGLImage: Accept MediaTek 16L32 tiled buffers for
+ dma-buf import
+
+Mesa's panfrost driver imports DRM_FORMAT_MOD_MTK_16L_32S_TILE buffers
+and detiles them with a compute shader, but deliberately keeps the
+modifier out of PAN_SUPPORTED_MODIFIERS - "MTK 16L32 is only used if
+explicitly asked for" in pan_format.h. eglQueryDmaBufModifiersEXT
+therefore never reports it, and SupportsFormatAndModifier rejects a
+layout the driver would actually accept.
+
+This is what stops CRendererDRMPRIMEGLES::Create from taking frames
+produced by the MediaTek stateless video decoder, which outputs MM21.
+
+Claim support for the modifier directly and let eglCreateImageKHR decide,
+in the same spirit as the existing broadcom parameter masking below.
+
+Only the 8-bit modifier is claimed. The 10-bit MT2110 layouts share the
+MTK vendor prefix but no importer supports them, so they keep failing
+here, which leaves another renderer to be tried instead of importing
+every frame into a black screen.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ xbmc/utils/EGLImage.cpp | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/xbmc/utils/EGLImage.cpp b/xbmc/utils/EGLImage.cpp
+index 0196a1f929..a6a013e47a 100644
+--- a/xbmc/utils/EGLImage.cpp
++++ b/xbmc/utils/EGLImage.cpp
+@@ -265,6 +265,28 @@ bool CEGLImage::SupportsFormatAndModifier(uint32_t format, uint64_t modifier)
+   if (modifier == DRM_FORMAT_MOD_LINEAR)
+     return true;
+ 
++#if defined(DRM_FORMAT_MOD_MTK_16L_32S_TILE)
++  /*
++   * Mesa imports MediaTek 16L32 tiled buffers and detiles them with a compute
++   * shader, but deliberately leaves the modifier out of what it advertises -
++   * see "MTK 16L32 is only used if explicitly asked for" in panfrost's
++   * pan_format.h. Querying would reject a layout the driver does accept, so
++   * take it on trust and let eglCreateImageKHR be the arbiter.
++   *
++   * Only the 8-bit modifier is claimed. The 10-bit MT2110 layouts share the
++   * MTK vendor prefix but have no importer, and failing here lets a renderer
++   * that can handle them be tried instead of importing every frame into a
++   * black screen.
++   */
++  if (modifier == DRM_FORMAT_MOD_MTK_16L_32S_TILE)
++  {
++    CLog::Log(LOGDEBUG, "CEGLImage::{} - assuming support for format: {} modifier: {}",
++              __FUNCTION__, DRMHELPERS::FourCCToString(format),
++              DRMHELPERS::ModifierToString(modifier));
++    return true;
++  }
++#endif
++
+   /*
+    * Some broadcom modifiers have parameters encoded which need to be
+    * masked out before comparing with reported modifiers.

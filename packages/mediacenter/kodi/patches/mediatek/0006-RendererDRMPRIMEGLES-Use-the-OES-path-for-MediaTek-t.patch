@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 14:50:47 +0100
+Subject: [PATCH 06/11] RendererDRMPRIMEGLES: Use the OES path for MediaTek
+ tiled buffers
+
+The limited-range YUV path imports each plane on its own, as R8 and
+GR88 images carrying the buffer's modifier. Mesa only detiles MTK
+16L32 when importing the whole image, so for these buffers the
+per-plane import fails on every frame before the OES path is tried.
+Don't set up the YUV path for them at all.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp    | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+index e1ccc815f8..5bea716ad9 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/RendererDRMPRIMEGLES.cpp
+@@ -18,6 +18,7 @@
+ #include "rendering/gles/RenderSystemGLES.h"
+ #include "settings/Settings.h"
+ #include "settings/SettingsComponent.h"
++#include "utils/DRMHelpers.h"
+ #include "utils/EGLFence.h"
+ #include "utils/EGLImage.h"
+ #include "utils/GLUtils.h"
+@@ -147,6 +148,12 @@ bool CRendererDRMPRIMEGLES::Configure(const VideoPicture& picture,
+     auto* desc = drmBuf->GetDescriptor();
+     if (desc && desc->nb_layers == 1)
+       sourceFourcc = desc->layers[0].format;
++#if defined(DRM_FORMAT_MOD_VENDOR_MTK)
++    // MTK tiled buffers only import as a whole image (OES), never per plane
++    if (desc && desc->nb_objects > 0 &&
++        desc->objects[0].format_modifier >> 56 == DRM_FORMAT_MOD_VENDOR_MTK)
++      sourceFourcc = 0;
++#endif
+     drmBuf->ReleaseDescriptor();
+   }
+ 

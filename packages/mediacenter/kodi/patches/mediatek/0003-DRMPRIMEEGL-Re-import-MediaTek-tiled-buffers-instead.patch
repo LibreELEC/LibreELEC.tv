@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Mon, 24 Aug 2026 21:29:44 +0200
+Subject: [PATCH 03/11] DRMPRIMEEGL: Re-import MediaTek tiled buffers instead
+ of caching them
+
+Mesa does not import MTK 16L32 tiled buffers as a view of the dma-buf.
+panfrost_legalize_format() finds the modifier incompatible and calls
+pan_resource_modifier_convert(), which detiles into a freshly allocated
+linear resource with a compute shader and migrates the BO. The EGLImage
+that comes back is a snapshot taken at import time, and nothing tells
+Mesa when the producer writes another frame into the same memory.
+
+CDRMPRIMETexturePool keys its imported images on the dma-buf inode, which
+is correct for linear and AFBC buffers where the texture samples live
+memory. The v4l2 capture pool exports each buffer once and then recycles
+it for frame after frame, so for a copy-converted layout every later
+frame hit the cache and got the snapshot taken the first time that buffer
+was used. Playback showed the first few frames on a loop, one per capture
+buffer, rather than the video.
+
+Re-import on a cache hit for these buffers so each frame is detiled from
+the current contents. The GL texture object is kept, only the EGLImage is
+recreated. Other modifiers keep using the cache untouched.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../HwDecRender/DRMPRIMEEGL.cpp               | 51 +++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp
+index f7fcd69477..e9faa35a6d 100644
+--- a/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp
++++ b/xbmc/cores/VideoPlayer/VideoRenderers/HwDecRender/DRMPRIMEEGL.cpp
+@@ -8,6 +8,7 @@
+ 
+ #include "DRMPRIMEEGL.h"
+ 
++#include "utils/DRMHelpers.h"
+ #include "utils/log.h"
+ 
+ #include <memory>
+@@ -358,6 +359,46 @@ std::optional<DRMPRIME::DmaBufIdentity> AcquiredIdentity(CVideoBufferDRMPRIME* b
+   return identity;
+ }
+ 
++// Mesa imports some tiled layouts by converting them into a linear copy once,
++// on first use - panfrost does this for MTK 16L32, detiling with a compute
++// shader in pan_resource_modifier_convert(). The imported image is then a
++// snapshot of the dma-buf rather than a view of it, and Mesa has no way to
++// learn that the producer later wrote another frame into the same memory.
++//
++// The v4l2 capture pool recycles a handful of buffers, each exported once, so
++// caching by identity would hand back the first frame decoded into that buffer
++// for the rest of playback. Re-import these every time instead.
++bool RequiresReimport(const DRMPRIME::DmaBufIdentity& identity)
++{
++#if defined(DRM_FORMAT_MOD_VENDOR_MTK)
++  for (int i = 0; i < identity.nbObjects; i++)
++  {
++    if (identity.modifier[i] >> 56 == DRM_FORMAT_MOD_VENDOR_MTK)
++      return true;
++  }
++#endif
++  return false;
++}
++
++// refresh an already-cached slot in place; recycles it and fails on error
++template<typename EntryVec>
++bool RefreshEntry(CVideoBufferDRMPRIME* buffer,
++                  DRMPRIME::CDmaBufIdentityCache& cache,
++                  EntryVec& entries,
++                  std::vector<size_t>& freeSlots,
++                  uint32_t handle)
++{
++  auto& entry = entries[handle - 1];
++
++  entry->Reset();
++  if (entry->Import(buffer))
++    return true;
++
++  cache.InvalidateAll();
++  RecycleDoomed(cache, entries, freeSlots, {});
++  return false;
++}
++
+ } // namespace
+ 
+ CDRMPRIMETexture* CDRMPRIMETexturePool::GetOES(CVideoBufferDRMPRIME* buffer)
+@@ -396,6 +437,11 @@ CDRMPRIMETexture* CDRMPRIMETexturePool::GetOES(CVideoBufferDRMPRIME* buffer)
+     handle = static_cast<uint32_t>(slot) + 1;
+     m_oesCache.Insert(*identity, handle, salt);
+   }
++  else if (RequiresReimport(*identity) &&
++           !RefreshEntry(buffer, m_oesCache, m_oesEntries, m_oesFree, handle))
++  {
++    return nullptr;
++  }
+ 
+   RecycleDoomed(m_oesCache, m_oesEntries, m_oesFree, {handle});
+ 
+@@ -433,6 +479,11 @@ CDRMPRIMETextureYUV* CDRMPRIMETexturePool::GetYUV(CVideoBufferDRMPRIME* buffer)
+     handle = static_cast<uint32_t>(slot) + 1;
+     m_yuvCache.Insert(*identity, handle);
+   }
++  else if (RequiresReimport(*identity) &&
++           !RefreshEntry(buffer, m_yuvCache, m_yuvEntries, m_yuvFree, handle))
++  {
++    return nullptr;
++  }
+ 
+   RecycleDoomed(m_yuvCache, m_yuvEntries, m_yuvFree, {handle});
+ 

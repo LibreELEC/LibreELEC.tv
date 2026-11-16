@@ -244,6 +244,10 @@ configure_package() {
     PKG_PATCH_DIRS+=" drmprime-filter"
   fi
 
+  if [ "${PROJECT}" = "Mediatek" ]; then
+    PKG_PATCH_DIRS+=" mediatek"
+  fi
+
   KODI_LIBDVD="${KODI_DVDCSS} \
                -DLIBDVDNAV_URL=${SOURCES}/libdvdnav/libdvdnav-$(get_pkg_version libdvdnav).tar.xz \
                -DLIBDVDNAV_HASH=SHA256=$(get_pkg_variable libdvdnav PKG_SHA256) \
