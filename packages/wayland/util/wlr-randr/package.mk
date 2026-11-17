@@ -9,3 +9,8 @@ PKG_SITE="https://gitlab.freedesktop.org/emersion/wlr-randr"
 PKG_URL="https://gitlab.freedesktop.org/emersion/wlr-randr/-/archive/v${PKG_VERSION}/${PKG_NAME}-v${PKG_VERSION}.tar.bz2"
 PKG_DEPENDS_TARGET="toolchain wayland"
 PKG_LONGDESC="Utility to manage outputs of a Wayland compositor."
+
+if [ "${DISPLAYSERVER}" != "wl" ]; then
+  PKG_BUILD_FLAGS="-sysroot"
+  PKG_DEPENDS_CONFIG="wayland"
+fi
