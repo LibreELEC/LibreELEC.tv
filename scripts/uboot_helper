@@ -482,6 +482,22 @@ devices = \
       },
     },
     'RK3576': {
+      'armsom-sige5': {
+        'config': 'sige5-rk3576_defconfig',
+        'dtb': 'rk3576-armsom-sige5.dtb'
+      },
+      'armsom-sige5-v1.2-wifibt': {
+        'config': 'sige5-rk3576_defconfig',
+        'dtb': 'rk3576-armsom-sige5-v1.2-wifibt.dtb'
+      },
+      'nanopi-m5': {
+        'config': 'nanopi-m5-rk3576_defconfig',
+        'dtb': ''
+      },
+      'nanopi-r76s': {
+        'config': 'nanopi-r76s-rk3576_defconfig',
+        'dtb': ''
+      },
       'roc-pc': {
         'config': 'roc-pc-rk3576_defconfig',
         'dtb': ''
