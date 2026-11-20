@@ -11,14 +11,9 @@ PKG_DEPENDS_TARGET="toolchain libgcrypt"
 PKG_LONGDESC="NTFS filesystem userspace utilities"
 PKG_TOOLCHAIN="autotools"
 
-PKG_CONFIGURE_OPTS_TARGET="--enable-library"
+PKG_CONFIGURE_OPTS_TARGET="--enable-library \
+                           --exec-prefix=/usr"
 
 post_configure_target() {
   libtool_remove_rpath libtool
-}
-
-post_makeinstall_target() {
-  rm ${INSTALL}/usr/lib/libntfs.so
-  mv ${INSTALL}/lib/libntfs.so* ${INSTALL}/usr/lib/
-  rmdir ${INSTALL}/lib
 }
