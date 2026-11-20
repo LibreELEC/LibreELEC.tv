@@ -14,8 +14,8 @@ linear calculation for all other framebuffers.
 
 Signed-off-by: Jernej Skrabec <jernej.skrabec@gmail.com>
 ---
- drivers/gpu/drm/drm_gem_framebuffer_helper.c | 24 +++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/drm_gem_framebuffer_helper.c | 26 +++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpu/drm/drm_gem_framebuffer_helper.c b/drivers/gpu/drm/drm_gem_framebuffer_helper.c
 index 88808e972cc1..b1926d5cb401 100644
@@ -33,7 +33,7 @@ index 88808e972cc1..b1926d5cb401 100644
  /**
   * drm_gem_fb_destroy - Free GEM backed framebuffer
   * @fb: Framebuffer
-@@ -183,9 +188,19 @@ int drm_gem_fb_init_with_funcs(struct drm_device *dev,
+@@ -183,9 +188,21 @@ int drm_gem_fb_init_with_funcs(struct drm_device *dev,
  			goto err_gem_object_put;
  		}
  
@@ -45,8 +45,10 @@ index 88808e972cc1..b1926d5cb401 100644
 +
 +			ret = drm_gem_afbc_min_size(dev, info, mode_cmd,
 +						    &afbc_fb);
-+			if (ret)
++			if (ret) {
++				drm_gem_object_put(objs[i]);
 +				goto err_gem_object_put;
++			}
 +			min_size = afbc_fb.afbc_size;
 +		} else {
 +			min_size = (height - 1) * mode_cmd->pitches[i]
@@ -56,7 +58,7 @@ index 88808e972cc1..b1926d5cb401 100644
  
  		if (objs[i]->size < min_size) {
  			drm_dbg_kms(dev,
-@@ -573,6 +588,9 @@ static int drm_gem_afbc_min_size(struct drm_device *dev,
+@@ -573,6 +590,9 @@ static int drm_gem_afbc_min_size(struct drm_device *dev,
  	afbc_fb->afbc_size = ALIGN(n_blocks * AFBC_HEADER_SIZE, hdr_alignment);
  	afbc_fb->afbc_size += n_blocks * ALIGN(bpp * AFBC_SUPERBLOCK_PIXELS / 8,
  					       AFBC_SUPERBLOCK_ALIGNMENT);
