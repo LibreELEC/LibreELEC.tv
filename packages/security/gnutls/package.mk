@@ -3,13 +3,13 @@
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="gnutls"
-PKG_VERSION="3.8.13"
-PKG_SHA256="ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e"
+PKG_VERSION="3.8.14"
+PKG_SHA256="7e2d258071f5db9620aa7ff34259331d004f7beafa3eb18560cfaf60acfbf02a"
 PKG_LICENSE="LGPL-2.1-or-later"
 PKG_SITE="https://gnutls.org"
 PKG_URL="https://www.gnupg.org/ftp/gcrypt/gnutls/v${PKG_VERSION:0:3}/${PKG_NAME}-${PKG_VERSION}.tar.xz"
-PKG_DEPENDS_HOST="autotools:host libidn2:host nettle:host zlib:host"
-PKG_DEPENDS_TARGET="autotools:host gcc:host libidn2 nettle zlib"
+PKG_DEPENDS_HOST="autotools:host libidn2:host libtasn1:host nettle:host zlib:host"
+PKG_DEPENDS_TARGET="autotools:host gcc:host libidn2 libtasn1 nettle zlib"
 PKG_LONGDESC="A library which provides a secure layer over a reliable transport layer."
 
 PKG_CONFIGURE_OPTS_COMMON="--disable-doc \
@@ -21,7 +21,6 @@ PKG_CONFIGURE_OPTS_COMMON="--disable-doc \
                            --disable-tools \
                            --disable-valgrind-tests \
                            --with-idn \
-                           --with-included-libtasn1 \
                            --with-included-unistring \
                            --without-p11-kit \
                            --without-tpm"
