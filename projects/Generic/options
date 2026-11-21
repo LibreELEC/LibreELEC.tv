@@ -63,7 +63,7 @@
     ADDITIONAL_DRIVERS+=""
 
   # additional packages to install:
-    ADDITIONAL_PACKAGES+=" pciutils"
+    ADDITIONAL_PACKAGES+=" pciutils rtw88-rtl8723bs"
 
   # Default size of the ova image, in MB, e.g. 4096
     OVA_SIZE="4096"
