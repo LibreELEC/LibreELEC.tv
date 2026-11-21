@@ -51,4 +51,8 @@ makeinstall_target() {
   install -m 0644 \
     "${PKG_BUILD}/firmware/rtw8723b_fw.bin" \
     "${firmware_dir}/rtw8723b_fw.bin"
+
+  install -m 0644 \
+    "${PKG_BUILD}/firmware/rtw8723b_wow_fw.bin" \
+    "${firmware_dir}/rtw8723b_wow_fw.bin"
 }
