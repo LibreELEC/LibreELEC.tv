@@ -156,6 +156,7 @@ if [ -n "${PKG_INSTALL}" -a -d "${PKG_INSTALL}" ]; then
     --exclude=./usr/lib/cmake \
     --exclude=./usr/lib/pkgconfig \
     --exclude=./usr/share/aclocal \
+    --exclude=./usr/share/cmake \
     --exclude=./usr/share/pkgconfig \
     --exclude=./include \
     --exclude=./lib/cmake \
