@@ -439,6 +439,10 @@ post_makeinstall_target() {
     cp ${PKG_DIR}/config/70-libinput-ignore-power-button.rules ${INSTALL}/usr/lib/udev/rules.d/
   fi
 
+  # install well-known XDG user directories config file
+  mkdir -p ${INSTALL}/usr/config
+  cp ${PKG_DIR}/config/user-dirs.dirs ${INSTALL}/usr/config
+
   # update addon manifest
   ADDON_MANIFEST=${INSTALL}/usr/share/kodi/system/addon-manifest.xml
   xmlstarlet ed -L -d "/addons/addon[text()='service.xbmc.versioncheck']" ${ADDON_MANIFEST}

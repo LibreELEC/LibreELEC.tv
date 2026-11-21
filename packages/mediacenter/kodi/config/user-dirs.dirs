@@ -1,0 +1,5 @@
+# well-known XDG user directories
+XDG_DOWNLOAD_DIR="/storage/downloads"
+XDG_MUSIC_DIR="/storage/music"
+XDG_PICTURES_DIR="/storage/pictures"
+XDG_VIDEOS_DIR="/storage/videos"
