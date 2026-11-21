@@ -3,11 +3,11 @@
 
 PKG_NAME="externalhelper"
 PKG_VERSION="0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://libreelec.tv"
 PKG_URL=""
-PKG_DEPENDS_TARGET="toolchain seatd wayland wlroots kanshi labwc wayvnc wlopm swayidle"
+PKG_DEPENDS_TARGET="toolchain seatd wayland wlroots kanshi labwc wayvnc wlopm swayidle wayland-utils wlr-randr"
 PKG_SECTION="tools"
 PKG_SHORTDESC="External programs helper"
 PKG_LONGDESC="Tools to run external programs in a minimal wayland session"
@@ -28,8 +28,10 @@ addon() {
 	cp -P $(get_install_dir wayvnc)/usr/bin/wayvnc "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_build_dir wlopm)/wlopm "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_install_dir swayidle)/usr/bin/swayidle "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
+    cp -P $(get_install_dir wayland-utils)/usr/bin/wayland-info "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
+    cp -P $(get_install_dir wlr-randr)/usr/bin/wlr-randr "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
 
-    for f in seatd seatd-launch labwc kanshi wayvnc wlopm swayidle; do
+    for f in seatd seatd-launch labwc kanshi wayvnc wlopm swayidle wayland-info wlr-randr; do
       patchelf --add-rpath '${ORIGIN}/../lib.private' "${ADDON_BUILD}/${PKG_ADDON_ID}/bin/${f}"
     done
 
