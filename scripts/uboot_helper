@@ -278,6 +278,10 @@ devices = \
         'dtb': 'meson-sm1-s905d3-libretech-cc.dtb',
         'config': 'aml-s905d3-cc_defconfig'
       },
+      'vero4k-plus': {
+        'dtb': 'meson-gxl-s905d-vero4k-plus.dtb',
+        'config': 'osmc-vero4k-plus_defconfig'
+      },
       'wetek-core2': {
         'dtb': 'meson-gxm-wetek-core2.dtb',
         'config': 'wetek-core2_defconfig'
