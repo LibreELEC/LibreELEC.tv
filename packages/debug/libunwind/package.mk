@@ -3,7 +3,7 @@
 
 PKG_NAME="libunwind"
 PKG_VERSION="1.8.3"
-PKG_SHA256="21b26bc75cd37b548d7952f2794cde711efa6c6151c4147cc3c52cfedbf11df4"
+PKG_SHA256="4dcbdba4e25544d3753dbbcd5cc4cd36d3eb6e6d2f23d8ab61c0ee1ca6da54e3"
 PKG_LICENSE="MIT"
 PKG_SITE="https://www.nongnu.org/libunwind/"
 PKG_URL="https://github.com/libunwind/libunwind/archive/refs/tags/v${PKG_VERSION}.tar.gz"
