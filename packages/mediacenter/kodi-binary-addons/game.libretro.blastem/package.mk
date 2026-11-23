@@ -2,8 +2,8 @@
 # Copyright (C) 2023-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.blastem"
-PKG_VERSION="1.0.1.43-Piers"
-PKG_SHA256="7671ccb86b8aaab9f274b58a4f7fab063b25b4ff13b52e2bb8c73187638b6e00"
+PKG_VERSION="1.0.1.44-Piers"
+PKG_SHA256="c1a05a586c1425b91b0d04b50ff97308fd28b1a9d8ad06fa797ee0889e40e108"
 PKG_REV="1"
 PKG_ARCH="x86_64"
 PKG_LICENSE="GPL-3.0-or-later"
