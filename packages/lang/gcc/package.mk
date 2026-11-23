@@ -24,6 +24,10 @@ case ${TARGET_ARCH} in
     OPTS_LIBATOMIC="--enable-libatomic"
     OPTS_STATIC="--enable-static"
     ;;
+  aarch64 | x86_64)
+    OPTS_LIBATOMIC="--enable-libatomic"
+    OPTS_STATIC="--disable-static"
+    ;;
   *)
     OPTS_LIBATOMIC="--disable-libatomic"
     OPTS_STATIC="--disable-static"
