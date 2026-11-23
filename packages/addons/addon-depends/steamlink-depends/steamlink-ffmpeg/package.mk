@@ -3,8 +3,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="steamlink-ffmpeg"
-PKG_VERSION="de943d66dab18e89fc10c74459bea1d787edc49d" # tag: pi/7.1.2/rpi_28
-PKG_SHA256="c5059cbe7e59437b1577403f3a5dd2e264318d496af8b8762a4de86e295c068b"
+PKG_VERSION="9c17617b74cc40aa651c722f3dce40ead63dd11f" # tag: pi/7.1.5/rpi_30
+PKG_SHA256="d2d7c8de1450d15f565c3240caa706d07c108614eecafb09db4e2ee8c4934700"
 PKG_LICENSE="GPL-3.0-or-later"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="https://github.com/jc-kynesim/rpi-ffmpeg/archive/${PKG_VERSION}.tar.gz"
