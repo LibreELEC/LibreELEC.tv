@@ -2,8 +2,8 @@
 # Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.opera"
-PKG_VERSION="1.0.0.61-Piers"
-PKG_SHA256="c2d014d502c369a9e490e86e6b9f580fa2876979fa43592008e6ac3ef56df5ca"
+PKG_VERSION="1.0.0.64-Piers"
+PKG_SHA256="6d4c6d1b7cabdc770a361768ec6372b06318f8af8596b2512d171f70368ec121"
 PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="LicenseRef-FreeDO"

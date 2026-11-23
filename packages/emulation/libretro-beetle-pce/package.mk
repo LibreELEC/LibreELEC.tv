@@ -2,8 +2,8 @@
 # Copyright (C) 2023-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-beetle-pce"
-PKG_VERSION="b96c11e095b6a40a412d2da02766ae1c3f4fd539"
-PKG_SHA256="dafa9d71ba2c6cc81c67145d7ac31d8ee32dd6fe8e9448335ae1bcb30b4a1205"
+PKG_VERSION="0c9db4d5d65d661100354442ff426585eaff4987"
+PKG_SHA256="5b75b2350a5a6d0184ada25b7c90fa02c0613881bb64cf9606d6a395d6ae63f5"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/libretro/beetle-pce-libretro"
 PKG_URL="https://github.com/libretro/beetle-pce-libretro/archive/${PKG_VERSION}.tar.gz"

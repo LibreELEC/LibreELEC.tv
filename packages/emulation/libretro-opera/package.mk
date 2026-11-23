@@ -2,8 +2,8 @@
 # Copyright (C) 2021-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-opera"
-PKG_VERSION="370d9a25c030bb9de4aade371b31045691c40a95"
-PKG_SHA256="cb7176d654861502e7bef1b3d1914393522dfdf94abb9e80a6b61cc8796804ba"
+PKG_VERSION="e01f1dc83e325596b2d09e7f286b0219459433e6"
+PKG_SHA256="ceeccd792334eb447df541bca615649e431361f5ab0c601658233433f17fd281"
 PKG_LICENSE="LicenseRef-FreeDO"
 PKG_SITE="https://github.com/libretro/opera-libretro"
 PKG_URL="https://github.com/libretro/opera-libretro/archive/${PKG_VERSION}.tar.gz"
