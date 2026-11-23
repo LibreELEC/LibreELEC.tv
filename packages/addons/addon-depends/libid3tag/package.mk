@@ -4,10 +4,10 @@
 
 PKG_NAME="libid3tag"
 PKG_VERSION="0.16.4"
-PKG_SHA256="ceb88ada1aa867c87c1d748a8aa40e68db5b0d2df636a9dab0ab1f7741d5e009"
+PKG_SHA256="8b6bc96016f6ab3a52b753349ed442e15181de9db1df01884f829e3d4f3d1e78"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://www.underbit.com/products/mad/"
-PKG_URL="https://codeberg.org/tenacityteam/libid3tag/archive/${PKG_VERSION}.tar.gz"
+PKG_URL="https://codeberg.org/tenacityteam/libid3tag/releases/download/${PKG_VERSION}/id3tag-${PKG_VERSION}-source.tar.gz"
 PKG_DEPENDS_TARGET="toolchain zlib"
 PKG_LONGDESC="A library for id3 tagging."
 

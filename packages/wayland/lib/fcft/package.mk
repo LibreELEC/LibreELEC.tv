@@ -3,10 +3,10 @@
 
 PKG_NAME="fcft"
 PKG_VERSION="3.3.3"
-PKG_SHA256="c0d8d485b45b1af829f73101d6588f404a32bf3c7543236b1a4707d44be81b60"
+PKG_SHA256="bb298772d625e7d917373d541456f34f1957a9e22b16f17f64158b2c3816563c"
 PKG_LICENSE="MIT"
 PKG_SITE="https://codeberg.org/dnkl/fcft"
-PKG_URL="https://codeberg.org/dnkl/fcft/archive/${PKG_VERSION}.tar.gz"
+PKG_URL="https://codeberg.org/dnkl/fcft/releases/download/${PKG_VERSION}/fcft-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain pixman fontconfig freetype tllist"
 PKG_LONGDESC="A simple library for font loading and glyph rasterization using FontConfig, FreeType and pixman."
 
