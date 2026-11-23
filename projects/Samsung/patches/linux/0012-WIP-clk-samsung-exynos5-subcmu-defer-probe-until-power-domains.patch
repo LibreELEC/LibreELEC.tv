@@ -1,0 +1,131 @@
+From: Shigeaki Asai <ShigeakiAsai@users.noreply.github.com>
+Subject: [PATCH] WIP: clk: samsung: exynos5-subcmu: defer probe until power
+ domains are registered
+
+Since the Exynos power domain driver became a regular platform driver,
+exynos5_clk_probe() may run before the power domains are registered.
+of_genpd_add_device() then fails silently, the sub-CMU devices are added
+without a power domain and their clock setup is not restored across
+power domain off/on cycles. On ODROID-XU4 this leaves the G3D clocks
+misconfigured, causing very poor GPU performance and panfrost
+"gpu sched timeout" errors.
+
+Attach all sub-CMU devices to their power domains first, and defer the
+probe if a power domain provider is not registered yet.
+
+Note: the sub-CMU clock data is __initconst, so the deferred probe must
+complete before init memory is freed. This holds as long as the power
+domain driver is built-in.
+
+---
+--- a/drivers/clk/samsung/clk-exynos5-subcmu.c
++++ b/drivers/clk/samsung/clk-exynos5-subcmu.c
+@@ -9,6 +9,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_domain.h>
+ #include <linux/pm_runtime.h>
++#include <linux/slab.h>
+ 
+ #include "clk.h"
+ #include "clk-exynos5-subcmu.h"
+@@ -131,43 +132,73 @@
+ 	.probe = exynos5_subcmu_probe,
+ };
+ 
+-static int __init exynos5_clk_register_subcmu(struct device *parent,
+-					 const struct exynos5_subcmu_info *info,
+-					      struct device_node *pd_node)
+-{
+-	struct of_phandle_args genpdspec = { .np = pd_node };
+-	struct platform_device *pdev;
+-	int ret;
+-
+-	pdev = platform_device_alloc("exynos5-subcmu", PLATFORM_DEVID_AUTO);
+-	if (!pdev)
+-		return -ENOMEM;
+-
+-	pdev->dev.parent = parent;
+-	platform_set_drvdata(pdev, (void *)info);
+-	of_genpd_add_device(&genpdspec, &pdev->dev);
+-	ret = platform_device_add(pdev);
+-	if (ret)
+-		platform_device_put(pdev);
+-
+-	return ret;
+-}
+-
+ static int __init exynos5_clk_probe(struct platform_device *pdev)
+ {
++	struct platform_device **subcmus;
+ 	struct device_node *np;
+ 	const char *name;
+-	int i;
++	int i, n = 0, ret;
++
++	subcmus = kcalloc(nr_cmus, sizeof(*subcmus), GFP_KERNEL);
++	if (!subcmus)
++		return -ENOMEM;
+ 
+ 	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
++		struct of_phandle_args genpdspec = { .np = np };
++
+ 		if (of_property_read_string(np, "label", &name) < 0)
+ 			continue;
+-		for (i = 0; i < nr_cmus; i++)
+-			if (strcmp(cmu[i]->pd_name, name) == 0)
+-				exynos5_clk_register_subcmu(&pdev->dev,
+-							    cmu[i], np);
++		for (i = 0; i < nr_cmus && n < nr_cmus; i++) {
++			struct platform_device *sub;
++
++			if (strcmp(cmu[i]->pd_name, name) != 0)
++				continue;
++
++			sub = platform_device_alloc("exynos5-subcmu",
++						    PLATFORM_DEVID_AUTO);
++			if (!sub) {
++				of_node_put(np);
++				ret = -ENOMEM;
++				goto err;
++			}
++			sub->dev.parent = &pdev->dev;
++			platform_set_drvdata(sub, (void *)cmu[i]);
++
++			ret = of_genpd_add_device(&genpdspec, &sub->dev);
++			if (ret == -ENOENT || ret == -EPROBE_DEFER) {
++				platform_device_put(sub);
++				of_node_put(np);
++				ret = dev_err_probe(&pdev->dev, -EPROBE_DEFER,
++						    "power domain %s not ready\n",
++						    name);
++				goto err;
++			} else if (ret) {
++				dev_warn(&pdev->dev,
++					 "failed to add %s sub-CMU to its power domain: %d\n",
++					 name, ret);
++			}
++			subcmus[n++] = sub;
++		}
++	}
++
++	for (i = 0; i < n; i++) {
++		ret = platform_device_add(subcmus[i]);
++		if (ret) {
++			pm_genpd_remove_device(&subcmus[i]->dev);
++			platform_device_put(subcmus[i]);
++		}
+ 	}
++
++	kfree(subcmus);
+ 	return 0;
++
++err:
++	while (n--) {
++		pm_genpd_remove_device(&subcmus[n]->dev);
++		platform_device_put(subcmus[n]);
++	}
++	kfree(subcmus);
++	return ret;
+ }
+ 
+ static const struct of_device_id exynos5_clk_of_match[] = {
