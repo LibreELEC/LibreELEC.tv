@@ -4,10 +4,10 @@
 
 PKG_NAME="libaio"
 PKG_VERSION="0.3.113"
-PKG_SHA256="716c7059703247344eb066b54ecbc3ca2134f0103307192e6c2b7dab5f9528ab"
+PKG_SHA256="2c44d1c5fd0d43752287c9ae1eb9c023f04ef848ea8d4aafa46e9aedb678200b"
 PKG_LICENSE="LGPL-2.0-or-later"
-PKG_SITE="https://pagure.io/libaio"
-PKG_URL="https://pagure.io/${PKG_NAME}/archive/${PKG_NAME}-${PKG_VERSION}/${PKG_NAME}-${PKG_NAME}-${PKG_VERSION}.tar.gz"
+PKG_SITE="https://codeberg.org/jmoyer/libaio"
+PKG_URL="https://codeberg.org/jmoyer/libaio/releases/download/libaio-${PKG_VERSION}/libaio-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="make:host gcc:host"
 PKG_LONGDESC="Kernel Asynchronous I/O (AIO) Support for Linux."
 
