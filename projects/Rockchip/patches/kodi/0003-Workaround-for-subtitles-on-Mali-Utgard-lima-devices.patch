@@ -16,20 +16,20 @@ diff --git a/xbmc/cores/VideoPlayer/VideoRenderers/OverlayRendererGLES.cpp b/xbm
 index 99e1bd3ff9..8075f89dab 100644
 --- a/xbmc/cores/VideoPlayer/VideoRenderers/OverlayRendererGLES.cpp
 +++ b/xbmc/cores/VideoPlayer/VideoRenderers/OverlayRendererGLES.cpp
-@@ -397,7 +397,7 @@ void COverlayGlyphGLES::Render(SRenderState& state)
-   glEnableVertexAttribArray(colLoc);
-   glEnableVertexAttribArray(tex0Loc);
+@@ -444,7 +444,7 @@ void COverlayGlyphGLES::Render(SRenderState& state)
+     glEnableVertexAttribArray(colLoc);
+     glEnableVertexAttribArray(tex0Loc);
  
--  glUniform1f(depthLoc, -1.0f);
-+  glUniform1f(depthLoc, -0.99f);
+-    glUniform1f(depthLoc, -1.0f);
++    glUniform1f(depthLoc, -0.99f);
  
-   glDrawArrays(GL_TRIANGLES, 0, m_vertexCount);
-   CRenderSystemBase::m_GUIElementCount++;
+     glDrawArrays(GL_TRIANGLES, 0, page.vertexCount);
+     CRenderSystemBase::m_GUIElementCount++;
 diff --git a/xbmc/guilib/GUIFontTTFGLES.cpp b/xbmc/guilib/GUIFontTTFGLES.cpp
 index 6554740fc6..42897ee9df 100644
 --- a/xbmc/guilib/GUIFontTTFGLES.cpp
 +++ b/xbmc/guilib/GUIFontTTFGLES.cpp
-@@ -253,7 +253,7 @@ void CGUIFontTTFGLES::LastEnd()
+@@ -242,7 +242,7 @@ void CGUIFontTTFGLES::LastEnd()
  
        // Apply the depth value of the layer
        float depth = CServiceBroker::GetWinSystem()->GetGfxContext().GetTransformDepth();
