@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris <meischris39@hotmail.com>
+Date: Mon, 23 Nov 2026 12:12:57 +0000
+Subject: [PATCH] Mark the emulation thread instead of assuming the loading
+ thread
+
+switchThread() took the thread that loaded the core for the main thread.
+Kodi loads the game on one thread and runs frames on another, so the
+first retro_run() took the emulation thread's side and waited for the
+emulation thread, which was waiting too, and Kodi froze.
+---
+ libretro/src/emu_thread.cpp | 12 ++++++++----
+ libretro/src/emu_thread.h   |  5 +++++
+ libretro/src/libretro.cpp   |  2 ++
+ 3 files changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/libretro/src/emu_thread.cpp b/libretro/src/emu_thread.cpp
+index 76eb3ea..2fb39c4 100644
+--- a/libretro/src/emu_thread.cpp
++++ b/libretro/src/emu_thread.cpp
+@@ -5,9 +5,8 @@
+ #include <atomic>
+ #include <condition_variable>
+ #include <mutex>
+-#include <thread>
+ 
+-static const auto main_thread_id = std::this_thread::get_id();
++static thread_local bool is_emu_thread = false;
+ static bool use_spinlock = false;
+ 
+ // For CV-based waiting.
+@@ -113,12 +112,17 @@ static void switchToMainThread()
+     }
+ }
+ 
++void markEmuThread()
++{
++    is_emu_thread = true;
++}
++
+ auto switchThread(const ThreadSwitchReason reason) -> ThreadSwitchReason
+ {
+     static ThreadSwitchReason switch_reason = ThreadSwitchReason::None;
+ 
+     switch_reason = reason;
+-    if (std::this_thread::get_id() == main_thread_id) {
++    if (!is_emu_thread) {
+         switchToEmuThread();
+     } else {
+         switchToMainThread();
+@@ -134,7 +138,7 @@ void useSpinlockThreadSync(const bool use_spinlock_)
+ 
+     ::use_spinlock = use_spinlock_;
+ 
+-    if (std::this_thread::get_id() == main_thread_id) {
++    if (!is_emu_thread) {
+         if (use_spinlock_) {
+             std::unique_lock emu_lock(emu_mutex);
+             emu_keep_waiting = false;
+diff --git a/libretro/src/emu_thread.h b/libretro/src/emu_thread.h
+index 6ad43dc..fedd616 100644
+--- a/libretro/src/emu_thread.h
++++ b/libretro/src/emu_thread.h
+@@ -20,6 +20,11 @@ enum class ThreadSwitchReason
+  */
+ auto switchThread(ThreadSwitchReason reason = ThreadSwitchReason::None) -> ThreadSwitchReason;
+ 
++/* Marks the calling thread as the emulation thread. Every other thread is taken as the main thread,
++ * as a frontend can load the game on one thread and run it on another.
++ */
++void markEmuThread();
++
+ /* Change current thread synchronization mode. If true, use a spinlock. If false, use condition
+  * variables. Can be called from either the main thread or the emulation thread.
+  */
+diff --git a/libretro/src/libretro.cpp b/libretro/src/libretro.cpp
+index 6a0e28d..540d364 100644
+--- a/libretro/src/libretro.cpp
++++ b/libretro/src/libretro.cpp
+@@ -1436,6 +1436,8 @@ static void MOUNTZIP_ProgramStart(Program** make)
+ 
+ static void start_dosbox(const std::string cmd_line)
+ {
++    markEmuThread();
++
+     // ZIP content is not a path the shell can run: mount it and change to it.
+     const char* const zip_argv[] = {"dosbox", "-c", "MOUNTZIP", "-c", "C:", "-c", "Z:\\ZIPRUN.BAT"};
+     const char* const argv[2] = {"dosbox", cmd_line.c_str()};
