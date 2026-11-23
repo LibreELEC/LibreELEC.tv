@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kel Modderman <kelvmod@gmail.com>
+Date: Sun, 15 Nov 2026 03:25:49 +1000
+Subject: [PATCH] Build the objects after all bundled deps
+
+The SDL_sound wrapper's decoders include mpg123.h and opusfile.h, but
+the objects only waited for fluidsynth, munt and SDL_net, so a parallel
+build without a separate 'make deps' could compile them before mpg123
+and opusfile were installed.
+---
+ libretro/Makefile.libretro | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libretro/Makefile.libretro b/libretro/Makefile.libretro
+index a6acaa5..a64dfd9 100644
+--- a/libretro/Makefile.libretro
++++ b/libretro/Makefile.libretro
+@@ -308,7 +308,7 @@ all: $(TARGET)
+ .PHONY: deps
+ deps:
+ 
+-$(OBJECTS): $(FLUIDSYNTH) $(MUNT) $(SDLNET)
++$(OBJECTS): $(FLUIDSYNTH) $(MUNT) $(SDLNET) | deps
+ 
+ $(TARGET): $(OBJECTS)
+ ifeq ($(STATIC_LINKING), 1)
+-- 
+2.55.0
+
