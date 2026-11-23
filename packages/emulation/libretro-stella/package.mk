@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libretro-stella"
-PKG_VERSION="2c3d7023e9136f75c789803b44f119d8749dc104"
-PKG_SHA256="3a49d0b643eac55cd88040fa1dcd7c8d17163541b1c33ba40725b15158d1d386"
+PKG_VERSION="da5a002c318843bea1d233932508b9439798de0d"
+PKG_SHA256="f51ac5fd8805c3bb0f111b1f5f40d0717d5eb8b2147fd079003cf0c7c5c87961"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/stella-emu/stella"
 PKG_URL="https://github.com/stella-emu/stella/archive/${PKG_VERSION}.tar.gz"
