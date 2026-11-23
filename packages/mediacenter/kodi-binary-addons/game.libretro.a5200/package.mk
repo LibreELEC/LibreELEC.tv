@@ -2,9 +2,9 @@
 # Copyright (C) 2023-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="game.libretro.a5200"
-PKG_VERSION="2.0.2.22-Omega"
-PKG_SHA256="9ca56f703211f712d004a94ca2498cebc27f77e17e7b76f85692e086bdec81af"
-PKG_REV="2"
+PKG_VERSION="2.0.2.28-Piers"
+PKG_SHA256="a567453a88b48109a378ab62acb48b36bb9d00f119c6250e0c9b6fc1a215e637"
+PKG_REV="1"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.a5200"
