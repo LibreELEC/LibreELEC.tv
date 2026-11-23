@@ -55,7 +55,9 @@ PKG_MESON_OPTS_TARGET="--libdir=/usr/lib \
                        -Dbinfmt=false \
                        -Drepart=disabled \
                        -Dcoredump=false \
-                       -Dresolve=false \
+                       -Dresolve=true \
+                       -Ddefault-mdns=no \
+                       -Ddefault-llmnr=no \
                        -Dlogind=true \
                        -Dhostnamed=true \
                        -Dlocaled=false \
@@ -211,6 +213,9 @@ post_makeinstall_target() {
   sed -e "s,^.*SplitMode=.*$,SplitMode=none,g" -i ${INSTALL}/etc/systemd/journald.conf
   sed -e "s,^.*SystemMaxUse=.*$,SystemMaxUse=10M,g" -i ${INSTALL}/etc/systemd/journald.conf
 
+  # tune resolved.conf
+  sed -e "s,^#FallbackDNS=.*$,FallbackDNS=8.8.8.8 8.8.4.4,g" -i ${INSTALL}/etc/systemd/resolved.conf
+
   # tune logind.conf
   if [ "${LOCAL_LOGIN}" = "yes" ]; then
     sed -e "s,^.*NAutoVTs=.*$,NAutoVTs=2,g" -i ${INSTALL}/etc/systemd/logind.conf
@@ -265,6 +270,7 @@ post_makeinstall_target() {
   ln -sf /storage/.config/logind.conf.d ${INSTALL}/etc/systemd/logind.conf.d
   ln -sf /storage/.config/sleep.conf.d ${INSTALL}/etc/systemd/sleep.conf.d
   ln -sf /storage/.config/timesyncd.conf.d ${INSTALL}/etc/systemd/timesyncd.conf.d
+  ln -sf /storage/.config/resolved.conf.d ${INSTALL}/etc/systemd/resolved.conf.d
   safe_remove ${INSTALL}/etc/sysctl.d
   ln -sf /storage/.config/sysctl.d ${INSTALL}/etc/sysctl.d
   safe_remove ${INSTALL}/etc/tmpfiles.d
@@ -285,6 +291,9 @@ post_install() {
 
   add_group systemd-timesync 191
   add_user systemd-timesync x 191 191 "systemd-timesync" "/" "/bin/false"
+
+  add_group systemd-resolve 192
+  add_user systemd-resolve x 192 192 "systemd-resolve" "/" "/bin/false"
 
   add_group systemd-network 193
   add_user systemd-network x 193 193 "systemd-network" "/" "/bin/sh"
@@ -320,6 +329,7 @@ post_install() {
   enable_service network-base.service
   enable_service systemd-timesyncd.service
   enable_service systemd-timesyncd-setup.service
+  enable_service systemd-resolved.service
   enable_service systemd-userdbd.socket
   if [ "${LOCAL_LOGIN}" = "yes" ]; then
     enable_service getty@tty0.service

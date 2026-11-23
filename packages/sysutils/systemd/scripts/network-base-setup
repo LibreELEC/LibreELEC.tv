@@ -33,9 +33,23 @@ fi
 
 # setup /etc/resolv.conf
 rm -f /run/libreelec/resolv.conf
-if [ -f /storage/.config/resolv.conf ]; then
+if [ ! -f /dev/.kernel_ipconfig ]; then
+  # connman passes DNS servers to systemd-resolved, so use its stub resolver
+  # and pass user nameservers to it as global DNS servers
+  if [ -f /storage/.config/resolv.conf ]; then
+    DNS_SERVERS=""
+    while read -r KEY VALUE _; do
+      if [ "${KEY}" = "nameserver" ]; then
+        DNS_SERVERS="${DNS_SERVERS} ${VALUE}"
+      fi
+    done </storage/.config/resolv.conf
+    mkdir -p /run/systemd/resolved.conf.d
+    printf "[Resolve]\nDNS=%s\n" "${DNS_SERVERS# }" >/run/systemd/resolved.conf.d/50-resolv-conf.conf
+  fi
+  ln -s /run/systemd/resolve/stub-resolv.conf /run/libreelec/resolv.conf
+elif [ -f /storage/.config/resolv.conf ]; then
   cat /storage/.config/resolv.conf >/run/libreelec/resolv.conf
-elif [ -f /dev/.kernel_ipconfig ] && [ -f /proc/net/pnp ]; then
+elif [ -f /proc/net/pnp ]; then
   cat /proc/net/pnp >/run/libreelec/resolv.conf
 else
   cat <<EOF >/run/libreelec/resolv.conf

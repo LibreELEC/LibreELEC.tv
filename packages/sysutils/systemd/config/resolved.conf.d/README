@@ -1,0 +1,61 @@
+RESOLVED.CONF(5)                 resolved.conf                 RESOLVED.CONF(5)
+
+NAME
+       resolved.conf, resolved.conf.d - Network Name Resolution configuration
+       files
+
+SYNOPSIS
+       /etc/systemd/resolved.conf
+
+       /etc/systemd/resolved.conf.d/*.conf
+
+DESCRIPTION
+       These configuration files control local network name resolution.
+       ConnMan and other network services (e.g. Tailscale) pass per-link DNS
+       servers to systemd-resolved, and /etc/resolv.conf points to its local
+       stub resolver on 127.0.0.53.
+
+       Files in /storage/.config/resolved.conf.d/ ending in .conf override the
+       defaults in /etc/systemd/resolved.conf. Restart the service to apply
+       changes:
+
+           systemctl restart systemd-resolved
+
+       Nameservers in /storage/.config/resolv.conf are added as global DNS=
+       servers at boot.
+
+       Use "resolvectl status" to show the current DNS configuration.
+
+OPTIONS
+       The following options are configured in the [Resolve] section:
+
+       DNS=
+           A space-separated list of IPv4 and IPv6 addresses to use as system
+           DNS servers. These are combined with the per-link DNS servers
+           provided by ConnMan.
+
+       FallbackDNS=
+           A space-separated list of IPv4 and IPv6 addresses to use as the
+           fallback DNS servers when no other DNS servers are known. Defaults
+           to 8.8.8.8 8.8.4.4.
+
+       Domains=
+           A space-separated list of search domains. Domains prefixed with
+           "~" are routing-only domains.
+
+       MulticastDNS=, LLMNR=
+           Takes a boolean or "resolve". Both default to "no" because Avahi
+           provides mDNS.
+
+       DNSStubListener=
+           Takes a boolean or "udp" or "tcp". Defaults to "yes". Do not
+           disable the stub listener; /etc/resolv.conf uses it.
+
+EXAMPLE
+       /storage/.config/resolved.conf.d/dns.conf:
+
+           [Resolve]
+           DNS=192.168.1.1 1.1.1.1
+
+SEE ALSO
+       https://www.freedesktop.org/software/systemd/man/resolved.conf.html
