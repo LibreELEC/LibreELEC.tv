@@ -1,0 +1,93 @@
+From 5fbe2d229bd3738ed63c7c9177466ad6bc130f18 Mon Sep 17 00:00:00 2001
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Date: Fri, 30 Oct 2026 08:53:16 +0100
+Subject: [PATCH 3/3] FROMGIT: clk: samsung: exynos5-subcmu: Defer probe until power
+ domains are available
+
+Sub-CMU devices are added to their power domains with
+of_genpd_add_device() during exynos5_clk_probe(). Its return value is
+ignored, so if the power domain provider is not registered yet, the
+sub-CMU device is silently left outside of its power domain.
+
+Since commit c09a3e6c97f0 ("soc: samsung: pm_domains: Convert to regular
+platform driver"), power domain providers are registered only when their
+platform devices are probed, which happens after exynos5_clk_probe() has
+already been called.
+
+When a sub-CMU device is outside of its power domain, its runtime PM
+callbacks race with the power domain state changes, which might result in
+losing the proper hardware state. In practice, some clock muxes are left
+switched to the oscillator instead of the respective PLLs.
+
+Fix this by deferring exynos5_clk_probe() until the platform devices for
+all available power domains are instantiated. Since the probe function
+calls __init code, return -ENODEV if a deferred probe runs after the init
+sections have been freed.
+
+Fixes: c09a3e6c97f0 ("soc: samsung: pm_domains: Convert to regular platform driver")
+Cc: stable@vger.kernel.org
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Link: https://patch.msgid.link/20261030075325.517182-4-m.szyprowski@samsung.com
+Signed-off-by: Krzysztof Kozlowski <krzk@kernel.org>
+---
+ drivers/clk/samsung/clk-exynos5-subcmu.c | 25 +++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clk/samsung/clk-exynos5-subcmu.c b/drivers/clk/samsung/clk-exynos5-subcmu.c
+index 1d7eb98b72cf..faa59c65a033 100644
+--- a/drivers/clk/samsung/clk-exynos5-subcmu.c
++++ b/drivers/clk/samsung/clk-exynos5-subcmu.c
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/io.h>
+ #include <linux/of.h>
++#include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_domain.h>
+ #include <linux/pm_runtime.h>
+@@ -153,13 +154,31 @@ static int __init exynos5_clk_register_subcmu(struct device *parent,
+ 	return ret;
+ }
+ 
+-static int __init exynos5_clk_probe(struct platform_device *pdev)
++static int __ref exynos5_clk_probe(struct platform_device *pdev)
+ {
++	static const char pd_node_name[] = "samsung,exynos4210-pd";
+ 	struct device_node *np;
+ 	const char *name;
+ 	int i;
+ 
+-	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
++	/* Deferred probe might run after the init sections have been freed */
++	if (system_state >= SYSTEM_RUNNING)
++		return -ENODEV;
++
++	/* Defer until all needed power domains are registered */
++	for_each_compatible_node(np, NULL, pd_node_name) {
++		if (of_device_is_available(np)) {
++			struct platform_device *pd = of_find_device_by_node(np);
++
++			if (!pd) {
++				of_node_put(np);
++				return -EPROBE_DEFER;
++			}
++			put_device(&pd->dev);
++		}
++	}
++
++	for_each_compatible_node(np, NULL, pd_node_name) {
+ 		if (of_property_read_string(np, "label", &name) < 0)
+ 			continue;
+ 		for (i = 0; i < nr_cmus; i++)
+@@ -177,7 +196,7 @@ static const struct of_device_id exynos5_clk_of_match[] = {
+ 	{ },
+ };
+ 
+-static struct platform_driver exynos5_clk_driver __refdata = {
++static struct platform_driver exynos5_clk_driver = {
+ 	.driver	= {
+ 		.name = "exynos5-clock",
+ 		.of_match_table = exynos5_clk_of_match,
+-- 
+2.43.0
+

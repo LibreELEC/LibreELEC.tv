@@ -1,0 +1,37 @@
+From 73cb3b59548acce1d9fcf6d5a8c3468391dc4580 Mon Sep 17 00:00:00 2001
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Date: Fri, 30 Oct 2026 08:53:15 +0100
+Subject: [PATCH 2/3] FROMGIT: clk: samsung: exynos5-subcmu: Use pm_runtime_get_sync()
+ during probe
+
+The clocks are registered right after pm_runtime_get(), which only
+schedules a resume asynchronously and doesn't guarantee the device (and
+its power domain) is active yet. Use pm_runtime_get_sync() to ensure the
+power domain is really on while the clock registers are accessed during
+the registration.
+
+Fixes: b06a532bf1fa ("clk: samsung: Add Exynos5 sub-CMU clock driver")
+Cc: stable@vger.kernel.org
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Link: https://patch.msgid.link/20261030075325.517182-3-m.szyprowski@samsung.com
+Signed-off-by: Krzysztof Kozlowski <krzk@kernel.org>
+---
+ drivers/clk/samsung/clk-exynos5-subcmu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/samsung/clk-exynos5-subcmu.c b/drivers/clk/samsung/clk-exynos5-subcmu.c
+index 373129847301..1d7eb98b72cf 100644
+--- a/drivers/clk/samsung/clk-exynos5-subcmu.c
++++ b/drivers/clk/samsung/clk-exynos5-subcmu.c
+@@ -103,7 +103,7 @@ static int __init exynos5_subcmu_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_set_suspended(dev);
+ 	pm_runtime_enable(dev);
+-	pm_runtime_get(dev);
++	pm_runtime_get_sync(dev);
+ 
+ 	ctx->dev = dev;
+ 	samsung_clk_register_div(ctx, info->div_clks, info->nr_div_clks);
+-- 
+2.43.0
+
