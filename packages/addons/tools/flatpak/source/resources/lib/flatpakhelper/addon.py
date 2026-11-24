@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
+import sys
+
 import externalhelper.utils as eh
 import xbmc
 import xbmcaddon
@@ -17,6 +19,7 @@ class FlatpakAddon:
         remote_url: str = 'https://dl.flathub.org/repo/flathub.flatpakrepo',
         display_settings: bool = True,
         audio_settings: bool = False,
+        start_args: list | None = None,
     ):
 
         self.calling_addon = addon
@@ -27,6 +30,7 @@ class FlatpakAddon:
         self.remote_url = remote_url
         self.display_settings = display_settings
         self.audio_settings = audio_settings
+        self.start_args = start_args
 
         self.gui = FlatpakGui()
 
@@ -119,6 +123,9 @@ class FlatpakAddon:
         if audiodevice is None and self.audio_settings:
             audiodevice = self.get_audio_device_setting()
 
+        if args is None:
+            args = self.start_args
+
         return self.gui.start(
             appid=self.appid,
             name=self.name,
@@ -134,3 +141,29 @@ class FlatpakAddon:
             audiodevice=audiodevice,
             displayconfig=displayconfig,
         )
+
+    def main(self) -> None:
+        action = sys.argv[1] if len(sys.argv) > 1 else None
+        match action:
+            case None | 'start':
+                self.start()
+            case 'info':
+                if not self.gui.flatpak.is_installed(self.appid):
+                    if not self.gui.confirm_and_install(self.appid, self.remote, self.name):
+                        return
+
+                self.gui.show_info(self.appid)
+            case 'update':
+                if self.gui.flatpak.is_installed(self.appid):
+                    self.gui.check_for_updates(self.appid)
+                else:
+                    self.gui.confirm_and_install(self.appid, self.remote, self.name)
+
+            case 'uninstall':
+                if self.gui.flatpak.is_installed(self.appid):
+                    self.gui.confirm_and_uninstall(self.appid)
+                else:
+                    self.gui.toast(self.gui.ls(30023).format(name=self.name))
+
+            case _:
+                xbmc.log(f'unknown action {action}', xbmc.LOGERROR)

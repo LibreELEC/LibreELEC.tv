@@ -4,5 +4,5 @@
 import xbmcaddon
 from flatpakhelper.addon import FlatpakAddon
 
-flatpak = FlatpakAddon(addon=xbmcaddon.Addon(), appid="@APPID@"@AUDIO_SETTINGS@)
-flatpak.start(@START_ARGS@)
+flatpak = FlatpakAddon(addon=xbmcaddon.Addon(), @CONSTRUCTOR_ARGS@)
+flatpak.main()

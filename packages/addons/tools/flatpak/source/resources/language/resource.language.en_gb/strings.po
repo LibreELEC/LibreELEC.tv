@@ -100,6 +100,10 @@ msgctxt "#30022"
 msgid "Installed {name}"
 msgstr ""
 
+msgctxt "#30023"
+msgid "{name} is not installed"
+msgstr ""
+
 # texts of main plugin
 msgctxt "#30100"
 msgid "Failed to get installed applications.\nCheck the log for errors"

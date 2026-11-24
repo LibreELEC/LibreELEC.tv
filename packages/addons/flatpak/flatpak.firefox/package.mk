@@ -3,7 +3,7 @@
 
 PKG_NAME="flatpak.firefox"
 PKG_VERSION="0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_ARCH="aarch64 x86_64"
 PKG_LICENSE="MPL-2.0"
 PKG_SITE="https://www.mozilla.org/"
