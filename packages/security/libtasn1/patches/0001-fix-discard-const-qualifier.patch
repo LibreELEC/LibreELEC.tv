@@ -1,0 +1,38 @@
+From e5bff665e63eac9a01b415f4b08015aed20b9c77 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Sun, 22 Feb 2026 10:05:24 +0000
+Subject: [PATCH] Fix discard const qualifier
+
+Since glibc-2.43 and ISO C23, the functions bsearch, memchr, strchr,
+strpbrk, strrchr, strstr, wcschr, wcspbrk, wcsrchr, wcsstr and wmemchr
+that return pointers into their input arrays now have definitions as
+macros that return a pointer to a const-qualified type when the input
+argument is a pointer to a const-qualified type.
+
+n_end pointer returns are only being used for comparisons so declare
+them as const, which matches the input variable. n_start was already
+declared as const, so matching logic.
+
+Signed-off-by: Rudi Heitbaum <rudi@heitbaum.com>
+---
+ lib/parser_aux.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/lib/parser_aux.c b/lib/parser_aux.c
+index 813b3d8273d9..a58411f441af 100644
+--- a/lib/parser_aux.c
++++ b/lib/parser_aux.c
+@@ -122,8 +122,8 @@ asn1_node
+ asn1_find_node (asn1_node_const pointer, const char *name)
+ {
+   asn1_node_const p;
+-  char *n_end, n[ASN1_MAX_NAME_SIZE + 1];
+-  const char *n_start;
++  char n[ASN1_MAX_NAME_SIZE + 1];
++  const char *n_start, *n_end;
+   unsigned int nsize;
+   unsigned int nhash;
+   const struct asn1_node_array_st *numbered_children;
+-- 
+2.55.0.windows.5
+
