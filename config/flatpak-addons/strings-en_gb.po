@@ -21,6 +21,14 @@ msgctxt "#30102"
 msgid "Audio"
 msgstr ""
 
+msgctxt "#30103"
+msgid "Common settings"
+msgstr ""
+
+msgctxt "#30104"
+msgid "Flatpak management"
+msgstr ""
+
 # display settings
 msgctxt "#30120"
 msgid "Use custom display settings"
@@ -91,3 +99,22 @@ msgstr ""
 msgctxt "#30147"
 msgid "For ALSA devices enter 'ALSA:' followed by the full PCM name like shown in aplay -L\neg ALSA:sysdefault:CARD=MyCard or ALSA:iec958:CARD=MyCard,DEV=1"
 msgstr ""
+
+# common settings
+msgctxt "#30160"
+msgid "Open External program helper settings"
+msgstr ""
+
+# flatpak management
+msgctxt "#30170"
+msgid "Info"
+msgstr ""
+
+msgctxt "#30171"
+msgid "Check for updates"
+msgstr ""
+
+msgctxt "#30172"
+msgid "Uninstall"
+msgstr ""
+

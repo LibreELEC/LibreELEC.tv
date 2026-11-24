@@ -1713,25 +1713,24 @@ install_flatpak_addon_files() {
   local default_py_file="${dest_dir}/default.py"
   local settings_xml_file="${dest_dir}/resources/settings.xml"
   local strings_po_file="${dest_dir}/resources/language/resource.language.en_gb/strings.po"
-  local start_args=""
-  local audio_settings="" 
+  local constructor_args
 
   if [ ! -f "${default_py_file}" ]; then
     if [ -z "${PKG_FLATPAK_APPID}" ]; then
       die "ERROR: ${PKG_NAME}: PKG_FLATPAK_APPID is not defined"
     fi
+    constructor_args="appid='${PKG_FLATPAK_APPID}'"
 
     if [ "${PKG_FLATPAK_AUDIO_SETTINGS}" = "yes" ]; then
-      audio_settings=", audio_settings=True"
+      constructor_args+=", audio_settings=True"
     fi
 
     if [ -n "${PKG_FLATPAK_START_ARGS}" ]; then
-      start_args="args=[${PKG_FLATPAK_START_ARGS}]"
+      constructor_args+=", start_args=[${PKG_FLATPAK_START_ARGS}]"
     fi
 
     sed -e "s|@APPID@|${PKG_FLATPAK_APPID}|g" \
-        -e "s|@AUDIO_SETTINGS@|${audio_settings}|g" \
-        -e "s|@START_ARGS@|${start_args}|g" \
+        -e "s|@CONSTRUCTOR_ARGS@|${constructor_args}|g" \
         "${ROOT}/config/flatpak-addons/default.py" \
         > "${default_py_file}"
   fi 

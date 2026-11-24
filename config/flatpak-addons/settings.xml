@@ -73,6 +73,32 @@
                     </control>
                 </setting>
             </group>
+            <group id="3" label="30103">
+                <setting id="externalhelpersettings" type="action" label="30160">
+                    <level>0</level>
+                    <data>Addon.OpenSettings(tools.externalhelper)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+            </group>
+            <group id="4" label="30104">
+                <setting id="flatpakinfo" type="action" label="30170">
+                    <level>0</level>
+                    <data>RunScript($ID,info)</data>
+                    <control type="button" format="action" />
+                </setting>
+                <setting id="flatpakcheckupdates" type="action" label="30171">
+                    <level>0</level>
+                    <data>RunScript($ID,update)</data>
+                    <control type="button" format="action" />
+                </setting>
+                <setting id="flatpakuninstall" type="action" label="30172">
+                    <level>0</level>
+                    <data>RunScript($ID,uninstall)</data>
+                    <control type="button" format="action" />
+                </setting>
+            </group>
         </category>
     </section>
 </settings>
