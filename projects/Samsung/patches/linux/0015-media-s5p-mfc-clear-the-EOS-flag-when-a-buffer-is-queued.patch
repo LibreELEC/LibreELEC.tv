@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 16:00:00 +0900
+Subject: [PATCH] media: s5p-mfc: clear the EOS flag when a buffer is queued
+
+V4L2_DEC_CMD_STOP marks the last queued source buffer with
+MFC_BUF_FLAG_EOS. The flag is kept in the per-index buffer state and is
+never cleared, so it is still set when the application queues the same
+buffer index again after the drain. Decoding then stops (the context
+enters the FINISHING state) every time that buffer is used, for example
+after a seek in Kodi, which drains the decoder first.
+
+The same applies to the destination buffers, which are marked with
+MFC_BUF_FLAG_EOS when all frames are extracted.
+
+Clear MFC_BUF_FLAG_EOS together with MFC_BUF_FLAG_USED when a buffer is
+queued.
+
+---
+--- a/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
++++ b/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
+@@ -1137,14 +1137,14 @@
+ 
+ 	if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+ 		mfc_buf = &ctx->src_bufs[vb->index];
+-		mfc_buf->flags &= ~MFC_BUF_FLAG_USED;
++		mfc_buf->flags &= ~(MFC_BUF_FLAG_USED | MFC_BUF_FLAG_EOS);
+ 		spin_lock_irqsave(&dev->irqlock, flags);
+ 		list_add_tail(&mfc_buf->list, &ctx->src_queue);
+ 		ctx->src_queue_cnt++;
+ 		spin_unlock_irqrestore(&dev->irqlock, flags);
+ 	} else if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+ 		mfc_buf = &ctx->dst_bufs[vb->index];
+-		mfc_buf->flags &= ~MFC_BUF_FLAG_USED;
++		mfc_buf->flags &= ~(MFC_BUF_FLAG_USED | MFC_BUF_FLAG_EOS);
+ 		/* Mark destination as available for use by MFC */
+ 		spin_lock_irqsave(&dev->irqlock, flags);
+ 		set_bit(vb->index, &ctx->dec_dst_flag);
