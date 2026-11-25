@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 22:02:11 +0900
+Subject: [PATCH] DVDVideoCodecDRMPRIME: do not open software decoders for more
+ than 8 bits
+
+The frames of software decoders are only supported in 8-bit formats.
+For other streams (e.g. H.264 High 10 or HEVC Main 10, when the
+hardware decoder cannot be used), GetFormat() fails with "no supported
+pixel formats" once decoding has started, and no frame is shown.
+
+Use the bit depth reported by the demuxer and fail Open() instead, so
+that another decoder is used.
+---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp          | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index fa51ed7..00b0176 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -302,6 +302,16 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
+     return false;
+   }
+ 
++  // software decoded frames are only supported with 8 bits: leave the others
++  // to another decoder, as the error would only be noticed when decoding
++  if (!FindHWConfig(pCodec) && hints.bitdepth > 8)
++  {
++    CLog::Log(LOGINFO,
++              "CDVDVideoCodecDRMPRIME::{} - {}-bit video is not supported by software decoding",
++              __FUNCTION__, hints.bitdepth);
++    return false;
++  }
++
+   CLog::Log(LOGINFO, "CDVDVideoCodecDRMPRIME::{} - using decoder {}", __FUNCTION__,
+             pCodec->long_name ? pCodec->long_name : pCodec->name);
+ 
+-- 
+2.43.0
+
