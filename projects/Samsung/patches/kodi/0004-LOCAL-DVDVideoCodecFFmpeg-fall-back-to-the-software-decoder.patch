@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 22:45:00 +0900
+Subject: [PATCH] LOCAL: DVDVideoCodecFFmpeg: fall back to the software decoder
+ if the v4l2m2m decoder cannot be opened
+
+With the changes for Odroid XU3/XU4, the software decoder is reopened
+as the v4l2m2m (MFC) decoder after the first picture. If that fails
+(e.g. the MFC rejects an H.264 High 10 stream), Reopen() leaves the
+codec without a codec context and GetPicture() crashes.
+
+Open the software decoder again in that case, and do not try the
+v4l2m2m decoder again for this stream.
+---
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+@@ -899,7 +899,7 @@
+   else
+   {
+     m_interlaced = false;
+-    if (m_useSoftDecoder)
++    if (m_useSoftDecoder && !m_hwOpenFailed)
+     {
+       m_useSoftDecoder = false;
+       return VC_REOPEN;
+@@ -1059,6 +1059,20 @@
+   if (!Open(m_hints, m_options))
+   {
+     Dispose();
++
++    // the v4l2m2m decoder could not be opened (e.g. unsupported profile):
++    // go on with the software decoder instead of being left without a codec
++    if (!m_useSoftDecoder)
++    {
++      CLog::Log(LOGWARNING,
++                "CDVDVideoCodecFFmpeg::{} - unable to open the v4l2m2m decoder, "
++                "using the software decoder",
++                __FUNCTION__);
++      m_hwOpenFailed = true;
++      m_useSoftDecoder = true;
++      if (!Open(m_hints, m_options))
++        Dispose();
++    }
+   }
+ }
+ 
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h
+@@ -101,6 +101,7 @@
+   int m_codecControlFlags = 0;
+   bool m_interlaced = false;
+   bool m_useSoftDecoder = true;
++  bool m_hwOpenFailed = false;
+   double m_DAR = 1.0;
+   CDVDStreamInfo m_hints;
+   CDVDCodecOptions m_options;
