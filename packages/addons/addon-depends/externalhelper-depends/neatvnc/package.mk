@@ -18,4 +18,4 @@ PKG_MESON_OPTS_TARGET="-Dexamples=false \
                        -Djpeg=enabled \
                        -Dnettle=disabled \
                        -Dtests=false \
-					   -Dtls=enabled"
+                       -Dtls=enabled"

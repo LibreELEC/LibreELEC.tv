@@ -14,4 +14,4 @@ PKG_LONGDESC="Vulkan Header files and API registry"
 
 post_makeinstall_target() {
   safe_remove "${INSTALL}/usr/share"
-} 
+}
