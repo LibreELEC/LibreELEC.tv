@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 15:22:18 +0900
+Subject: [PATCH] libavcodec: v4l2m2m: restart the capture queue if
+ DEC_CMD_START fails
+
+After a drain, the decoder marks its last capture buffer with
+V4L2_BUF_FLAG_LAST, and the capture queue returns EPIPE until it is
+restarted. On flush, V4L2_DEC_CMD_START is used for that, but some
+decoders do not support it: s5p-mfc (Exynos) returns EINVAL, so no
+frame is decoded after a seek.
+
+If V4L2_DEC_CMD_START fails with EINVAL or ENOTTY, restart the capture
+queue with STREAMOFF/STREAMON instead, and queue again the buffers that
+are not used by the user.
+---
+ libavcodec/v4l2_m2m_dec.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index 3d6a3a5..77aae68 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -287,8 +287,38 @@ static void v4l2_decode_flush(AVCodecContext *avctx)
+     }
+ 
+     ret = ioctl(s->fd, VIDIOC_DECODER_CMD, &cmd);
+-    if (ret < 0)
++    if (ret < 0 && (errno == EINVAL || errno == ENOTTY) && capture->streamon) {
++        /* Some decoders (e.g. s5p-mfc) do not support V4L2_DEC_CMD_START.
++         * After the last buffer of a drain, the capture queue then only
++         * returns EPIPE: restart it with STREAMOFF/STREAMON instead. */
++        av_log(avctx, AV_LOG_DEBUG, "VIDIOC_DECODER_CMD start not supported, restarting capture\n");
++
++        ret = ff_v4l2_context_set_status(capture, VIDIOC_STREAMOFF);
++        if (ret < 0)
++            av_log(avctx, AV_LOG_ERROR, "VIDIOC_STREAMOFF %s error: %d\n", capture->name, ret);
++
++        /* the driver has given back all its buffers */
++        for (i = 0; i < capture->num_buffers; i++) {
++            if (capture->buffers[i].status == V4L2BUF_IN_DRIVER)
++                capture->buffers[i].status = V4L2BUF_AVAILABLE;
++        }
++
++        ret = ff_v4l2_context_set_status(capture, VIDIOC_STREAMON);
++        if (ret < 0)
++            av_log(avctx, AV_LOG_ERROR, "VIDIOC_STREAMON %s error: %d\n", capture->name, ret);
++
++        /* queue the buffers that are not used by the user; the others are
++         * queued when the user releases them */
++        for (i = 0; i < capture->num_buffers; i++) {
++            V4L2Buffer *avbuf = &capture->buffers[i];
++
++            if (avbuf->status != V4L2BUF_IN_DRIVER &&
++                !atomic_load(&avbuf->context_refcount))
++                ff_v4l2_buffer_enqueue(avbuf);
++        }
++    } else if (ret < 0) {
+         av_log(avctx, AV_LOG_ERROR, "VIDIOC_DECODER_CMD start error: %d\n", errno);
++    }
+ 
+     s->draining = 0;
+     output->done = 0;
+-- 
+2.43.0
+
