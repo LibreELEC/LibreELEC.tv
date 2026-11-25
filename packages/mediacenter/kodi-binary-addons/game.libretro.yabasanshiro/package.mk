@@ -4,7 +4,7 @@
 PKG_NAME="game.libretro.yabasanshiro"
 PKG_VERSION="3.4.2.21-Piers"
 PKG_SHA256="8375baa91df63b25558f6616f119ffdc2c95502d842496d703fb81092b136a65"
-PKG_REV="1"
+PKG_REV="2"
 PKG_ARCH="any"
 PKG_LICENSE="GPL-2.0-or-later"
 PKG_SITE="https://github.com/kodi-game/game.libretro.yabasanshiro"
