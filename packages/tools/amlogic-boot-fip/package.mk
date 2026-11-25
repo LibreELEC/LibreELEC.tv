@@ -3,8 +3,8 @@
 
 PKG_NAME="amlogic-boot-fip"
 PKG_LICENSE="LicenseRef-nonfree"
-PKG_VERSION="b54e3bbbcf5613d451230d359d264844eeda7166"
-PKG_SHA256="bf91f371193dba1d62d0f2d8dd3a815bbeecf24bcb1e42e50127ea9854597e86"
+PKG_VERSION="c592f26d9927719ec68096538dc19b1cf4d031c2"
+PKG_SHA256="9861d28d2420d86b463533c13e2a78cafdf5fda8d68bbe3cc71a87d9376431bd"
 PKG_SITE="https://github.com/LibreELEC/amlogic-boot-fip"
 PKG_URL="https://github.com/LibreELEC/amlogic-boot-fip/archive/${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="xxd:host"
