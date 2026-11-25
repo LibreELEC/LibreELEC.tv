@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 21:56:19 +0900
+Subject: [PATCH] libavcodec: v4l2m2m: check the H.264 profile supported by the
+ decoder
+
+Some stateful decoders do not support all H.264 profiles and do not
+reject such streams either: the Exynos MFC outputs corrupted frames for
+High 10 streams, for example. The application has no way to fall back
+to another decoder.
+
+If the decoder reports the profiles it supports with the
+V4L2_CID_MPEG_VIDEO_H264_PROFILE menu control, check the profile of the
+stream (from the codec context, or from the SPS in the extradata) when
+probing the devices, and skip the device if it is not supported.
+Decoders that do not report the profiles are used as before.
+---
+ libavcodec/v4l2_m2m.c | 103 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 103 insertions(+)
+
+diff --git a/libavcodec/v4l2_m2m.c b/libavcodec/v4l2_m2m.c
+index 07c7500..edbfc69 100644
+--- a/libavcodec/v4l2_m2m.c
++++ b/libavcodec/v4l2_m2m.c
+@@ -98,6 +98,107 @@ static int v4l2_prepare_contexts(V4L2m2mContext *s, int probe)
+     return AVERROR(EINVAL);
+ }
+ 
++/* H.264 profile (as AV_PROFILE_H264_*) from the codec context or the
++ * extradata (avcC or Annex B SPS), AV_PROFILE_UNKNOWN if not found */
++static int v4l2_h264_profile(AVCodecContext *avctx)
++{
++    const uint8_t *p = avctx->extradata;
++    int size = avctx->extradata_size;
++    int idc = -1, flags = 0;
++
++    if (avctx->profile != AV_PROFILE_UNKNOWN)
++        return avctx->profile;
++
++    if (!p || size < 4)
++        return AV_PROFILE_UNKNOWN;
++
++    if (p[0] == 1) {
++        /* avcC: configurationVersion, profile, constraint flags, level */
++        idc   = p[1];
++        flags = p[2];
++    } else {
++        /* Annex B: look for the first SPS */
++        for (int i = 0; i + 5 < size; i++) {
++            if (p[i] == 0 && p[i + 1] == 0 && p[i + 2] == 1 &&
++                (p[i + 3] & 0x1f) == 7) {
++                idc   = p[i + 4];
++                flags = p[i + 5];
++                break;
++            }
++        }
++    }
++    if (idc < 0)
++        return AV_PROFILE_UNKNOWN;
++
++    /* constraint_set1_flag: constrained baseline,
++     * constraint_set3_flag: intra profiles */
++    if (idc == 66 && (flags & 0x40))
++        return idc | AV_PROFILE_H264_CONSTRAINED;
++    if ((idc == 110 || idc == 122 || idc == 244) && (flags & 0x10))
++        return idc | AV_PROFILE_H264_INTRA;
++    return idc;
++}
++
++static int v4l2_h264_profile_to_v4l2(int profile)
++{
++    switch (profile) {
++    case AV_PROFILE_H264_BASELINE:             return V4L2_MPEG_VIDEO_H264_PROFILE_BASELINE;
++    case AV_PROFILE_H264_CONSTRAINED_BASELINE: return V4L2_MPEG_VIDEO_H264_PROFILE_CONSTRAINED_BASELINE;
++    case AV_PROFILE_H264_MAIN:                 return V4L2_MPEG_VIDEO_H264_PROFILE_MAIN;
++    case AV_PROFILE_H264_EXTENDED:             return V4L2_MPEG_VIDEO_H264_PROFILE_EXTENDED;
++    case AV_PROFILE_H264_HIGH:                 return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH;
++    case AV_PROFILE_H264_HIGH_10:              return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_10;
++    case AV_PROFILE_H264_HIGH_10_INTRA:        return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_10_INTRA;
++    case AV_PROFILE_H264_HIGH_422:             return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_422;
++    case AV_PROFILE_H264_HIGH_422_INTRA:       return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_422_INTRA;
++    case AV_PROFILE_H264_HIGH_444_PREDICTIVE:  return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_444_PREDICTIVE;
++    case AV_PROFILE_H264_HIGH_444_INTRA:       return V4L2_MPEG_VIDEO_H264_PROFILE_HIGH_444_INTRA;
++    case AV_PROFILE_H264_CAVLC_444:            return V4L2_MPEG_VIDEO_H264_PROFILE_CAVLC_444_INTRA;
++    case AV_PROFILE_H264_MULTIVIEW_HIGH:       return V4L2_MPEG_VIDEO_H264_PROFILE_MULTIVIEW_HIGH;
++    case AV_PROFILE_H264_STEREO_HIGH:          return V4L2_MPEG_VIDEO_H264_PROFILE_STEREO_HIGH;
++    }
++    return -1;
++}
++
++static int v4l2_menu_has(int fd, uint32_t id, int index)
++{
++    struct v4l2_querymenu qm = { .id = id, .index = index };
++
++    return index >= 0 && !ioctl(fd, VIDIOC_QUERYMENU, &qm);
++}
++
++/* If the decoder reports the profiles it supports, check the stream's */
++static int v4l2_check_profile(V4L2m2mContext *s)
++{
++    AVCodecContext *avctx = s->avctx;
++    struct v4l2_queryctrl qc = { .id = V4L2_CID_MPEG_VIDEO_H264_PROFILE };
++    int profile, index;
++
++    if (!av_codec_is_decoder(avctx->codec) || avctx->codec_id != AV_CODEC_ID_H264)
++        return 0;
++
++    profile = v4l2_h264_profile(avctx);
++    index = v4l2_h264_profile_to_v4l2(profile);
++    if (index < 0)
++        return 0;
++
++    if (ioctl(s->fd, VIDIOC_QUERYCTRL, &qc) || qc.type != V4L2_CTRL_TYPE_MENU)
++        return 0; /* not reported */
++
++    if (v4l2_menu_has(s->fd, qc.id, index))
++        return 0;
++
++    /* constrained baseline streams are also baseline and main streams */
++    if (index == V4L2_MPEG_VIDEO_H264_PROFILE_CONSTRAINED_BASELINE &&
++        (v4l2_menu_has(s->fd, qc.id, V4L2_MPEG_VIDEO_H264_PROFILE_BASELINE) ||
++         v4l2_menu_has(s->fd, qc.id, V4L2_MPEG_VIDEO_H264_PROFILE_MAIN)))
++        return 0;
++
++    av_log(avctx, AV_LOG_VERBOSE, "H.264 profile %d not supported by %s\n",
++           profile, s->devname);
++    return AVERROR(ENOTSUP);
++}
++
+ static int v4l2_probe_driver(V4L2m2mContext *s)
+ {
+     void *log_ctx = s->avctx;
+@@ -123,6 +224,8 @@ static int v4l2_probe_driver(V4L2m2mContext *s)
+         goto done;
+     }
+ 
++    ret = v4l2_check_profile(s);
++
+ done:
+     if (close(s->fd) < 0) {
+         ret = AVERROR(errno);
+-- 
+2.43.0
+
