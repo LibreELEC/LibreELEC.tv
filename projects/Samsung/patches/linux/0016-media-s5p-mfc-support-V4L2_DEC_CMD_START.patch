@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Thu, 26 Nov 2026 18:21:01 +0900
+Subject: [PATCH] media: s5p-mfc: support V4L2_DEC_CMD_START
+
+The stateful decoder interface requires V4L2_DEC_CMD_START to resume
+decoding after a drain, but the driver only implements
+V4L2_DEC_CMD_STOP and returns -EINVAL for START. Clients such as
+FFmpeg issue START after a seek, so the capture queue stays in the
+"last buffer dequeued" state and decoding does not resume.
+
+Implement START the same way as restarting the capture queue: put the
+instance back into the running state, clear the last buffer state of
+the capture queue and schedule the context if it is ready.
+---
+ .../platform/samsung/s5p-mfc/s5p_mfc_dec.c    | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c b/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
+index afd28be..40c9ebe 100644
+--- a/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
++++ b/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
+@@ -888,6 +888,25 @@ static int vidioc_decoder_cmd(struct file *file, void *priv,
+ 			spin_unlock_irqrestore(&dev->irqlock, flags);
+ 		}
+ 		break;
++	case V4L2_DEC_CMD_START:
++		if (cmd->flags != 0)
++			return -EINVAL;
++
++		if (!vb2_is_streaming(&ctx->vq_dst))
++			return -EINVAL;
++
++		spin_lock_irqsave(&dev->irqlock, flags);
++		if (ctx->state == MFCINST_FINISHING ||
++		    ctx->state == MFCINST_FINISHED)
++			ctx->state = MFCINST_RUNNING;
++		spin_unlock_irqrestore(&dev->irqlock, flags);
++
++		vb2_clear_last_buffer_dequeued(&ctx->vq_dst);
++
++		if (s5p_mfc_ctx_ready(ctx))
++			set_work_bit_irqsave(ctx);
++		s5p_mfc_hw_call(dev->mfc_ops, try_run, dev);
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+-- 
+2.43.0
+
