@@ -5,13 +5,12 @@ Subject: [PATCH 2/2] LOCAL: changes for Odroid XU3/XU4
 
 ---
  cmake/modules/FindGBM.cmake                   |  8 --
- system/settings/linux.xml                     |  2 +-
  .../DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp   | 66 +++++++++++++++++--
  .../DVDCodecs/Video/DVDVideoCodecFFmpeg.h     |  1 +
  xbmc/windowing/Resolution.cpp                 |  2 +
  xbmc/windowing/gbm/GBMUtils.cpp               | 28 ++++----
  xbmc/windowing/gbm/WinSystemGbmEGLContext.cpp |  2 +-
- 7 files changed, 85 insertions(+), 28 deletions(-)
+ 6 files changed, 84 insertions(+), 27 deletions(-)
 
 diff --git a/cmake/modules/FindGBM.cmake b/cmake/modules/FindGBM.cmake
 index 37a26a7bc4..53cc04663e 100644
@@ -31,19 +30,6 @@ index 37a26a7bc4..53cc04663e 100644
      ADD_TARGET_COMPILE_DEFINITION()
    endif()
  endif()
-diff --git a/system/settings/linux.xml b/system/settings/linux.xml
-index 531974f3f4..6244ef7515 100644
---- a/system/settings/linux.xml
-+++ b/system/settings/linux.xml
-@@ -177,7 +177,7 @@
-             </dependency>
-           </dependencies>
-           <level>3</level>
--          <default>true</default>
-+          <default>false</default>
-           <control type="toggle" />
-         </setting>
-         <setting id="videoplayer.useprimerenderer" type="integer" label="13462" help="13463">
 diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
 index a7dc0890e8..ad8c41dcf0 100644
 --- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
