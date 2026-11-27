@@ -31,7 +31,7 @@ PKG_MESON_OPTS_TARGET="--prefix=${PKG_LE_PATH} \
                        -Ddconf=disabled \
                        -Ddocbook_docs=disabled \
                        -Dgir=disabled \
-                       -Dgtkdoc=disabled \
+                       -Dapi_docs=disabled \
                        -Dlibzstd=enabled \
                        -Dmalcontent=disabled \
                        -Dman=disabled \
