@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Tue, 24 Nov 2026 23:30:00 +0900
+Subject: [PATCH] LOCAL: drm/exynos: mixer: use an overlay plane with fixed
+ stacking order
+
+The mixer on Exynos 5422 has no video processor, so it only has two
+graphics layers. The second one is exposed as a cursor plane, which
+Kodi does not use for direct-to-plane video rendering.
+
+The mixer also only blends a graphics layer over the layers below it in
+the default order (layer 1 over layer 0), as the vendor kernel assumes
+("layer1 - OSD, layer0 - framebuffer"). With a mutable zpos, Kodi moves
+layer 0 on top of layer 1 for its GUI, and the video below is hidden.
+
+Expose layer 1 as an overlay plane and make the zpos of both graphics
+layers immutable, so that Kodi puts the GUI on layer 1 and the video on
+layer 0 without any Kodi change.
+---
+--- a/drivers/gpu/drm/exynos/exynos_mixer.c
++++ b/drivers/gpu/drm/exynos/exynos_mixer.c
+@@ -129,16 +129,14 @@
+ 		.pixel_formats = mixer_formats,
+ 		.num_pixel_formats = ARRAY_SIZE(mixer_formats),
+ 		.capabilities = EXYNOS_DRM_PLANE_CAP_DOUBLE |
+-				EXYNOS_DRM_PLANE_CAP_ZPOS |
+ 				EXYNOS_DRM_PLANE_CAP_PIX_BLEND |
+ 				EXYNOS_DRM_PLANE_CAP_WIN_BLEND,
+ 	}, {
+ 		.zpos = 1,
+-		.type = DRM_PLANE_TYPE_CURSOR,
++		.type = DRM_PLANE_TYPE_OVERLAY,
+ 		.pixel_formats = mixer_formats,
+ 		.num_pixel_formats = ARRAY_SIZE(mixer_formats),
+ 		.capabilities = EXYNOS_DRM_PLANE_CAP_DOUBLE |
+-				EXYNOS_DRM_PLANE_CAP_ZPOS |
+ 				EXYNOS_DRM_PLANE_CAP_PIX_BLEND |
+ 				EXYNOS_DRM_PLANE_CAP_WIN_BLEND,
+ 	}, {
+--
+2.43.0
