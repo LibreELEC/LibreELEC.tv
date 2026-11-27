@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 27 Nov 2026 18:47:23 +1100
+Subject: [PATCH] Allow building against a system fluidsynth
+
+WITH_FLUIDSYNTH always builds the bundled fluidsynth 2.2.7, which
+compiles and runs its make_tables generator during the build. In a
+cross build that is a program for the build machine, built with
+whatever compiler that nested cmake run finds. Newer fluidsynth releases
+compute those tables at compile time instead.
+
+Add BUNDLED_FLUIDSYNTH, default 1 so nothing changes, and with 0 take
+fluidsynth from pkg-config like the other system packages. The bundled
+libsndfile is only built for fluidsynth, so it moves under it.
+---
+ libretro/Makefile.libretro | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/libretro/Makefile.libretro b/libretro/Makefile.libretro
+index a64dfd9b8d3e..b8b02d62e09f 100644
+--- a/libretro/Makefile.libretro
++++ b/libretro/Makefile.libretro
+@@ -12,6 +12,8 @@ BUNDLED_AUDIO_CODECS ?= 1
+ BUNDLED_LIBSNDFILE ?= 1
+ # Build and link our own sdl and sdl_net statically.
+ BUNDLED_SDL ?= 0
++# Build and link our own fluidsynth statically.
++BUNDLED_FLUIDSYNTH ?= 1
+ # Build with BASSMIDI support
+ WITH_BASSMIDI ?= 1
+ # Build with fluidsynth support
+@@ -227,10 +229,15 @@ ifeq ($(WITH_FLUIDSYNTH), 1)
+ 		include deps/opus.makefile
+ 		include deps/flac.makefile
+ 	endif
+-	ifeq ($(BUNDLED_LIBSNDFILE), 1)
+-		include deps/libsndfile.makefile
++	ifeq ($(BUNDLED_FLUIDSYNTH), 1)
++		ifeq ($(BUNDLED_LIBSNDFILE), 1)
++			include deps/libsndfile.makefile
++		endif
++		include deps/fluidsynth.makefile
++	else
++		EXTRA_PACKAGES += fluidsynth
++		COMMONFLAGS += -DWITH_FLUIDSYNTH
+ 	endif
+-	include deps/fluidsynth.makefile
+ endif
+ include deps/munt.makefile
+ ifeq ($(WITH_SDL_SOUND_WRAPPER), 1)
