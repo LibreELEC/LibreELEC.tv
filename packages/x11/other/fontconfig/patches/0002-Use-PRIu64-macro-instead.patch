@@ -1,0 +1,45 @@
+From 79dbaf49b1eca1dcdf97655d116c9b2e57d3ca80 Mon Sep 17 00:00:00 2001
+From: Akira TAGOH <akira@tagoh.org>
+Date: Wed, 25 Nov 2026 17:26:14 +0900
+Subject: [PATCH 2/2] Use PRIu64 macro instead
+
+Fix a compile error against format type mismatch.
+
+Changelog: fixed
+---
+ src/fcxml.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/fcxml.c b/src/fcxml.c
+index afd537f5e23e..6eeb292b41dd 100644
+--- a/src/fcxml.c
++++ b/src/fcxml.c
+@@ -24,6 +24,7 @@
+ 
+ #include "fcint.h"
+ 
++#include <inttypes.h>
+ #include <fcntl.h>
+ #include <stdarg.h>
+ #include <string.h>
+@@ -730,7 +731,7 @@ FcConfigMessage (FcConfigParse *parse, FcConfigSeverity severe, const char *fmt,
+     if (parse) {
+ 	if (parse->name)
+ #if HAVE_XML_GETCURRENTLINENUMBER64
+-	    fprintf (stderr, "Fontconfig %s: \"%s\", line %ld: ", s,
++	    fprintf (stderr, "Fontconfig %s: \"%s\", line %" PRIu64 ": ", s,
+ 	             parse->name, XML_GetCurrentLineNumber64 (parse->parser));
+ #else
+ 	    fprintf (stderr, "Fontconfig %s: \"%s\", line %d: ", s,
+@@ -738,7 +739,7 @@ FcConfigMessage (FcConfigParse *parse, FcConfigSeverity severe, const char *fmt,
+ #endif
+ 	else
+ #if HAVE_XML_GETCURRENTLINENUMBER64
+-	    fprintf (stderr, "Fontconfig %s: line %ld: ", s,
++	    fprintf (stderr, "Fontconfig %s: line %" PRIu64 ": ", s,
+ 	             XML_GetCurrentLineNumber64 (parse->parser));
+ #else
+ 	    fprintf (stderr, "Fontconfig %s: line %d: ", s,
+-- 
+2.55.0.windows.5
+
