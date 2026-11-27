@@ -15,7 +15,19 @@ PKG_LIBNAME="yabasanshiro_libretro.so"
 PKG_LIBPATH="yabause/src/libretro/${PKG_LIBNAME}"
 PKG_LIBVAR="YABASANSHIRO_LIB"
 
-PKG_MAKE_OPTS_TARGET="-C yabause/src/libretro platform=unix GIT_VERSION="
+PKG_MAKE_OPTS_TARGET="-C yabause/src/libretro GIT_VERSION="
+
+case "${TARGET_ARCH}" in
+  aarch64)
+    PKG_MAKE_OPTS_TARGET+=" platform=arm64"
+    ;;
+  arm)
+    PKG_MAKE_OPTS_TARGET+=" platform=armv"
+    ;;
+  *)
+    PKG_MAKE_OPTS_TARGET+=" platform=unix"
+    ;;
+esac
 
 if build_with_debug; then
   PKG_MAKE_OPTS_TARGET+=" DEBUG=1"
