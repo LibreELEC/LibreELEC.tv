@@ -1,0 +1,69 @@
+From 54a5da75b64d148fe92520693b1543247d1d3426 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Fri, 27 Nov 2026 11:10:27 +0900
+Subject: [PATCH] media: s5p-mfc: keep the remaining capture buffers queued
+ after a drain
+
+When all frames have been extracted at the end of a drain, the driver
+returns every queued capture buffer empty and marked with
+V4L2_BUF_FLAG_LAST. The stateful decoder interface only expects a
+single buffer marked with V4L2_BUF_FLAG_LAST. Clients such as FFmpeg
+stop dequeuing after that buffer, so the other buffers are not queued
+again and decoding stalls after V4L2_DEC_CMD_START because fewer than
+pb_count buffers are available.
+
+Return only one buffer at the end of a drain and keep the others queued.
+On a resolution change all buffers are still returned, as they have to
+be reallocated.
+---
+ drivers/media/platform/samsung/s5p-mfc/s5p_mfc.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/samsung/s5p-mfc/s5p_mfc.c b/drivers/media/platform/samsung/s5p-mfc/s5p_mfc.c
+index 03ef65c..5ff8014 100644
+--- a/drivers/media/platform/samsung/s5p-mfc/s5p_mfc.c
++++ b/drivers/media/platform/samsung/s5p-mfc/s5p_mfc.c
+@@ -222,7 +222,8 @@ unlock:
+ 		mutex_unlock(&dev->mfc_mutex);
+ }
+ 
+-static void s5p_mfc_handle_frame_all_extracted(struct s5p_mfc_ctx *ctx)
++static void s5p_mfc_handle_frame_all_extracted(struct s5p_mfc_ctx *ctx,
++					       bool return_all)
+ {
+ 	struct s5p_mfc_buf *dst_buf;
+ 	struct s5p_mfc_dev *dev = ctx->dev;
+@@ -250,6 +251,14 @@ static void s5p_mfc_handle_frame_all_extracted(struct s5p_mfc_ctx *ctx)
+ 
+ 		ctx->dec_dst_flag &= ~(1 << dst_buf->b->vb2_buf.index);
+ 		vb2_buffer_done(&dst_buf->b->vb2_buf, VB2_BUF_STATE_DONE);
++
++		/*
++		 * At the end of a drain only one buffer is needed to signal
++		 * the last buffer. Keep the others queued so that they can be
++		 * used when decoding is restarted.
++		 */
++		if (!return_all)
++			break;
+ 	}
+ }
+ 
+@@ -409,13 +418,13 @@ static void s5p_mfc_handle_frame(struct s5p_mfc_ctx *ctx,
+ 					V4L2_EVENT_SRC_CH_RESOLUTION,
+ 			};
+ 
+-			s5p_mfc_handle_frame_all_extracted(ctx);
++			s5p_mfc_handle_frame_all_extracted(ctx, true);
+ 			ctx->state = MFCINST_RES_CHANGE_END;
+ 			v4l2_event_queue_fh(&ctx->fh, &ev_src_ch);
+ 
+ 			goto leave_handle_frame;
+ 		} else {
+-			s5p_mfc_handle_frame_all_extracted(ctx);
++			s5p_mfc_handle_frame_all_extracted(ctx, false);
+ 		}
+ 	}
+ 
+-- 
+2.43.0
+
