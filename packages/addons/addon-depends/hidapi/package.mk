@@ -2,8 +2,8 @@
 # Copyright (C) 2023-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="hidapi"
-PKG_VERSION="0.15.0"
-PKG_SHA256="5d84dec684c27b97b921d2f3b73218cb773cf4ea915caee317ac8fc73cef8136"
+PKG_VERSION="0.16.0"
+PKG_SHA256="bc599d295792fe515778f19ce86a49760b0ea5fc114e5258245d470609632bbf"
 PKG_LICENSE="LicenseRef-HIDAPI-orig"
 PKG_SITE="http://libusb.info/"
 PKG_URL="https://github.com/libusb/hidapi/archive/refs/tags/hidapi-${PKG_VERSION}.tar.gz"

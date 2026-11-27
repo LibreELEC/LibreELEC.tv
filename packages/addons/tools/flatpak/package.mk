@@ -2,10 +2,10 @@
 # Copyright (C) 2026-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="flatpak"
-PKG_VERSION="1.19.2"
-PKG_REV="1"
+PKG_VERSION="1.19.4"
+PKG_REV="2"
 PKG_ARCH="aarch64 x86_64"
-PKG_SHA256="161907a8c132fcdf2ef47e612fee79dc70d232b88a4f4ba061966a4769906667"
+PKG_SHA256="57e2c9d972878660bfe1030d226653f0875cbecd46da5010dabc2731a88921f2"
 PKG_LICENSE="LGPL-2.1-or-later"
 PKG_SITE="https://flatpak.org/"
 PKG_URL="https://github.com/flatpak/flatpak/releases/download/${PKG_VERSION}/${PKG_NAME}-${PKG_VERSION}.tar.xz"
