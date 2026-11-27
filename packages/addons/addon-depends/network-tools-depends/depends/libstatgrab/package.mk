@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="libstatgrab"
-PKG_VERSION="0.92.1"
-PKG_SHA256="5688aa4a685547d7174a8a373ea9d8ee927e766e3cc302bdee34523c2c5d6c11"
+PKG_VERSION="0.92.2"
+PKG_SHA256="ff559fcd4da75a4023af986c02c52ad51d4b68ae83fc0c8c461026126a8ebefa"
 PKG_SITE="https://libstatgrab.org"
 PKG_URL="https://github.com/libstatgrab/libstatgrab/releases/download/LIBSTATGRAB_${PKG_VERSION//./_}/libstatgrab-${PKG_VERSION}.tar.gz"
 PKG_DEPENDS_TARGET="toolchain"
