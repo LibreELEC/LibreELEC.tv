@@ -1,0 +1,34 @@
+From 1d1f92efa65ea5c085e9a38e9376f75fc255db6c Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Tue, 10 Nov 2026 02:23:18 +0000
+Subject: [PATCH] svg: cast the lwsac total to size_t in svg_heap_note
+
+lwsac_total_alloc() returns uint64_t, so on a 32-bit target the sum
+assigned to the size_t heap_now is a narrowing conversion and the
+-Werror -Wconversion build fails:
+
+  lib/misc/svg.c:1578:25: error: conversion from 'uint64_t'
+  {aka 'long long unsigned int'} to 'size_t' {aka 'unsigned int'}
+  may change value [-Werror=conversion]
+
+The lwsac lives in the address space, so its total always fits in a
+size_t. Make the conversion explicit.
+
+(cherry picked from commit d1d1d8d8bf0e07fe62fe9b735cb0aaac1c7f7ed4)
+---
+ lib/misc/svg.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/misc/svg.c b/lib/misc/svg.c
+index c16e275163c7..75656329a117 100644
+--- a/lib/misc/svg.c
++++ b/lib/misc/svg.c
+@@ -1499,7 +1499,7 @@ svg_ac_use(lws_svg_t *ctx, size_t nec)
+ 	void *p = lwsac_use(&ctx->ac, nec, 0);
+ 
+ 	if (p) {
+-		ctx->heap_now = lwsac_total_alloc(ctx->ac);
++		ctx->heap_now = (size_t)lwsac_total_alloc(ctx->ac);
+ 		if (ctx->heap_now > ctx->heap_peak)
+ 			ctx->heap_peak = ctx->heap_now;
+ 	}
