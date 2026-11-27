@@ -4,7 +4,7 @@
 PKG_NAME="flirc_util"
 PKG_VERSION="280cccbb333f5be30fc48ea958ca103d2fce6fec"
 PKG_SHA256="fc0a79e2e08b96d6cb8d69a7ee3a0cec6445f690ff432dbe62945f583213940e"
-PKG_REV="0"
+PKG_REV="1"
 PKG_LICENSE="LicenseRef-FLIRC"
 PKG_SITE="http://www.flirc.tv"
 PKG_URL="https://github.com/flirc/sdk/archive/${PKG_VERSION}.tar.gz"
