@@ -3,8 +3,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="kmod"
-PKG_VERSION="34.3"
-PKG_SHA256="985554de49c21a58abd68c6cda2251384e1e5bb08b3b14c7f02b51f4c90c2958"
+PKG_VERSION="34.4"
+PKG_SHA256="4c7942dda4793d08f975270322db582c9701438afd4d76ed9e6e7cf4094cb967"
 PKG_LICENSE="LGPL-2.1-or-later"
 PKG_SITE="https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git"
 PKG_URL="https://www.kernel.org/pub/linux/utils/kernel/kmod/${PKG_NAME}-${PKG_VERSION}.tar.xz"
