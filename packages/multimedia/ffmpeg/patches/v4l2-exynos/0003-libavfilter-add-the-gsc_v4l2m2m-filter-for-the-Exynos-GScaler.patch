@@ -1,0 +1,928 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 11:33:58 +0900
+Subject: [PATCH] libavfilter: add the gsc_v4l2m2m filter for the Exynos
+ GScaler
+
+The display mixer on Exynos 5422 (ODROID-XU4) only has RGB planes, so
+the YUV frames from the MFC decoder cannot be shown with direct to
+plane rendering. Its planes cannot scale either (only 1:1 or 2x).
+
+The gsc_v4l2m2m filter imports DRM PRIME frames (NV12, NV21 or YUV420,
+in one or more objects) into the GScaler as dmabufs and returns
+XRGB8888 DRM PRIME frames. No CPU copy is involved. An input frame is
+released only after its conversion has finished.
+
+Without options, the whole pitch is converted, so no cropping is
+needed; the frames keep the visible size. With the w and h options,
+the visible area is scaled to that size (e.g. the display size) and the
+frames have square pixels.
+
+The conversion of one frame overlaps with the decoding of the next
+one, so frames come out one frame later. The "flush" command drops the
+frames in the converter, so that the filter can be kept on seek.
+
+Based on the decoder->converter pipeline by memeka:
+https://github.com/mihailescu2m/FFmpeg/commits/v4l2-drmprime
+---
+ libavfilter/Makefile         |   1 +
+ libavfilter/allfilters.c     |   1 +
+ libavfilter/vf_gsc_v4l2m2m.c | 862 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 864 insertions(+)
+ create mode 100644 libavfilter/vf_gsc_v4l2m2m.c
+
+diff --git a/libavfilter/Makefile b/libavfilter/Makefile
+index c09dd54..1ae47a5 100644
+--- a/libavfilter/Makefile
++++ b/libavfilter/Makefile
+@@ -339,6 +339,7 @@ OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
+ OBJS-$(CONFIG_GRAPHMONITOR_FILTER)           += f_graphmonitor.o
+ OBJS-$(CONFIG_GRAYWORLD_FILTER)              += vf_grayworld.o
+ OBJS-$(CONFIG_GREYEDGE_FILTER)               += vf_colorconstancy.o
++OBJS-$(CONFIG_GSC_V4L2M2M_FILTER)            += vf_gsc_v4l2m2m.o
+ OBJS-$(CONFIG_GUIDED_FILTER)                 += vf_guided.o framesync.o
+ OBJS-$(CONFIG_HALDCLUT_FILTER)               += vf_lut3d.o framesync.o
+ OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
+diff --git a/libavfilter/allfilters.c b/libavfilter/allfilters.c
+index 6b9c920..9c60df3 100644
+--- a/libavfilter/allfilters.c
++++ b/libavfilter/allfilters.c
+@@ -313,6 +313,7 @@ extern const FFFilter ff_vf_gradfun;
+ extern const FFFilter ff_vf_graphmonitor;
+ extern const FFFilter ff_vf_grayworld;
+ extern const FFFilter ff_vf_greyedge;
++extern const FFFilter ff_vf_gsc_v4l2m2m;
+ extern const FFFilter ff_vf_guided;
+ extern const FFFilter ff_vf_haldclut;
+ extern const FFFilter ff_vf_hflip;
+diff --git a/libavfilter/vf_gsc_v4l2m2m.c b/libavfilter/vf_gsc_v4l2m2m.c
+new file mode 100644
+index 0000000..6f4ffd2
+--- /dev/null
++++ b/libavfilter/vf_gsc_v4l2m2m.c
+@@ -0,0 +1,862 @@
++/*
++ * V4L2 mem2mem colour converter filter (Samsung Exynos GScaler)
++ *
++ * The Exynos display mixer only scans out RGB planes, so YUV frames from
++ * the MFC decoder cannot be put on a plane directly. The GScaler is a
++ * V4L2 mem2mem colour converter: it imports the DRM PRIME frames as
++ * dmabufs and writes XRGB8888 frames that can be scanned out (or imported
++ * by the GPU) without any CPU copy.
++ *
++ * Based on the idea of the decoder->converter pipeline by memeka
++ * (https://github.com/mihailescu2m/FFmpeg/commits/v4l2-drmprime) and on
++ * the structure of the deinterlace_v4l2m2m filter.
++ *
++ * This file is part of FFmpeg.
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <dirent.h>
++#include <drm_fourcc.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <poll.h>
++#include <stdatomic.h>
++#include <stdio.h>
++#include <string.h>
++#include <sys/ioctl.h>
++#include <unistd.h>
++#include <linux/videodev2.h>
++
++#include "libavutil/avstring.h"
++#include "libavutil/common.h"
++#include "libavutil/hwcontext.h"
++#include "libavutil/hwcontext_drm.h"
++#include "libavutil/mem.h"
++#include "libavutil/opt.h"
++#include "libavutil/pixdesc.h"
++#include "libavutil/refstruct.h"
++
++#include "avfilter.h"
++#include "filters.h"
++#include "formats.h"
++#include "video.h"
++
++#define GSC_OUTPUT_BUFFERS  16
++#define GSC_CAPTURE_BUFFERS 8
++#define GSC_TIMEOUT_MS      500
++/* frames in the converter at the same time: while one frame is being
++ * converted, the next one is decoded */
++#define GSC_JOBS            2
++
++typedef struct GscBuffer {
++    struct GscConverter *gsc;
++    int index;
++    AVDRMFrameDescriptor desc;
++} GscBuffer;
++
++/* shared with the converted frames, so it outlives the filter */
++typedef struct GscConverter {
++    int fd;
++    void *log_ctx;
++    atomic_int closing;
++
++    int configured;
++    uint32_t drm_format;
++    int nb_objects;
++    int pitch;
++    unsigned sizeimage[VIDEO_MAX_PLANES];
++
++    /* output size when scaling, 0 otherwise */
++    int out_w, out_h;
++
++    /* input dmabufs imported in each converter input buffer */
++    int num_output_buffers;
++    int output_fd[GSC_OUTPUT_BUFFERS];
++    int output_busy[GSC_OUTPUT_BUFFERS];
++    int output_next;
++
++    int num_capture_buffers;
++    GscBuffer capture[GSC_CAPTURE_BUFFERS];
++
++    /* input frames queued in the converter, oldest first */
++    AVFrame *jobs[GSC_JOBS];
++    int job_slot[GSC_JOBS];
++    int job_head, job_count;
++
++    AVBufferRef *frames_ref;
++} GscConverter;
++
++typedef struct GscV4L2M2MContext {
++    const AVClass *class;
++    GscConverter *gsc;
++    int w, h;
++} GscV4L2M2MContext;
++
++static int xioctl(int fd, unsigned long req, void *arg)
++{
++    int ret;
++
++    do {
++        ret = ioctl(fd, req, arg);
++    } while (ret < 0 && errno == EINTR);
++
++    return ret < 0 ? AVERROR(errno) : 0;
++}
++
++static void gsc_free(AVRefStructOpaque unused, void *obj)
++{
++    GscConverter *gsc = obj;
++
++    for (int i = 0; i < gsc->num_capture_buffers; i++)
++        if (gsc->capture[i].desc.objects[0].fd >= 0)
++            close(gsc->capture[i].desc.objects[0].fd);
++
++    if (gsc->fd >= 0)
++        close(gsc->fd);
++
++    for (int i = 0; i < GSC_JOBS; i++)
++        av_frame_free(&gsc->jobs[i]);
++
++    av_buffer_unref(&gsc->frames_ref);
++}
++
++static int gsc_queue_capture(GscConverter *gsc, int index)
++{
++    struct v4l2_plane plane = { 0 };
++    struct v4l2_buffer buf = {
++        .type     = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
++        .memory   = V4L2_MEMORY_MMAP,
++        .index    = index,
++        .length   = 1,
++        .m.planes = &plane,
++    };
++
++    return xioctl(gsc->fd, VIDIOC_QBUF, &buf);
++}
++
++/* called when the user releases a converted frame (any thread) */
++static void gsc_release_buffer(void *opaque, uint8_t *data)
++{
++    GscBuffer *gbuf = opaque;
++    GscConverter *gsc = gbuf->gsc;
++
++    if (!atomic_load(&gsc->closing))
++        gsc_queue_capture(gsc, gbuf->index);
++
++    av_refstruct_unref(&gsc);
++}
++
++static int gsc_probe(const char *devname)
++{
++    struct v4l2_capability cap = { 0 };
++    int fd, ret;
++
++    fd = open(devname, O_RDWR);
++    if (fd < 0)
++        return 0;
++
++    ret = xioctl(fd, VIDIOC_QUERYCAP, &cap);
++    close(fd);
++    if (ret)
++        return 0;
++
++    return !strcmp((const char *)cap.driver, "exynos-gsc") &&
++           ((cap.capabilities | cap.device_caps) & V4L2_CAP_VIDEO_M2M_MPLANE);
++}
++
++static int gsc_find_device(char *devname, size_t size)
++{
++    struct dirent *entry;
++    DIR *dirp = opendir("/dev");
++    int found = 0;
++
++    if (!dirp)
++        return 0;
++
++    for (entry = readdir(dirp); entry; entry = readdir(dirp)) {
++        if (strncmp(entry->d_name, "video", 5))
++            continue;
++        snprintf(devname, size, "/dev/%s", entry->d_name);
++        if (gsc_probe(devname)) {
++            found = 1;
++            break;
++        }
++    }
++    closedir(dirp);
++
++    return found;
++}
++
++static uint32_t gsc_v4l2_format(uint32_t drm_format, int nb_objects)
++{
++    switch (drm_format) {
++    case DRM_FORMAT_NV12:
++        return nb_objects == 2 ? V4L2_PIX_FMT_NV12M :
++               nb_objects == 1 ? V4L2_PIX_FMT_NV12 : 0;
++    case DRM_FORMAT_NV21:
++        return nb_objects == 2 ? V4L2_PIX_FMT_NV21M :
++               nb_objects == 1 ? V4L2_PIX_FMT_NV21 : 0;
++    case DRM_FORMAT_YUV420:
++        return nb_objects == 3 ? V4L2_PIX_FMT_YUV420M :
++               nb_objects == 1 ? V4L2_PIX_FMT_YUV420 : 0;
++    }
++
++    return 0;
++}
++
++/* set up the converter for the first input frame */
++static int gsc_setup(GscConverter *gsc, const AVFrame *in, AVBufferRef *frames_ref)
++{
++    const AVDRMFrameDescriptor *desc = (const AVDRMFrameDescriptor *)in->data[0];
++    const AVDRMLayerDescriptor *layer = &desc->layers[0];
++    struct v4l2_format fmt = { 0 };
++    struct v4l2_requestbuffers req = { 0 };
++    uint32_t v4l2_format;
++    int width, height, type, ret;
++
++    v4l2_format = gsc_v4l2_format(layer->format, desc->nb_objects);
++    if (desc->nb_layers != 1 || !v4l2_format) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "unsupported input %.4s with %d objects\n",
++               (const char *)&layer->format, desc->nb_objects);
++        return AVERROR(EINVAL);
++    }
++
++    /* convert the whole pitch (the 8-bit YUV formats have one byte per
++     * luma pixel): no cropping is needed, and the frame keeps its visible
++     * size, so the padding is simply not displayed */
++    width  = layer->planes[0].pitch;
++    height = in->height;
++    if (desc->nb_objects == 1) {
++        /* one object (e.g. software decoded frames): the planes must follow
++         * each other as in the contiguous V4L2 formats */
++        int pitch = layer->planes[0].pitch;
++        int cpitch = layer->format == DRM_FORMAT_YUV420 ? pitch / 2 : pitch;
++
++        height = layer->planes[1].offset / pitch;
++        if (layer->planes[0].offset || layer->planes[1].offset != (ptrdiff_t)pitch * height ||
++            layer->planes[1].pitch != cpitch ||
++            (layer->format == DRM_FORMAT_YUV420 &&
++             (layer->planes[2].pitch != cpitch ||
++              layer->planes[2].offset != layer->planes[1].offset + (ptrdiff_t)cpitch * (height / 2)))) {
++            av_log(gsc->log_ctx, AV_LOG_ERROR, "unsupported plane layout\n");
++            return AVERROR(EINVAL);
++        }
++    }
++
++    /* 1. converter input */
++    fmt.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++    fmt.fmt.pix_mp.width       = width;
++    fmt.fmt.pix_mp.height      = height;
++    fmt.fmt.pix_mp.pixelformat = v4l2_format;
++    fmt.fmt.pix_mp.field       = V4L2_FIELD_NONE;
++    fmt.fmt.pix_mp.num_planes  = desc->nb_objects;
++    for (int i = 0; i < desc->nb_objects; i++)
++        fmt.fmt.pix_mp.plane_fmt[i].bytesperline = layer->planes[i].pitch;
++    ret = xioctl(gsc->fd, VIDIOC_S_FMT, &fmt);
++    if (ret || fmt.fmt.pix_mp.pixelformat != v4l2_format ||
++        fmt.fmt.pix_mp.width != width || fmt.fmt.pix_mp.height < height) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "S_FMT on output failed\n");
++        return ret ? ret : AVERROR(EINVAL);
++    }
++    height = fmt.fmt.pix_mp.height;
++    for (int i = 0; i < desc->nb_objects; i++)
++        gsc->sizeimage[i] = fmt.fmt.pix_mp.plane_fmt[i].sizeimage;
++    for (int i = 0; i < desc->nb_objects; i++) {
++        const struct v4l2_plane_pix_format *pf = &fmt.fmt.pix_mp.plane_fmt[i];
++
++        if (pf->bytesperline != layer->planes[i].pitch ||
++            (desc->objects[i].size && pf->sizeimage > desc->objects[i].size)) {
++            av_log(gsc->log_ctx, AV_LOG_ERROR,
++                   "plane %d does not fit (pitch %u/%td, size %u/%zu)\n", i,
++                   pf->bytesperline, layer->planes[i].pitch,
++                   pf->sizeimage, desc->objects[i].size);
++            return AVERROR(EINVAL);
++        }
++    }
++
++    /* 2. converter output: XRGB8888, at the same size or scaled */
++    if (gsc->out_w) {
++        /* scale the visible area only: select it as the source rectangle
++         * (this driver takes the source rectangle from the COMPOSE target) */
++        struct v4l2_selection sel = {
++            .type   = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
++            .target = V4L2_SEL_TGT_COMPOSE,
++            .r      = { .left = 0, .top = 0, .width = in->width, .height = in->height },
++        };
++
++        ret = xioctl(gsc->fd, VIDIOC_S_SELECTION, &sel);
++        if (ret || sel.r.width != in->width || sel.r.height != in->height) {
++            av_log(gsc->log_ctx, AV_LOG_ERROR, "source rectangle %dx%d not supported (%dx%d)\n",
++                   in->width, in->height, sel.r.width, sel.r.height);
++            return ret ? ret : AVERROR(EINVAL);
++        }
++        width  = gsc->out_w;
++        height = gsc->out_h;
++    }
++
++    memset(&fmt, 0, sizeof(fmt));
++    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++    fmt.fmt.pix_mp.width       = width;
++    fmt.fmt.pix_mp.height      = height;
++    fmt.fmt.pix_mp.pixelformat = V4L2_PIX_FMT_BGR32;
++    fmt.fmt.pix_mp.field       = V4L2_FIELD_NONE;
++    ret = xioctl(gsc->fd, VIDIOC_S_FMT, &fmt);
++    if (ret || fmt.fmt.pix_mp.pixelformat != V4L2_PIX_FMT_BGR32 ||
++        fmt.fmt.pix_mp.width != width || fmt.fmt.pix_mp.height != height) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "S_FMT on capture failed\n");
++        return ret ? ret : AVERROR(EINVAL);
++    }
++
++    /* 3. input buffers are imported as dmabufs */
++    req.type   = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++    req.memory = V4L2_MEMORY_DMABUF;
++    req.count  = GSC_OUTPUT_BUFFERS;
++    ret = xioctl(gsc->fd, VIDIOC_REQBUFS, &req);
++    if (ret || req.count < GSC_JOBS) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "REQBUFS (dmabuf) failed\n");
++        return ret ? ret : AVERROR(ENOMEM);
++    }
++    gsc->num_output_buffers = FFMIN(req.count, GSC_OUTPUT_BUFFERS);
++    for (int i = 0; i < GSC_OUTPUT_BUFFERS; i++)
++        gsc->output_fd[i] = -1;
++
++    /* 4. output buffers, exported as dmabufs for the user */
++    memset(&req, 0, sizeof(req));
++    req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++    req.memory = V4L2_MEMORY_MMAP;
++    req.count  = GSC_CAPTURE_BUFFERS;
++    ret = xioctl(gsc->fd, VIDIOC_REQBUFS, &req);
++    if (ret || req.count < 2) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "REQBUFS (mmap) failed\n");
++        return ret ? ret : AVERROR(ENOMEM);
++    }
++    gsc->num_capture_buffers = FFMIN(req.count, GSC_CAPTURE_BUFFERS);
++
++    for (int i = 0; i < gsc->num_capture_buffers; i++) {
++        GscBuffer *gbuf = &gsc->capture[i];
++        struct v4l2_plane plane = { 0 };
++        struct v4l2_buffer buf = {
++            .type     = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
++            .memory   = V4L2_MEMORY_MMAP,
++            .index    = i,
++            .length   = 1,
++            .m.planes = &plane,
++        };
++        struct v4l2_exportbuffer expbuf = {
++            .type  = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
++            .index = i,
++            .flags = O_RDWR,
++        };
++        AVDRMLayerDescriptor *olayer = &gbuf->desc.layers[0];
++
++        ret = xioctl(gsc->fd, VIDIOC_QUERYBUF, &buf);
++        if (!ret)
++            ret = xioctl(gsc->fd, VIDIOC_EXPBUF, &expbuf);
++        if (ret) {
++            av_log(gsc->log_ctx, AV_LOG_ERROR, "buffer %d export failed\n", i);
++            return ret;
++        }
++
++        gbuf->gsc   = gsc;
++        gbuf->index = i;
++        gbuf->desc.nb_objects = 1;
++        gbuf->desc.objects[0].fd   = expbuf.fd;
++        gbuf->desc.objects[0].size = plane.length;
++        gbuf->desc.objects[0].format_modifier = DRM_FORMAT_MOD_LINEAR;
++        gbuf->desc.nb_layers = 1;
++        /* the 4th byte is not written as alpha */
++        olayer->format    = DRM_FORMAT_XRGB8888;
++        olayer->nb_planes = 1;
++        olayer->planes[0].object_index = 0;
++        olayer->planes[0].offset = 0;
++        olayer->planes[0].pitch  = fmt.fmt.pix_mp.plane_fmt[0].bytesperline;
++
++        ret = gsc_queue_capture(gsc, i);
++        if (ret)
++            return ret;
++    }
++
++    /* 5. frames context describing the converted frames */
++    gsc->frames_ref = av_buffer_ref(frames_ref);
++    if (!gsc->frames_ref)
++        return AVERROR(ENOMEM);
++
++    type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++    ret = xioctl(gsc->fd, VIDIOC_STREAMON, &type);
++    if (!ret) {
++        type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++        ret = xioctl(gsc->fd, VIDIOC_STREAMON, &type);
++    }
++    if (ret) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "STREAMON failed\n");
++        return ret;
++    }
++
++    gsc->drm_format = layer->format;
++    gsc->nb_objects = desc->nb_objects;
++    gsc->pitch      = layer->planes[0].pitch;
++    gsc->configured = 1;
++
++    av_log(gsc->log_ctx, AV_LOG_VERBOSE,
++           "%.4s %dx%d (%d objects) -> XRGB8888, frame %dx%d (%d+%d buffers)\n",
++           (const char *)&v4l2_format, width, height, desc->nb_objects,
++           in->width, in->height, gsc->num_output_buffers, gsc->num_capture_buffers);
++
++    return 0;
++}
++
++/* pick the converter input buffer for a dmabuf: the kernel keeps the
++ * import of a buffer, so the same dmabuf goes to the same buffer */
++static int gsc_output_slot(GscConverter *gsc, int fd)
++{
++    for (int i = 0; i < gsc->num_output_buffers; i++)
++        if (gsc->output_fd[i] == fd && !gsc->output_busy[i])
++            return i;
++
++    for (int n = 0; n < gsc->num_output_buffers; n++) {
++        int i = (gsc->output_next + n) % gsc->num_output_buffers;
++
++        if (!gsc->output_busy[i]) {
++            gsc->output_next = (i + 1) % gsc->num_output_buffers;
++            gsc->output_fd[i] = fd;
++            return i;
++        }
++    }
++
++    return -1;
++}
++
++/* queue an input frame on the converter; frame is taken over */
++static int gsc_submit(GscConverter *gsc, AVFrame *frame)
++{
++    const AVDRMFrameDescriptor *desc = (const AVDRMFrameDescriptor *)frame->data[0];
++    struct v4l2_plane planes[VIDEO_MAX_PLANES] = { 0 };
++    struct v4l2_buffer buf = {
++        .type     = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
++        .memory   = V4L2_MEMORY_DMABUF,
++        .length   = desc->nb_objects,
++        .m.planes = planes,
++    };
++    int slot, ret;
++
++    if (desc->nb_layers != 1 || desc->layers[0].format != gsc->drm_format ||
++        desc->nb_objects != gsc->nb_objects || desc->layers[0].planes[0].pitch != gsc->pitch) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "input format changed\n");
++        return AVERROR(EINVAL);
++    }
++
++    slot = gsc_output_slot(gsc, desc->objects[0].fd);
++    if (slot < 0)
++        return AVERROR(EAGAIN);
++    buf.index = slot;
++
++    for (int i = 0; i < desc->nb_objects; i++) {
++        planes[i].m.fd      = desc->objects[i].fd;
++        size_t size = desc->objects[i].size;
++
++        /* the size may be unknown (0), e.g. for frames allocated by the
++         * user: ask the dmabuf */
++        if (!size) {
++            off_t end = lseek(desc->objects[i].fd, 0, SEEK_END);
++            size = end > 0 ? end : 0;
++        }
++        if (size < gsc->sizeimage[i]) {
++            av_log(gsc->log_ctx, AV_LOG_ERROR, "object %d too small (%zu < %u)\n",
++                   i, size, gsc->sizeimage[i]);
++            return AVERROR(EINVAL);
++        }
++        planes[i].length    = size;
++        planes[i].bytesused = size;
++    }
++
++    ret = xioctl(gsc->fd, VIDIOC_QBUF, &buf);
++    if (ret) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "QBUF on input failed\n");
++        return ret;
++    }
++    gsc->output_busy[slot] = 1;
++
++    /* keep the input frame referenced until its conversion is done */
++    gsc->job_slot[(gsc->job_head + gsc->job_count) % GSC_JOBS] = slot;
++    av_frame_move_ref(gsc->jobs[(gsc->job_head + gsc->job_count) % GSC_JOBS], frame);
++    gsc->job_count++;
++
++    return 0;
++}
++
++/* wait for the oldest queued frame; on success out holds the result */
++static int gsc_complete(GscConverter *gsc, AVFrame *out, int timeout)
++{
++    struct v4l2_plane planes[VIDEO_MAX_PLANES] = { 0 };
++    struct v4l2_buffer in = { 0 }, buf = { 0 };
++    struct pollfd pfd = { .fd = gsc->fd, .events = POLLIN | POLLRDNORM };
++    AVFrame *job = gsc->jobs[gsc->job_head];
++    AVBufferRef *ref;
++    GscBuffer *gbuf;
++    int ret;
++
++    ret = poll(&pfd, 1, timeout);
++    if (ret == 0 && !timeout)
++        return AVERROR(EAGAIN); /* not converted yet */
++    if (ret <= 0) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "conversion timeout\n");
++        return AVERROR(ETIMEDOUT);
++    }
++
++    buf.type     = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++    buf.memory   = V4L2_MEMORY_MMAP;
++    buf.length   = 1;
++    buf.m.planes = planes;
++    ret = xioctl(gsc->fd, VIDIOC_DQBUF, &buf);
++    if (ret) {
++        av_log(gsc->log_ctx, AV_LOG_ERROR, "DQBUF on capture failed\n");
++        return ret;
++    }
++
++    /* the input buffer is done as well: take it back before the input
++     * frame is released and its memory reused */
++    memset(planes, 0, sizeof(planes));
++    in.type     = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++    in.memory   = V4L2_MEMORY_DMABUF;
++    in.length   = VIDEO_MAX_PLANES;
++    in.m.planes = planes;
++    if (xioctl(gsc->fd, VIDIOC_DQBUF, &in))
++        av_log(gsc->log_ctx, AV_LOG_WARNING, "DQBUF on output failed\n");
++
++    gsc->output_busy[gsc->job_slot[gsc->job_head]] = 0;
++    gsc->job_head = (gsc->job_head + 1) % GSC_JOBS;
++    gsc->job_count--;
++
++    gbuf = &gsc->capture[buf.index];
++    if (buf.flags & V4L2_BUF_FLAG_ERROR) {
++        av_log(gsc->log_ctx, AV_LOG_WARNING, "buffer error, frame dropped\n");
++        gsc_queue_capture(gsc, gbuf->index);
++        av_frame_unref(job);
++        return AVERROR(EAGAIN);
++    }
++
++    ref = av_buffer_create((uint8_t *)&gbuf->desc, sizeof(gbuf->desc),
++                           gsc_release_buffer, gbuf, AV_BUFFER_FLAG_READONLY);
++    if (!ref) {
++        gsc_queue_capture(gsc, gbuf->index);
++        av_frame_unref(job);
++        return AVERROR(ENOMEM);
++    }
++    av_refstruct_ref(gsc);
++
++    ret = av_frame_copy_props(out, job);
++    out->width  = gsc->out_w ? gsc->out_w : job->width;
++    out->height = gsc->out_h ? gsc->out_h : job->height;
++    if (gsc->out_w)
++        out->sample_aspect_ratio = (AVRational){ 1, 1 };
++    /* releasing the input frame returns its buffer to the decoder */
++    av_frame_unref(job);
++    if (ret < 0) {
++        av_buffer_unref(&ref);
++        return ret;
++    }
++
++    out->buf[0]        = ref;
++    out->data[0]       = (uint8_t *)&gbuf->desc;
++    out->format        = AV_PIX_FMT_DRM_PRIME;
++    out->hw_frames_ctx = av_buffer_ref(gsc->frames_ref);
++    out->colorspace    = AVCOL_SPC_RGB;
++    out->color_range   = AVCOL_RANGE_JPEG;
++    if (!out->hw_frames_ctx)
++        return AVERROR(ENOMEM);
++
++    return 0;
++}
++
++static int gsc_output_frame(AVFilterContext *avctx, int timeout)
++{
++    GscV4L2M2MContext *s = avctx->priv;
++    AVFrame *out = av_frame_alloc();
++    int ret;
++
++    if (!out)
++        return AVERROR(ENOMEM);
++
++    ret = gsc_complete(s->gsc, out, timeout);
++    if (ret < 0) {
++        av_frame_free(&out);
++        return ret;
++    }
++
++    return ff_filter_frame(avctx->outputs[0], out);
++}
++
++static int gsc_v4l2m2m_activate(AVFilterContext *avctx)
++{
++    GscV4L2M2MContext *s = avctx->priv;
++    AVFilterLink *inlink  = avctx->inputs[0];
++    AVFilterLink *outlink = avctx->outputs[0];
++    GscConverter *gsc = s->gsc;
++    AVFrame *in;
++    int64_t pts;
++    int status, ret;
++
++    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
++
++    /* queue a new frame first, so that its conversion runs while the
++     * next frame is decoded */
++    ret = ff_inlink_consume_frame(inlink, &in);
++    if (ret < 0)
++        return ret;
++    if (ret > 0) {
++        if (!gsc->configured) {
++            FilterLink *fl = ff_filter_link(outlink);
++
++            ret = gsc_setup(gsc, in, fl->hw_frames_ctx);
++            if (ret < 0) {
++                av_frame_free(&in);
++                return ret;
++            }
++        }
++
++        ret = gsc_submit(gsc, in);
++        if (ret == AVERROR(EAGAIN) && gsc->job_count) {
++            /* no free input buffer: make room first */
++            ret = gsc_output_frame(avctx, GSC_TIMEOUT_MS);
++            if (ret >= 0)
++                ret = gsc_submit(gsc, in);
++        }
++        if (ret < 0) {
++            av_frame_free(&in);
++            return ret;
++        }
++
++        /* one frame in, one frame out: the oldest frame has had a whole
++         * frame time to be converted, so this rarely waits */
++        if (gsc->job_count >= GSC_JOBS)
++            return gsc_output_frame(avctx, GSC_TIMEOUT_MS);
++    }
++
++    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
++        while (gsc->job_count) {
++            ret = gsc_output_frame(avctx, GSC_TIMEOUT_MS);
++            if (ret < 0 && ret != AVERROR(EAGAIN))
++                return ret;
++        }
++        ff_outlink_set_status(outlink, status, pts);
++        return 0;
++    }
++
++    FF_FILTER_FORWARD_WANTED(outlink, inlink);
++
++    return FFERROR_NOT_READY;
++}
++
++static int gsc_v4l2m2m_config_output(AVFilterLink *outlink)
++{
++    AVFilterContext *avctx = outlink->src;
++    AVFilterLink *inlink   = avctx->inputs[0];
++    FilterLink *fl_inlink  = ff_filter_link(inlink);
++    FilterLink *fl_outlink = ff_filter_link(outlink);
++    GscV4L2M2MContext *s   = avctx->priv;
++    AVHWFramesContext *hwfc;
++    AVBufferRef *frames_ref;
++    int ret;
++
++    if (!fl_inlink->hw_frames_ctx) {
++        av_log(avctx, AV_LOG_ERROR, "No hw context provided on input\n");
++        return AVERROR(EINVAL);
++    }
++
++    hwfc = (AVHWFramesContext *)fl_inlink->hw_frames_ctx->data;
++    if (hwfc->sw_format != AV_PIX_FMT_NV12 && hwfc->sw_format != AV_PIX_FMT_NV21 &&
++        hwfc->sw_format != AV_PIX_FMT_YUV420P) {
++        av_log(avctx, AV_LOG_ERROR, "Unsupported input format %s\n",
++               av_get_pix_fmt_name(hwfc->sw_format));
++        return AVERROR(EINVAL);
++    }
++
++    if (s->gsc->fd < 0) {
++        av_log(avctx, AV_LOG_ERROR, "No exynos-gsc device found\n");
++        return AVERROR(ENODEV);
++    }
++
++    /* frames context describing the converted frames */
++    frames_ref = av_hwframe_ctx_alloc(hwfc->device_ref);
++    if (!frames_ref)
++        return AVERROR(ENOMEM);
++    hwfc = (AVHWFramesContext *)frames_ref->data;
++    hwfc->format    = AV_PIX_FMT_DRM_PRIME;
++    hwfc->sw_format = AV_PIX_FMT_BGR0;
++    /* no need to scale if the size does not change */
++    if (s->w > 0 && s->h > 0 && (s->w != inlink->w || s->h != inlink->h)) {
++        /* the output size is the display size: square pixels */
++        s->gsc->out_w = s->w;
++        s->gsc->out_h = s->h;
++    }
++    hwfc->width     = s->gsc->out_w ? s->gsc->out_w : inlink->w;
++    hwfc->height    = s->gsc->out_h ? s->gsc->out_h : inlink->h;
++    ret = av_hwframe_ctx_init(frames_ref);
++    if (ret < 0) {
++        av_buffer_unref(&frames_ref);
++        return ret;
++    }
++
++    av_buffer_unref(&fl_outlink->hw_frames_ctx);
++    fl_outlink->hw_frames_ctx = frames_ref;
++    outlink->w = hwfc->width;
++    outlink->h = hwfc->height;
++    if (s->gsc->out_w)
++        outlink->sample_aspect_ratio = (AVRational){ 1, 1 };
++    outlink->colorspace  = AVCOL_SPC_RGB;
++    outlink->color_range = AVCOL_RANGE_JPEG;
++
++    return 0;
++}
++
++static int gsc_v4l2m2m_query_formats(AVFilterContext *avctx)
++{
++    static const enum AVPixelFormat pixel_formats[] = {
++        AV_PIX_FMT_DRM_PRIME,
++        AV_PIX_FMT_NONE,
++    };
++
++    return ff_set_common_formats(avctx, ff_make_format_list(pixel_formats));
++}
++
++static av_cold int gsc_v4l2m2m_init(AVFilterContext *avctx)
++{
++    GscV4L2M2MContext *s = avctx->priv;
++    GscConverter *gsc;
++    char devname[PATH_MAX];
++
++    gsc = av_refstruct_alloc_ext(sizeof(*gsc), 0, NULL, gsc_free);
++    if (!gsc)
++        return AVERROR(ENOMEM);
++    s->gsc = gsc;
++
++    gsc->fd = -1;
++    gsc->log_ctx = avctx;
++    for (int i = 0; i < GSC_CAPTURE_BUFFERS; i++)
++        gsc->capture[i].desc.objects[0].fd = -1;
++
++    for (int i = 0; i < GSC_JOBS; i++) {
++        gsc->jobs[i] = av_frame_alloc();
++        if (!gsc->jobs[i])
++            return AVERROR(ENOMEM);
++    }
++
++    if (gsc_find_device(devname, sizeof(devname))) {
++        gsc->fd = open(devname, O_RDWR);
++        if (gsc->fd >= 0)
++            av_log(avctx, AV_LOG_VERBOSE, "Using %s (exynos-gsc)\n", devname);
++    }
++
++    return 0;
++}
++
++/* "flush": drop the frames in the converter (e.g. on seek). Reusing the
++ * filter avoids allocating the buffers of a new converter while the
++ * frames of the old one are still on screen. */
++static int gsc_v4l2m2m_process_command(AVFilterContext *avctx, const char *cmd,
++                                       const char *arg, char *res, int res_len,
++                                       int flags)
++{
++    GscV4L2M2MContext *s = avctx->priv;
++    GscConverter *gsc = s->gsc;
++
++    if (strcmp(cmd, "flush"))
++        return AVERROR(ENOSYS);
++
++    while (gsc->job_count) {
++        AVFrame *out = av_frame_alloc();
++        int ret;
++
++        if (!out)
++            return AVERROR(ENOMEM);
++
++        /* releasing the result gives its buffer back to the converter */
++        ret = gsc_complete(gsc, out, GSC_TIMEOUT_MS);
++        av_frame_free(&out);
++        if (ret < 0 && ret != AVERROR(EAGAIN))
++            return ret;
++    }
++
++    return 0;
++}
++
++static av_cold void gsc_v4l2m2m_uninit(AVFilterContext *avctx)
++{
++    GscV4L2M2MContext *s = avctx->priv;
++    GscConverter *gsc = s->gsc;
++    int type;
++
++    if (!gsc)
++        return;
++
++    /* converted frames still held by the user stay valid */
++    atomic_store(&gsc->closing, 1);
++    gsc->log_ctx = NULL;
++    if (gsc->fd >= 0) {
++        type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++        xioctl(gsc->fd, VIDIOC_STREAMOFF, &type);
++        type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++        xioctl(gsc->fd, VIDIOC_STREAMOFF, &type);
++    }
++
++    /* the input frames can go back to the decoder now */
++    for (int i = 0; i < GSC_JOBS; i++)
++        if (gsc->jobs[i])
++            av_frame_unref(gsc->jobs[i]);
++    gsc->job_count = 0;
++
++    av_refstruct_unref(&s->gsc);
++}
++
++#define OFFSET(x) offsetof(GscV4L2M2MContext, x)
++#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
++static const AVOption gsc_v4l2m2m_options[] = {
++    { "w", "output width (0: no scaling)",  OFFSET(w), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8192, FLAGS },
++    { "h", "output height (0: no scaling)", OFFSET(h), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8192, FLAGS },
++    { NULL },
++};
++
++AVFILTER_DEFINE_CLASS(gsc_v4l2m2m);
++
++static const AVFilterPad gsc_v4l2m2m_inputs[] = {
++    {
++        .name = "default",
++        .type = AVMEDIA_TYPE_VIDEO,
++    },
++};
++
++static const AVFilterPad gsc_v4l2m2m_outputs[] = {
++    {
++        .name         = "default",
++        .type         = AVMEDIA_TYPE_VIDEO,
++        .config_props = gsc_v4l2m2m_config_output,
++    },
++};
++
++const FFFilter ff_vf_gsc_v4l2m2m = {
++    .p.name         = "gsc_v4l2m2m",
++    .p.description  = NULL_IF_CONFIG_SMALL("Exynos GScaler V4L2 M2M colour converter"),
++    .p.priv_class   = &gsc_v4l2m2m_class,
++    .priv_size      = sizeof(GscV4L2M2MContext),
++    .init           = gsc_v4l2m2m_init,
++    .uninit         = gsc_v4l2m2m_uninit,
++    .activate       = gsc_v4l2m2m_activate,
++    .process_command = gsc_v4l2m2m_process_command,
++    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
++    FILTER_QUERY_FUNC(&gsc_v4l2m2m_query_formats),
++    FILTER_INPUTS(gsc_v4l2m2m_inputs),
++    FILTER_OUTPUTS(gsc_v4l2m2m_outputs),
++};
+-- 
+2.43.0
+
