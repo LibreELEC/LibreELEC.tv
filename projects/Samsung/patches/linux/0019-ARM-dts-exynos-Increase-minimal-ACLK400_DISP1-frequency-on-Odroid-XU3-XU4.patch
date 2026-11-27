@@ -1,0 +1,44 @@
+From a31ff462064ddbc238a63e507b842d68d3b4c15d Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Fri, 27 Nov 2026 14:06:51 +0900
+Subject: [PATCH] ARM: dts: exynos: Increase minimal ACLK400_DISP1 frequency on
+ Odroid XU3/XU4
+
+ACLK400_DISP1 feeds internal buses of the display subsystem, including
+the Mixer. When it is set to 120MHz, the Mixer cannot handle two XRGB
+planes at FullHD 60Hz: DMA underruns make it read past the configured
+buffer, which causes an IOMMU page fault and a kernel panic:
+
+  exynos-sysmmu 14650000.sysmmu: 14450000.mixer: [READ] PAGE FAULT occurred at 0x22fe9000
+  Kernel panic - not syncing: Unrecoverable System MMU Fault!
+
+The same change was proposed for exynos5420.dtsi in 2019, but the bus OPP
+tables of the Odroid boards still start at 120MHz. Use 150MHz, derived
+from the 600MHz DPLL, as the lowest OPP of bus_disp1.
+---
+ arch/arm/boot/dts/samsung/exynos5422-odroid-core.dtsi | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/samsung/exynos5422-odroid-core.dtsi b/arch/arm/boot/dts/samsung/exynos5422-odroid-core.dtsi
+index 2f5b860..94f8f58 100644
+--- a/arch/arm/boot/dts/samsung/exynos5422-odroid-core.dtsi
++++ b/arch/arm/boot/dts/samsung/exynos5422-odroid-core.dtsi
+@@ -248,9 +248,13 @@ opp01 {
+ 	bus_disp1_opp_table: opp-table-14 {
+ 		compatible = "operating-points-v2";
+ 
+-		/* derived from 600MHz DPLL */
++		/*
++		 * derived from 600MHz DPLL
++		 * TODO: the Mixer cannot handle two XRGB FullHD planes at 60Hz
++		 * below 150MHz: DMA underruns make it read past the buffer.
++		 */
+ 		opp00 {
+-			opp-hz = /bits/ 64 <120000000>;
++			opp-hz = /bits/ 64 <150000000>;
+ 		};
+ 		opp01 {
+ 			opp-hz = /bits/ 64 <200000000>;
+-- 
+2.43.0
+
