@@ -24,4 +24,5 @@ PKG_CMAKE_OPTS_HOST="-DMI_SECURE=OFF \
                      -DMI_BUILD_TESTS=OFF \
                      -DMI_DEBUG_TSAN=OFF \
                      -DMI_DEBUG_UBSAN=OFF \
-                     -DMI_SKIP_COLLECT_ON_EXIT=OFF"
+                     -DMI_SKIP_COLLECT_ON_EXIT=OFF \
+                     -DMI_BIG_ENDIAN=OFF"
