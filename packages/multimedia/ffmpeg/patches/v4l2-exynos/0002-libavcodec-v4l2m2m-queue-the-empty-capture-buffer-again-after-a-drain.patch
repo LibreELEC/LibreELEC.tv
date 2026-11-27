@@ -1,0 +1,42 @@
+From db87024463f0d1a6c281c9cf94553ef5dae2a9cb Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Fri, 27 Nov 2026 11:10:27 +0900
+Subject: [PATCH] libavcodec/v4l2m2m: queue the empty capture buffer again
+ after a drain
+
+At the end of a drain, the driver may return an empty capture buffer to
+signal the last buffer. It is not marked as available and is never
+queued again, so one capture buffer is lost on each drain. With drivers
+that need a minimum number of capture buffers to decode, decoding stalls
+after a few seeks.
+
+Queue the empty buffer again so that it can be used when decoding is
+restarted.
+---
+ libavcodec/v4l2_context.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/libavcodec/v4l2_context.c b/libavcodec/v4l2_context.c
+index 1f1fd6d..907e571 100644
+--- a/libavcodec/v4l2_context.c
++++ b/libavcodec/v4l2_context.c
+@@ -400,6 +400,16 @@ dequeue:
+             int bytesused = V4L2_TYPE_IS_MULTIPLANAR(buf.type) ?
+                             buf.m.planes[0].bytesused : buf.bytesused;
+             if (bytesused == 0) {
++                /* an empty buffer only signals the end of the drain: give
++                 * it back to the driver so that it can be used again when
++                 * decoding is restarted */
++                avbuf = &ctx->buffers[buf.index];
++                avbuf->buf = buf;
++                if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
++                    memcpy(avbuf->planes, planes, sizeof(planes));
++                    avbuf->buf.m.planes = avbuf->planes;
++                }
++                ff_v4l2_buffer_enqueue(avbuf);
+                 ctx->done = 1;
+                 return NULL;
+             }
+-- 
+2.43.0
+
