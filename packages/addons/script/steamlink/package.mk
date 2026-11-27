@@ -3,7 +3,7 @@
 
 PKG_NAME="steamlink"
 PKG_VERSION="1.0"
-PKG_REV="0"
+PKG_REV="1"
 PKG_ARCH="aarch64"
 PKG_LICENSE="LicenseRef-nonfree"
 PKG_SITE="https://support.steampowered.com/kb_article.php?ref=6153-IFGH-6589"
@@ -18,8 +18,8 @@ PKG_ADDON_NAME="Raspberry Pi Steam Link"
 PKG_ADDON_TYPE="xbmc.python.script"
 PKG_ADDON_PROVIDES="executable"
 
-PKG_STEAMLINK_VERSION="1.3.32.316"
-PKG_STEAMLINK_HASH="32f737f0167727bff739a5b793b87222b603ec0da7837991a493e7a81e77bb62"
+PKG_STEAMLINK_VERSION="1.4.5.327"
+PKG_STEAMLINK_HASH="34cac22f301e8c466d59959f87bf2eb6a8d15ce8b53566361ec5216571c1e318"
 
 addon() {
   # Add needed libraries
