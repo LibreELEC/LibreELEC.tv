@@ -1733,7 +1733,7 @@ install_flatpak_addon_files() {
         -e "s|@CONSTRUCTOR_ARGS@|${constructor_args}|g" \
         "${ROOT}/config/flatpak-addons/default.py" \
         > "${default_py_file}"
-  fi 
+  fi
 
   if [ ! -f "${settings_xml_file}" ]; then
     mkdir -p "${dest_dir}/resources/"
@@ -1743,7 +1743,7 @@ install_flatpak_addon_files() {
     if [ "${PKG_FLATPAK_AUDIO_SETTINGS}" != "yes" ]; then
       xmlstarlet ed --inplace -d "//group[@id='2']" "${settings_xml_file}"
     fi
-  fi 
+  fi
 
   if [ ! -f "${strings_po_file}" ]; then
     mkdir -p "${dest_dir}/resources/language/resource.language.en_gb/"
@@ -1751,7 +1751,7 @@ install_flatpak_addon_files() {
         -e "s|@ADDON_NAME@|${PKG_ADDON_NAME}|g" \
         "${ROOT}/config/flatpak-addons/strings-en_gb.po" \
         > "${strings_po_file}"
-  fi 
+  fi
 }
 
 install_addon_files() {

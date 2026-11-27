@@ -79,7 +79,7 @@ class FlatpakAddon:
                 return None
         except TypeError:
             return None
-    
+
         try:
             audiodev = settings.getString('customaudiodevice').strip()
         except TypeError:

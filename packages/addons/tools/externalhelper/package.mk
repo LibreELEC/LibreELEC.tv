@@ -25,7 +25,7 @@ addon() {
     cp -P $(get_install_dir seatd)/usr/bin/{seatd,seatd-launch} "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_install_dir labwc)/usr/bin/labwc "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_install_dir kanshi)/usr/bin/kanshi "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
-	cp -P $(get_install_dir wayvnc)/usr/bin/wayvnc "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
+    cp -P $(get_install_dir wayvnc)/usr/bin/wayvnc "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_build_dir wlopm)/wlopm "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_install_dir swayidle)/usr/bin/swayidle "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"
     cp -P $(get_install_dir wayland-utils)/usr/bin/wayland-info "${ADDON_BUILD}/${PKG_ADDON_ID}/bin"

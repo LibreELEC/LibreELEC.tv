@@ -13,7 +13,7 @@ setup_pulse() {
 
   AUDIODEV="${KODI_AUDIO_DEVICE#ALSA:}"
   AUDIODEV="${AUDIODEV:-sysdefault}"
-  
+
   if [ -n "${KODI_FLATPAK_PULSEAUDIO_CHANNELS}" ]; then
     CHANNELS="channels=${KODI_FLATPAK_PULSEAUDIO_CHANNELS}"
   fi

@@ -61,7 +61,7 @@ save_rust_reusable() {
     cp -a "${stage2}"/lib/* "${dir}/lib"
 
   # the source links point back into the rust build directory
-  rm -rf "${dir}"/lib/rustlib/{src,rustc-src}
+  safe_remove "${dir}"/lib/rustlib/{src,rustc-src}
 
   # find openssl from the toolchain the archive is unpacked into
   patchelf --set-rpath '$ORIGIN/../lib' "${dir}/bin/cargo"
