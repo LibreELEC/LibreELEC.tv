@@ -4,9 +4,10 @@ Date: Mon, 30 Dec 2024 14:19:07 +0000
 Subject: [PATCH] link against static libopenmpt
 
 diff --git a/src/decoder/plugins/meson.build b/src/decoder/plugins/meson.build
+index b1836fd..f220212 100644
 --- a/src/decoder/plugins/meson.build
 +++ b/src/decoder/plugins/meson.build
-@@ -110,7 +110,7 @@
+@@ -116,7 +116,7 @@ if libmodplug_dep.found()
    ]
  endif
  
@@ -15,3 +16,6 @@ diff --git a/src/decoder/plugins/meson.build b/src/decoder/plugins/meson.build
  decoder_features.set('ENABLE_OPENMPT', libopenmpt_dep.found())
  if libopenmpt_dep.found()
    decoder_plugins_sources += [
+-- 
+2.53.0
+
