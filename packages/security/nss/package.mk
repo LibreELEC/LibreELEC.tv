@@ -31,7 +31,7 @@ make_host() {
     USE_SYSTEM_ZLIB=1 ZLIB_LIBS="-lz -L${TOOLCHAIN}/lib" \
     SKIP_SHLIBSIGN=1 \
     NSS_TESTS="dummy" \
-    CC=${CC} LDFLAGS="${LDFLAGS} -L${TOOLCHAIN}/lib" \
+    CC=${CC} CCC=${CXX} LDFLAGS="${LDFLAGS} -L${TOOLCHAIN}/lib" \
     V=1
 }
 
@@ -68,6 +68,7 @@ make_target() {
     NSINSTALL=${TOOLCHAIN}/bin/nsinstall \
     CPU_ARCH_TAG=${TARGET_ARCH} \
     CC=${CC} \
+    CCC=${CXX} \
     LDFLAGS="${LDFLAGS} -L${SYSROOT_PREFIX}/usr/lib" \
     V=1
 }
