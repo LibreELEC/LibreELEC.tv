@@ -52,7 +52,6 @@ PKG_MESON_OPTS_TARGET="-Dgallium-drivers=${GALLIUM_DRIVERS// /,} \
                        -Dgallium-extra-hud=false \
                        -Dgallium-rusticl=false \
                        -Dshader-cache=enabled \
-                       -Dopengl=true \
                        -Dgbm=enabled \
                        -Degl=enabled \
                        -Dvalgrind=disabled \
@@ -129,6 +128,12 @@ if [ "${OPENGLES_SUPPORT}" = "yes" ]; then
   PKG_MESON_OPTS_TARGET+=" -Dgles1=disabled -Dgles2=enabled"
 else
   PKG_MESON_OPTS_TARGET+=" -Dgles1=disabled -Dgles2=disabled"
+fi
+
+if [ "${OPENGL_SUPPORT}" = "yes" ]; then
+  PKG_MESON_OPTS_TARGET+=" -Dopengl=true"
+else
+  PKG_MESON_OPTS_TARGET+=" -Dopengl=false"
 fi
 
 if [ "${VULKAN_SUPPORT}" = "yes" ]; then
