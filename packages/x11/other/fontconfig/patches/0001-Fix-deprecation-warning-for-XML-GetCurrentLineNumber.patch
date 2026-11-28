@@ -1,0 +1,71 @@
+From 5fe7d013a9406c8ecfd71bd91370faba9ecd5b34 Mon Sep 17 00:00:00 2001
+From: Akira TAGOH <akira@tagoh.org>
+Date: Fri, 30 Oct 2026 11:42:56 +0900
+Subject: [PATCH 1/2] Fix deprecation warning for XML_GetCurrentLineNumber
+
+Changelog: fixed
+---
+ meson.build | 13 +++++++++++++
+ src/fcxml.c | 10 ++++++++++
+ 2 files changed, 23 insertions(+)
+
+diff --git a/meson.build b/meson.build
+index e0c52f5c127f..6c734d61bc62 100644
+--- a/meson.build
++++ b/meson.build
+@@ -165,6 +165,10 @@ check_funcs = [
+   ['uselocale'],
+ ]
+ 
++check_expat_funcs = [
++  ['XML_GetCurrentLineNumber64', {'prefix': '#include <expat.h>', 'dependencies': xml_dep}],
++]
++
+ check_freetype_funcs = [
+   ['FT_Get_BDF_Property', {'dependencies': freetype_dep}],
+   ['FT_Get_PS_Font_Info', {'dependencies': freetype_dep}],
+@@ -256,6 +260,15 @@ conf.set('USE_ICONV', found_iconv)
+ deps += [iconv_dep]
+ 
+ # We cannot try compiling against an internal dependency
++if xml_dep.type_name() == 'internal'
++  foreach func: check_expat_funcs
++    name = func[0]
++    conf.set('HAVE_@0@'.format(name.to_upper()), 0)
++  endforeach
++else
++  check_funcs += check_expat_funcs
++endif
++
+ if freetype_dep.type_name() == 'internal'
+   foreach func: check_freetype_funcs
+     name = func[0]
+diff --git a/src/fcxml.c b/src/fcxml.c
+index 5b3a73417309..afd537f5e23e 100644
+--- a/src/fcxml.c
++++ b/src/fcxml.c
+@@ -729,11 +729,21 @@ FcConfigMessage (FcConfigParse *parse, FcConfigSeverity severe, const char *fmt,
+     }
+     if (parse) {
+ 	if (parse->name)
++#if HAVE_XML_GETCURRENTLINENUMBER64
++	    fprintf (stderr, "Fontconfig %s: \"%s\", line %ld: ", s,
++	             parse->name, XML_GetCurrentLineNumber64 (parse->parser));
++#else
+ 	    fprintf (stderr, "Fontconfig %s: \"%s\", line %d: ", s,
+ 	             parse->name, (int)XML_GetCurrentLineNumber (parse->parser));
++#endif
+ 	else
++#if HAVE_XML_GETCURRENTLINENUMBER64
++	    fprintf (stderr, "Fontconfig %s: line %ld: ", s,
++	             XML_GetCurrentLineNumber64 (parse->parser));
++#else
+ 	    fprintf (stderr, "Fontconfig %s: line %d: ", s,
+ 	             (int)XML_GetCurrentLineNumber (parse->parser));
++#endif
+ 	if (severe >= FcSevereError)
+ 	    parse->error = FcTrue;
+     } else
+-- 
+2.55.0.windows.5
+
