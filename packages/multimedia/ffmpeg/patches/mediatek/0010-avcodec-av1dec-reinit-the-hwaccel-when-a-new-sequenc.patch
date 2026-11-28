@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Fri, 13 Nov 2026 01:26:27 +0100
+Subject: [PATCH 10/11] avcodec/av1dec: reinit the hwaccel when a new sequence
+ needs larger frames
+
+get_pixel_format() keeps the current hwaccel when the pixel format is
+unchanged, which also skipped reinitialisation when a new sequence
+header raised the frame size. The hardware frames pool then stayed at
+the old size; with V4L2 request the decoder wrote the larger frames
+past the end of the CAPTURE buffers (IOMMU faults on MediaTek).
+
+Only reuse the hwaccel when the existing frames context is large
+enough. Fixes av1-1-b8-03-sizeup.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavcodec/av1dec.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/libavcodec/av1dec.c b/libavcodec/av1dec.c
+index c3fa6b1709..6a7c773255 100644
+--- a/libavcodec/av1dec.c
++++ b/libavcodec/av1dec.c
+@@ -22,6 +22,7 @@
+ 
+ #include "libavutil/attributes.h"
+ #include "libavutil/hdr_dynamic_metadata.h"
++#include "libavutil/hwcontext.h"
+ #include "libavutil/film_grain_params.h"
+ #include "libavutil/mastering_display_metadata.h"
+ #include "libavutil/mem.h"
+@@ -666,6 +667,12 @@ static int get_pixel_format(AVCodecContext *avctx)
+ 
+     for (int i = 0; pix_fmts[i] != pix_fmt; i++)
+         if (pix_fmts[i] == avctx->pix_fmt) {
++            const AVHWFramesContext *frames = avctx->hw_frames_ctx ?
++                (const AVHWFramesContext *)avctx->hw_frames_ctx->data : NULL;
++            /* a new sequence may need larger frames than the current pool has */
++            if (frames && (frames->width  < avctx->coded_width ||
++                           frames->height < avctx->coded_height))
++                break;
+             s->pix_fmt = pix_fmt;
+             return 1;
+         }

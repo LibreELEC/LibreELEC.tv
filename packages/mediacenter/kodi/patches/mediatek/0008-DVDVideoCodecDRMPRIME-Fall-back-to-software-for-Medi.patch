@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 20:48:40 +0100
+Subject: [PATCH 08/11] DVDVideoCodecDRMPRIME: Fall back to software for
+ MediaTek 10-bit frames
+
+Neither the GPU nor MDP3 can read the MediaTek 10-bit tiled layouts, so
+reopen in software as soon as one is decoded, on both render paths. Do
+not pick the hardware format in GetFormat once forced to software.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 24 +++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index 0492d8b4a0..eca7452cdc 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -258,11 +258,13 @@ static const AVCodec* FindDecoder(CDVDStreamInfo& hints)
+ enum AVPixelFormat CDVDVideoCodecDRMPRIME::GetFormat(struct AVCodecContext* avctx,
+                                                      const enum AVPixelFormat* fmt)
+ {
++  CDVDVideoCodecDRMPRIME* ctx = static_cast<CDVDVideoCodecDRMPRIME*>(avctx->opaque);
++  const bool software = ctx->m_hints.codecOptions & CODEC_FORCE_SOFTWARE;
++
+   for (int n = 0; fmt[n] != AV_PIX_FMT_NONE; n++)
+   {
+-    if (IsSupportedHwFormat(fmt[n]) || IsSupportedSwFormat(fmt[n]))
++    if ((!software && IsSupportedHwFormat(fmt[n])) || IsSupportedSwFormat(fmt[n]))
+     {
+-      CDVDVideoCodecDRMPRIME* ctx = static_cast<CDVDVideoCodecDRMPRIME*>(avctx->opaque);
+       ctx->UpdateProcessInfo(avctx, fmt[n]);
+       return fmt[n];
+     }
+@@ -1118,6 +1120,24 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+   if (!m_processInfo.GetVideoInterlaced() && (m_pFrame->flags & AV_FRAME_FLAG_INTERLACED) != 0)
+     m_processInfo.SetVideoInterlaced(true);
+ 
++  // nothing scans out, samples or converts the MediaTek 10-bit tiled layouts
++  if (IsSupportedHwFormat(static_cast<AVPixelFormat>(m_pFrame->format)))
++  {
++    const auto* descriptor = reinterpret_cast<const AVDRMFrameDescriptor*>(m_pFrame->data[0]);
++    const uint64_t modifier = descriptor && descriptor->nb_objects > 0
++                                  ? descriptor->objects[0].format_modifier
++                                  : DRM_FORMAT_MOD_LINEAR;
++    if (modifier >> 56 == DRM_FORMAT_MOD_VENDOR_MTK && (modifier & MTK_FMT_MOD_10BIT_LAYOUT_MASK))
++    {
++      CLog::Log(LOGWARNING,
++                "CDVDVideoCodecDRMPRIME::{} - MediaTek 10-bit layout cannot be displayed, "
++                "falling back to software decoding",
++                __FUNCTION__);
++      m_hints.codecOptions |= CODEC_FORCE_SOFTWARE;
++      return VC_REOPEN;
++    }
++  }
++
+   std::string filterChain = GetFilterChain((m_pFrame->flags & AV_FRAME_FLAG_INTERLACED) != 0);
+   if (!filterChain.empty())
+   {

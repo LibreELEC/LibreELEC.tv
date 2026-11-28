@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 23:51:46 +0100
+Subject: [PATCH 09/11] avcodec/v4l2_request_av1: pass tile starts in MI units
+
+V4L2's mi_col_starts/mi_row_starts are in 4x4 (MI) units, but the
+superblock starts from CBS were passed as-is, while the final entry was
+computed in MI units. Drivers that derive tile sizes from consecutive
+starts, e.g. the MediaTek AV1 decoder, then got wrong tile geometry for
+every multi-tile frame and faulted. Shift by the superblock size.
+
+Fixes the Chromium AV1 tile vectors on MT8195: 8-bit 6 -> 10/13,
+10-bit 10 -> 22/23.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavcodec/v4l2_request_av1.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/libavcodec/v4l2_request_av1.c b/libavcodec/v4l2_request_av1.c
+index 4eabdbf31b..a673fe2798 100644
+--- a/libavcodec/v4l2_request_av1.c
++++ b/libavcodec/v4l2_request_av1.c
+@@ -137,7 +137,7 @@ static void fill_frame(struct v4l2_ctrl_av1_frame *ctrl, const AV1DecContext *s)
+         V4L2_AV1_FRAME_RESTORE_WIENER,
+         V4L2_AV1_FRAME_RESTORE_SGRPROJ,
+     };
+-    int i, j;
++    int i, j, sb_shift;
+ 
+     *ctrl = (struct v4l2_ctrl_av1_frame) {
+         .tile_info = {
+@@ -231,14 +231,16 @@ static void fill_frame(struct v4l2_ctrl_av1_frame *ctrl, const AV1DecContext *s)
+     if (frame_header->uniform_tile_spacing_flag)
+         ctrl->tile_info.flags |= V4L2_AV1_TILE_INFO_FLAG_UNIFORM_TILE_SPACING;
+ 
++    /* mi_col_starts/mi_row_starts are in MI (4x4) units, the CBS starts in superblocks */
++    sb_shift = s->raw_seq->use_128x128_superblock ? 5 : 4;
+     for (i = 0; i < frame_header->tile_cols; i++) {
+-        ctrl->tile_info.mi_col_starts[i] = frame_header->tile_start_col_sb[i];
++        ctrl->tile_info.mi_col_starts[i] = frame_header->tile_start_col_sb[i] << sb_shift;
+         ctrl->tile_info.width_in_sbs_minus_1[i] = frame_header->width_in_sbs_minus_1[i];
+     }
+     ctrl->tile_info.mi_col_starts[i] = 2 * ((cbctx->frame_width + 7) >> 3);
+ 
+     for (i = 0; i < frame_header->tile_rows; i++) {
+-        ctrl->tile_info.mi_row_starts[i] = frame_header->tile_start_row_sb[i];
++        ctrl->tile_info.mi_row_starts[i] = frame_header->tile_start_row_sb[i] << sb_shift;
+         ctrl->tile_info.height_in_sbs_minus_1[i] = frame_header->height_in_sbs_minus_1[i];
+     }
+     ctrl->tile_info.mi_row_starts[i] = 2 * ((cbctx->frame_height + 7) >> 3);

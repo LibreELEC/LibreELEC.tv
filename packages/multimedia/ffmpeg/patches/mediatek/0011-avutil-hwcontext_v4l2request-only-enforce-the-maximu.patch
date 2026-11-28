@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Fri, 13 Nov 2026 01:28:45 +0100
+Subject: [PATCH 11/11] avutil/hwcontext_v4l2request: only enforce the maximum
+ frame size
+
+Frames smaller than the minimum of a stepwise ENUM_FRAMESIZES range
+were rejected, although S_FMT rounds the buffers up and the smaller
+frame decodes fine into them (as GStreamer relies on). Only keep the
+maximum as a hard limit.
+
+Fixes the 60 small-size VP9 conformance vectors (vp90-2-02-size-*) on
+MediaTek MT8195, whose minimum is 64x64.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavutil/hwcontext_v4l2request.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/libavutil/hwcontext_v4l2request.c b/libavutil/hwcontext_v4l2request.c
+index a06fc15f90..68e82ec0a8 100644
+--- a/libavutil/hwcontext_v4l2request.c
++++ b/libavutil/hwcontext_v4l2request.c
+@@ -519,8 +519,11 @@ static int v4l2request_try_framesize(AVHWFramesContext *hwfc,
+             return 0;
+         } else if ((frmsize.type == V4L2_FRMSIZE_TYPE_STEPWISE ||
+                     frmsize.type == V4L2_FRMSIZE_TYPE_CONTINUOUS) &&
+-                   hwfc->width >= frmsize.stepwise.min_width &&
+-                   hwfc->height >= frmsize.stepwise.min_height &&
++                   /*
++                    * Below the minimum, S_FMT rounds the buffers up and the
++                    * smaller frame still decodes into them; only the maximum
++                    * is a hard limit.
++                    */
+                    hwfc->width <= frmsize.stepwise.max_width &&
+                    hwfc->height <= frmsize.stepwise.max_height) {
+             return 0;

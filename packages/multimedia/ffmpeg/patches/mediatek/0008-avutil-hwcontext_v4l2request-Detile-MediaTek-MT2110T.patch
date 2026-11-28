@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 22:42:29 +0100
+Subject: [PATCH 08/11] avutil/hwcontext_v4l2request: Detile MediaTek MT2110T/R
+ to P010 on hwdownload
+
+The 10-bit MediaTek layouts use the MM21 tile grid with 4-row
+partitions of 16 bytes of low bits followed by 64 bytes of high bits;
+T and R only differ in how the low bits are packed. Detile on the CPU
+to P010, bit-exact against software decoding for HEVC Main10 and AV1
+10-bit. 4K 10-bit runs at ~100 fps with the detile on the NIO-12L.
+
+Based on Nicolas Dufresne's MT2110T/MT2110R unpack functions in
+GStreamer (gst-libs/gst/video/video-format.c).
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavutil/hwcontext_v4l2request.c | 96 +++++++++++++++++++++++++++++++
+ 1 file changed, 96 insertions(+)
+
+diff --git a/libavutil/hwcontext_v4l2request.c b/libavutil/hwcontext_v4l2request.c
+index d053d04cd0..a06fc15f90 100644
+--- a/libavutil/hwcontext_v4l2request.c
++++ b/libavutil/hwcontext_v4l2request.c
+@@ -1349,6 +1349,86 @@ fail:
+ }
+ #endif
+ 
++#if defined(V4L2_PIX_FMT_MT2110T) && defined(V4L2_PIX_FMT_MT2110R)
++/*
++ * MediaTek MT2110T/MT2110R: 10-bit NV12 in the MM21 tile grid (16x32 luma,
++ * 16x16 chroma tiles; 640/320 bytes per tile). Each tile is split into
++ * partitions of 4 rows x 16 bytes: 16 bytes holding the low 2 bits, then 64
++ * bytes holding the high 8 bits. T and R differ in how the low bits are
++ * packed: T keeps one byte per column (row in bits 2*row), R one byte per
++ * 4 columns of a row (column in bits 2*(col%4)).
++ */
++static uint32_t v4l2request_mt2110_pixelformat(AVHWFramesContext *hwfc)
++{
++    AVV4L2RequestFramesContext *fctx = hwfc->hwctx;
++    const struct v4l2_format *fmt = &fctx->internal->capture.format;
++
++    if (!V4L2_TYPE_IS_MULTIPLANAR(fmt->type))
++        return 0;
++    if (fmt->fmt.pix_mp.pixelformat == V4L2_PIX_FMT_MT2110T ||
++        fmt->fmt.pix_mp.pixelformat == V4L2_PIX_FMT_MT2110R)
++        return fmt->fmt.pix_mp.pixelformat;
++    return 0;
++}
++
++static void v4l2request_detile_mt2110_plane(uint8_t *dst, int dst_linesize,
++                                            const uint8_t *src, int pitch,
++                                            int width, int height,
++                                            int tile_h, int raster)
++{
++    const int tile_size = 16 * tile_h * 10 / 8;
++    const int x_tiles = pitch / 16;
++
++    for (int y = 0; y < height; y++) {
++        const int part = (y % tile_h) / 4, line = y % 4;
++        const uint8_t *row = src + (size_t)(y / tile_h) * x_tiles * tile_size + part * 80;
++        uint16_t *out = (uint16_t *)(dst + (size_t)y * dst_linesize);
++
++        for (int x = 0; x < width; x += 16) {
++            const uint8_t *t = row + (x / 16) * tile_size;
++            const int n = FFMIN(16, width - x);
++
++            for (int i = 0; i < n; i++) {
++                const int lo = raster ? (t[line * 4 + i / 4] >> ((i % 4) * 2)) & 3
++                                      : (t[i] >> (line * 2)) & 3;
++                out[x + i] = ((t[16 + line * 16 + i] << 2) | lo) << 6;
++            }
++        }
++    }
++}
++
++static int v4l2request_transfer_mt2110(AVHWFramesContext *hwfc, AVFrame *dst,
++                                       const AVFrame *src, int raster)
++{
++    const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
++    AVV4L2RequestFramesContext *fctx = hwfc->hwctx;
++    const struct v4l2_format *fmt = &fctx->internal->capture.format;
++    const int pitch = fmt->fmt.pix_mp.plane_fmt[0].bytesperline;
++    AVFrame *map;
++    int ret;
++
++    if (desc->nb_layers != 1 || desc->layers[0].nb_planes != 2 || pitch < 16)
++        return AVERROR(EINVAL);
++
++    map = av_frame_alloc();
++    if (!map)
++        return AVERROR(ENOMEM);
++
++    ret = v4l2request_map_frame(hwfc, map, src);
++    if (ret)
++        goto fail;
++
++    v4l2request_detile_mt2110_plane(dst->data[0], dst->linesize[0], map->data[0],
++                                    pitch, dst->width, dst->height, 32, raster);
++    v4l2request_detile_mt2110_plane(dst->data[1], dst->linesize[1], map->data[1],
++                                    pitch, FFALIGN(dst->width, 2),
++                                    (dst->height + 1) / 2, 16, raster);
++fail:
++    av_frame_free(&map);
++    return ret;
++}
++#endif
++
+ static int v4l2request_transfer_get_formats(AVHWFramesContext *hwfc,
+                                             enum AVHWFrameTransferDirection dir,
+                                             enum AVPixelFormat **formats)
+@@ -1372,6 +1452,13 @@ static int v4l2request_transfer_get_formats(AVHWFramesContext *hwfc,
+         return 0;
+     }
+ #endif
++#if defined(V4L2_PIX_FMT_MT2110T) && defined(V4L2_PIX_FMT_MT2110R)
++    if (v4l2request_mt2110_pixelformat(hwfc)) {
++        fmts[0] = AV_PIX_FMT_P010;
++        *formats = fmts;
++        return 0;
++    }
++#endif
+ 
+     if (hwfc->sw_format == AV_PIX_FMT_YUV420P ||
+         hwfc->sw_format == AV_PIX_FMT_YUV420P10 ||
+@@ -1398,6 +1485,15 @@ static int v4l2request_transfer_data_from(AVHWFramesContext *hwfc,
+         return v4l2request_transfer_mm21(hwfc, dst, src);
+     }
+ #endif
++#if defined(V4L2_PIX_FMT_MT2110T) && defined(V4L2_PIX_FMT_MT2110R)
++    if (v4l2request_mt2110_pixelformat(hwfc)) {
++        if (dst->format != AV_PIX_FMT_P010)
++            return AVERROR(ENOSYS);
++        return v4l2request_transfer_mt2110(hwfc, dst, src,
++                                           v4l2request_mt2110_pixelformat(hwfc) ==
++                                           V4L2_PIX_FMT_MT2110R);
++    }
++#endif
+ 
+     map = av_frame_alloc();
+     if (!map)

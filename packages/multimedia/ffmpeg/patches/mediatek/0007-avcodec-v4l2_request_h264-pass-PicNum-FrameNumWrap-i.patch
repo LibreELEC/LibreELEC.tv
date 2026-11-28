@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 19:54:31 +0100
+Subject: [PATCH 07/11] avcodec/v4l2_request_h264: pass PicNum = FrameNumWrap
+ in the DPB
+
+pic_id is only updated for pictures in the current slice's reference
+lists, so after frame_num wraps the DPB entries carried stale, unwrapped
+pic_num values. Compute FrameNumWrap per 8.2.4.1 for short-term frame
+references, as GStreamer does.
+
+Together with the previous commit, this fixes corrupted H.264 B-frame
+decoding on MediaTek (MT8195); libx264 streams decode bit-exact again.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ libavcodec/v4l2_request_h264.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/libavcodec/v4l2_request_h264.c b/libavcodec/v4l2_request_h264.c
+index 5abf631090..44331e7259 100644
+--- a/libavcodec/v4l2_request_h264.c
++++ b/libavcodec/v4l2_request_h264.c
+@@ -69,10 +69,18 @@ static void fill_weight_factors(struct v4l2_h264_weight_factors *weight_factors,
+ }
+ 
+ static void fill_dpb_entry(struct v4l2_h264_dpb_entry *entry,
++                           const H264Context *h,
+                            const H264Picture *pic, int long_idx)
+ {
+     entry->reference_ts = ff_v4l2_request_get_capture_timestamp(pic->f);
+-    entry->pic_num = pic->pic_id;
++    if (!pic->long_ref && !FIELD_PICTURE(h)) {
++        /* PicNum = FrameNumWrap (8.2.4.1); pic_id is only valid for pictures in the current ref lists */
++        int max_frame_num = 1 << h->ps.sps->log2_max_frame_num;
++        entry->pic_num = pic->frame_num > h->poc.frame_num ?
++                         pic->frame_num - max_frame_num : pic->frame_num;
++    } else {
++        entry->pic_num = pic->pic_id;
++    }
+     entry->frame_num = pic->long_ref ? long_idx : pic->frame_num;
+     entry->fields = pic->reference & V4L2_H264_FRAME_REF;
+     entry->flags = V4L2_H264_DPB_ENTRY_FLAG_VALID;
+@@ -96,7 +104,7 @@ static void fill_dpb(struct v4l2_ctrl_h264_decode_params *decode_params,
+     for (int i = 0; i < h->short_ref_count; i++) {
+         const H264Picture *pic = h->short_ref[i];
+         if (pic && (pic->field_poc[0] != INT_MAX || pic->field_poc[1] != INT_MAX))
+-            fill_dpb_entry(&decode_params->dpb[entries++], pic, pic->pic_id);
++            fill_dpb_entry(&decode_params->dpb[entries++], h, pic, pic->pic_id);
+     }
+ 
+     if (!h->long_ref_count)
+@@ -105,7 +113,7 @@ static void fill_dpb(struct v4l2_ctrl_h264_decode_params *decode_params,
+     for (int i = 0; i < FF_ARRAY_ELEMS(h->long_ref); i++) {
+         const H264Picture *pic = h->long_ref[i];
+         if (pic && (pic->field_poc[0] != INT_MAX || pic->field_poc[1] != INT_MAX))
+-            fill_dpb_entry(&decode_params->dpb[entries++], pic, i);
++            fill_dpb_entry(&decode_params->dpb[entries++], h, pic, i);
+     }
+ }
+ 

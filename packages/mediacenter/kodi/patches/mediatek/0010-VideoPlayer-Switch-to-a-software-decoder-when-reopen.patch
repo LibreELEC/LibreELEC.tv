@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Thu, 12 Nov 2026 22:20:59 +0100
+Subject: [PATCH 10/11] VideoPlayer: Switch to a software decoder when
+ reopening fails
+
+A hardware decoder can ask to be reopened in software (VC_REOPEN), but
+when it has no software path for the stream, e.g. DRMPRIME with AV1,
+whose only software decoder (libdav1d) lacks AV_CODEC_CAP_DR1, the
+reopen left a codec without a context and Kodi crashed. Let Reopen()
+report failure, and recreate the codec through the factory with
+CODEC_FORCE_SOFTWARE in that case.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h |  2 +-
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp         |  6 +++++-
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h           |  2 +-
+ .../DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp           |  4 +++-
+ .../VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h |  2 +-
+ xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp           | 11 ++++++++++-
+ 6 files changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h
+index 08933a0c10..79ce556b9c 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h
+@@ -253,7 +253,7 @@ public:
+    * Re-open the decoder.
+    * Decoder request to re-open
+    */
+-  virtual void Reopen() {}
++  virtual bool Reopen() { return true; }
+ 
+ protected:
+   CProcessInfo &m_processInfo;
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index eca7452cdc..790dd40f02 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -904,7 +904,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+   return true;
+ }
+ 
+-void CDVDVideoCodecDRMPRIME::Reopen()
++bool CDVDVideoCodecDRMPRIME::Reopen()
+ {
+   m_filters.clear();
+   m_deintFilterName.clear();
+@@ -915,8 +915,12 @@ void CDVDVideoCodecDRMPRIME::Reopen()
+   avcodec_free_context(&m_pCodecContext);
+ 
+   if (!Open(m_hints, m_options))
++  {
+     CLog::Log(LOGERROR, "CDVDVideoCodecDRMPRIME::{} - failed to reopen the decoder",
+               __FUNCTION__);
++    return false;
++  }
++  return true;
+ }
+ 
+ void CDVDVideoCodecDRMPRIME::FilterClose()
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+index 2265ebf126..44ea601fd7 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+@@ -39,7 +39,7 @@ public:
+   const char* GetName() override { return m_name.c_str(); }
+   unsigned GetAllowedReferences() override { return 5; }
+   void SetCodecControl(int flags) override;
+-  void Reopen() override;
++  bool Reopen() override;
+ 
+ protected:
+   void Drain();
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+index 34ba54ec42..875a91c9cb 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.cpp
+@@ -995,13 +995,15 @@ void CDVDVideoCodecFFmpeg::Reset()
+   m_dropCtrl.Reset(false);
+ }
+ 
+-void CDVDVideoCodecFFmpeg::Reopen()
++bool CDVDVideoCodecFFmpeg::Reopen()
+ {
+   Dispose();
+   if (!Open(m_hints, m_options))
+   {
+     Dispose();
++    return false;
+   }
++  return true;
+ }
+ 
+ CDVDVideoCodec::VCReturn CDVDVideoCodecFFmpeg::HandleHwFatal()
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h
+index b84fee9b0b..bd6ff18e3b 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecFFmpeg.h
+@@ -37,7 +37,7 @@ public:
+   bool Open(CDVDStreamInfo &hints, CDVDCodecOptions &options) override;
+   bool AddData(const DemuxPacket &packet) override;
+   void Reset() override;
+-  void Reopen() override;
++  bool Reopen() override;
+   CDVDVideoCodec::VCReturn GetPicture(VideoPicture* pVideoPicture) override;
+   const char* GetName() override { return m_name.c_str(); }; // m_name is never changed after open
+   unsigned GetConvergeCount() override;
+diff --git a/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp b/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
+index c8f609f4ab..b1a93c9e2f 100644
+--- a/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
++++ b/xbmc/cores/VideoPlayer/VideoPlayerVideo.cpp
+@@ -688,7 +688,16 @@ bool CVideoPlayerVideo::ProcessDecoderOutput(double &frametime, double &pts)
+       SendMessage(msg, 10);
+     }
+ 
+-    m_pVideoCodec->Reopen();
++    if (!m_pVideoCodec->Reopen())
++    {
++      // e.g. a hardware decoder's software fallback without a usable software decoder
++      CLog::Log(LOGWARNING, "CVideoPlayerVideo - reopening the decoder failed, switching to "
++                            "software decoding");
++      CDVDStreamInfo hints = m_hints;
++      hints.codecOptions |= CODEC_FORCE_SOFTWARE;
++      m_pVideoCodec.reset();
++      OpenStream(hints, nullptr);
++    }
+     m_packets.clear();
+     m_renderManager.DiscardBuffer();
+     return false;

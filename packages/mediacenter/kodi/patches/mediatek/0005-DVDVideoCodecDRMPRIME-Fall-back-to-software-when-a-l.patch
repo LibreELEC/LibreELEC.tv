@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ricardo Pardini <ricardo@pardini.net>
+Date: Mon, 24 Aug 2026 22:07:19 +0200
+Subject: [PATCH 05/11] DVDVideoCodecDRMPRIME: Fall back to software when a
+ layout cannot be converted
+
+MediaTek 10-bit output is MT2110, which nothing on the board can consume:
+MDP3 has no entry for it, panfrost cannot import it and the display
+cannot scan it out. Playback stopped with "failed to configure renderer"
+and never recovered.
+
+Detect it as what it is, a frame layout that has to be converted and that
+no device will convert, and ask VideoPlayer to reopen the decoder with
+CODEC_FORCE_SOFTWARE. The mem2mem device is probed on the first frame
+rather than while the graph is configured, so the failure can surface
+either when the graph is built or when the first frame is pushed into it,
+and both are treated the same way.
+
+Open() now skips the hardware config when the software decoder is forced.
+Without that, reopening would find the hwaccel again, create the device
+context again and land straight back on the path it was reopened to
+escape.
+
+The software frames that come out are 10-bit planar, so accept those
+formats too. CVideoBufferPoolDMA::TranslateFormat already maps them onto
+the S010 family of DRM fourccs, and CDRMPRIMETextureYUV already imports
+those, so they render through the existing zero-copy path. The two format
+lists are kept in lockstep, including their libdrm version guards, and
+GetBuffer sizes the buffers with av_image_get_buffer_size so the 10-bit
+formats get a pool at all.
+
+Assisted-by: Claude:claude-opus-5-5
+---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 112 ++++++++++++++----
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h   |   4 +
+ 2 files changed, 92 insertions(+), 24 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index 8d0435530e..0492d8b4a0 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -168,8 +168,46 @@ static bool IsSupportedHwFormat(const enum AVPixelFormat fmt)
+ 
+ static bool IsSupportedSwFormat(const enum AVPixelFormat fmt)
+ {
+-  return fmt == AV_PIX_FMT_YUV420P || fmt == AV_PIX_FMT_YUVJ420P || fmt == AV_PIX_FMT_YUV422P ||
+-         fmt == AV_PIX_FMT_YUVJ422P || fmt == AV_PIX_FMT_YUV444P || fmt == AV_PIX_FMT_YUVJ444P;
++  switch (fmt)
++  {
++    case AV_PIX_FMT_YUV420P:
++    case AV_PIX_FMT_YUVJ420P:
++    case AV_PIX_FMT_YUV422P:
++    case AV_PIX_FMT_YUVJ422P:
++    case AV_PIX_FMT_YUV444P:
++    case AV_PIX_FMT_YUVJ444P:
++      return true;
++    /*
++     * Kept in lockstep with CVideoBufferPoolDMA::TranslateFormat, which needs
++     * the matching DRM fourcc to describe the buffer.
++     */
++#if defined(DRM_FORMAT_S010)
++    case AV_PIX_FMT_YUV420P10:
++      return true;
++#endif
++#if defined(DRM_FORMAT_S012)
++    case AV_PIX_FMT_YUV420P12:
++      return true;
++#endif
++#if defined(DRM_FORMAT_S210)
++    case AV_PIX_FMT_YUV422P10:
++      return true;
++#endif
++#if defined(DRM_FORMAT_S212)
++    case AV_PIX_FMT_YUV422P12:
++      return true;
++#endif
++#if defined(DRM_FORMAT_S410)
++    case AV_PIX_FMT_YUV444P10:
++      return true;
++#endif
++#if defined(DRM_FORMAT_S412)
++    case AV_PIX_FMT_YUV444P12:
++      return true;
++#endif
++    default:
++      return false;
++  }
+ }
+ 
+ static const AVCodecHWConfig* FindHWConfig(const AVCodec* codec)
+@@ -250,24 +288,9 @@ int CDVDVideoCodecDRMPRIME::GetBuffer(struct AVCodecContext* avctx, AVFrame* fra
+ 
+     AlignedSize(avctx, width, height);
+ 
+-    int size;
+-    switch (avctx->pix_fmt)
+-    {
+-      case AV_PIX_FMT_YUV420P:
+-      case AV_PIX_FMT_YUVJ420P:
+-        size = width * height * 3 / 2;
+-        break;
+-      case AV_PIX_FMT_YUV422P:
+-      case AV_PIX_FMT_YUVJ422P:
+-        size = width * height * 2;
+-        break;
+-      case AV_PIX_FMT_YUV444P:
+-      case AV_PIX_FMT_YUVJ444P:
+-        size = width * height * 3;
+-        break;
+-      default:
+-        return -1;
+-    }
++    const int size = av_image_get_buffer_size(avctx->pix_fmt, width, height, 1);
++    if (size <= 0)
++      return -1;
+ 
+     CDVDVideoCodecDRMPRIME* ctx = static_cast<CDVDVideoCodecDRMPRIME*>(avctx->opaque);
+     // no lock: ffmpeg serializes get_buffer2 even with frame threading, and the codec's
+@@ -316,8 +339,15 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
+     return false;
+ 
+   m_hints = hints;
++  m_options = options;
+ 
+-  const AVCodecHWConfig* pConfig = FindHWConfig(pCodec);
++  /*
++   * Without a hardware device context ffmpeg will not offer the hardware pixel
++   * format, which is what keeps a forced software reopen from ending up back on
++   * the hardware path it was reopened to escape.
++   */
++  const AVCodecHWConfig* pConfig =
++      (hints.codecOptions & CODEC_FORCE_SOFTWARE) ? nullptr : FindHWConfig(pCodec);
+   if (pConfig && (pConfig->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX))
+   {
+     const char* type = av_hwdevice_get_type_name(pConfig->device_type);
+@@ -872,6 +902,21 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+   return true;
+ }
+ 
++void CDVDVideoCodecDRMPRIME::Reopen()
++{
++  m_filters.clear();
++  m_deintFilterName.clear();
++  m_checkedDeinterlace = false;
++  FilterClose();
++  av_frame_unref(m_pFrame);
++  av_frame_unref(m_pFilterFrame);
++  avcodec_free_context(&m_pCodecContext);
++
++  if (!Open(m_hints, m_options))
++    CLog::Log(LOGERROR, "CDVDVideoCodecDRMPRIME::{} - failed to reopen the decoder",
++              __FUNCTION__);
++}
++
+ void CDVDVideoCodecDRMPRIME::FilterClose()
+ {
+   m_processInfo.SetVideoDeintMethod("none");
+@@ -958,6 +1003,8 @@ std::string CDVDVideoCodecDRMPRIME::GetConvertFilter()
+   return {};
+ #endif
+ 
++  m_convertRequired = true;
++
+   // UYVY because the MediaTek planes take packed YUV and RGB, but not NV12
+   std::string filter = "scale_v4l2m2m=format=uyvy";
+ 
+@@ -985,6 +1032,8 @@ std::string CDVDVideoCodecDRMPRIME::GetConvertFilter()
+ 
+ std::string CDVDVideoCodecDRMPRIME::GetFilterChain(bool interlaced)
+ {
++  m_convertRequired = false;
++
+   // ask codec to do deinterlacing if possible
+   EINTERLACEMETHOD mInt = m_processInfo.GetVideoSettings().m_InterlaceMethod;
+   std::string filterChain;
+@@ -1088,11 +1137,26 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::GetPicture(VideoPicture* pVideo
+         FilterClose();
+     }
+ 
+-    if (m_pFilterGraph)
++    /*
++     * A conversion the graph could not be built for, or that fails on the first
++     * frame because no device accepts the layout, means hardware decoding leads
++     * nowhere for this stream. The mem2mem device is probed on the first frame,
++     * so both have to be treated the same way.
++     */
++    VCReturn filterState = m_pFilterGraph ? ProcessFilterIn() : VC_ERROR;
++
++    if (filterState == VC_ERROR && m_convertRequired)
+     {
+-      if (ProcessFilterIn() != VC_PICTURE)
+-        return VC_NONE;
++      CLog::Log(LOGWARNING,
++                "CDVDVideoCodecDRMPRIME::{} - no conversion available for the decoded frame "
++                "layout, falling back to software decoding",
++                __FUNCTION__);
++      m_hints.codecOptions |= CODEC_FORCE_SOFTWARE;
++      return VC_REOPEN;
+     }
++
++    if (m_pFilterGraph && filterState != VC_PICTURE)
++      return VC_NONE;
+   }
+   else
+   {
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+index 7b1b819a5b..2265ebf126 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+@@ -9,6 +9,7 @@
+ #pragma once
+ 
+ #include "cores/VideoPlayer/Buffers/VideoBuffer.h"
++#include "cores/VideoPlayer/DVDCodecs/DVDCodecs.h"
+ #include "cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodec.h"
+ #include "cores/VideoPlayer/DVDStreamInfo.h"
+ 
+@@ -38,6 +39,7 @@ public:
+   const char* GetName() override { return m_name.c_str(); }
+   unsigned GetAllowedReferences() override { return 5; }
+   void SetCodecControl(int flags) override;
++  void Reopen() override;
+ 
+ protected:
+   void Drain();
+@@ -60,6 +62,8 @@ protected:
+   CDVDStreamInfo m_hints;
+   double m_DAR = 1.0;
+   bool m_checkedDeinterlace = false;
++  bool m_convertRequired = false;
++  CDVDCodecOptions m_options;
+   AVCodecContext* m_pCodecContext = nullptr;
+   AVFrame* m_pFrame = nullptr;
+   AVFrame* m_pFilterFrame = nullptr;

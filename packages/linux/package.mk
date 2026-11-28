@@ -36,6 +36,13 @@ case "${LINUX}" in
     PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
     PKG_PATCH_DIRS="default rockchip"
     ;;
+  mediatek)
+    PKG_VERSION="7595a62d45ee1a2297eafa5f2ef5d0a45142d84d" # 7.3.4
+    PKG_SHA256="0f1c3ae0e3e1efcd6943156cb37daa53a52bcb3f9fa281eda1a38de1d03dd8b0"
+    PKG_URL="https://github.com/torvalds/linux/archive/${PKG_VERSION}.tar.gz"
+    PKG_SOURCE_NAME="linux-${LINUX}-${PKG_VERSION}.tar.gz"
+    PKG_PATCH_DIRS="default mediatek"
+    ;;
   *)
     PKG_VERSION="7.3.4"
     PKG_SHA256="b11b6df8295e8e991ff040b71aaa4994a8b55caa23b6b092907f195b5840fd1f"
