@@ -48,6 +48,9 @@ case "${PROJECT}" in
       Allwinner | Rockchip)
         PKG_PATCH_DIRS+=" vf-deinterlace-v4l2m2m"
         ;;
+      Samsung)
+        PKG_PATCH_DIRS+=" v4l2-exynos"
+        ;;
     esac
     ;;
 esac

@@ -1,0 +1,321 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 11:19:43 +0900
+Subject: [PATCH] LOCAL: DVDVideoCodecDRMPRIME: use the GScaler filter for direct to
+ plane on exynos
+
+The display mixer on Exynos 5422 (ODROID-XU4) has no YUV plane, and its
+planes cannot scale (only 1:1 or 2x), so the decoded frames cannot be
+put on a plane directly.
+
+If the gsc_v4l2m2m filter is available and direct to plane rendering
+is selected, add it to the filter chain to convert the frames to RGB
+with the GScaler, scaled to the size of the video on the display
+(normal view mode). Software decoded 4:2:0 frames (e.g. HEVC) are
+passed to the filter as DRM PRIME frames, as they are in dmabufs as
+well.
+
+On reset (e.g. seek), flush the filter instead of recreating it: a new
+converter would allocate its buffers while the frames of the old one
+are still on screen.
+
+Software decoded frames are allocated with a height multiple of 16, as
+the GScaler requires it for 4:2:0 frames (H.264 adds two lines). The
+converted frames are DRM PRIME frames even when hardware decoding is
+disabled ("Allow hardware acceleration with DRM PRIME" off): give them
+to the renderer as such, otherwise no picture is shown.
+---
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp | 155 +++++++++++++++++-
+ .../DVDCodecs/Video/DVDVideoCodecDRMPRIME.h   |   4 +
+ 2 files changed, 153 insertions(+), 6 deletions(-)
+
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+index 00b0176..1d02edc 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.cpp
+@@ -23,6 +23,7 @@
+ #include "utils/log.h"
+ 
+ #if defined(HAVE_GBM)
++#include "windowing/GraphicContext.h"
+ #include "windowing/gbm/WinSystemGbm.h"
+ #endif
+ 
+@@ -32,6 +33,8 @@ extern "C"
+ #include <libavfilter/buffersink.h>
+ #include <libavfilter/buffersrc.h>
+ #include <libavutil/error.h>
++#include <libavutil/hwcontext.h>
++#include <libavutil/hwcontext_drm.h>
+ #include <libavutil/imgutils.h>
+ #include <libavutil/opt.h>
+ #include <libavutil/pixdesc.h>
+@@ -243,6 +246,9 @@ int CDVDVideoCodecDRMPRIME::GetBuffer(struct AVCodecContext* avctx, AVFrame* fra
+     int height = frame->height;
+ 
+     AlignedSize(avctx, width, height);
++    // the GScaler takes 4:2:0 frames with a height multiple of 16 (H.264
++    // adds two lines): keep the planes of the dmabuf at such a height
++    height = (height + 15) & ~15;
+ 
+     int size;
+     switch (avctx->pix_fmt)
+@@ -485,8 +491,11 @@ void CDVDVideoCodecDRMPRIME::Reset()
+     return;
+ 
+   Drain();
+-  m_filters.clear();
+-  FilterClose();
++  if (!FilterFlush())
++  {
++    m_filters.clear();
++    FilterClose();
++  }
+ 
+   do
+   {
+@@ -653,7 +662,10 @@ bool CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
+     pVideoPicture->videoBuffer = nullptr;
+   }
+ 
+-  if (IsSupportedHwFormat(static_cast<AVPixelFormat>(m_pFrame->format)))
++  // frames converted by the rgb filter are DRM PRIME frames even when
++  // hardware decoding is disabled
++  if (IsSupportedHwFormat(static_cast<AVPixelFormat>(m_pFrame->format)) ||
++      (!m_rgbFilterName.empty() && m_pFrame->format == AV_PIX_FMT_DRM_PRIME))
+   {
+     CVideoBufferDRMPRIMEFFmpeg* buffer = m_hwVideoBufferPool->Get();
+     buffer->SetPictureParams(*pVideoPicture);
+@@ -689,6 +701,18 @@ void CDVDVideoCodecDRMPRIME::FilterTest()
+   void* opaque{};
+ 
+   m_deintFilterName.clear();
++  m_rgbFilterName.clear();
++
++  // The Exynos 5422 display mixer has no YUV plane: for direct to plane
++  // rendering, convert the frames to RGB with the GScaler
++  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
++          CSettings::SETTING_VIDEOPLAYER_USEPRIMERENDERER) == 0 &&
++      avfilter_get_by_name("gsc_v4l2m2m") && FilterOpen("gsc_v4l2m2m", true))
++  {
++    m_rgbFilterName = "gsc_v4l2m2m";
++    CLog::Log(LOGDEBUG, "CDVDVideoCodecDRMPRIME::{} - found rgb conversion filter {}",
++              __FUNCTION__, m_rgbFilterName);
++  }
+ 
+   while ((filter = av_filter_iterate(&opaque)) != nullptr)
+   {
+@@ -722,6 +746,12 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+   if (filters.empty())
+     return true;
+ 
++  // software decoded frames are in dmabufs too: the GScaler filter can
++  // import them as DRM PRIME frames
++  if (!m_pFrame->hw_frames_ctx && m_pFrame->opaque &&
++      filters.find("gsc_v4l2m2m") != std::string::npos && !CreateSwFramesContext())
++    return false;
++
+   if (!(m_pFilterGraph = avfilter_graph_alloc()))
+   {
+     CLog::Log(LOGERROR, "CDVDVideoCodecDRMPRIME::FilterOpen - unable to alloc filter graph");
+@@ -746,7 +776,7 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+   }
+ 
+   par->format = AV_PIX_FMT_DRM_PRIME;
+-  par->hw_frames_ctx = m_pFrame->hw_frames_ctx;
++  par->hw_frames_ctx = m_swFramesRef ? m_swFramesRef : m_pFrame->hw_frames_ctx;
+   par->time_base = m_pCodecContext->time_base;
+   par->width = m_pCodecContext->width;
+   par->height = m_pCodecContext->height;
+@@ -860,7 +890,11 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+     return true;
+   }
+ 
+-  m_processInfo.SetVideoDeintMethod(filters);
++  // the rgb conversion filter is not a deinterlacer
++  if (!m_deintFilterName.empty() && filters.find(m_deintFilterName) != std::string::npos)
++    m_processInfo.SetVideoDeintMethod(m_deintFilterName);
++  else
++    m_processInfo.SetVideoDeintMethod("none");
+ 
+   if (CServiceBroker::GetLogging().CanLogComponent(LOGVIDEO))
+   {
+@@ -876,6 +910,26 @@ bool CDVDVideoCodecDRMPRIME::FilterOpen(const std::string& filters, bool test)
+   return true;
+ }
+ 
++bool CDVDVideoCodecDRMPRIME::FilterFlush()
++{
++  // Keep a graph with only the rgb conversion filter: a new GScaler
++  // converter would allocate its buffers while the frames of the old one
++  // are still on screen
++  if (!m_pFilterGraph || m_rgbFilterName.empty() || m_filters.rfind(m_rgbFilterName, 0) != 0)
++    return false;
++
++  while (av_buffersink_get_frame(m_pFilterOut, m_pFilterFrame) >= 0)
++    av_frame_unref(m_pFilterFrame);
++
++  if (avfilter_graph_send_command(m_pFilterGraph, m_rgbFilterName.c_str(), "flush", "",
++                                  nullptr, 0, 0) < 0)
++    return false;
++
++  CLog::Log(LOGDEBUG, "CDVDVideoCodecDRMPRIME::{} - flushed filter {}", __FUNCTION__,
++            m_rgbFilterName);
++  return true;
++}
++
+ void CDVDVideoCodecDRMPRIME::FilterClose()
+ {
+   m_processInfo.SetVideoDeintMethod("none");
+@@ -888,10 +942,64 @@ void CDVDVideoCodecDRMPRIME::FilterClose()
+     m_pFilterIn = nullptr;
+     m_pFilterOut = nullptr;
+   }
++  av_buffer_unref(&m_swFramesRef);
++}
++
++bool CDVDVideoCodecDRMPRIME::CreateSwFramesContext()
++{
++  av_buffer_unref(&m_swFramesRef);
++
++  // the GScaler converts 8-bit 4:2:0 frames only
++  if (m_pFrame->format != AV_PIX_FMT_YUV420P && m_pFrame->format != AV_PIX_FMT_YUVJ420P)
++    return false;
++
++  // no DRM device is needed to describe the frames
++  AVBufferRef* device = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_DRM);
++  if (!device)
++    return false;
++  reinterpret_cast<AVDRMDeviceContext*>(
++      reinterpret_cast<AVHWDeviceContext*>(device->data)->hwctx)->fd = -1;
++  if (av_hwdevice_ctx_init(device) < 0)
++  {
++    av_buffer_unref(&device);
++    return false;
++  }
++
++  m_swFramesRef = av_hwframe_ctx_alloc(device);
++  av_buffer_unref(&device);
++  if (!m_swFramesRef)
++    return false;
++
++  auto* frames = reinterpret_cast<AVHWFramesContext*>(m_swFramesRef->data);
++  frames->format = AV_PIX_FMT_DRM_PRIME;
++  frames->sw_format = AV_PIX_FMT_YUV420P;
++  frames->width = m_pFrame->width;
++  frames->height = m_pFrame->height;
++  if (av_hwframe_ctx_init(m_swFramesRef) < 0)
++  {
++    CLog::Log(LOGERROR, "CDVDVideoCodecDRMPRIME::{} - failed to init frames context",
++              __FUNCTION__);
++    av_buffer_unref(&m_swFramesRef);
++    return false;
++  }
++
++  return true;
+ }
+ 
+ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterIn()
+ {
++  // pass a software decoded frame as a DRM PRIME frame
++  if (m_swFramesRef && m_pFrame->format != AV_PIX_FMT_DRM_PRIME && m_pFrame->opaque)
++  {
++    CVideoBufferDMA* buffer = static_cast<CVideoBufferDMA*>(m_pFrame->opaque);
++    buffer->SetDimensions(m_pFrame->width, m_pFrame->height);
++    buffer->SyncEnd();
++    m_pFrame->data[0] = reinterpret_cast<uint8_t*>(buffer->GetDescriptor());
++    m_pFrame->format = AV_PIX_FMT_DRM_PRIME;
++    av_buffer_unref(&m_pFrame->hw_frames_ctx);
++    m_pFrame->hw_frames_ctx = av_buffer_ref(m_swFramesRef);
++  }
++
+   int ret = av_buffersrc_add_frame(m_pFilterIn, m_pFrame);
+   if (ret < 0)
+   {
+@@ -928,6 +1036,13 @@ CDVDVideoCodec::VCReturn CDVDVideoCodecDRMPRIME::ProcessFilterOut()
+   av_frame_unref(m_pFrame);
+   av_frame_move_ref(m_pFrame, m_pFilterFrame);
+ 
++  // the converted frame does not need the software decoded buffer
++  if (m_swFramesRef)
++  {
++    av_buffer_unref(&m_pFrame->opaque_ref);
++    m_pFrame->opaque = nullptr;
++  }
++
+   return VC_PICTURE;
+ }
+ 
+@@ -941,12 +1056,40 @@ std::string CDVDVideoCodecDRMPRIME::GetFilterChain(bool interlaced)
+     mInt = m_processInfo.GetFallbackDeintMethod();
+ 
+   // avoid disabling deinterlace graph for occasional progressive frames - they will be copied by deinterlace
+-  if (!m_filters.empty())
++  if (!m_deintFilterName.empty() && m_filters.find(m_deintFilterName) != std::string::npos)
+     interlaced = true;
+ 
+   if (mInt != VS_INTERLACEMETHOD_NONE && interlaced && !m_deintFilterName.empty())
+     filterChain += m_deintFilterName;
+ 
++  if (!m_rgbFilterName.empty())
++  {
++    if (!filterChain.empty())
++      filterChain += ",";
++    filterChain += m_rgbFilterName;
++
++    // the display planes cannot scale (only 1:1 or 2x): let the GScaler scale
++    // to the size of the video on the display (normal view mode)
++    const RESOLUTION_INFO res = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(
++        CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution());
++    int width = res.iScreenWidth;
++    int height = res.iScreenHeight;
++    if (width > 0 && height > 0 && m_pFrame->width > 0 && m_pFrame->height > 0)
++    {
++      double aspect = static_cast<double>(m_pFrame->width) / m_pFrame->height;
++      if (m_pFrame->sample_aspect_ratio.num)
++        aspect *= av_q2d(m_pFrame->sample_aspect_ratio);
++
++      int h = static_cast<int>(lrint(width / aspect)) & ~1;
++      if (h <= height)
++        height = h;
++      else
++        width = static_cast<int>(lrint(height * aspect)) & ~1;
++
++      filterChain += StringUtils::Format("=w={}:h={}", width, height);
++    }
++  }
++
+   return filterChain;
+ }
+ 
+diff --git a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+index 585bba2..676cfb6 100644
+--- a/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
++++ b/xbmc/cores/VideoPlayer/DVDCodecs/Video/DVDVideoCodecDRMPRIME.h
+@@ -48,12 +48,15 @@ protected:
+   static enum AVPixelFormat GetFormat(struct AVCodecContext* avctx, const enum AVPixelFormat* fmt);
+   static int GetBuffer(struct AVCodecContext* avctx, AVFrame* frame, int flags);
+   bool FilterOpen(const std::string& filters, bool test);
++  bool CreateSwFramesContext();
++  bool FilterFlush();
+   void FilterClose();
+   void FilterTest();
+   std::string GetFilterChain(bool interlaced);
+ 
+   std::string m_name;
+   std::string m_deintFilterName;
++  std::string m_rgbFilterName;
+   std::string m_filters;
+   int m_codecControlFlags = 0;
+   CDVDStreamInfo m_hints;
+@@ -65,6 +68,7 @@ protected:
+   AVFilterGraph* m_pFilterGraph = nullptr;
+   AVFilterContext* m_pFilterIn = nullptr;
+   AVFilterContext* m_pFilterOut = nullptr;
++  AVBufferRef* m_swFramesRef = nullptr;
+   std::shared_ptr<CVideoBufferPoolDRMPRIMEFFmpeg> m_hwVideoBufferPool;
+   std::shared_ptr<CVideoBufferPoolDMA> m_swVideoBufferPool;
+ };
+-- 
+2.43.0
+

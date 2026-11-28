@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shigeaki Asai <y-asai.0816@docomonet.jp>
+Date: Wed, 25 Nov 2026 21:10:00 +0900
+Subject: [PATCH] media: s5p-mfc: report the supported H.264 decoder profiles
+
+The MFC decodes H.264 up to the High profile only: it supports neither
+more than 8 bits nor other chroma formats than 4:2:0. The firmware does
+not reject such streams (e.g. High 10) either, but outputs corrupted
+frames, so applications have no way to know that they should use
+another decoder.
+
+Add a read-only V4L2_CID_MPEG_VIDEO_H264_PROFILE menu control to the
+decoder, listing the profiles that can be decoded (Baseline,
+Constrained Baseline, Main and High), as other stateful decoders do.
+
+---
+--- a/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
++++ b/drivers/media/platform/samsung/s5p-mfc/s5p_mfc_dec.c
+@@ -1188,6 +1188,7 @@
+ int s5p_mfc_dec_ctrls_setup(struct s5p_mfc_ctx *ctx)
+ {
+ 	struct v4l2_ctrl_config cfg;
++	struct v4l2_ctrl *ctrl;
+ 	int i;
+ 
+ 	v4l2_ctrl_handler_init(&ctx->ctrl_handler, NUM_CTRLS);
+@@ -1226,6 +1227,25 @@
+ 		if (controls[i].is_volatile && ctx->ctrls[i])
+ 			ctx->ctrls[i]->flags |= V4L2_CTRL_FLAG_VOLATILE;
+ 	}
++
++	/*
++	 * Report the H.264 profiles that can be decoded, so that applications
++	 * can use another decoder for the others: there is no support for
++	 * more than 8 bits or for other chroma formats than 4:2:0 (High 10,
++	 * High 4:2:2, High 4:4:4), and the firmware does not reject such
++	 * streams but outputs corrupted frames.
++	 */
++	ctrl = v4l2_ctrl_new_std_menu(&ctx->ctrl_handler, &s5p_mfc_dec_ctrl_ops,
++				      V4L2_CID_MPEG_VIDEO_H264_PROFILE,
++				      V4L2_MPEG_VIDEO_H264_PROFILE_HIGH,
++				      BIT(V4L2_MPEG_VIDEO_H264_PROFILE_EXTENDED),
++				      V4L2_MPEG_VIDEO_H264_PROFILE_HIGH);
++	if (ctx->ctrl_handler.error) {
++		mfc_err("Adding H264 profile control failed\n");
++		return ctx->ctrl_handler.error;
++	}
++	ctrl->flags |= V4L2_CTRL_FLAG_READ_ONLY;
++
+ 	return 0;
+ }
+ 
