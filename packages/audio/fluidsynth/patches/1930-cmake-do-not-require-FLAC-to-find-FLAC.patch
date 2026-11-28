@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 27 Nov 2026 10:51:39 +0000
+Subject: [PATCH] cmake: do not require FLAC++ to find FLAC
+
+FindFLAC fails unless both libFLAC and libFLAC++ are found. FluidSynth
+does not use FLAC itself. The module is only reached through
+libsndfile's SndFileConfig.cmake, whose find_dependency(FLAC) picks up
+this module ahead of libsndfile's own because cmake_admin is already on
+CMAKE_MODULE_PATH. libsndfile links only FLAC::FLAC.
+
+With a libFLAC built without the C++ library, the SndFile config is
+rejected, FluidSynth falls back to FindSndFileLegacy, and SF3 support
+is disabled even though libsndfile has Ogg/Vorbis support.
+
+Require only the C library, and create FLAC::FLAC++ only when the C++
+library is found.
+---
+ cmake_admin/FindFLAC.cmake | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/cmake_admin/FindFLAC.cmake b/cmake_admin/FindFLAC.cmake
+index 2de2f41a81da..0279daa49524 100644
+--- a/cmake_admin/FindFLAC.cmake
++++ b/cmake_admin/FindFLAC.cmake
+@@ -20,7 +20,7 @@ Result Variables
+ This will define the following variables:
+ 
+ ``FLAC_FOUND``
+-  True if both libraries were found.
++  True if the C library was found.
+ ``FLAC_FLAC_FOUND``
+   True if the C library was found.
+ ``FLAC_FLAC++_FOUND``
+@@ -74,8 +74,7 @@ endif()
+ # Forward the result to CMake
+ include(FindPackageHandleStandardArgs)
+ find_package_handle_standard_args(
+-  FLAC REQUIRED_VARS "FLAC_LIBRARY" "FLAC_INCLUDE_DIR" "FLAC++_LIBRARY"
+-                     "FLAC++_INCLUDE_DIR")
++  FLAC REQUIRED_VARS "FLAC_LIBRARY" "FLAC_INCLUDE_DIR")
+ 
+ # Create the target
+ if(FLAC_FOUND AND NOT TARGET FLAC::FLAC)
+@@ -90,7 +89,10 @@ if(FLAC_FOUND AND NOT TARGET FLAC::FLAC)
+   set(FLAC_FLAC_FOUND TRUE)
+ endif()
+ 
+-if(FLAC_FOUND AND NOT TARGET FLAC::FLAC++)
++if(FLAC_FOUND
++   AND FLAC++_LIBRARY
++   AND FLAC++_INCLUDE_DIR
++   AND NOT TARGET FLAC::FLAC++)
+   add_library(FLAC::FLAC++ UNKNOWN IMPORTED)
+   set_target_properties(
+     FLAC::FLAC++

@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rudi Heitbaum <rudi@heitbaum.com>
+Date: Fri, 27 Nov 2026 11:06:38 +0000
+Subject: [PATCH] cmake: detect static libraries when there is no import suffix
+
+get_target_properties_from_pkg_config() treats a library as static
+only when it does not match CMAKE_IMPORT_LIBRARY_SUFFIX. That suffix
+is empty on platforms without import libraries, such as Linux, so the
+pattern is just "$", it matches every path, and a static library is
+never recognised as one.
+
+The shared pkg-config fields are used instead, and a static libvorbis.a
+gets an empty INTERFACE_LINK_LIBRARIES rather than "m;ogg". Linking
+the fluidsynth program against a static libsndfile with Ogg/Vorbis
+support then fails, because nothing places libogg after libvorbis:
+
+  libvorbis.a(block.o): undefined reference to 'oggpack_writeinit'
+
+Only test the import suffix when there is one.
+
+Fixes: 2bb9d83a734f ("Fix an import library is treated as a static library on OS/2 (#1321)")
+---
+ cmake_admin/PkgConfigHelpers.cmake | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/cmake_admin/PkgConfigHelpers.cmake b/cmake_admin/PkgConfigHelpers.cmake
+index b297aeb6a942..383deb0d8a60 100644
+--- a/cmake_admin/PkgConfigHelpers.cmake
++++ b/cmake_admin/PkgConfigHelpers.cmake
+@@ -76,8 +76,9 @@ macro ( unset_pkg_config _prefix )
+ endmacro ( unset_pkg_config )
+ 
+ function ( get_target_properties_from_pkg_config _library _prefix _out_prefix )
+-  if ( NOT "${_library}" MATCHES "${CMAKE_IMPORT_LIBRARY_SUFFIX}$"
+-       AND "${_library}" MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$" )
++  if ( "${_library}" MATCHES "${CMAKE_STATIC_LIBRARY_SUFFIX}$"
++       AND NOT ( CMAKE_IMPORT_LIBRARY_SUFFIX
++                 AND "${_library}" MATCHES "${CMAKE_IMPORT_LIBRARY_SUFFIX}$" ) )
+     set ( _cflags ${_prefix}_STATIC_CFLAGS_OTHER )
+     set ( _link_libraries ${_prefix}_STATIC_LIBRARIES )
+     set ( _library_dirs ${_prefix}_STATIC_LIBRARY_DIRS )
