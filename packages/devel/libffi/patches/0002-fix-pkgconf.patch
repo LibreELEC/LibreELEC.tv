@@ -8,7 +8,7 @@ Subject: [PATCH] fix pkgconf
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/libffi.pc.in b/libffi.pc.in
-index 1477a66..1dd4ebd 100644
+index 6fad83b..cac8c8a 100644
 --- a/libffi.pc.in
 +++ b/libffi.pc.in
 @@ -7,5 +7,5 @@ includedir=@includedir@
@@ -19,5 +19,5 @@ index 1477a66..1dd4ebd 100644
 +Libs: -L${libdir} -lffi
  Cflags: -I${includedir}
 -- 
-1.7.2.5
+2.53.0
 
