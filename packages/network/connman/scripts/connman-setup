@@ -16,11 +16,3 @@ if [ -f /storage/.config/connman_main.conf ]; then
 else
   export CONNMAN_MAIN="--config=/etc/connman/main.conf"
 fi
-
-# switch resolv.conf management to connman and use current contents
-# as a fallback
-if [ -f /run/libreelec/resolv.conf ]; then
-  cat /run/libreelec/resolv.conf >/run/connman/resolv.conf
-fi
-rm -f /run/libreelec/resolv.conf
-ln -s /run/connman/resolv.conf /run/libreelec/resolv.conf

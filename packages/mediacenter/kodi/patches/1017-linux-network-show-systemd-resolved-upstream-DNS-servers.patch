@@ -1,0 +1,75 @@
+From 767ddafdd3b11850a7e3a0b5fb851b2ed0385175 Mon Sep 17 00:00:00 2001
+From: Christian Hewitt <christianshewitt@gmail.com>
+Date: Mon, 23 Nov 2026 12:13:13 +0000
+Subject: [PATCH] [linux] network: show systemd-resolved upstream DNS servers
+
+With systemd-resolved, /etc/resolv.conf points at its local stub resolver
+so System Info shows 127.0.0.53 as the only DNS server.
+
+When the stub address is the only nameserver, read the upstream DNS
+servers that resolved lists in /run/systemd/resolve/resolv.conf instead.
+
+Assisted-by: Claude:claude-opus-5-5
+Signed-off-by: Christian Hewitt <christianshewitt@gmail.com>
+---
+ xbmc/platform/linux/network/NetworkLinux.cpp | 30 ++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/xbmc/platform/linux/network/NetworkLinux.cpp b/xbmc/platform/linux/network/NetworkLinux.cpp
+index f9a184d5d1..05d32bc652 100644
+--- a/xbmc/platform/linux/network/NetworkLinux.cpp
++++ b/xbmc/platform/linux/network/NetworkLinux.cpp
+@@ -15,6 +15,7 @@
+ #include <algorithm>
+ #include <chrono>
+ #include <errno.h>
++#include <fstream>
+ #include <signal.h>
+ #include <thread>
+ #include <utility>
+@@ -39,6 +40,27 @@ namespace
+ constexpr unsigned int ICMP_PACKET_SIZE{64};
+ constexpr unsigned int TTL{64};
+ 
++// systemd-resolved points resolv.conf at its local stub resolver and lists
++// the upstream DNS servers it uses in this file
++constexpr const char* RESOLVED_STUB_ADDRESS{"127.0.0.53"};
++constexpr const char* RESOLVED_UPLINK_RESOLV_CONF{"/run/systemd/resolve/resolv.conf"};
++
++std::vector<std::string> GetResolvedNameServers()
++{
++  std::vector<std::string> result;
++  std::ifstream file(RESOLVED_UPLINK_RESOLV_CONF);
++  std::string line;
++
++  while (std::getline(file, line))
++  {
++    const std::vector<std::string> fields = StringUtils::Split(line, ' ');
++    if (fields.size() >= 2 && fields[0] == "nameserver")
++      result.push_back(fields[1]);
++  }
++
++  return result;
++}
++
+ bool PingWithCommand(unsigned long remoteIp, unsigned int timeoutMs)
+ {
+   // A zero timeout is a nonblocking probe; a new child cannot provide a result yet.
+@@ -308,6 +330,14 @@ std::vector<std::string> CNetworkLinux::GetNameServers()
+     std::string ns = inet_ntoa(_res.nsaddr_list[i].sin_addr);
+     result.push_back(ns);
+   }
++
++  if (result.size() == 1 && result[0] == RESOLVED_STUB_ADDRESS)
++  {
++    std::vector<std::string> resolved = GetResolvedNameServers();
++    if (!resolved.empty())
++      return resolved;
++  }
++
+   return result;
+ }
+ 
+-- 
+2.43.0
+

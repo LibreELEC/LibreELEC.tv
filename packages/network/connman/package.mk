@@ -44,7 +44,8 @@ PKG_CONFIGURE_OPTS_TARGET="--srcdir=.. \
                            --with-systemdunitdir=/usr/lib/systemd/system \
                            --disable-silent-rules \
                            --disable-wifi \
-                           --enable-iwd"
+                           --enable-iwd \
+                           --with-dns-backend=systemd-resolved"
 
 if [ "${WIREGUARD_SUPPORT}" = "yes" ]; then
   PKG_CONFIGURE_OPTS_TARGET+=" --enable-wireguard=builtin"
@@ -79,7 +80,6 @@ post_makeinstall_target() {
     sed -i ${INSTALL}/etc/connman/main.conf \
         -e "s|^# BackgroundScanning.*|BackgroundScanning = true|g" \
         -e "s|^# UseGatewaysAsTimeservers.*|UseGatewaysAsTimeservers = false|g" \
-        -e "s|^# FallbackNameservers.*|FallbackNameservers = 8.8.8.8,8.8.4.4|g" \
         -e "s|^# FallbackTimeservers.*|FallbackTimeservers = 0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org,3.pool.ntp.org|g" \
         -e "s|^# PreferredTechnologies.*|PreferredTechnologies = ethernet,wifi,cellular|g" \
         -e "s|^# TetheringTechnologies.*|TetheringTechnologies = ethernet,wifi|g" \
