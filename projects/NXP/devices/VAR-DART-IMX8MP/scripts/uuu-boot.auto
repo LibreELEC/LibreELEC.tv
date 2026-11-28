@@ -1,0 +1,22 @@
+uuu_version 1.4.149
+
+# Write only eMMC boot0 (source-built flash.bin). Leaves FAT/STORAGE alone.
+# Board: SD boot switch, no SD card, USB OTG.
+#   sudo uuu uuu-boot.auto
+# Then dip-switch to eMMC and reboot.
+# SD overlay (or Yocto SD) is the recovery path.
+
+# i.MX8MP ROM stream. Keep SDPS open long enough for SPL to pull u-boot.itb.
+# SDP/SDPV run only if SPL re-enumerates as a gadget (this SPL does not).
+SDPS[-t 10000]: boot -f imx-boot
+SDP: boot -f imx-boot
+
+FB: ucmd if env exists emmc_dev; then ; else setenv emmc_dev 2; fi;
+FB: ucmd setenv fastboot_dev mmc
+FB: ucmd setenv mmcdev ${emmc_dev}
+FB: ucmd mmc dev ${emmc_dev}
+FB: flash bootloader imx-boot
+FB: ucmd if env exists emmc_ack; then ; else setenv emmc_ack 1; fi;
+FB: ucmd mmc partconf ${emmc_dev} ${emmc_ack} 1 0
+
+FB: done
