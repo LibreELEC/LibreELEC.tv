@@ -59,7 +59,6 @@ PKG_MESON_OPTS_TARGET="-Dadplug=disabled \
                        -Dmad=enabled \
                        -Dmanpages=false \
                        -Dmikmod=disabled \
-                       -Dmms=disabled \
                        -Dmodplug=disabled \
                        -Dmpcdec=disabled \
                        -Dmpg123=disabled \
